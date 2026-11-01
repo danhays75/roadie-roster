@@ -1,4 +1,4 @@
-import { Role } from "@/backend";
+import { Role, createActor } from "@/backend";
 import { ApprovalGate } from "@/components/ApprovalGate";
 import { AuthenticatedApp, useSignOut } from "@/components/InternetIdentity";
 import { Layout } from "@/components/Layout";
@@ -30,6 +30,7 @@ import KioskPage from "@/pages/Kiosk";
 import RoadieCardPage from "@/pages/RoadieCard";
 import RosterPage from "@/pages/Roster";
 import TodayPage from "@/pages/Today";
+import { useActor } from "@caffeineai/core-infrastructure";
 import {
   Outlet,
   RouterProvider,
@@ -43,33 +44,38 @@ import { Lock } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 /**
- * The staff PIN that unlocks the kiosk's sign-out control. The kiosk is a
- * shared device, so signing out is deliberately behind a PIN the roadie does
- * not know; this is a client-side gate on a shared kiosk, not a secret.
- */
-const KIOSK_STAFF_PIN = "9750";
-
-/**
  * A discreet, PIN-protected staff sign-out for the kiosk shell. The kiosk
  * renders without the app header, so this is the only way to end the session
- * on a shared device.
+ * on a shared device. The PIN is verified by the backend against the stored
+ * hash, never compared to a constant in the client.
  */
 function KioskSignOut() {
   const { t } = useI18n();
   const signOut = useSignOut();
+  const { actor } = useActor(createActor);
   const [open, setOpen] = useState(false);
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
+  const [checking, setChecking] = useState(false);
 
-  const submit = () => {
-    if (pin.trim() !== KIOSK_STAFF_PIN) {
+  const submit = async () => {
+    if (!actor || checking) return;
+    setChecking(true);
+    try {
+      const ok = await actor.checkKioskPin(pin.trim());
+      if (!ok) {
+        setError(true);
+        return;
+      }
+      setError(false);
+      setPin("");
+      setOpen(false);
+      signOut();
+    } catch {
       setError(true);
-      return;
+    } finally {
+      setChecking(false);
     }
-    setError(false);
-    setPin("");
-    setOpen(false);
-    signOut();
   };
 
   return (
@@ -116,7 +122,7 @@ function KioskSignOut() {
                 setPin(event.target.value);
               }}
               onKeyDown={(event) => {
-                if (event.key === "Enter") submit();
+                if (event.key === "Enter") void submit();
               }}
             />
             {error && (
@@ -144,7 +150,8 @@ function KioskSignOut() {
               type="button"
               className="touch-target"
               data-ocid="kiosk.sign_out.confirm_button"
-              onClick={submit}
+              onClick={() => void submit()}
+              disabled={checking}
             >
               {t("kiosk.signOut.confirm")}
             </Button>

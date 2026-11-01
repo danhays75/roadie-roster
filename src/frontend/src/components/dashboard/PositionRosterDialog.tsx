@@ -2,6 +2,7 @@ import type { ArchiveReason, Position, Roadie } from "@/backend";
 import { RoadieStatus } from "@/backend";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StoreLogo } from "@/components/StoreLogo";
+import { DEFAULT_TIME_ZONE } from "@/components/approvals/timeZone";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatDateOnly, roadieStatusLabel } from "@/lib/format";
+import { useStoreInfo } from "@/hooks/useQueries";
+import { formatTimestamp, roadieStatusLabel } from "@/lib/format";
 import { Loader2, RotateCcw, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useDashboardCopy } from "./copy";
@@ -69,9 +71,11 @@ function OpenSpotTile({ index }: { index: number }) {
 function ArchivedRow({
   roadie,
   canRehire,
+  timeZone,
 }: {
   roadie: Roadie;
   canRehire: boolean;
+  timeZone: string;
 }) {
   const { t } = useDashboardCopy();
   const rehire = useRehireRoadie();
@@ -90,7 +94,7 @@ function ArchivedRow({
         <p className="text-xs text-muted-foreground">
           {archiveReasonLabel(roadie.archivedReason)}
           {roadie.archivedAt !== undefined
-            ? ` · ${formatDateOnly(roadie.archivedAt)}`
+            ? ` · ${formatTimestamp(roadie.archivedAt, timeZone)}`
             : ""}
         </p>
         {error && (
@@ -149,6 +153,8 @@ export function PositionRosterDialog({
   canRehire: boolean;
 }) {
   const { t } = useDashboardCopy();
+  const { data: storeInfo } = useStoreInfo();
+  const timeZone = storeInfo?.timeZone || DEFAULT_TIME_ZONE;
   const {
     data: roster,
     isLoading,
@@ -243,6 +249,7 @@ export function PositionRosterDialog({
                       key={roadie.id.toString()}
                       roadie={roadie}
                       canRehire={canRehire}
+                      timeZone={timeZone}
                     />
                   ))}
                 </ul>

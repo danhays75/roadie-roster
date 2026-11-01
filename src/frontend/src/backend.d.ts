@@ -514,6 +514,10 @@ export interface backendInterface {
      */
     changePosition(id: RoadieId, mainPositionId: PositionId, secondPositionId: PositionId | null, crewId: CrewId | null): Promise<void>;
     /**
+     * / Check a candidate kiosk PIN. Returns true when it matches the stored hash.
+     */
+    checkKioskPin(pin: string): Promise<boolean>;
+    /**
      * / Create a crew (Admin/Store Manager only).
      */
     createCrew(name: string): Promise<CrewId>;
@@ -587,6 +591,11 @@ export interface backendInterface {
      */
     getOrientationCheckoff(roadieId: RoadieId): Promise<OrientationCheckoff | null>;
     /**
+     * / Read a roadie's photo bytes by id, for a caller allowed to see the roadie.
+     * / Returns null when the roadie has no photo or is not visible to the caller.
+     */
+    getPhoto(id: RoadieId): Promise<PhotoRef | null>;
+    /**
      * / Read retention settings.
      */
     getRetentionSettings(): Promise<RetentionSettings>;
@@ -603,6 +612,11 @@ export interface backendInterface {
      */
     getSignup(id: SignupId): Promise<SignupSubmission | null>;
     /**
+     * / Read a pending submission's photo bytes by id (Admin/Store Manager only).
+     * / Returns null when the submission has no photo.
+     */
+    getSignupPhoto(id: SignupId): Promise<PhotoRef | null>;
+    /**
      * / Read the store configuration.
      */
     getStoreInfo(): Promise<StoreInfo>;
@@ -610,6 +624,10 @@ export interface backendInterface {
      * / Read a training group with its unassigned and off-shift lists.
      */
     getTrainingGroup(id: TrainingGroupId): Promise<TrainingGroupView | null>;
+    /**
+     * / True when an Admin has set a kiosk PIN.
+     */
+    hasKioskPin(): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     /**
      * / Compute whether a roadie is a minor as of now.
@@ -660,7 +678,9 @@ export interface backendInterface {
      */
     listSchedule(): Promise<Array<ScheduleEvent>>;
     /**
-     * / List trainer notes for a roadie.
+     * / List trainer notes for a roadie. Restricted the same way roadies are:
+     * / Integration sees nothing, and a trainer sees notes only for roadies in
+     * / their assigned stations.
      */
     listTrainerNotes(roadieId: RoadieId): Promise<Array<TrainerNote>>;
     /**
@@ -698,6 +718,10 @@ export interface backendInterface {
      */
     saveStoreTemplate(name: string): Promise<void>;
     schema(): Promise<string>;
+    /**
+     * / Set the kiosk staff PIN (Admin only). Stored hashed; never returned.
+     */
+    setKioskPin(pin: string): Promise<void>;
     /**
      * / Record per-roadie attendance for a leader talk (Admin/Store Manager only).
      */

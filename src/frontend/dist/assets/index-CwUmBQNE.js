@@ -33329,6 +33329,7 @@ var OrientationCheckoff = Record({
 	"uniformItems": Vec(Text),
 	"shirtsCount": Nat
 });
+var PhotoRef = Vec(Nat8);
 var RetentionSettings = Record({
 	"notesDays": Nat,
 	"archivedContactSetDays": Nat,
@@ -33345,7 +33346,6 @@ var RoadieStatus$1 = Variant({
 	"needsMoreTime": Null,
 	"archived": Null
 });
-var PhotoRef = Vec(Nat8);
 var PersonName = Text;
 var ShirtSize = Text;
 var HatSize = Text;
@@ -33510,6 +33510,7 @@ Service({
 		Opt(PositionId),
 		Opt(CrewId)
 	], [], []),
+	"checkKioskPin": Func([Text], [Bool], ["query"]),
 	"createCrew": Func([Text], [CrewId], []),
 	"createLeaderTalk": Func([LeaderTalk], [LeaderTalkId], []),
 	"createPosition": Func([Position], [PositionId], []),
@@ -33535,12 +33536,15 @@ Service({
 	})], ["query"]),
 	"getMyAccess": Func([], [Opt(AccessGrant)], ["query"]),
 	"getOrientationCheckoff": Func([RoadieId], [Opt(OrientationCheckoff)], ["query"]),
+	"getPhoto": Func([RoadieId], [Opt(PhotoRef)], ["query"]),
 	"getRetentionSettings": Func([], [RetentionSettings], ["query"]),
 	"getRoadie": Func([RoadieId], [Opt(Roadie)], ["query"]),
 	"getRosterSummary": Func([], [Vec(RosterSummary)], ["query"]),
 	"getSignup": Func([SignupId], [Opt(SignupSubmission)], ["query"]),
+	"getSignupPhoto": Func([SignupId], [Opt(PhotoRef)], ["query"]),
 	"getStoreInfo": Func([], [StoreInfo], ["query"]),
 	"getTrainingGroup": Func([TrainingGroupId], [Opt(TrainingGroupView)], ["query"]),
+	"hasKioskPin": Func([], [Bool], ["query"]),
 	"isCallerAdmin": Func([], [Bool], ["query"]),
 	"isMinor": Func([RoadieId], [Bool], ["query"]),
 	"listAccessGrants": Func([], [Vec(AccessGrant)], ["query"]),
@@ -33564,6 +33568,7 @@ Service({
 	"resignAvailability": Func([RoadieId, SignatureRef], [], []),
 	"saveStoreTemplate": Func([Text], [], []),
 	"schema": Func([], [Text], ["query"]),
+	"setKioskPin": Func([Text], [], []),
 	"setLeaderTalkAttendance": Func([LeaderTalkId, Vec(RoadieId)], [], []),
 	"submitSignup": Func([
 		RoadieProfile,
@@ -33843,6 +33848,7 @@ var idlFactory = ({ IDL }) => {
 		"uniformItems": IDL.Vec(IDL.Text),
 		"shirtsCount": IDL.Nat
 	});
+	const PhotoRef = IDL.Vec(IDL.Nat8);
 	const RetentionSettings = IDL.Record({
 		"notesDays": IDL.Nat,
 		"archivedContactSetDays": IDL.Nat,
@@ -33859,7 +33865,6 @@ var idlFactory = ({ IDL }) => {
 		"needsMoreTime": IDL.Null,
 		"archived": IDL.Null
 	});
-	const PhotoRef = IDL.Vec(IDL.Nat8);
 	const PersonName = IDL.Text;
 	const ShirtSize = IDL.Text;
 	const HatSize = IDL.Text;
@@ -34027,6 +34032,7 @@ var idlFactory = ({ IDL }) => {
 			IDL.Opt(PositionId),
 			IDL.Opt(CrewId)
 		], [], []),
+		"checkKioskPin": IDL.Func([IDL.Text], [IDL.Bool], ["query"]),
 		"createCrew": IDL.Func([IDL.Text], [CrewId], []),
 		"createLeaderTalk": IDL.Func([LeaderTalk], [LeaderTalkId], []),
 		"createPosition": IDL.Func([Position], [PositionId], []),
@@ -34052,12 +34058,15 @@ var idlFactory = ({ IDL }) => {
 		})], ["query"]),
 		"getMyAccess": IDL.Func([], [IDL.Opt(AccessGrant)], ["query"]),
 		"getOrientationCheckoff": IDL.Func([RoadieId], [IDL.Opt(OrientationCheckoff)], ["query"]),
+		"getPhoto": IDL.Func([RoadieId], [IDL.Opt(PhotoRef)], ["query"]),
 		"getRetentionSettings": IDL.Func([], [RetentionSettings], ["query"]),
 		"getRoadie": IDL.Func([RoadieId], [IDL.Opt(Roadie)], ["query"]),
 		"getRosterSummary": IDL.Func([], [IDL.Vec(RosterSummary)], ["query"]),
 		"getSignup": IDL.Func([SignupId], [IDL.Opt(SignupSubmission)], ["query"]),
+		"getSignupPhoto": IDL.Func([SignupId], [IDL.Opt(PhotoRef)], ["query"]),
 		"getStoreInfo": IDL.Func([], [StoreInfo], ["query"]),
 		"getTrainingGroup": IDL.Func([TrainingGroupId], [IDL.Opt(TrainingGroupView)], ["query"]),
+		"hasKioskPin": IDL.Func([], [IDL.Bool], ["query"]),
 		"isCallerAdmin": IDL.Func([], [IDL.Bool], ["query"]),
 		"isMinor": IDL.Func([RoadieId], [IDL.Bool], ["query"]),
 		"listAccessGrants": IDL.Func([], [IDL.Vec(AccessGrant)], ["query"]),
@@ -34081,6 +34090,7 @@ var idlFactory = ({ IDL }) => {
 		"resignAvailability": IDL.Func([RoadieId, SignatureRef], [], []),
 		"saveStoreTemplate": IDL.Func([IDL.Text], [], []),
 		"schema": IDL.Func([], [IDL.Text], ["query"]),
+		"setKioskPin": IDL.Func([IDL.Text], [], []),
 		"setLeaderTalkAttendance": IDL.Func([LeaderTalkId, IDL.Vec(RoadieId)], [], []),
 		"submitSignup": IDL.Func([
 			RoadieProfile,
@@ -34392,6 +34402,15 @@ var Backend = class {
 		}
 		else return await this.actor.changePosition(arg0, arg1, to_candid_opt_n39(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n40(this._uploadFile, this._downloadFile, arg3));
 	}
+	async checkKioskPin(arg0) {
+		if (this.processError) try {
+			return await this.actor.checkKioskPin(arg0);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else return await this.actor.checkKioskPin(arg0);
+	}
 	async createCrew(arg0) {
 		if (this.processError) try {
 			return await this.actor.createCrew(arg0);
@@ -34569,6 +34588,19 @@ var Backend = class {
 			return from_candid_opt_n77(this._uploadFile, this._downloadFile, result);
 		}
 	}
+	async getPhoto(arg0) {
+		if (this.processError) try {
+			const result = await this.actor.getPhoto(arg0);
+			return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else {
+			const result = await this.actor.getPhoto(arg0);
+			return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+		}
+	}
 	async getRetentionSettings() {
 		if (this.processError) try {
 			return await this.actor.getRetentionSettings();
@@ -34581,14 +34613,14 @@ var Backend = class {
 	async getRoadie(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getRoadie(arg0);
-			return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n79(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getRoadie(arg0);
-			return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n79(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getRosterSummary() {
@@ -34611,6 +34643,19 @@ var Backend = class {
 		else {
 			const result = await this.actor.getSignup(arg0);
 			return from_candid_opt_n94(this._uploadFile, this._downloadFile, result);
+		}
+	}
+	async getSignupPhoto(arg0) {
+		if (this.processError) try {
+			const result = await this.actor.getSignupPhoto(arg0);
+			return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else {
+			const result = await this.actor.getSignupPhoto(arg0);
+			return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getStoreInfo() {
@@ -34638,6 +34683,15 @@ var Backend = class {
 			const result = await this.actor.getTrainingGroup(arg0);
 			return from_candid_opt_n101(this._uploadFile, this._downloadFile, result);
 		}
+	}
+	async hasKioskPin() {
+		if (this.processError) try {
+			return await this.actor.hasKioskPin();
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else return await this.actor.hasKioskPin();
 	}
 	async isCallerAdmin() {
 		if (this.processError) try {
@@ -34882,6 +34936,15 @@ var Backend = class {
 		}
 		else return await this.actor.schema();
 	}
+	async setKioskPin(arg0) {
+		if (this.processError) try {
+			return await this.actor.setKioskPin(arg0);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else return await this.actor.setKioskPin(arg0);
+	}
 	async setLeaderTalkAttendance(arg0, arg1) {
 		if (this.processError) try {
 			return await this.actor.setLeaderTalkAttendance(arg0, arg1);
@@ -35030,8 +35093,8 @@ var Backend = class {
 function from_candid_AccessGrant_n73(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n74(_uploadFile, _downloadFile, value);
 }
-function from_candid_ArchiveReason_n87(_uploadFile, _downloadFile, value) {
-	return from_candid_variant_n88(_uploadFile, _downloadFile, value);
+function from_candid_ArchiveReason_n88(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n89(_uploadFile, _downloadFile, value);
 }
 function from_candid_AttendanceRecord_n108(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n109(_uploadFile, _downloadFile, value);
@@ -35078,11 +35141,11 @@ function from_candid_Result_n49(_uploadFile, _downloadFile, value) {
 function from_candid_RoadieProfile_n90(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n91(_uploadFile, _downloadFile, value);
 }
-function from_candid_RoadieStatus_n81(_uploadFile, _downloadFile, value) {
+function from_candid_RoadieStatus_n82(_uploadFile, _downloadFile, value) {
 	return "active" in value ? "active" : "hired" in value ? "hired" : "inTraining" in value ? "inTraining" : "paperworkDone" in value ? "paperworkDone" : "oriented" in value ? "oriented" : "certified" in value ? "certified" : "needsMoreTime" in value ? "needsMoreTime" : "archived" in value ? "archived" : value;
 }
-function from_candid_Roadie_n79(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n80(_uploadFile, _downloadFile, value);
+function from_candid_Roadie_n80(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n81(_uploadFile, _downloadFile, value);
 }
 function from_candid_Role_n76(_uploadFile, _downloadFile, value) {
 	return "integration" in value ? "integration" : "admin" in value ? "admin" : "trainingManager" in value ? "trainingManager" : "trainer" in value ? "trainer" : "leadership" in value ? "leadership" : "visitingManager" in value ? "visitingManager" : "storeManager" in value ? "storeManager" : "kiosk" in value ? "kiosk" : value;
@@ -35169,25 +35232,25 @@ function from_candid_opt_n77(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n78(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_Roadie_n79(_uploadFile, _downloadFile, value[0]);
-}
-function from_candid_opt_n82(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n79(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_Roadie_n80(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n83(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n84(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_ContactSet_n59(_uploadFile, _downloadFile, value[0]);
+	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n85(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
+	return value.length === 0 ? null : from_candid_ContactSet_n59(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n86(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_ArchiveReason_n87(_uploadFile, _downloadFile, value[0]);
-}
-function from_candid_opt_n89(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n87(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_ArchiveReason_n88(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n92(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
@@ -35206,7 +35269,7 @@ function from_candid_record_n100(_uploadFile, _downloadFile, value) {
 		leaderTalkName: value.leaderTalkName,
 		appName: value.appName,
 		leaderTalkSize: value.leaderTalkSize,
-		logo: record_opt_to_undefined(from_candid_opt_n89(_uploadFile, _downloadFile, value.logo)),
+		logo: record_opt_to_undefined(from_candid_opt_n78(_uploadFile, _downloadFile, value.logo)),
 		amShiftStart: value.amShiftStart,
 		openingDate: value.openingDate,
 		pmShiftEnd: value.pmShiftEnd,
@@ -35236,7 +35299,7 @@ function from_candid_record_n105(_uploadFile, _downloadFile, value) {
 }
 function from_candid_record_n109(_uploadFile, _downloadFile, value) {
 	return {
-		eventId: record_opt_to_undefined(from_candid_opt_n82(_uploadFile, _downloadFile, value.eventId)),
+		eventId: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.eventId)),
 		roadieId: value.roadieId,
 		recordedAt: value.recordedAt,
 		recordedBy: value.recordedBy,
@@ -35387,23 +35450,23 @@ function from_candid_record_n74(_uploadFile, _downloadFile, value) {
 		accessEndsAt: record_opt_to_undefined(from_candid_opt_n61(_uploadFile, _downloadFile, value.accessEndsAt))
 	};
 }
-function from_candid_record_n80(_uploadFile, _downloadFile, value) {
+function from_candid_record_n81(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
-		status: from_candid_RoadieStatus_n81(_uploadFile, _downloadFile, value.status),
-		orientationEventId: record_opt_to_undefined(from_candid_opt_n82(_uploadFile, _downloadFile, value.orientationEventId)),
+		status: from_candid_RoadieStatus_n82(_uploadFile, _downloadFile, value.status),
+		orientationEventId: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.orientationEventId)),
 		mainPositionId: value.mainPositionId,
-		crossTrainedPositionId: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.crossTrainedPositionId)),
+		crossTrainedPositionId: record_opt_to_undefined(from_candid_opt_n84(_uploadFile, _downloadFile, value.crossTrainedPositionId)),
 		corporateEmployeeId: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.corporateEmployeeId)),
-		contactSet: record_opt_to_undefined(from_candid_opt_n84(_uploadFile, _downloadFile, value.contactSet)),
-		crewId: record_opt_to_undefined(from_candid_opt_n85(_uploadFile, _downloadFile, value.crewId)),
+		contactSet: record_opt_to_undefined(from_candid_opt_n85(_uploadFile, _downloadFile, value.contactSet)),
+		crewId: record_opt_to_undefined(from_candid_opt_n86(_uploadFile, _downloadFile, value.crewId)),
 		signedBy: record_opt_to_undefined(from_candid_opt_n62(_uploadFile, _downloadFile, value.signedBy)),
 		birthdayMonthDay: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.birthdayMonthDay)),
 		isMinor: value.isMinor,
-		archivedReason: record_opt_to_undefined(from_candid_opt_n86(_uploadFile, _downloadFile, value.archivedReason)),
-		photo: record_opt_to_undefined(from_candid_opt_n89(_uploadFile, _downloadFile, value.photo)),
+		archivedReason: record_opt_to_undefined(from_candid_opt_n87(_uploadFile, _downloadFile, value.archivedReason)),
+		photo: record_opt_to_undefined(from_candid_opt_n78(_uploadFile, _downloadFile, value.photo)),
 		hiredAt: value.hiredAt,
-		secondPositionId: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.secondPositionId)),
+		secondPositionId: record_opt_to_undefined(from_candid_opt_n84(_uploadFile, _downloadFile, value.secondPositionId)),
 		profile: from_candid_RoadieProfile_n90(_uploadFile, _downloadFile, value.profile),
 		startDate: record_opt_to_undefined(from_candid_opt_n30(_uploadFile, _downloadFile, value.startDate)),
 		archivedAt: record_opt_to_undefined(from_candid_opt_n61(_uploadFile, _downloadFile, value.archivedAt))
@@ -35433,7 +35496,7 @@ function from_candid_record_n96(_uploadFile, _downloadFile, value) {
 		signature: record_opt_to_undefined(from_candid_opt_n63(_uploadFile, _downloadFile, value.signature)),
 		contactSet: from_candid_ContactSet_n59(_uploadFile, _downloadFile, value.contactSet),
 		submittedAt: value.submittedAt,
-		photo: record_opt_to_undefined(from_candid_opt_n89(_uploadFile, _downloadFile, value.photo)),
+		photo: record_opt_to_undefined(from_candid_opt_n78(_uploadFile, _downloadFile, value.photo)),
 		profile: from_candid_RoadieProfile_n90(_uploadFile, _downloadFile, value.profile)
 	};
 }
@@ -35497,7 +35560,7 @@ function from_candid_variant_n56(_uploadFile, _downloadFile, value) {
 		text: value.text
 	} : value;
 }
-function from_candid_variant_n88(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n89(_uploadFile, _downloadFile, value) {
 	return "noShow" in value ? {
 		__kind__: "noShow",
 		noShow: value.noShow
@@ -35549,7 +35612,7 @@ function from_candid_vec_n115(_uploadFile, _downloadFile, value) {
 	return value.map((x) => from_candid_SignupSubmission_n95(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n116(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_Roadie_n79(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_Roadie_n80(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n117(_uploadFile, _downloadFile, value) {
 	return value.map((x) => from_candid_ScheduleEvent_n118(_uploadFile, _downloadFile, x));
@@ -39078,7 +39141,7 @@ var ImagePlus = createLucideIcon("image-plus", [
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
-var Image = createLucideIcon("image", [
+var Image$1 = createLucideIcon("image", [
 	["rect", {
 		width: "18",
 		height: "18",
@@ -39299,6 +39362,19 @@ var ShieldAlert = createLucideIcon("shield-alert", [
 		key: "1drbdi"
 	}]
 ]);
+/**
+* @license lucide-react v0.511.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
+var ShieldCheck = createLucideIcon("shield-check", [["path", {
+	d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+	key: "oel41y"
+}], ["path", {
+	d: "m9 12 2 2 4-4",
+	key: "dzmm74"
+}]]);
 /**
 * @license lucide-react v0.511.0 - ISC
 *
@@ -39734,16 +39810,20 @@ function StoreLogo({ className, title = "Roadie store logo" }) {
 //#region src/hooks/useQueries.ts
 function useMyAccess() {
 	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["myAccess"],
-		queryFn: async () => {
-			if (!actor) return null;
-			return actor.getMyAccess();
-		},
-		enabled: !!actor && !isFetching,
-		refetchInterval: 5e3,
-		refetchIntervalInBackground: false
-	});
+	const enabled = !!actor && !isFetching;
+	return {
+		...useQuery({
+			queryKey: ["myAccess"],
+			queryFn: async () => {
+				if (!actor) return null;
+				return actor.getMyAccess();
+			},
+			enabled,
+			refetchInterval: 5e3,
+			refetchIntervalInBackground: false
+		}),
+		isReady: enabled
+	};
 }
 /**
 * The pending sign-in queue. Only admins may read it, so callers pass
@@ -39938,6 +40018,40 @@ function useRemoveUser() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
 			queryClient.invalidateQueries({ queryKey: ["adminCount"] });
+		}
+	});
+}
+/**
+* Whether an Admin has set the kiosk staff PIN. The kiosk sign-out checks the
+* entered PIN against the stored hash, so this tells an admin whether a PIN
+* exists yet. Admin-only on the backend, so callers pass `enabled` to avoid a
+* trapping read for other roles.
+*/
+function useHasKioskPin(enabled = true) {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["hasKioskPin"],
+		queryFn: async () => {
+			if (!actor) return false;
+			return actor.hasKioskPin();
+		},
+		enabled: enabled && !!actor && !isFetching
+	});
+}
+/**
+* Set the kiosk staff PIN. The backend stores only a one-way hash, so the
+* plaintext is never persisted or returned. Admin-only.
+*/
+function useSetKioskPin() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (pin) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.setKioskPin(pin);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["hasKioskPin"] });
 		}
 	});
 }
@@ -40145,6 +40259,25 @@ function useRoadie(id) {
 		enabled: !!actor && !isFetching && id !== void 0
 	});
 }
+/**
+* A roadie's photo bytes, read on demand. `listRoadies` and
+* `listPendingSignups` no longer carry full photo bytes, so the roster list and
+* the roadie card fetch the photo by id instead. React Query caches the result
+* under the roadie id, and the bytes never change for a given id, so a
+* re-render or a revisit reuses the cached read rather than re-fetching.
+*/
+function useRoadiePhoto(id) {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["roadiePhoto", id?.toString()],
+		queryFn: async () => {
+			if (!actor || id === void 0) return null;
+			return actor.getPhoto(id);
+		},
+		enabled: !!actor && !isFetching && id !== void 0,
+		staleTime: Number.POSITIVE_INFINITY
+	});
+}
 function useCrews() {
 	const { actor, isFetching } = useActor(createActor);
 	return useQuery({
@@ -40271,23 +40404,24 @@ var NAV_ITEMS = [
 ];
 /** Resolve the caller's access state from the backend grant. */
 function useAccessState() {
-	const { data, isLoading, isError, error } = useMyAccess();
+	const { data, isLoading, isError, error, isReady } = useMyAccess();
 	return (0, import_react.useMemo)(() => {
-		if (isLoading) return { kind: "loading" };
+		if (!isReady || isLoading) return { kind: "loading" };
+		if (data) return {
+			kind: "granted",
+			grant: data
+		};
 		if (isError) return {
 			kind: "error",
 			message: error instanceof Error ? error.message : "Unknown error"
 		};
-		if (!data) return { kind: "pending" };
-		return {
-			kind: "granted",
-			grant: data
-		};
+		return { kind: "pending" };
 	}, [
 		data,
 		isLoading,
 		isError,
-		error
+		error,
+		isReady
 	]);
 }
 /** Whether the given role may see a nav item. */
@@ -41001,6 +41135,7 @@ function ApprovalGate({ children }) {
 	const requested = (0, import_react.useRef)(false);
 	const bootstrapped = (0, import_react.useRef)(false);
 	const bootstrapAttempts = (0, import_react.useRef)(0);
+	const requestAttempts = (0, import_react.useRef)(0);
 	(0, import_react.useEffect)(() => {
 		if (!actor) return;
 		if (access.kind === "loading" || access.kind === "error") return;
@@ -41015,12 +41150,21 @@ function ApprovalGate({ children }) {
 		bootstrapAdmin
 	]);
 	(0, import_react.useEffect)(() => {
-		if (access.kind !== "pending" || requested.current) return;
+		if (!actor) return;
+		if (access.kind !== "pending") return;
+		if (requested.current && !requestAccess.isError) return;
+		if (requestAttempts.current >= 3) return;
 		requested.current = true;
+		requestAttempts.current += 1;
 		requestAccess.mutate();
-	}, [access.kind, requestAccess]);
+	}, [
+		actor,
+		access.kind,
+		requestAccess
+	]);
 	if (access.kind === "granted") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children });
-	if (access.kind === "loading") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+	const actorReady = !!actor;
+	if (access.kind === "loading" && actorReady) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		"data-ocid": "gate.loading_state",
 		className: "flex min-h-dvh items-center justify-center bg-background px-6",
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("common.loading") })
@@ -45467,9 +45611,10 @@ function useCurrentRole() {
 function NavLinks({ onNavigate, className }) {
 	const { t } = useI18n();
 	const role = useCurrentRole();
-	const { data: pending } = usePendingUsers(canApprove(role));
+	const { data: pendingSignups } = usePendingSignups();
+	usePendingUsers(canAdmin(role));
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
-	const pendingCount = pending?.length ?? 0;
+	const pendingCount = pendingSignups?.length ?? 0;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("nav", {
 		"aria-label": "Primary",
 		className,
@@ -47812,6 +47957,21 @@ var adminCopy = {
 		templateSaved: "Store template saved.",
 		templateSaveError: "We couldn't save the store template.",
 		accessDescription: "Who can sign in, and with which role.",
+		kioskPinTitle: "Kiosk staff PIN",
+		kioskPinDescription: "The PIN staff enter to sign out of the kiosk on a shared device.",
+		kioskPinLoading: "Checking the staff PIN…",
+		kioskPinSet: "A staff PIN is set.",
+		kioskPinNotSet: "No staff PIN is set yet. The kiosk cannot be signed out.",
+		kioskPinLabel: "New staff PIN",
+		kioskPinPlaceholder: "Enter a PIN",
+		kioskPinConfirmLabel: "Confirm staff PIN",
+		kioskPinConfirmPlaceholder: "Re-enter the PIN",
+		kioskPinSave: "Save PIN",
+		kioskPinSaved: "Staff PIN saved.",
+		kioskPinError: "We couldn't save the staff PIN.",
+		kioskPinRequired: "Enter a PIN.",
+		kioskPinMismatch: "The PINs do not match.",
+		kioskPinHint: "Only a one-way hash is stored. The PIN is never shown again after saving.",
 		actionEdit: "Edit",
 		actionDelete: "Delete",
 		actionCancel: "Cancel",
@@ -47939,6 +48099,21 @@ var adminCopy = {
 		templateSaved: "Plantilla de tienda guardada.",
 		templateSaveError: "No pudimos guardar la plantilla de tienda.",
 		accessDescription: "Quién puede iniciar sesión y con qué rol.",
+		kioskPinTitle: "PIN del personal del quiosco",
+		kioskPinDescription: "El PIN que el personal ingresa para cerrar la sesión del quiosco en un dispositivo compartido.",
+		kioskPinLoading: "Comprobando el PIN del personal…",
+		kioskPinSet: "Hay un PIN del personal configurado.",
+		kioskPinNotSet: "Aún no hay un PIN del personal. No se puede cerrar la sesión del quiosco.",
+		kioskPinLabel: "Nuevo PIN del personal",
+		kioskPinPlaceholder: "Ingresa un PIN",
+		kioskPinConfirmLabel: "Confirmar PIN del personal",
+		kioskPinConfirmPlaceholder: "Vuelve a ingresar el PIN",
+		kioskPinSave: "Guardar PIN",
+		kioskPinSaved: "PIN del personal guardado.",
+		kioskPinError: "No pudimos guardar el PIN del personal.",
+		kioskPinRequired: "Ingresa un PIN.",
+		kioskPinMismatch: "Los PIN no coinciden.",
+		kioskPinHint: "Solo se guarda un hash de una vía. El PIN nunca se vuelve a mostrar tras guardarlo.",
 		actionEdit: "Editar",
 		actionDelete: "Eliminar",
 		actionCancel: "Cancelar",
@@ -51115,6 +51290,76 @@ function refToDataUrl(ref, contentType = "image/png") {
 async function fileToRef(file) {
 	return new Uint8Array(await file.arrayBuffer());
 }
+/** JPEG quality used when re-encoding an upload. */
+var UPLOAD_JPEG_QUALITY = .8;
+/**
+* How long to wait for an image to decode before falling back to the original
+* file. A real browser decodes a small image in a few milliseconds, so this is
+* only a safety net for an undecodable file; keeping it short means a submit
+* never stalls on an image the browser cannot read.
+*/
+var IMAGE_LOAD_TIMEOUT_MS = 500;
+/** Load a `File` into an `HTMLImageElement` for canvas re-encoding. */
+function loadImage(file) {
+	return new Promise((resolve, reject) => {
+		const url = URL.createObjectURL(file);
+		const image = new Image();
+		const timer = setTimeout(() => {
+			URL.revokeObjectURL(url);
+			reject(/* @__PURE__ */ new Error("Timed out reading the image"));
+		}, IMAGE_LOAD_TIMEOUT_MS);
+		image.onload = () => {
+			clearTimeout(timer);
+			URL.revokeObjectURL(url);
+			resolve(image);
+		};
+		image.onerror = () => {
+			clearTimeout(timer);
+			URL.revokeObjectURL(url);
+			reject(/* @__PURE__ */ new Error("Could not read the image"));
+		};
+		image.src = url;
+	});
+}
+/** Draw an image onto a canvas at a scaled size and read it back as a blob. */
+function encodeCanvas(image, width, height, quality) {
+	const canvas = document.createElement("canvas");
+	canvas.width = width;
+	canvas.height = height;
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return Promise.resolve(null);
+	ctx.drawImage(image, 0, 0, width, height);
+	return new Promise((resolve) => {
+		canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
+	});
+}
+/**
+* Downscale a photo or signature to at most `MAX_UPLOAD_EDGE` on its longest
+* edge, re-encode it as JPEG at `UPLOAD_JPEG_QUALITY`, and step the quality
+* down until the result fits `MAX_UPLOAD_BYTES`. Falls back to the original
+* file when the browser cannot decode or re-encode it.
+*/
+async function resizeImageFile(file) {
+	let image;
+	try {
+		image = await loadImage(file);
+	} catch {
+		return file;
+	}
+	const longest = Math.max(image.naturalWidth, image.naturalHeight);
+	const scale = longest > 800 ? 800 / longest : 1;
+	const width = Math.max(1, Math.round(image.naturalWidth * scale));
+	const height = Math.max(1, Math.round(image.naturalHeight * scale));
+	let quality = UPLOAD_JPEG_QUALITY;
+	let blob = await encodeCanvas(image, width, height, quality);
+	while (blob && blob.size > 307200 && quality > .4) {
+		quality = Math.round((quality - .1) * 10) / 10;
+		blob = await encodeCanvas(image, width, height, quality);
+	}
+	if (!blob) return file;
+	const name = file.name.replace(/\.[^.]+$/, "") || "upload";
+	return new File([blob], `${name}.jpg`, { type: "image/jpeg" });
+}
 /** Motoko `Time.now()` nanoseconds -> JS Date. Returns null when invalid. */
 function timestampToDate(timestamp) {
 	const date = new Date(Number(timestamp / 1000000n));
@@ -51472,6 +51717,149 @@ function GrantRow({ grant, adminCount, timeZone }) {
 		]
 	});
 }
+/**
+* Set the kiosk staff PIN. The kiosk sign-out verifies the entered PIN against
+* the stored hash, so without a PIN the kiosk can never be signed out. Only an
+* Admin may set it; the backend stores a one-way hash and never returns it.
+*/
+function KioskPinSection() {
+	const c = useAdminCopy();
+	const hasPin = useHasKioskPin();
+	const savePin = useSetKioskPin();
+	const [pin, setPin] = (0, import_react.useState)("");
+	const [confirm, setConfirm] = (0, import_react.useState)("");
+	const [error, setError] = (0, import_react.useState)(null);
+	const [saved, setSaved] = (0, import_react.useState)(false);
+	const submit = () => {
+		setSaved(false);
+		const value = pin.trim();
+		if (!value) {
+			setError(c.kioskPinRequired);
+			return;
+		}
+		if (value !== confirm.trim()) {
+			setError(c.kioskPinMismatch);
+			return;
+		}
+		setError(null);
+		savePin.mutate(value, {
+			onSuccess: () => {
+				setPin("");
+				setConfirm("");
+				setSaved(true);
+			},
+			onError: () => setError(c.kioskPinError)
+		});
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		"data-ocid": "admin.kiosk_pin.section",
+		className: "mb-5 rounded-md border border-border bg-muted/30 p-4",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex items-start gap-3",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShieldCheck, {
+					className: "mt-0.5 h-5 w-5 shrink-0 text-primary",
+					"aria-hidden": "true"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "min-w-0",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+							className: "font-display text-sm font-semibold uppercase tracking-wide",
+							children: c.kioskPinTitle
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "mt-1 text-sm text-muted-foreground",
+							children: c.kioskPinDescription
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							"data-ocid": "admin.kiosk_pin.status",
+							className: `mt-2 text-sm font-medium ${hasPin.isLoading ? "text-muted-foreground" : hasPin.data ? "text-accent" : "text-destructive"}`,
+							children: hasPin.isLoading ? c.kioskPinLoading : hasPin.data ? c.kioskPinSet : c.kioskPinNotSet
+						})
+					]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "space-y-1.5",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+						htmlFor: "kiosk-pin-new",
+						children: c.kioskPinLabel
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+						id: "kiosk-pin-new",
+						type: "password",
+						inputMode: "numeric",
+						autoComplete: "off",
+						value: pin,
+						"data-ocid": "admin.kiosk_pin.input",
+						className: "touch-target",
+						placeholder: c.kioskPinPlaceholder,
+						onChange: (event) => {
+							setSaved(false);
+							setError(null);
+							setPin(event.target.value);
+						}
+					})]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "space-y-1.5",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+						htmlFor: "kiosk-pin-confirm",
+						children: c.kioskPinConfirmLabel
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+						id: "kiosk-pin-confirm",
+						type: "password",
+						inputMode: "numeric",
+						autoComplete: "off",
+						value: confirm,
+						"data-ocid": "admin.kiosk_pin.confirm_input",
+						className: "touch-target",
+						placeholder: c.kioskPinConfirmPlaceholder,
+						onChange: (event) => {
+							setSaved(false);
+							setError(null);
+							setConfirm(event.target.value);
+						},
+						onKeyDown: (event) => {
+							if (event.key === "Enter") submit();
+						}
+					})]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "mt-3 flex flex-wrap items-center gap-3",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+						type: "button",
+						className: "touch-target",
+						"data-ocid": "admin.kiosk_pin.save_button",
+						disabled: savePin.isPending,
+						onClick: submit,
+						children: [savePin.isPending && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
+							className: "mr-2 h-4 w-4 animate-spin",
+							"aria-hidden": "true"
+						}), c.kioskPinSave]
+					}),
+					saved && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-sm font-medium text-accent",
+						"data-ocid": "admin.kiosk_pin.success_state",
+						children: c.kioskPinSaved
+					}),
+					error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						role: "alert",
+						"data-ocid": "admin.kiosk_pin.error_state",
+						className: "text-sm font-medium text-destructive",
+						children: error
+					})
+				]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "mt-2 text-xs text-muted-foreground",
+				children: c.kioskPinHint
+			})
+		]
+	});
+}
 function AccessPanel() {
 	const { t } = useI18n();
 	const c = useAdminCopy();
@@ -51483,6 +51871,7 @@ function AccessPanel() {
 		description: c.accessDescription,
 		ocid: "admin.access.section",
 		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskPinSection, {}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				className: "mb-3 text-sm text-muted-foreground",
 				children: t("admin.access.adminCount", { count: (adminCount.data ?? 0n).toString() })
@@ -51983,6 +52372,7 @@ function useAdjustBuildTo() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
 			queryClient.invalidateQueries({ queryKey: ["positions"] });
+			queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
 			queryClient.invalidateQueries({ queryKey: ["changeLog"] });
 		}
 	});
@@ -52461,6 +52851,47 @@ function PositionsPanel() {
 		]
 	});
 }
+/** The offset, in milliseconds, of a time zone at a given UTC instant. */
+function timeZoneOffsetMs(utcMs, timeZone) {
+	const parts = new Intl.DateTimeFormat("en-US", {
+		timeZone,
+		hour12: false,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit"
+	}).formatToParts(new Date(utcMs));
+	const get = (type) => Number(parts.find((part) => part.type === type)?.value ?? "0");
+	return Date.UTC(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"), get("second")) - utcMs;
+}
+/**
+* Build the instant for a wall-clock time on a `YYYY-MM-DD` day in a named
+* time zone. Used to store an access end date at 11:59:59 PM in the store's
+* own time zone.
+*/
+function zonedWallTimeToDate(dateOnly, hour, minute, second, timeZone) {
+	const [year, month, day] = dateOnly.split("-").map(Number);
+	const guess = Date.UTC(year, month - 1, day, hour, minute, second);
+	const offset = timeZoneOffsetMs(guess, timeZone);
+	return new Date(guess - offset);
+}
+/** The calendar date (year, month, day) of an instant in a named time zone. */
+function calendarInTimeZone(instant, timeZone) {
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		timeZone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit"
+	}).formatToParts(instant);
+	const get = (type) => Number(parts.find((part) => part.type === type)?.value ?? "0");
+	return {
+		year: get("year"),
+		month: get("month"),
+		day: get("day")
+	};
+}
 //#endregion
 //#region src/components/admin/SchedulePanel.tsx
 var EVENT_KINDS = [
@@ -52472,36 +52903,49 @@ var EVENT_KINDS = [
 	EventKind.signOff,
 	EventKind.other
 ];
-/** `datetime-local` value -> Motoko `DateTime` (ns). */
-function inputToDateTime(value) {
-	const date = new Date(value);
+/**
+* A `datetime-local` value (`YYYY-MM-DDTHH:mm`) is a wall-clock time in the
+* store's time zone, so it is resolved to an instant in that zone rather than
+* the device's. Returns 0n for an empty or malformed value.
+*/
+function inputToDateTime(value, timeZone) {
+	const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value);
+	if (!match) return 0n;
+	const [, year, month, day, hour, minute] = match;
+	const date = zonedWallTimeToDate(`${year}-${month}-${day}`, Number(hour), Number(minute), 0, timeZone);
 	return Number.isNaN(date.getTime()) ? 0n : dateToTimestamp(date);
 }
-/** Motoko `DateTime` (ns) -> `datetime-local` value. */
-function dateTimeToInput(value) {
-	const date = timestampToDate(value);
-	if (!date) return "";
-	const offset = date.getTimezoneOffset() * 6e4;
-	return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-}
-function formatDateTime(value) {
-	const date = timestampToDate(value);
-	if (!date) return "—";
-	return date.toLocaleString(void 0, {
-		dateStyle: "medium",
-		timeStyle: "short"
-	});
+/**
+* A Motoko `DateTime` (ns) -> `datetime-local` value, rendered as the wall-clock
+* time in the store's time zone so the field reads the same on every device.
+*/
+function dateTimeToInput(value, timeZone) {
+	const date = new Date(Number(value / 1000000n));
+	if (Number.isNaN(date.getTime())) return "";
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		timeZone,
+		hour12: false,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit"
+	}).formatToParts(date);
+	const get = (type) => parts.find((part) => part.type === type)?.value ?? "00";
+	const hour = get("hour") === "24" ? "00" : get("hour");
+	return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}`;
 }
 function SchedulePanel() {
 	const c = useAdminCopy();
 	const schedule = useSchedule();
+	const { data: storeInfo } = useStoreInfo();
+	const timeZone = storeInfo?.timeZone || "America/Chicago";
 	const create = useCreateScheduleEvent();
 	const update = useUpdateScheduleEvent();
 	const remove = useDeleteScheduleEvent();
 	const [draft, setDraft] = (0, import_react.useState)(null);
 	const [deleteTarget, setDeleteTarget] = (0, import_react.useState)(null);
 	const events = schedule.data ?? [];
-	const nextId = events.reduce((max, event) => event.id > max ? event.id : max, 0n) + 1n;
 	const isEditing = draft !== null && draft.id !== 0n;
 	const mutation = isEditing ? update : create;
 	const trainingDayLabels = /* @__PURE__ */ new Map();
@@ -52516,7 +52960,7 @@ function SchedulePanel() {
 	};
 	const openNew = () => {
 		setDraft({
-			id: nextId,
+			id: 0n,
 			kind: EventKind.trainingDay,
 			name: "",
 			start: "",
@@ -52528,8 +52972,8 @@ function SchedulePanel() {
 			id: event.id,
 			kind: event.kind,
 			name: event.name,
-			start: dateTimeToInput(event.start),
-			end: event.end !== void 0 ? dateTimeToInput(event.end) : ""
+			start: dateTimeToInput(event.start, timeZone),
+			end: event.end !== void 0 ? dateTimeToInput(event.end, timeZone) : ""
 		});
 	};
 	const onSubmit = (event) => {
@@ -52539,8 +52983,8 @@ function SchedulePanel() {
 			id: draft.id,
 			kind: draft.kind,
 			name: draft.name.trim(),
-			start: inputToDateTime(draft.start),
-			end: draft.end ? inputToDateTime(draft.end) : void 0
+			start: inputToDateTime(draft.start, timeZone),
+			end: draft.end ? inputToDateTime(draft.end, timeZone) : void 0
 		};
 		mutation.mutate(payload, { onSuccess: () => setDraft(null) });
 	};
@@ -52603,7 +53047,7 @@ function SchedulePanel() {
 								]
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 								className: "mt-1 text-xs text-muted-foreground",
-								children: [formatDateTime(event.start), event.end !== void 0 ? ` – ${formatDateTime(event.end)}` : ""]
+								children: [formatTimestamp(event.start, timeZone), event.end !== void 0 ? ` – ${formatTimestamp(event.end, timeZone)}` : ""]
 							})]
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 							className: "flex shrink-0 items-center gap-2",
@@ -53600,47 +54044,6 @@ function ApprovalRoleSelect({ id, value, onChange }) {
 			}, option)) })]
 		})]
 	});
-}
-/** The offset, in milliseconds, of a time zone at a given UTC instant. */
-function timeZoneOffsetMs(utcMs, timeZone) {
-	const parts = new Intl.DateTimeFormat("en-US", {
-		timeZone,
-		hour12: false,
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-		second: "2-digit"
-	}).formatToParts(new Date(utcMs));
-	const get = (type) => Number(parts.find((part) => part.type === type)?.value ?? "0");
-	return Date.UTC(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"), get("second")) - utcMs;
-}
-/**
-* Build the instant for a wall-clock time on a `YYYY-MM-DD` day in a named
-* time zone. Used to store an access end date at 11:59:59 PM in the store's
-* own time zone.
-*/
-function zonedWallTimeToDate(dateOnly, hour, minute, second, timeZone) {
-	const [year, month, day] = dateOnly.split("-").map(Number);
-	const guess = Date.UTC(year, month - 1, day, hour, minute, second);
-	const offset = timeZoneOffsetMs(guess, timeZone);
-	return new Date(guess - offset);
-}
-/** The calendar date (year, month, day) of an instant in a named time zone. */
-function calendarInTimeZone(instant, timeZone) {
-	const parts = new Intl.DateTimeFormat("en-CA", {
-		timeZone,
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit"
-	}).formatToParts(instant);
-	const get = (type) => Number(parts.find((part) => part.type === type)?.value ?? "0");
-	return {
-		year: get("year"),
-		month: get("month"),
-		day: get("day")
-	};
 }
 //#endregion
 //#region src/components/approvals/PendingApprovalCard.tsx
@@ -54933,7 +55336,7 @@ function OpenSpotTile({ index }) {
 		})]
 	});
 }
-function ArchivedRow({ roadie, canRehire }) {
+function ArchivedRow({ roadie, canRehire, timeZone }) {
 	const { t } = useDashboardCopy();
 	const rehire = useRehireRoadie$1();
 	const [error, setError] = (0, import_react.useState)(null);
@@ -54950,7 +55353,7 @@ function ArchivedRow({ roadie, canRehire }) {
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 					className: "text-xs text-muted-foreground",
-					children: [archiveReasonLabel$1(roadie.archivedReason), roadie.archivedAt !== void 0 ? ` · ${formatDateOnly(roadie.archivedAt)}` : ""]
+					children: [archiveReasonLabel$1(roadie.archivedReason), roadie.archivedAt !== void 0 ? ` · ${formatTimestamp(roadie.archivedAt, timeZone)}` : ""]
 				}),
 				error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "mt-1 text-xs text-destructive",
@@ -54987,6 +55390,8 @@ function ArchivedRow({ roadie, canRehire }) {
 */
 function PositionRosterDialog({ position, open, onOpenChange, canRehire }) {
 	const { t } = useDashboardCopy();
+	const { data: storeInfo } = useStoreInfo();
+	const timeZone = storeInfo?.timeZone || "America/Chicago";
 	const { data: roster, isLoading, isError } = useRosterForPosition(position?.id);
 	const { active, archived } = (0, import_react.useMemo)(() => {
 		const list = roster ?? [];
@@ -55043,7 +55448,8 @@ function PositionRosterDialog({ position, open, onOpenChange, canRehire }) {
 						className: "space-y-2",
 						children: archived.map((roadie) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchivedRow, {
 							roadie,
-							canRehire
+							canRehire,
+							timeZone
 						}, roadie.id.toString()))
 					})]
 				})] })
@@ -88099,9 +88505,22 @@ function safeSheetName(name, used) {
 	used.add(candidate.toLowerCase());
 	return candidate;
 }
-/** "Y" when the roadie is available for that shift, blank otherwise. */
-function shiftMark(row, shift) {
-	return row.availability.includes(shift) ? "Y" : "";
+/** Short day labels for the Wed–Tue availability columns. */
+var WEEKDAY_LABELS = {
+	[Weekday.wed]: "Wed",
+	[Weekday.thu]: "Thu",
+	[Weekday.fri]: "Fri",
+	[Weekday.sat]: "Sat",
+	[Weekday.sun]: "Sun",
+	[Weekday.mon]: "Mon",
+	[Weekday.tue]: "Tue"
+};
+/**
+* The days (Wed–Tue order) the roadie is available for one shift, as a
+* comma-separated list such as "Wed, Fri". Blank when none.
+*/
+function shiftDays(row, shift) {
+	return row.availabilityByDay.filter(([, shifts]) => shifts.includes(shift)).map(([day]) => WEEKDAY_LABELS[day]).join(", ");
 }
 function yesNo(value) {
 	return value ? "Yes" : "No";
@@ -88114,7 +88533,7 @@ function groupHeaders(variant) {
 		"Weekday lunch (Y)",
 		"Name"
 	];
-	if (variant === "full") headers.push("Phone");
+	if (variant === "full") headers.push("Phone", "Email", "Emergency contact name", "Emergency contact phone", "Date of birth");
 	headers.push("Onboarding complete", "Policies & procedures", "Alcohol cert", "Food handlers", "Availability Wed-Tue AM", "Availability Wed-Tue PM");
 	return headers;
 }
@@ -88125,8 +88544,8 @@ function groupRow(row, variant) {
 		row.weekdayLunch ? "Y" : "",
 		row.name
 	];
-	if (variant === "full") cells.push(row.phone ?? "");
-	cells.push(yesNo(row.onboardingComplete), yesNo(row.policiesComplete), yesNo(row.alcoholCert), yesNo(row.foodHandlers), shiftMark(row, Shift.am), shiftMark(row, Shift.pm));
+	if (variant === "full") cells.push(row.phone ?? "", row.email ?? "", row.emergencyContactName ?? "", row.emergencyContactPhone ?? "", row.dateOfBirth !== void 0 ? formatDateOnly(row.dateOfBirth) : "");
+	cells.push(yesNo(row.onboardingComplete), yesNo(row.policiesComplete), yesNo(row.alcoholCert), yesNo(row.foodHandlers), shiftDays(row, Shift.am), shiftDays(row, Shift.pm));
 	return cells;
 }
 /** Build the "Staff Pars and Overview" worksheet. */
@@ -88162,23 +88581,23 @@ function addOverviewSheet(workbook, data) {
 	});
 	const totals = sheet.addRow({
 		position: "FOH total",
-		totalPar: null,
+		totalPar: Number(data.fohTotalPar),
 		hired: Number(data.fohTotal),
-		need: null
+		need: Number(data.fohNeed)
 	});
 	totals.font = { bold: true };
 	const boh = sheet.addRow({
 		position: "BOH total",
-		totalPar: null,
+		totalPar: Number(data.bohTotalPar),
 		hired: Number(data.bohTotal),
-		need: null
+		need: Number(data.bohNeed)
 	});
 	boh.font = { bold: true };
 	const grand = sheet.addRow({
 		position: "Grand total",
-		totalPar: null,
+		totalPar: Number(data.grandTotalPar),
 		hired: Number(data.grandTotal),
-		need: null
+		need: Number(data.grandNeed)
 	});
 	grand.font = { bold: true };
 	sheet.getRow(1).font = { bold: true };
@@ -89431,6 +89850,15 @@ var useCamera = (config = {}) => {
 };
 //#endregion
 //#region src/components/kiosk/KioskPhotoStep.tsx
+/** Read a `File` into a data URL for previewing without a storage round trip. */
+function fileToDataUrl(file) {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(String(reader.result));
+		reader.onerror = () => reject(/* @__PURE__ */ new Error("Could not read the photo"));
+		reader.readAsDataURL(file);
+	});
+}
 /**
 * Photo step: live device-camera preview with capture, retake and switch.
 * Falls back to a file picker when the browser exposes no camera.
@@ -89444,15 +89872,20 @@ function KioskPhotoStep({ photo, onCapture, onClear }) {
 	});
 	const [previewUrl, setPreviewUrl] = (0, import_react.useState)(null);
 	const fileInputRef = (0, import_react.useRef)(null);
+	const previewDataUrl = (0, import_react.useMemo)(() => photo, [photo]);
 	(0, import_react.useEffect)(() => {
-		if (!photo) {
+		if (!previewDataUrl) {
 			setPreviewUrl(null);
 			return;
 		}
-		const url = URL.createObjectURL(photo);
-		setPreviewUrl(url);
-		return () => URL.revokeObjectURL(url);
-	}, [photo]);
+		let active = true;
+		fileToDataUrl(previewDataUrl).then((url) => {
+			if (active) setPreviewUrl(url);
+		});
+		return () => {
+			active = false;
+		};
+	}, [previewDataUrl]);
 	(0, import_react.useEffect)(() => {
 		if (isSupported) startCamera();
 		return () => {
@@ -89811,12 +90244,15 @@ function KioskReviewStep({ details, contact, availability, hasPhoto, hasSignatur
 *
 * The canvas is sized once on mount. A resize or rotation must never clear a
 * drawn signature, so the setup effect has no resize listener and the drawing
-* surface keeps every stroke the user makes.
+* surface keeps every stroke the user makes. When the step is re-entered with
+* an already-captured signature, that image is redrawn so the canvas and the
+* "captured" state stay in sync.
 */
-function KioskSignatureStep({ onSigned, onClear, hasSignature, error }) {
+function KioskSignatureStep({ onSigned, onClear, hasSignature, signature, error }) {
 	const t = useKioskCopy();
 	const canvasRef = (0, import_react.useRef)(null);
 	const drawingRef = (0, import_react.useRef)(false);
+	const restoredRef = (0, import_react.useRef)(false);
 	const [dirty, setDirty] = (0, import_react.useState)(false);
 	const setupCanvas = (0, import_react.useCallback)(() => {
 		const canvas = canvasRef.current;
@@ -89836,6 +90272,23 @@ function KioskSignatureStep({ onSigned, onClear, hasSignature, error }) {
 	(0, import_react.useEffect)(() => {
 		setupCanvas();
 	}, [setupCanvas]);
+	(0, import_react.useEffect)(() => {
+		if (!signature || restoredRef.current) return;
+		restoredRef.current = true;
+		const canvas = canvasRef.current;
+		const ctx = canvas?.getContext("2d");
+		if (!canvas || !ctx) return;
+		const url = URL.createObjectURL(signature);
+		const image = new Image();
+		image.onload = () => {
+			const rect = canvas.getBoundingClientRect();
+			ctx.drawImage(image, 0, 0, rect.width, rect.height);
+			URL.revokeObjectURL(url);
+		};
+		image.onerror = () => URL.revokeObjectURL(url);
+		image.src = url;
+		setDirty(true);
+	}, [signature]);
 	const pointFromEvent = (event) => {
 		const canvas = canvasRef.current;
 		if (!canvas) return {
@@ -90080,8 +90533,17 @@ var STEP_KEYS = [
 	"step.review"
 ];
 var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-/** A basic phone format: at least 7 digits, optional +, spaces, dashes, parens. */
+/** A basic phone format: optional +, spaces, dashes, parens, at least 7 digits. */
 var PHONE_RE = /^\+?[\d\s().-]{7,}$/;
+/** Count the actual digits in a phone string. */
+function phoneDigitCount(value) {
+	return (value.match(/\d/g) ?? []).length;
+}
+/** A phone is valid when it matches the format and carries at least 7 digits. */
+function isValidPhone(value) {
+	const trimmed = value.trim();
+	return PHONE_RE.test(trimmed) && phoneDigitCount(trimmed) >= 7;
+}
 var MIN_AGE = 14;
 var MAX_AGE = 100;
 var MAX_SHIFTS = 7;
@@ -90119,7 +90581,7 @@ function toProfile(details) {
 	};
 }
 /** Build the backend `ContactSet` from the collected contact + availability. */
-function toContactSet(contact, availability, signatureRef) {
+function toContactSet(contact, availability) {
 	const slots = [];
 	for (const key of availability) {
 		const [day, shift] = key.split("-");
@@ -90135,8 +90597,6 @@ function toContactSet(contact, availability, signatureRef) {
 		emergencyContactName: contact.emergencyContactName.trim(),
 		emergencyContactPhone: contact.emergencyContactPhone.trim(),
 		availability: slots,
-		availabilitySignature: signatureRef ?? void 0,
-		availabilitySignedAt: signatureRef ? BigInt(Date.now()) * 1000000n : void 0,
 		availabilityResignPending: false
 	};
 }
@@ -90153,7 +90613,20 @@ function KioskPage() {
 	const [availability, setAvailability] = (0, import_react.useState)(/* @__PURE__ */ new Set());
 	const [signature, setSignature] = (0, import_react.useState)(null);
 	const [errors, setErrors] = (0, import_react.useState)({});
-	const resetAll = (0, import_react.useCallback)(() => {
+	const submit = useMutation({
+		mutationFn: async () => {
+			if (!actor) throw new Error("Backend is not ready");
+			const [photoRef, signatureRef] = await Promise.all([photo ? resizeImageFile(photo).then(fileToRef) : Promise.resolve(null), signature ? resizeImageFile(signature).then(fileToRef) : Promise.resolve(null)]);
+			return actor.submitSignup(toProfile(details), photoRef, signatureRef, toContactSet(contact, availability));
+		},
+		onSuccess: () => {
+			resetForm();
+			setPhase("success");
+		}
+	});
+	const { reset: resetSubmit } = submit;
+	/** Clear the collected answers and any submit error, keeping the language. */
+	const resetForm = (0, import_react.useCallback)(() => {
 		setPhase("welcome");
 		setStep(0);
 		setPhoto(null);
@@ -90162,21 +90635,13 @@ function KioskPage() {
 		setAvailability(/* @__PURE__ */ new Set());
 		setSignature(null);
 		setErrors({});
+		resetSubmit();
+	}, [resetSubmit]);
+	/** Clear the answers, the submit error and the language for the next person. */
+	const resetAll = (0, import_react.useCallback)(() => {
+		resetForm();
 		setLocale("en");
-	}, [setLocale]);
-	const submit = useMutation({
-		mutationFn: async () => {
-			if (!actor) throw new Error("Backend is not ready");
-			const photoRef = photo ? await fileToRef(photo) : null;
-			const signatureRef = signature ? await fileToRef(signature) : null;
-			return actor.submitSignup(toProfile(details), photoRef, signatureRef, toContactSet(contact, availability, signatureRef));
-		},
-		onSuccess: () => {
-			resetAll();
-			setPhase("success");
-		}
-	});
-	const { reset: resetSubmit } = submit;
+	}, [resetForm, setLocale]);
 	const idleTimer = (0, import_react.useRef)(null);
 	const clearIdleTimer = (0, import_react.useCallback)(() => {
 		if (idleTimer.current !== null) {
@@ -90193,7 +90658,6 @@ function KioskPage() {
 		const arm = () => {
 			clearIdleTimer();
 			idleTimer.current = setTimeout(() => {
-				resetSubmit();
 				resetAll();
 			}, IDLE_RESET_MS);
 		};
@@ -90212,7 +90676,6 @@ function KioskPage() {
 	}, [
 		phase,
 		resetAll,
-		resetSubmit,
 		clearIdleTimer
 	]);
 	const toggleSlot = (day, shift) => {
@@ -90237,7 +90700,7 @@ function KioskPage() {
 		if (index === 2) {
 			if (!EMAIL_RE.test(contact.email.trim())) next.email = t("error.emailInvalid");
 			if (!contact.phone.trim()) next.phone = t("error.phoneRequired");
-			else if (!PHONE_RE.test(contact.phone.trim())) next.phone = t("error.phoneInvalid");
+			else if (!isValidPhone(contact.phone)) next.phone = t("error.phoneInvalid");
 			if (!contact.dateOfBirth) next.dateOfBirth = t("error.dobRequired");
 			else {
 				const dob = /* @__PURE__ */ new Date(`${contact.dateOfBirth}T00:00:00Z`);
@@ -90248,7 +90711,7 @@ function KioskPage() {
 			}
 			if (!contact.emergencyContactName.trim()) next.emergencyContactName = t("error.emergencyRequired");
 			if (!contact.emergencyContactPhone.trim()) next.emergencyContactPhone = t("error.emergencyPhoneRequired");
-			else if (!PHONE_RE.test(contact.emergencyContactPhone.trim())) next.emergencyContactPhone = t("error.emergencyPhoneInvalid");
+			else if (!isValidPhone(contact.emergencyContactPhone)) next.emergencyContactPhone = t("error.emergencyPhoneInvalid");
 		}
 		if (index === 3 && availability.size === 0) next.availability = t("error.availabilityRequired");
 		if (index === 4 && !signature) next.signature = t("error.signatureRequired");
@@ -90307,6 +90770,7 @@ function KioskPage() {
 					}),
 					step === 4 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskSignatureStep, {
 						hasSignature: !!signature,
+						signature,
 						onSigned: setSignature,
 						onClear: clearSignature,
 						error: errors.signature
@@ -90361,6 +90825,31 @@ function KioskPage() {
 				})]
 			})
 		]
+	});
+}
+//#endregion
+//#region src/components/roadie/RoadiePhoto.tsx
+/**
+* A roadie's photo, read on demand by id. The photo bytes are fetched once per
+* roadie (React Query caches them under the id) and converted to a displayable
+* data URL once per roadie, memoized so a re-render does not re-read the bytes.
+* A roadie with no stored photo shows the placeholder icon, never a broken
+* image.
+*/
+function RoadiePhoto({ id, name, className, iconClassName, ocid }) {
+	const { data: photo } = useRoadiePhoto(id);
+	const src = (0, import_react.useMemo)(() => refToDataUrl(photo), [photo]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+		"data-ocid": ocid,
+		className: cn("flex items-center justify-center overflow-hidden rounded-full border-2 border-primary bg-muted", className),
+		children: src ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+			src,
+			alt: name,
+			className: "h-full w-full object-cover"
+		}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Image$1, {
+			className: cn("h-6 w-6 text-muted-foreground", iconClassName),
+			"aria-hidden": "true"
+		})
 	});
 }
 //#endregion
@@ -90436,16 +90925,12 @@ function FlipCard({ roadie, position, secondPosition, crossTrainedPosition, crew
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "flex flex-1 flex-col items-center gap-4 p-6 text-center",
 						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-								className: "flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-4 border-primary bg-muted",
-								children: roadie.photo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-									src: refToDataUrl(roadie.photo) ?? void 0,
-									alt: name,
-									className: "h-full w-full object-cover"
-								}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Image, {
-									className: "h-12 w-12 text-muted-foreground",
-									"aria-hidden": "true"
-								})
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadiePhoto, {
+								id: roadie.id,
+								name,
+								ocid: "roadie.card.photo",
+								className: "h-40 w-40 border-4",
+								iconClassName: "h-12 w-12"
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 								className: "min-w-0",
@@ -90738,6 +91223,22 @@ function useUpdateContactSet() {
 		mutationFn: async (args) => {
 			if (!actor) throw new Error("Backend is not ready");
 			return actor.updateContactSet(args.id, args.contactSet);
+		},
+		onSuccess: (_data, args) => {
+			invalidate(args.id);
+			queryClient.invalidateQueries({ queryKey: ["contactSet", args.id.toString()] });
+		}
+	});
+}
+/** Re-sign a roadie's availability (Admin/Store Manager only). */
+function useResignAvailability() {
+	const { actor } = useActor(createActor);
+	const invalidate = useInvalidateRoadie();
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (args) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.resignAvailability(args.id, args.signature);
 		},
 		onSuccess: (_data, args) => {
 			invalidate(args.id);
@@ -91221,23 +91722,19 @@ function SignaturePad({ onSigned, onClear, hasSignature }) {
 }
 /**
 * Availability grid with the manager re-sign flow. The manager draws on the
-* canvas and the drawn bytes are stored in the contact set's manager signature
-* field, alongside the signed-at timestamp.
+* canvas and the drawn bytes are stored through the re-sign mutation, which
+* records the manager signature and clears the pending re-sign flag.
 */
 function AvailabilityPanel({ id, contactSet }) {
 	const { t } = useI18n();
-	const update = useUpdateContactSet();
+	const resign = useResignAvailability();
 	const [drawn, setDrawn] = (0, import_react.useState)(null);
 	const selected = new Set(contactSet.availability.map((slot) => `${slot.day}:${slot.shift}`));
 	const saveSignature = () => {
 		if (!drawn) return;
-		update.mutate({
+		resign.mutate({
 			id,
-			contactSet: {
-				...contactSet,
-				managerSignature: drawn,
-				managerSignedAt: BigInt(Date.now()) * 1000000n
-			}
+			signature: drawn
 		}, { onSuccess: () => {
 			setDrawn(null);
 		} });
@@ -91259,7 +91756,19 @@ function AvailabilityPanel({ id, contactSet }) {
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 						className: "text-sm text-muted-foreground",
-						children: contactSet.managerSignature ? `${t("roadie.field.availabilitySignature")}: ${refToDataUrl(contactSet.managerSignature) ?? ""}` : t("roadie.unsigned")
+						children: contactSet.managerSignature ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+							className: "inline-flex items-center gap-2",
+							children: [
+								t("roadie.field.availabilitySignature"),
+								":",
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+									src: refToDataUrl(contactSet.managerSignature) ?? "",
+									alt: t("roadie.field.availabilitySignature"),
+									"data-ocid": "roadie.availability.signature_image",
+									className: "h-10 w-auto rounded border border-border bg-white"
+								})
+							]
+						}) : t("roadie.unsigned")
 					}),
 					contactSet.managerSignedAt !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 						className: "text-sm text-muted-foreground",
@@ -91325,7 +91834,7 @@ function AvailabilityPanel({ id, contactSet }) {
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
 								type: "button",
 								className: "touch-target",
-								disabled: !drawn || update.isPending,
+								disabled: !drawn || resign.isPending,
 								"data-ocid": "roadie.availability.resign_button",
 								onClick: saveSignature,
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PenLine, {
@@ -91333,12 +91842,12 @@ function AvailabilityPanel({ id, contactSet }) {
 									"aria-hidden": "true"
 								}), t("roadie.field.availabilitySignature")]
 							}),
-							update.isSuccess && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("output", {
+							resign.isSuccess && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("output", {
 								"data-ocid": "roadie.availability.success_state",
 								className: "text-sm text-accent",
 								children: t("roadie.signed")
 							}),
-							update.isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							resign.isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								role: "alert",
 								"data-ocid": "roadie.availability.error_state",
 								className: "text-sm text-destructive",
@@ -92465,16 +92974,11 @@ function RoadieRow({ roadie, positionName, positionCode, crewName }) {
 			"data-ocid": "roster.item.link",
 			className: "flex items-center gap-4 rounded-lg border border-border bg-card p-3 shadow-subtle transition-smooth hover:-translate-y-0.5 hover:shadow-elevated",
 			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-					className: "flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-primary bg-muted",
-					children: roadie.photo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-						src: refToDataUrl(roadie.photo) ?? void 0,
-						alt: name,
-						className: "h-full w-full object-cover"
-					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Image, {
-						className: "h-6 w-6 text-muted-foreground",
-						"aria-hidden": "true"
-					})
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadiePhoto, {
+					id: roadie.id,
+					name,
+					ocid: "roster.item.photo",
+					className: "h-14 w-14 shrink-0"
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 					className: "min-w-0 flex-1",
@@ -92654,31 +93158,36 @@ function TodayPage() {
 //#endregion
 //#region src/App.tsx
 /**
-* The staff PIN that unlocks the kiosk's sign-out control. The kiosk is a
-* shared device, so signing out is deliberately behind a PIN the roadie does
-* not know; this is a client-side gate on a shared kiosk, not a secret.
-*/
-var KIOSK_STAFF_PIN = "9750";
-/**
 * A discreet, PIN-protected staff sign-out for the kiosk shell. The kiosk
 * renders without the app header, so this is the only way to end the session
-* on a shared device.
+* on a shared device. The PIN is verified by the backend against the stored
+* hash, never compared to a constant in the client.
 */
 function KioskSignOut() {
 	const { t } = useI18n();
 	const signOut = useSignOut();
+	const { actor } = useActor(createActor);
 	const [open, setOpen] = (0, import_react.useState)(false);
 	const [pin, setPin] = (0, import_react.useState)("");
 	const [error, setError] = (0, import_react.useState)(false);
-	const submit = () => {
-		if (pin.trim() !== KIOSK_STAFF_PIN) {
+	const [checking, setChecking] = (0, import_react.useState)(false);
+	const submit = async () => {
+		if (!actor || checking) return;
+		setChecking(true);
+		try {
+			if (!await actor.checkKioskPin(pin.trim())) {
+				setError(true);
+				return;
+			}
+			setError(false);
+			setPin("");
+			setOpen(false);
+			signOut();
+		} catch {
 			setError(true);
-			return;
+		} finally {
+			setChecking(false);
 		}
-		setError(false);
-		setPin("");
-		setOpen(false);
-		signOut();
 	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "flex justify-end",
@@ -92748,7 +93257,8 @@ function KioskSignOut() {
 						type: "button",
 						className: "touch-target",
 						"data-ocid": "kiosk.sign_out.confirm_button",
-						onClick: submit,
+						onClick: () => void submit(),
+						disabled: checking,
 						children: t("kiosk.signOut.confirm")
 					})] })
 				]

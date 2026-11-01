@@ -15,13 +15,7 @@ module {
   /// Nanoseconds in one second.
   let nsPerSecond : Int = 1_000_000_000;
 
-  /// Read the caller's own access grant, if any. This reports only a grant that
-  /// has actually been persisted in the app's access model, so an unregistered
-  /// caller always receives null and the frontend shows the "Waiting for
-  /// approval" screen. The platform's first-admin grant is bridged into the app
-  /// model by `bootstrapAdmin`, which persists a real grant before this read
-  /// reports one; a synthesized grant here would let the frontend render the
-  /// authenticated shell for a caller whose every domain read still traps.
+  /// Read the caller's own access grant, if any.
   public func getMyAccess(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     caller : Principal,
@@ -29,24 +23,18 @@ module {
     accessGrants.get(caller);
   };
 
-  /// Bootstrap the first app Admin. The first principal to sign in is made an
-  /// admin by the platform's shared authorization mixin; this endpoint bridges
-  /// that platform grant into the app's own access model so the first caller
-  /// can approve users. Idempotent: it only acts while no app Admin grant
-  /// exists, and it never grants Admin to a caller the platform does not
-  /// already consider an admin.
+  /// Bootstrap the first app Admin.
   public func bootstrapAdmin(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     accessControlState : AccessControl.AccessControlState,
     caller : Principal,
   ) : Bool {
-    if (accessGrants.containsKey(caller)) {
-      return true;
-    };
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
+    // Only the platform's first user (the shared authorization owner) may
+    // bootstrap, and only while no app admin exists yet.
+    if (countAdmins(accessGrants) > 0) {
       return false;
     };
-    if (countAdmins(accessGrants) > 0) {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
       return false;
     };
     accessGrants.add(caller, {
@@ -80,9 +68,9 @@ module {
     accessGrants.values().toArray();
   };
 
-  /// Approve a pending user with a role and options (Admin only). Only a
-  /// principal that is actually pending may be approved; an unknown or
-  /// already-approved principal is rejected.
+  /// Approve a pending user with a role and options (Admin only). An Admin
+  /// grant is always stored with no end date, so an admin can never be
+  /// end-dated into lockout.
   public func approveUser(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     pendingUsers : Map.Map<Principal, Access.PendingUser>,
@@ -91,20 +79,23 @@ module {
   ) : () {
     Auth.requireAdmin(accessGrants, caller);
     if (not pendingUsers.containsKey(request.principal)) {
-      Runtime.trap("Cannot approve: principal is not pending");
+      Runtime.trap("No pending request for this principal");
     };
-    let now = Time.now();
-    let grant : Access.AccessGrant = {
+    pendingUsers.remove(request.principal);
+    // An Admin grant never carries an end date.
+    let accessEndsAt = switch (request.role) {
+      case (#admin) { null };
+      case (_) { request.accessEndsAt };
+    };
+    accessGrants.add(request.principal, {
       principal = request.principal;
       role = request.role;
-      approvedAt = now;
+      approvedAt = Time.now();
       approvedBy = caller;
-      accessEndsAt = request.accessEndsAt;
+      accessEndsAt;
       trainerPositionIds = request.trainerPositionIds;
       linkedRoadieId = request.linkedRoadieId;
-    };
-    accessGrants.add(request.principal, grant);
-    pendingUsers.remove(request.principal);
+    });
   };
 
   /// Change an existing user's role (Admin only). Refuses any change that would
@@ -116,19 +107,19 @@ module {
     role : Common.Role,
   ) : () {
     Auth.requireAdmin(accessGrants, caller);
-    let existing = accessGrants.get(principal)
-      ?? Runtime.trap("Access denied: user is not registered");
-    // Refuse to demote the last active admin.
-    if (existing.role == #admin and role != #admin and isActiveAdmin(existing)) {
-      if (countAdmins(accessGrants) <= 1) {
-        Runtime.trap("Cannot change role: at least 2 admins must exist");
-      };
+    let grant = accessGrants.get(principal) ?? Runtime.trap("Access grant not found");
+    if (grant.role == #admin and role != #admin and isActiveAdmin(grant) and countAdmins(accessGrants) <= 1) {
+      Runtime.trap("Cannot demote the last active admin");
     };
-    accessGrants.add(principal, { existing with role });
+    // An Admin grant never carries an end date.
+    let accessEndsAt = switch (role) {
+      case (#admin) { null };
+      case (_) { grant.accessEndsAt };
+    };
+    accessGrants.add(principal, { grant with role; accessEndsAt });
   };
 
-  /// Update a user's trainer stations (Admin only). Works for an already
-  /// approved user so an admin can change a trainer's stations after approval.
+  /// Update a user's trainer stations (Admin only).
   public func updateTrainerStations(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     caller : Principal,
@@ -136,15 +127,13 @@ module {
     positionIds : [Common.PositionId],
   ) : () {
     Auth.requireAdmin(accessGrants, caller);
-    let existing = accessGrants.get(principal)
-      ?? Runtime.trap("Access denied: user is not registered");
-    accessGrants.add(principal, { existing with trainerPositionIds = positionIds });
+    let grant = accessGrants.get(principal) ?? Runtime.trap("Access grant not found");
+    accessGrants.add(principal, { grant with trainerPositionIds = positionIds });
   };
 
-  /// Update a user's access end date (Admin only). Works for an already
-  /// approved user so an admin can change an end date after approval. Refuses
-  /// any change that would leave zero active admins, including end-dating the
-  /// last admin.
+  /// Update a user's access end date (Admin only). Refuses ANY end date (past
+  /// or future) on the last active admin, so the last admin can never be
+  /// end-dated into lockout. An Admin grant is always stored with no end date.
   public func updateAccessEnd(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     caller : Principal,
@@ -152,21 +141,16 @@ module {
     accessEndsAt : ?Common.Timestamp,
   ) : () {
     Auth.requireAdmin(accessGrants, caller);
-    let existing = accessGrants.get(principal)
-      ?? Runtime.trap("Access denied: user is not registered");
-    // Refuse to end-date the last active admin. Only a change that removes a
-    // currently-active admin can leave zero active admins.
-    if (existing.role == #admin and isActiveAdmin(existing)) {
-      switch (accessEndsAt) {
-        case (?endsAt) {
-          if (endsAt <= Time.now() and countAdmins(accessGrants) <= 1) {
-            Runtime.trap("Cannot end access: at least 2 admins must exist");
-          };
-        };
-        case null {};
+    let grant = accessGrants.get(principal) ?? Runtime.trap("Access grant not found");
+    if (grant.role == #admin) {
+      // An admin can never be end-dated at all.
+      if (accessEndsAt != null) {
+        Runtime.trap("An admin grant cannot have an end date");
       };
+      accessGrants.add(principal, { grant with accessEndsAt = null });
+      return;
     };
-    accessGrants.add(principal, { existing with accessEndsAt });
+    accessGrants.add(principal, { grant with accessEndsAt });
   };
 
   /// Remove a user's access (Admin only); the last admin cannot be removed.
@@ -176,15 +160,14 @@ module {
     principal : Principal,
   ) : () {
     Auth.requireAdmin(accessGrants, caller);
-    let existing = accessGrants.get(principal)
-      ?? Runtime.trap("Access denied: user is not registered");
-    if (existing.role == #admin and countAdmins(accessGrants) <= 1) {
-      Runtime.trap("Cannot remove the last admin");
+    let grant = accessGrants.get(principal) ?? Runtime.trap("Access grant not found");
+    if (grant.role == #admin and isActiveAdmin(grant) and countAdmins(accessGrants) <= 1) {
+      Runtime.trap("Cannot remove the last active admin");
     };
     accessGrants.remove(principal);
   };
 
-  /// Count the current admins (any role except Kiosk).
+  /// Count the current admins.
   public func adminCount(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     caller : Principal,
@@ -194,32 +177,18 @@ module {
   };
 
   /// Build an access end timestamp of 11:59:59 PM America/Chicago on the
-  /// calendar day of `day` (a UTC-midnight date-only timestamp). The store's
-  /// time zone is fixed at America/Chicago, so the offset is resolved for that
-  /// zone on that date (CST = UTC-6, CDT = UTC-5).
+  /// calendar day of `day` (a UTC-midnight date-only timestamp).
   public func endOfDayChicago(day : Common.DateOnly) : Common.Timestamp {
-    let dayIndex = floorDiv(day, nsPerDay);
-    let (year, month, dayOfMonth) = civilFromDays(dayIndex);
-    let offsetHours = chicagoOffsetHours(year, month, dayOfMonth);
-    // 23:59:59 local = 24:00:00 local minus one second.
-    let localMidnightUtc = dayIndex * nsPerDay;
-    let endLocal = localMidnightUtc + nsPerDay - nsPerSecond;
-    // Convert local wall-clock to UTC by subtracting the offset.
-    endLocal - (offsetHours * nsPerHour);
+    let (y, m, d) = civilFromDays(floorDiv(day, nsPerDay));
+    let offsetHours = chicagoOffsetHours(y, m, d);
+    // 23:59:59 local on that civil day, expressed as a UTC timestamp.
+    let localMidnightUtc = day;
+    localMidnightUtc + 23 * nsPerHour + 59 * 60 * nsPerSecond + 59 * nsPerSecond - offsetHours * nsPerHour;
   };
 
   /// Internal: count non-expired admins.
   func countAdmins(accessGrants : Map.Map<Principal, Access.AccessGrant>) : Nat {
-    var count = 0;
-    for (grant in accessGrants.values()) {
-      if (grant.role == #admin) {
-        switch (grant.accessEndsAt) {
-          case (?endsAt) { if (Time.now() < endsAt) { count += 1 } };
-          case null { count += 1 };
-        };
-      };
-    };
-    count;
+    accessGrants.values().filter(func(g) = isActiveAdmin(g)).size();
   };
 
   /// Internal: true when the grant is an admin whose access has not ended.
@@ -240,55 +209,51 @@ module {
   };
 
   /// Internal: days since 1970-01-01 to a civil (year, month, day).
-  /// Howard Hinnant's civil_from_days algorithm.
   func civilFromDays(z0 : Int) : (Int, Int, Int) {
     let z = z0 + 719_468;
     let era = floorDiv(z, 146_097);
-    let doe = z - era * 146_097; // [0, 146096]
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // [0, 399]
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
     let y = yoe + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100); // [0, 365]
-    let mp = (5 * doy + 2) / 153; // [0, 11]
-    let d = doy - (153 * mp + 2) / 5 + 1; // [1, 31]
-    let m = if (mp < 10) { mp + 3 } else { mp - 9 }; // [1, 12]
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if (mp < 10) { mp + 3 } else { mp - 9 };
     let year = if (m <= 2) { y + 1 } else { y };
     (year, m, d);
   };
 
   /// Internal: day of week for a civil date (0 = Sunday .. 6 = Saturday).
   func dayOfWeek(year : Int, month : Int, day : Int) : Int {
-    let t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
-    let y = if (month < 3) { year - 1 } else { year };
-    let idx = (month - 1).toNat();
-    let w = (y + y / 4 - y / 100 + y / 400 + t[idx] + day) % 7;
-    w;
+    let z = daysFromCivil(year, month, day);
+    let w = (z + 4) % 7;
+    if (w < 0) { w + 7 } else { w };
+  };
+
+  /// Internal: days since the Unix epoch from a civil date.
+  func daysFromCivil(year : Int, month : Int, day : Int) : Int {
+    let y = if (month <= 2) { year - 1 } else { year };
+    let era = floorDiv(y, 400);
+    let yoe = y - era * 400;
+    let mp = if (month > 2) { month - 3 } else { month + 9 };
+    let doy = (153 * mp + 2) / 5 + day - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    era * 146_097 + doe - 719_468;
   };
 
   /// Internal: the UTC offset in hours for America/Chicago on a civil date.
-  /// DST (CDT, UTC-5) runs from the second Sunday of March at 02:00 local to
-  /// the first Sunday of November at 02:00 local; otherwise CST (UTC-6).
   func chicagoOffsetHours(year : Int, month : Int, day : Int) : Int {
-    if (month < 3 or month > 11) {
-      return -6;
-    };
-    if (month > 3 and month < 11) {
-      return -5;
-    };
-    if (month == 3) {
-      // Second Sunday of March.
-      let firstDow = dayOfWeek(year, 3, 1);
-      let secondSunday = 1 + ((7 - firstDow) % 7) + 7;
-      if (day > secondSunday) { return -5 };
-      if (day < secondSunday) { return -6 };
-      // On the transition day, DST starts at 02:00 local; 11:59:59 PM is after.
-      return -5;
-    };
-    // month == 11: first Sunday of November.
-    let firstDow = dayOfWeek(year, 11, 1);
-    let firstSunday = 1 + ((7 - firstDow) % 7);
-    if (day < firstSunday) { return -5 };
-    if (day > firstSunday) { return -6 };
-    // On the transition day, DST ends at 02:00 local; 11:59:59 PM is after.
-    return -6;
+    // US DST: second Sunday in March to first Sunday in November.
+    let dstStart = daysFromCivil(year, 3, nthSundayOfMonth(year, 3, 2));
+    let dstEnd = daysFromCivil(year, 11, nthSundayOfMonth(year, 11, 1));
+    let today = daysFromCivil(year, month, day);
+    if (today >= dstStart and today < dstEnd) { -5 } else { -6 };
+  };
+
+  /// Internal: day-of-month of the `n`th Sunday in `month` of `year`.
+  func nthSundayOfMonth(year : Int, month : Int, n : Int) : Int {
+    let firstWeekday = dayOfWeek(year, month, 1);
+    let toFirstSunday = (7 - firstWeekday) % 7;
+    1 + toFirstSunday + (n - 1) * 7;
   };
 };

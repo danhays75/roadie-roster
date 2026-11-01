@@ -254,6 +254,7 @@ export const OrientationCheckoff = IDL.Record({
   'uniformItems' : IDL.Vec(IDL.Text),
   'shirtsCount' : IDL.Nat,
 });
+export const PhotoRef = IDL.Vec(IDL.Nat8);
 export const RetentionSettings = IDL.Record({
   'notesDays' : IDL.Nat,
   'archivedContactSetDays' : IDL.Nat,
@@ -270,7 +271,6 @@ export const RoadieStatus = IDL.Variant({
   'needsMoreTime' : IDL.Null,
   'archived' : IDL.Null,
 });
-export const PhotoRef = IDL.Vec(IDL.Nat8);
 export const PersonName = IDL.Text;
 export const ShirtSize = IDL.Text;
 export const HatSize = IDL.Text;
@@ -451,6 +451,7 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'checkKioskPin' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
   'createCrew' : IDL.Func([IDL.Text], [CrewId], []),
   'createLeaderTalk' : IDL.Func([LeaderTalk], [LeaderTalkId], []),
   'createPosition' : IDL.Func([Position], [PositionId], []),
@@ -486,16 +487,19 @@ export const idlService = IDL.Service({
       [IDL.Opt(OrientationCheckoff)],
       ['query'],
     ),
+  'getPhoto' : IDL.Func([RoadieId], [IDL.Opt(PhotoRef)], ['query']),
   'getRetentionSettings' : IDL.Func([], [RetentionSettings], ['query']),
   'getRoadie' : IDL.Func([RoadieId], [IDL.Opt(Roadie)], ['query']),
   'getRosterSummary' : IDL.Func([], [IDL.Vec(RosterSummary)], ['query']),
   'getSignup' : IDL.Func([SignupId], [IDL.Opt(SignupSubmission)], ['query']),
+  'getSignupPhoto' : IDL.Func([SignupId], [IDL.Opt(PhotoRef)], ['query']),
   'getStoreInfo' : IDL.Func([], [StoreInfo], ['query']),
   'getTrainingGroup' : IDL.Func(
       [TrainingGroupId],
       [IDL.Opt(TrainingGroupView)],
       ['query'],
     ),
+  'hasKioskPin' : IDL.Func([], [IDL.Bool], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isMinor' : IDL.Func([RoadieId], [IDL.Bool], ['query']),
   'listAccessGrants' : IDL.Func([], [IDL.Vec(AccessGrant)], ['query']),
@@ -527,6 +531,7 @@ export const idlService = IDL.Service({
   'resignAvailability' : IDL.Func([RoadieId, SignatureRef], [], []),
   'saveStoreTemplate' : IDL.Func([IDL.Text], [], []),
   'schema' : IDL.Func([], [IDL.Text], ['query']),
+  'setKioskPin' : IDL.Func([IDL.Text], [], []),
   'setLeaderTalkAttendance' : IDL.Func(
       [LeaderTalkId, IDL.Vec(RoadieId)],
       [],
@@ -803,6 +808,7 @@ export const idlFactory = ({ IDL }) => {
     'uniformItems' : IDL.Vec(IDL.Text),
     'shirtsCount' : IDL.Nat,
   });
+  const PhotoRef = IDL.Vec(IDL.Nat8);
   const RetentionSettings = IDL.Record({
     'notesDays' : IDL.Nat,
     'archivedContactSetDays' : IDL.Nat,
@@ -819,7 +825,6 @@ export const idlFactory = ({ IDL }) => {
     'needsMoreTime' : IDL.Null,
     'archived' : IDL.Null,
   });
-  const PhotoRef = IDL.Vec(IDL.Nat8);
   const PersonName = IDL.Text;
   const ShirtSize = IDL.Text;
   const HatSize = IDL.Text;
@@ -1000,6 +1005,7 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'checkKioskPin' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
     'createCrew' : IDL.Func([IDL.Text], [CrewId], []),
     'createLeaderTalk' : IDL.Func([LeaderTalk], [LeaderTalkId], []),
     'createPosition' : IDL.Func([Position], [PositionId], []),
@@ -1039,16 +1045,19 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(OrientationCheckoff)],
         ['query'],
       ),
+    'getPhoto' : IDL.Func([RoadieId], [IDL.Opt(PhotoRef)], ['query']),
     'getRetentionSettings' : IDL.Func([], [RetentionSettings], ['query']),
     'getRoadie' : IDL.Func([RoadieId], [IDL.Opt(Roadie)], ['query']),
     'getRosterSummary' : IDL.Func([], [IDL.Vec(RosterSummary)], ['query']),
     'getSignup' : IDL.Func([SignupId], [IDL.Opt(SignupSubmission)], ['query']),
+    'getSignupPhoto' : IDL.Func([SignupId], [IDL.Opt(PhotoRef)], ['query']),
     'getStoreInfo' : IDL.Func([], [StoreInfo], ['query']),
     'getTrainingGroup' : IDL.Func(
         [TrainingGroupId],
         [IDL.Opt(TrainingGroupView)],
         ['query'],
       ),
+    'hasKioskPin' : IDL.Func([], [IDL.Bool], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isMinor' : IDL.Func([RoadieId], [IDL.Bool], ['query']),
     'listAccessGrants' : IDL.Func([], [IDL.Vec(AccessGrant)], ['query']),
@@ -1084,6 +1093,7 @@ export const idlFactory = ({ IDL }) => {
     'resignAvailability' : IDL.Func([RoadieId, SignatureRef], [], []),
     'saveStoreTemplate' : IDL.Func([IDL.Text], [], []),
     'schema' : IDL.Func([], [IDL.Text], ['query']),
+    'setKioskPin' : IDL.Func([IDL.Text], [], []),
     'setLeaderTalkAttendance' : IDL.Func(
         [LeaderTalkId, IDL.Vec(RoadieId)],
         [],

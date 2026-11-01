@@ -9,22 +9,27 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *
  * The canvas is sized once on mount. A resize or rotation must never clear a
  * drawn signature, so the setup effect has no resize listener and the drawing
- * surface keeps every stroke the user makes.
+ * surface keeps every stroke the user makes. When the step is re-entered with
+ * an already-captured signature, that image is redrawn so the canvas and the
+ * "captured" state stay in sync.
  */
 export function KioskSignatureStep({
   onSigned,
   onClear,
   hasSignature,
+  signature,
   error,
 }: {
   onSigned: (file: File) => void;
   onClear: () => void;
   hasSignature: boolean;
+  signature?: File | null;
   error?: string;
 }) {
   const t = useKioskCopy();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
+  const restoredRef = useRef(false);
   const [dirty, setDirty] = useState(false);
 
   const setupCanvas = useCallback(() => {
@@ -48,6 +53,27 @@ export function KioskSignatureStep({
   useEffect(() => {
     setupCanvas();
   }, [setupCanvas]);
+
+  // Re-entering the step with a saved signature redraws it once, so the canvas
+  // is never blank while the step reports the signature as captured. A later
+  // stroke must not trigger a redraw over the strokes already on the canvas.
+  useEffect(() => {
+    if (!signature || restoredRef.current) return;
+    restoredRef.current = true;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    const url = URL.createObjectURL(signature);
+    const image = new Image();
+    image.onload = () => {
+      const rect = canvas.getBoundingClientRect();
+      ctx.drawImage(image, 0, 0, rect.width, rect.height);
+      URL.revokeObjectURL(url);
+    };
+    image.onerror = () => URL.revokeObjectURL(url);
+    image.src = url;
+    setDirty(true);
+  }, [signature]);
 
   const pointFromEvent = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;

@@ -3,6 +3,10 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { AdminSection, FormField } from "@/components/admin/FormField";
 import { fill } from "@/components/admin/copy";
 import { useAdminCopy } from "@/components/admin/useAdminCopy";
+import {
+  DEFAULT_TIME_ZONE,
+  zonedWallTimeToDate,
+} from "@/components/approvals/timeZone";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,9 +28,10 @@ import {
   useCreateScheduleEvent,
   useDeleteScheduleEvent,
   useSchedule,
+  useStoreInfo,
   useUpdateScheduleEvent,
 } from "@/hooks/useQueries";
-import { dateToTimestamp, timestampToDate } from "@/lib/format";
+import { dateToTimestamp, formatTimestamp } from "@/lib/format";
 import { CalendarPlus, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -48,32 +53,53 @@ interface EventDraft {
   end: string;
 }
 
-/** `datetime-local` value -> Motoko `DateTime` (ns). */
-function inputToDateTime(value: string): bigint {
-  const date = new Date(value);
+/**
+ * A `datetime-local` value (`YYYY-MM-DDTHH:mm`) is a wall-clock time in the
+ * store's time zone, so it is resolved to an instant in that zone rather than
+ * the device's. Returns 0n for an empty or malformed value.
+ */
+function inputToDateTime(value: string, timeZone: string): bigint {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value);
+  if (!match) return 0n;
+  const [, year, month, day, hour, minute] = match;
+  const date = zonedWallTimeToDate(
+    `${year}-${month}-${day}`,
+    Number(hour),
+    Number(minute),
+    0,
+    timeZone,
+  );
   return Number.isNaN(date.getTime()) ? 0n : dateToTimestamp(date);
 }
 
-/** Motoko `DateTime` (ns) -> `datetime-local` value. */
-function dateTimeToInput(value: bigint): string {
-  const date = timestampToDate(value);
-  if (!date) return "";
-  const offset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-}
-
-function formatDateTime(value: bigint): string {
-  const date = timestampToDate(value);
-  if (!date) return "—";
-  return date.toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+/**
+ * A Motoko `DateTime` (ns) -> `datetime-local` value, rendered as the wall-clock
+ * time in the store's time zone so the field reads the same on every device.
+ */
+function dateTimeToInput(value: bigint, timeZone: string): string {
+  const date = new Date(Number(value / 1_000_000n));
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(date);
+  const get = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "00";
+  // Some ICU builds render midnight as "24"; a datetime-local field expects 00.
+  const hour = get("hour") === "24" ? "00" : get("hour");
+  return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}`;
 }
 
 export function SchedulePanel() {
   const c = useAdminCopy();
   const schedule = useSchedule();
+  const { data: storeInfo } = useStoreInfo();
+  const timeZone = storeInfo?.timeZone || DEFAULT_TIME_ZONE;
   const create = useCreateScheduleEvent();
   const update = useUpdateScheduleEvent();
   const remove = useDeleteScheduleEvent();
@@ -81,8 +107,6 @@ export function SchedulePanel() {
   const [deleteTarget, setDeleteTarget] = useState<ScheduleEvent | null>(null);
 
   const events = schedule.data ?? [];
-  const nextId =
-    events.reduce((max, event) => (event.id > max ? event.id : max), 0n) + 1n;
   const isEditing = draft !== null && draft.id !== 0n;
   const mutation = isEditing ? update : create;
 
@@ -102,7 +126,7 @@ export function SchedulePanel() {
 
   const openNew = () => {
     setDraft({
-      id: nextId,
+      id: 0n,
       kind: EventKind.trainingDay,
       name: "",
       start: "",
@@ -115,8 +139,8 @@ export function SchedulePanel() {
       id: event.id,
       kind: event.kind,
       name: event.name,
-      start: dateTimeToInput(event.start),
-      end: event.end !== undefined ? dateTimeToInput(event.end) : "",
+      start: dateTimeToInput(event.start, timeZone),
+      end: event.end !== undefined ? dateTimeToInput(event.end, timeZone) : "",
     });
   };
 
@@ -127,8 +151,8 @@ export function SchedulePanel() {
       id: draft.id,
       kind: draft.kind,
       name: draft.name.trim(),
-      start: inputToDateTime(draft.start),
-      end: draft.end ? inputToDateTime(draft.end) : undefined,
+      start: inputToDateTime(draft.start, timeZone),
+      end: draft.end ? inputToDateTime(draft.end, timeZone) : undefined,
     };
     mutation.mutate(payload, { onSuccess: () => setDraft(null) });
   };
@@ -196,9 +220,9 @@ export function SchedulePanel() {
                       )}
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {formatDateTime(event.start)}
+                      {formatTimestamp(event.start, timeZone)}
                       {event.end !== undefined
-                        ? ` – ${formatDateTime(event.end)}`
+                        ? ` – ${formatTimestamp(event.end, timeZone)}`
                         : ""}
                     </p>
                   </div>

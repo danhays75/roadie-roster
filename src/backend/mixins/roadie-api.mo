@@ -24,6 +24,12 @@ mixin (
     RoadieLib.getRoadie(accessGrants, roadies, caller, id);
   };
 
+  /// Read a roadie's photo bytes by id, for a caller allowed to see the roadie.
+  /// Returns null when the roadie has no photo or is not visible to the caller.
+  public query ({ caller }) func getPhoto(id : Common.RoadieId) : async ?Common.PhotoRef {
+    RoadieLib.getPhoto(accessGrants, roadies, caller, id);
+  };
+
   /// List the roster for one position.
   public query ({ caller }) func listRosterForPosition(positionId : Common.PositionId) : async [Roadie.Roadie] {
     RoadieLib.listRosterForPosition(accessGrants, roadies, caller, positionId);

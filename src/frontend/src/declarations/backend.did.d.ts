@@ -457,6 +457,10 @@ export interface _SERVICE {
     undefined
   >,
   /**
+   * / Check a candidate kiosk PIN. Returns true when it matches the stored hash.
+   */
+  'checkKioskPin' : ActorMethod<[string], boolean>,
+  /**
    * / Create a crew (Admin/Store Manager only).
    */
   'createCrew' : ActorMethod<[string], CrewId>,
@@ -536,6 +540,11 @@ export interface _SERVICE {
     [] | [OrientationCheckoff]
   >,
   /**
+   * / Read a roadie's photo bytes by id, for a caller allowed to see the roadie.
+   * / Returns null when the roadie has no photo or is not visible to the caller.
+   */
+  'getPhoto' : ActorMethod<[RoadieId], [] | [PhotoRef]>,
+  /**
    * / Read retention settings.
    */
   'getRetentionSettings' : ActorMethod<[], RetentionSettings>,
@@ -552,6 +561,11 @@ export interface _SERVICE {
    */
   'getSignup' : ActorMethod<[SignupId], [] | [SignupSubmission]>,
   /**
+   * / Read a pending submission's photo bytes by id (Admin/Store Manager only).
+   * / Returns null when the submission has no photo.
+   */
+  'getSignupPhoto' : ActorMethod<[SignupId], [] | [PhotoRef]>,
+  /**
    * / Read the store configuration.
    */
   'getStoreInfo' : ActorMethod<[], StoreInfo>,
@@ -559,6 +573,10 @@ export interface _SERVICE {
    * / Read a training group with its unassigned and off-shift lists.
    */
   'getTrainingGroup' : ActorMethod<[TrainingGroupId], [] | [TrainingGroupView]>,
+  /**
+   * / True when an Admin has set a kiosk PIN.
+   */
+  'hasKioskPin' : ActorMethod<[], boolean>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   /**
    * / Compute whether a roadie is a minor as of now.
@@ -609,7 +627,9 @@ export interface _SERVICE {
    */
   'listSchedule' : ActorMethod<[], Array<ScheduleEvent>>,
   /**
-   * / List trainer notes for a roadie.
+   * / List trainer notes for a roadie. Restricted the same way roadies are:
+   * / Integration sees nothing, and a trainer sees notes only for roadies in
+   * / their assigned stations.
    */
   'listTrainerNotes' : ActorMethod<[RoadieId], Array<TrainerNote>>,
   /**
@@ -647,6 +667,10 @@ export interface _SERVICE {
    */
   'saveStoreTemplate' : ActorMethod<[string], undefined>,
   'schema' : ActorMethod<[], string>,
+  /**
+   * / Set the kiosk staff PIN (Admin only). Stored hashed; never returned.
+   */
+  'setKioskPin' : ActorMethod<[string], undefined>,
   /**
    * / Record per-roadie attendance for a leader talk (Admin/Store Manager only).
    */

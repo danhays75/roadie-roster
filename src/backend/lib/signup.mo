@@ -1,17 +1,16 @@
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
-import Iter "mo:core/Iter";
-import Text "mo:core/Text";
 import Time "mo:core/Time";
+import Text "mo:core/Text";
 import Common "../types/common";
 import Signup "../types/signup";
 import Roadie "../types/roadie";
 import Store "../types/store";
 import Access "../types/access";
 import Auth "auth";
-import Age "age";
 import ChangeLog "changelog";
+import Age "age";
 
 module {
   public type Counters = {
@@ -24,6 +23,9 @@ module {
   let maxTextLength : Nat = 200;
   /// Maximum accepted length of a phone/email field.
   let maxContactLength : Nat = 320;
+
+  /// The store's default time zone when none is configured.
+  let defaultTimeZone : Common.TimeZone = "America/Chicago";
 
   /// Submit a new sign-up from the kiosk. Callable by Kiosk, Store Manager or
   /// Admin; every text field is length-capped.
@@ -41,30 +43,32 @@ module {
     if (role != #kiosk and role != #storeManager and role != #admin) {
       Runtime.trap("Access denied: Kiosk, Store Manager or Admin role required");
     };
-    let cappedProfile = capProfile(profile);
-    let cappedContactSet = capContactSet(contactSet);
     let id = counters.nextSignupId;
     counters.nextSignupId := id + 1;
     signups.add(id, {
       id;
       submittedAt = Time.now();
-      profile = cappedProfile;
+      profile = capProfile(profile);
       photo;
       signature;
-      contactSet = cappedContactSet;
+      contactSet = capContactSet(contactSet);
       status = #pending;
     });
     id;
   };
 
-  /// List pending sign-up submissions (Admin/Store Manager only).
+  /// List pending sign-up submissions (Admin/Store Manager only). Full photo
+  /// bytes are never returned; fetch a photo with `getSignupPhoto`.
   public func listPendingSignups(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
     caller : Principal,
   ) : [Signup.SignupSubmission] {
     Auth.requireManager(accessGrants, caller);
-    signups.values().filter(func s = s.status == #pending).toArray();
+    signups.values()
+      .filter(func(s) = s.status == #pending)
+      .map(func(s) = { s with photo = null })
+      .toArray();
   };
 
   /// Read one submission (Admin/Store Manager only).
@@ -75,7 +79,25 @@ module {
     id : Common.SignupId,
   ) : ?Signup.SignupSubmission {
     Auth.requireManager(accessGrants, caller);
-    signups.get(id);
+    switch (signups.get(id)) {
+      case (?s) { ?{ s with photo = null } };
+      case null { null };
+    };
+  };
+
+  /// Read a pending submission's photo bytes by id (Admin/Store Manager only).
+  /// Returns null when the submission has no photo.
+  public func getSignupPhoto(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
+    caller : Principal,
+    id : Common.SignupId,
+  ) : ?Common.PhotoRef {
+    Auth.requireManager(accessGrants, caller);
+    switch (signups.get(id)) {
+      case (?s) { s.photo };
+      case null { null };
+    };
   };
 
   /// Find duplicate cards matching a submission's phone or email (Admin/Store Manager only).
@@ -87,23 +109,22 @@ module {
     id : Common.SignupId,
   ) : [Signup.DuplicateMatch] {
     Auth.requireManager(accessGrants, caller);
-    let submission = signups.get(id) ?? Runtime.trap("Submission not found");
+    let submission = signups.get(id) ?? Runtime.trap("Signup not found");
     let phone = submission.contactSet.phone;
     let email = submission.contactSet.email;
-    roadies.values().filter(func r =
+    roadies.values().filter(func(r) {
       switch (r.contactSet) {
-        case (?cs) { cs.phone == phone or cs.email == email };
-        case null { false };
-      }
-    ).map(func r = {
-      roadieId = r.id;
-      matchedOn = switch (r.contactSet) {
         case (?cs) {
-          if (cs.phone == phone) { "phone" } else { "email" };
+          (phone.size() > 0 and cs.phone == phone) or (email.size() > 0 and cs.email == email);
         };
-        case null { "unknown" };
+        case null { false };
       };
-      archived = r.status == #archived;
+    }).map(func(r) {
+      let matchedOn = switch (r.contactSet) {
+        case (?cs) { if (phone.size() > 0 and cs.phone == phone) { "phone" } else { "email" } };
+        case null { "email" };
+      };
+      { roadieId = r.id; matchedOn; archived = r.status == #archived };
     }).toArray();
   };
 
@@ -126,35 +147,41 @@ module {
     signature : Common.SignatureRef,
   ) : Common.RoadieId {
     Auth.requireManager(accessGrants, caller);
-    let submission = signups.get(id) ?? Runtime.trap("Submission not found");
-    if (submission.status != #pending) {
-      Runtime.trap("Submission is not pending");
+    let submission = signups.get(id) ?? Runtime.trap("Signup not found");
+    switch (submission.status) {
+      case (#pending) {};
+      case (_) { Runtime.trap("Signup has already been decided") };
+    };
+    let main = positions.get(decision.mainPositionId) ?? Runtime.trap("Position not found");
+    let second = switch (decision.secondPositionId) {
+      case (?sid) { ?(positions.get(sid) ?? Runtime.trap("Second position not found")) };
+      case null { null };
     };
     let timeZone = storeInfo.value.timeZone;
     let now = Time.now();
     let dob = submission.contactSet.dateOfBirth;
-    let target = positions.get(decision.mainPositionId) ?? Runtime.trap("Position not found");
-    if (not Age.meetsMinimumAge(dob, target.minimumAge, now, timeZone)) {
-      Runtime.trap("Cannot assign a roadie below the position's minimum age");
+    if (not Age.meetsMinimumAge(dob, main.minimumAge, now, timeZone)) {
+      Runtime.trap("Roadie is below the minimum age for this position");
     };
-    switch (decision.secondPositionId) {
-      case (?secondId) {
-        let second = positions.get(secondId) ?? Runtime.trap("Second position not found");
-        if (not Age.meetsMinimumAge(dob, second.minimumAge, now, timeZone)) {
-          Runtime.trap("Cannot assign a roadie below the second position's minimum age");
+    switch (second) {
+      case (?p) {
+        if (not Age.meetsMinimumAge(dob, p.minimumAge, now, timeZone)) {
+          Runtime.trap("Roadie is below the minimum age for the second position");
         };
       };
       case null {};
     };
     let roadieId = counters.nextRoadieId;
     counters.nextRoadieId := roadieId + 1;
-    let approvedContactSet : Roadie.ContactSet = {
+    // The manager's approval signature is stored separately; the roadie's own
+    // availability signature is preserved.
+    let contactSet : Roadie.ContactSet = {
       submission.contactSet with
       managerSignature = ?signature;
       managerSignedAt = ?now;
       managerSignedBy = ?caller;
     };
-    let roadie : Roadie.Roadie = {
+    roadies.add(roadieId, {
       id = roadieId;
       profile = submission.profile;
       photo = submission.photo;
@@ -166,17 +193,16 @@ module {
       startDate = decision.startDate;
       status = #hired;
       corporateEmployeeId = null;
-      contactSet = ?approvedContactSet;
+      contactSet = ?contactSet;
       isMinor = Age.isMinor(dob, now, timeZone);
       birthdayMonthDay = Age.birthdayMonthDay(dob);
       archivedReason = null;
       archivedAt = null;
       hiredAt = now;
       signedBy = ?caller;
-    };
-    roadies.add(roadieId, roadie);
+    });
     signups.add(id, { submission with status = #approved(roadieId) });
-    ignore ChangeLog.record(changeLog, counters, caller, "approveSignup", ?roadieId, false, "Approved sign-up and created roadie card");
+    ignore ChangeLog.record(changeLog, counters, caller, "approveSignup", ?roadieId, true, "Approved signup");
     roadieId;
   };
 
@@ -190,12 +216,9 @@ module {
     id : Common.SignupId,
   ) : () {
     Auth.requireManager(accessGrants, caller);
-    let submission = signups.get(id) ?? Runtime.trap("Submission not found");
-    if (submission.status != #pending) {
-      Runtime.trap("Submission is not pending");
-    };
+    let submission = signups.get(id) ?? Runtime.trap("Signup not found");
     signups.add(id, { submission with status = #rejected });
-    ignore ChangeLog.record(changeLog, counters, caller, "rejectSignup", null, false, "Rejected sign-up");
+    ignore ChangeLog.record(changeLog, counters, caller, "rejectSignup", null, false, "Rejected signup");
   };
 
   /// Internal: cap every free-text field of a profile.
@@ -229,7 +252,7 @@ module {
 
   /// Internal: truncate text to at most `max` characters.
   func cap(text : Text, max : Nat) : Text {
-    if (text.size() <= max) { text } else { Text.fromIter(text.toIter().take(max)) };
+    if (text.size() <= max) { text } else { Text.fromArray(text.toArray().sliceToArray(0, max)) };
   };
 
   /// Internal: truncate an optional text field.

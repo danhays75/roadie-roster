@@ -1,5 +1,6 @@
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
+import Nat "mo:core/Nat";
 import Common "../types/common";
 import Store "../types/store";
 import Roadie "../types/roadie";
@@ -37,11 +38,13 @@ module {
     caller : Principal,
   ) : Export.ExportData {
     Auth.requireManager(accessGrants, caller);
-    ignore ChangeLog.record(changeLog, counters, caller, "buildFullExport", null, true, "Full export generated");
+    ignore ChangeLog.record(changeLog, counters, caller, "buildFullExport", null, true, "Built the Full export");
     build(roadies, positions, checkoffs, true);
   };
 
-  /// Internal: assemble the export payload.
+  /// Internal: assemble the export payload. Availability (by shift and by day)
+  /// is filled only when `includeContactSet` is true; the Shareable export
+  /// returns empty availability arrays so it never leaks availability.
   func build(
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
@@ -49,76 +52,33 @@ module {
     includeContactSet : Bool,
   ) : Export.ExportData {
     let allPositions = positions.values().toArray();
-    let activeRoadies = roadies.values().filter(func r = r.status != #archived).toArray();
+    let active = roadies.values().filter(func r = r.status != #archived).toArray();
 
+    // Overview rows: one per position, in position-id order.
+    let sortedPositions = allPositions.sort(func(a, b) = Nat.compare(a.id, b.id));
     var fohTotal = 0;
     var bohTotal = 0;
-    var grandTotal = 0;
     var fohTotalPar = 0;
     var bohTotalPar = 0;
-    var grandTotalPar = 0;
-
-    // On-hand counts each roadie once, under their main position only. A second
-    // position is cross-trained and never adds to a position's on-hand count.
-    let overview = allPositions.map(func p : Export.OverviewRow {
-      let hired = activeRoadies.filter(func r = r.mainPositionId == p.id).size();
+    let overview = sortedPositions.map(func(p) {
+      let hired = active.filter(func(r) = r.mainPositionId == p.id).size();
       let par = p.openingBuildTo;
-      let need = saturatingSub(par, hired);
       switch (p.house) {
-        case (#foh) {
-          fohTotal += hired;
-          fohTotalPar += par;
-        };
-        case (#boh) {
-          bohTotal += hired;
-          bohTotalPar += par;
-        };
+        case (#foh) { fohTotal += hired; fohTotalPar += par };
+        case (#boh) { bohTotal += hired; bohTotalPar += par };
       };
-      grandTotal += hired;
-      grandTotalPar += par;
-      { positionName = p.name; totalPar = par; hired; need };
+      {
+        positionName = p.name;
+        totalPar = par;
+        hired;
+        need = saturatingSub(par, hired);
+      };
     });
 
-    let groups = allPositions.map(func p : (Text, [Export.ExportRow]) {
-      let rows = activeRoadies.filter(func r = r.mainPositionId == p.id).map(func r : Export.ExportRow {
-        let checkoff = checkoffs.get(r.id);
-        let (onboarding, policies, alcohol, foodHandlers) = switch (checkoff) {
-          case (?c) {
-            (
-              c.paperworkItems.any(func t = t == "onboarding"),
-              c.paperworkItems.any(func t = t == "policies"),
-              c.paperworkItems.any(func t = t == "alcohol"),
-              c.paperworkItems.any(func t = t == "foodHandler"),
-            );
-          };
-          case null { (false, false, false, false) };
-        };
-        let availability = switch (r.contactSet) {
-          case (?cs) { cs.availability.map(func slot = slot.shift) };
-          case null { [] : [Common.Shift] };
-        };
-        let availabilityByDay = switch (r.contactSet) {
-          case (?cs) { groupByDay(cs.availability) };
-          case null { [] : [(Common.Weekday, [Common.Shift])] };
-        };
-        let contact = if (includeContactSet) { r.contactSet } else { null };
-        {
-          dateHired = r.startDate;
-          shirtSize = r.profile.shirtSize;
-          weekdayLunch = r.profile.weekdayLunch;
-          name = r.profile.name;
-          phone = switch (contact) { case (?cs) { ?cs.phone }; case null { null } };
-          email = switch (contact) { case (?cs) { ?cs.email }; case null { null } };
-          emergencyContactName = switch (contact) { case (?cs) { ?cs.emergencyContactName }; case null { null } };
-          emergencyContactPhone = switch (contact) { case (?cs) { ?cs.emergencyContactPhone }; case null { null } };
-          dateOfBirth = switch (contact) { case (?cs) { ?cs.dateOfBirth }; case null { null } };
-          availabilityByDay;
-          onboardingComplete = onboarding;
-          policiesComplete = policies;
-          alcoholCert = alcohol;
-          foodHandlers;
-          availability;
-        };
+    // Group rows by position name, in position-id order.
+    let groups = sortedPositions.map(func(p) {
+      let rows = active.filter(func(r) = r.mainPositionId == p.id).map(func(r) {
+        toRow(r, p, checkoffs.get(r.id), includeContactSet);
       });
       (p.name, rows);
     });
@@ -127,14 +87,62 @@ module {
       overview;
       fohTotal;
       bohTotal;
-      grandTotal;
+      grandTotal = fohTotal + bohTotal;
       fohTotalPar;
       fohNeed = saturatingSub(fohTotalPar, fohTotal);
       bohTotalPar;
       bohNeed = saturatingSub(bohTotalPar, bohTotal);
-      grandTotalPar;
-      grandNeed = saturatingSub(grandTotalPar, grandTotal);
+      grandTotalPar = fohTotalPar + bohTotalPar;
+      grandNeed = saturatingSub(fohTotalPar + bohTotalPar, fohTotal + bohTotal);
       groups;
+    };
+  };
+
+  /// Internal: one export row. Contact fields and availability are filled only
+  /// when `includeContactSet` is true.
+  func toRow(
+    roadie : Roadie.Roadie,
+    position : Store.Position,
+    checkoff : ?Phase23.OrientationCheckoff,
+    includeContactSet : Bool,
+  ) : Export.ExportRow {
+    let contact = roadie.contactSet;
+    let availability : [Common.Shift] = if (includeContactSet) {
+      switch (contact) {
+        case (?cs) { cs.availability.map(func(s) = s.shift) };
+        case null { [] };
+      };
+    } else {
+      [];
+    };
+    let availabilityByDay : [(Common.Weekday, [Common.Shift])] = if (includeContactSet) {
+      switch (contact) {
+        case (?cs) { groupByDay(cs.availability) };
+        case null { [] };
+      };
+    } else {
+      [];
+    };
+    let onboardingComplete = switch (checkoff) {
+      case (?c) { c.paperworkItems.size() > 0 };
+      case null { false };
+    };
+    {
+      dateHired = roadie.startDate;
+      shirtSize = roadie.profile.shirtSize;
+      weekdayLunch = roadie.profile.weekdayLunch;
+      name = roadie.profile.name;
+      phone = if (includeContactSet) { switch (contact) { case (?cs) { ?cs.phone }; case null { null } } } else { null };
+      email = if (includeContactSet) { switch (contact) { case (?cs) { ?cs.email }; case null { null } } } else { null };
+      emergencyContactName = if (includeContactSet) { switch (contact) { case (?cs) { ?cs.emergencyContactName }; case null { null } } } else { null };
+      emergencyContactPhone = if (includeContactSet) { switch (contact) { case (?cs) { ?cs.emergencyContactPhone }; case null { null } } } else { null };
+      dateOfBirth = if (includeContactSet) { switch (contact) { case (?cs) { ?cs.dateOfBirth }; case null { null } } } else { null };
+      availabilityByDay;
+      onboardingComplete;
+      policiesComplete = onboardingComplete;
+      alcoholCert = position.needsAlcoholCert;
+      foodHandlers = false;
+      availability;
     };
   };
 
@@ -146,9 +154,9 @@ module {
   /// Internal: group availability slots by weekday, in the fixed Wed–Tue order.
   func groupByDay(slots : [Roadie.AvailabilitySlot]) : [(Common.Weekday, [Common.Shift])] {
     let order : [Common.Weekday] = [#wed, #thu, #fri, #sat, #sun, #mon, #tue];
-    order.filterMap(func day {
-      let shifts = slots.filter(func slot = slot.day == day).map(func slot = slot.shift);
-      if (shifts.size() == 0) { null } else { ?(day, shifts) };
+    order.map(func(day) {
+      let shifts = slots.filter(func(s) = s.day == day).map(func(s) = s.shift);
+      (day, shifts);
     });
   };
 };

@@ -35,6 +35,7 @@ export function useAdjustBuildTo() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["positions"] });
+      void queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
       void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
     },
   });

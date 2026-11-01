@@ -1,20 +1,20 @@
 {
-  "overview": "A restaurant hiring roster app for managing roadies, sign-ups, approvals, positions and exports.",
+  "overview": "A hiring and roster management app for a retail store, with kiosk sign-up, approvals, scheduling, training and exports.",
   "features": [
-    "Kiosk sign-up with photo and drawn signature",
-    "Manager approvals with on-device approval signature",
-    "Role-based access with admin safety rules",
-    "Roster, on-hand counts and position management",
-    "Shareable and full exports",
-    "Installable PWA with offline app shell"
+    "Kiosk sign-up with photo and signature capture",
+    "Manager approvals and role-based access",
+    "Roster, positions and build-to planning",
+    "Scheduling, checklists and training notes",
+    "Shareable and full Excel exports",
+    "Installable PWA with store branding"
   ],
   "category": "productivity",
   "tags": [
-    "roster",
     "hiring",
-    "restaurant",
-    "pwa",
-    "approvals"
+    "roster",
+    "retail",
+    "scheduling",
+    "pwa"
   ],
-  "last_updated": "2026-11-01T19:25:50.516Z"
+  "last_updated": "2026-11-01T20:34:34.083Z"
 }

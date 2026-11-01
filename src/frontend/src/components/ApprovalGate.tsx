@@ -31,6 +31,7 @@ export function ApprovalGate({ children }: { children?: React.ReactNode }) {
   const requested = useRef(false);
   const bootstrapped = useRef(false);
   const bootstrapAttempts = useRef(0);
+  const requestAttempts = useRef(0);
 
   // Persist the first platform admin's app grant. Safe for every signed-in
   // caller: the backend only acts while no app Admin exists and the caller is
@@ -47,19 +48,33 @@ export function ApprovalGate({ children }: { children?: React.ReactNode }) {
     bootstrapAdmin.mutate();
   }, [actor, access.kind, bootstrapAdmin]);
 
+  // Register the caller for approval once the actor is ready. Waiting for the
+  // actor keeps the call from being lost while the backend connection is still
+  // initializing; if it failed for that reason, retry a bounded number of times
+  // instead of leaving the caller permanently unregistered.
   useEffect(() => {
-    if (access.kind !== "pending" || requested.current) return;
+    if (!actor) return;
+    if (access.kind !== "pending") return;
+    if (requested.current && !requestAccess.isError) return;
+    if (requestAttempts.current >= 3) return;
     requested.current = true;
+    requestAttempts.current += 1;
     requestAccess.mutate();
-  }, [access.kind, requestAccess]);
+  }, [actor, access.kind, requestAccess]);
 
   if (access.kind === "granted") {
     return <>{children}</>;
   }
 
-  // While the access read is still in flight, show a neutral loading state so
-  // the waiting screen never flashes before the grant is known.
-  if (access.kind === "loading") {
+  // While the backend actor is still initializing the access read has not run,
+  // so the grant is unknown. Render the waiting screen rather than a spinner:
+  // the caller is signed in and awaiting approval, and the pending screen is the
+  // correct neutral state until the connection is ready.
+  const actorReady = !!actor;
+
+  // Once the actor is ready, a still-in-flight read shows a neutral loading
+  // state so the waiting screen never flashes before the grant is known.
+  if (access.kind === "loading" && actorReady) {
     return (
       <div
         data-ocid="gate.loading_state"

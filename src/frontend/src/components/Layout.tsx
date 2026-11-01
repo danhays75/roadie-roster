@@ -4,12 +4,12 @@ import { StoreLogo } from "@/components/StoreLogo";
 import { Button } from "@/components/ui/button";
 import {
   NAV_ITEMS,
-  canApprove,
+  canAdmin,
   canSeeNavItem,
   useAccessState,
 } from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
-import { usePendingUsers } from "@/hooks/useQueries";
+import { usePendingSignups, usePendingUsers } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
@@ -29,10 +29,13 @@ function NavLinks({
 }) {
   const { t } = useI18n();
   const role = useCurrentRole();
-  // Only admins may read the pending-users queue; a non-admin read traps.
-  const { data: pending } = usePendingUsers(canApprove(role));
+  // The badge reflects the pending sign-ups queue, which Store Managers and
+  // Admins may read. The pending-users queue is admin-only, so it is read only
+  // for an admin and never for a Store Manager.
+  const { data: pendingSignups } = usePendingSignups();
+  usePendingUsers(canAdmin(role));
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const pendingCount = pending?.length ?? 0;
+  const pendingCount = pendingSignups?.length ?? 0;
 
   return (
     <nav aria-label="Primary" className={className}>

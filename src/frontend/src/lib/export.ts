@@ -1,5 +1,5 @@
-import type { ExportData, ExportRow, Shift } from "@/backend";
-import { Shift as ShiftEnum } from "@/backend";
+import type { ExportData, ExportRow, Shift, Weekday } from "@/backend";
+import { Shift as ShiftEnum, Weekday as WeekdayEnum } from "@/backend";
 import { formatDateOnly } from "@/lib/format";
 import ExcelJS from "exceljs";
 
@@ -22,9 +22,26 @@ function safeSheetName(name: string, used: Set<string>): string {
   return candidate;
 }
 
-/** "Y" when the roadie is available for that shift, blank otherwise. */
-function shiftMark(row: ExportRow, shift: Shift): string {
-  return row.availability.includes(shift) ? "Y" : "";
+/** Short day labels for the Wed–Tue availability columns. */
+const WEEKDAY_LABELS: Record<Weekday, string> = {
+  [WeekdayEnum.wed]: "Wed",
+  [WeekdayEnum.thu]: "Thu",
+  [WeekdayEnum.fri]: "Fri",
+  [WeekdayEnum.sat]: "Sat",
+  [WeekdayEnum.sun]: "Sun",
+  [WeekdayEnum.mon]: "Mon",
+  [WeekdayEnum.tue]: "Tue",
+};
+
+/**
+ * The days (Wed–Tue order) the roadie is available for one shift, as a
+ * comma-separated list such as "Wed, Fri". Blank when none.
+ */
+function shiftDays(row: ExportRow, shift: Shift): string {
+  return row.availabilityByDay
+    .filter(([, shifts]) => shifts.includes(shift))
+    .map(([day]) => WEEKDAY_LABELS[day])
+    .join(", ");
 }
 
 function yesNo(value: boolean): string {
@@ -34,7 +51,15 @@ function yesNo(value: boolean): string {
 /** Column headers for a position-group sheet, in the required order. */
 function groupHeaders(variant: ExportVariant): string[] {
   const headers = ["Date hired", "Shirt size", "Weekday lunch (Y)", "Name"];
-  if (variant === "full") headers.push("Phone");
+  if (variant === "full") {
+    headers.push(
+      "Phone",
+      "Email",
+      "Emergency contact name",
+      "Emergency contact phone",
+      "Date of birth",
+    );
+  }
   headers.push(
     "Onboarding complete",
     "Policies & procedures",
@@ -53,14 +78,22 @@ function groupRow(row: ExportRow, variant: ExportVariant): string[] {
     row.weekdayLunch ? "Y" : "",
     row.name,
   ];
-  if (variant === "full") cells.push(row.phone ?? "");
+  if (variant === "full") {
+    cells.push(
+      row.phone ?? "",
+      row.email ?? "",
+      row.emergencyContactName ?? "",
+      row.emergencyContactPhone ?? "",
+      row.dateOfBirth !== undefined ? formatDateOnly(row.dateOfBirth) : "",
+    );
+  }
   cells.push(
     yesNo(row.onboardingComplete),
     yesNo(row.policiesComplete),
     yesNo(row.alcoholCert),
     yesNo(row.foodHandlers),
-    shiftMark(row, ShiftEnum.am),
-    shiftMark(row, ShiftEnum.pm),
+    shiftDays(row, ShiftEnum.am),
+    shiftDays(row, ShiftEnum.pm),
   );
   return cells;
 }
@@ -85,23 +118,23 @@ function addOverviewSheet(workbook: ExcelJS.Workbook, data: ExportData): void {
 
   const totals = sheet.addRow({
     position: "FOH total",
-    totalPar: null,
+    totalPar: Number(data.fohTotalPar),
     hired: Number(data.fohTotal),
-    need: null,
+    need: Number(data.fohNeed),
   });
   totals.font = { bold: true };
   const boh = sheet.addRow({
     position: "BOH total",
-    totalPar: null,
+    totalPar: Number(data.bohTotalPar),
     hired: Number(data.bohTotal),
-    need: null,
+    need: Number(data.bohNeed),
   });
   boh.font = { bold: true };
   const grand = sheet.addRow({
     position: "Grand total",
-    totalPar: null,
+    totalPar: Number(data.grandTotalPar),
     hired: Number(data.grandTotal),
-    need: null,
+    need: Number(data.grandNeed),
   });
   grand.font = { bold: true };
 

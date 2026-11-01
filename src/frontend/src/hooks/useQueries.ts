@@ -27,17 +27,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useMyAccess() {
   const { actor, isFetching } = useActor(createActor);
-  return useQuery({
+  const enabled = !!actor && !isFetching;
+  const query = useQuery({
     queryKey: ["myAccess"],
     queryFn: async () => {
       if (!actor) return null;
       return actor.getMyAccess();
     },
-    enabled: !!actor && !isFetching,
+    enabled,
     // Poll so a pending caller's approval appears without a manual reload.
     refetchInterval: 5_000,
     refetchIntervalInBackground: false,
   });
+  // A disabled query reports `isLoading: false`, so expose whether the read has
+  // actually been able to run. Callers treat "not ready" as loading rather than
+  // as a resolved pending state.
+  return { ...query, isReady: enabled };
 }
 
 /**
@@ -272,6 +277,42 @@ export function useRemoveUser() {
   });
 }
 
+/**
+ * Whether an Admin has set the kiosk staff PIN. The kiosk sign-out checks the
+ * entered PIN against the stored hash, so this tells an admin whether a PIN
+ * exists yet. Admin-only on the backend, so callers pass `enabled` to avoid a
+ * trapping read for other roles.
+ */
+export function useHasKioskPin(enabled = true) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["hasKioskPin"],
+    queryFn: async () => {
+      if (!actor) return false;
+      return actor.hasKioskPin();
+    },
+    enabled: enabled && !!actor && !isFetching,
+  });
+}
+
+/**
+ * Set the kiosk staff PIN. The backend stores only a one-way hash, so the
+ * plaintext is never persisted or returned. Admin-only.
+ */
+export function useSetKioskPin() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (pin: string) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.setKioskPin(pin);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["hasKioskPin"] });
+    },
+  });
+}
+
 /* ---------------------------------------------------------------------------
    Store & schedule
 --------------------------------------------------------------------------- */
@@ -500,6 +541,26 @@ export function useRoadie(id: RoadieId | undefined) {
       return actor.getRoadie(id);
     },
     enabled: !!actor && !isFetching && id !== undefined,
+  });
+}
+
+/**
+ * A roadie's photo bytes, read on demand. `listRoadies` and
+ * `listPendingSignups` no longer carry full photo bytes, so the roster list and
+ * the roadie card fetch the photo by id instead. React Query caches the result
+ * under the roadie id, and the bytes never change for a given id, so a
+ * re-render or a revisit reuses the cached read rather than re-fetching.
+ */
+export function useRoadiePhoto(id: RoadieId | undefined) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["roadiePhoto", id?.toString()],
+    queryFn: async () => {
+      if (!actor || id === undefined) return null;
+      return actor.getPhoto(id);
+    },
+    enabled: !!actor && !isFetching && id !== undefined,
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }
 

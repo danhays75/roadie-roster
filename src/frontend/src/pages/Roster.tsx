@@ -3,13 +3,12 @@ import { RoadieStatus as RoadieStatusEnum } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { StatusBadge } from "@/components/StatusBadge";
-import { StoreLogo } from "@/components/StoreLogo";
+import { RoadiePhoto } from "@/components/roadie/RoadiePhoto";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/hooks/useI18n";
 import { useCrews, usePositions, useRoadies } from "@/hooks/useQueries";
-import { refToDataUrl, roadieStatusLabel } from "@/lib/format";
+import { roadieStatusLabel } from "@/lib/format";
 import { Link } from "@tanstack/react-router";
-import { ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 type Filter = "all" | "active" | "archived";
@@ -41,20 +40,12 @@ function RoadieRow({
         data-ocid="roster.item.link"
         className="flex items-center gap-4 rounded-lg border border-border bg-card p-3 shadow-subtle transition-smooth hover:-translate-y-0.5 hover:shadow-elevated"
       >
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-primary bg-muted">
-          {roadie.photo ? (
-            <img
-              src={refToDataUrl(roadie.photo) ?? undefined}
-              alt={name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <ImageIcon
-              className="h-6 w-6 text-muted-foreground"
-              aria-hidden="true"
-            />
-          )}
-        </span>
+        <RoadiePhoto
+          id={roadie.id}
+          name={name}
+          ocid="roster.item.photo"
+          className="h-14 w-14 shrink-0"
+        />
 
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-base font-semibold uppercase tracking-wide text-foreground">

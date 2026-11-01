@@ -22,6 +22,91 @@ export async function fileToRef(file: File): Promise<Uint8Array> {
   return new Uint8Array(await file.arrayBuffer());
 }
 
+/** The longest edge, in pixels, an uploaded photo or signature is scaled to. */
+export const MAX_UPLOAD_EDGE = 800;
+/** JPEG quality used when re-encoding an upload. */
+export const UPLOAD_JPEG_QUALITY = 0.8;
+/** The soft size cap, in bytes, an upload is compressed toward. */
+export const MAX_UPLOAD_BYTES = 300 * 1024;
+
+/**
+ * How long to wait for an image to decode before falling back to the original
+ * file. A real browser decodes a small image in a few milliseconds, so this is
+ * only a safety net for an undecodable file; keeping it short means a submit
+ * never stalls on an image the browser cannot read.
+ */
+const IMAGE_LOAD_TIMEOUT_MS = 500;
+
+/** Load a `File` into an `HTMLImageElement` for canvas re-encoding. */
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    const timer = setTimeout(() => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Timed out reading the image"));
+    }, IMAGE_LOAD_TIMEOUT_MS);
+    image.onload = () => {
+      clearTimeout(timer);
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      clearTimeout(timer);
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read the image"));
+    };
+    image.src = url;
+  });
+}
+
+/** Draw an image onto a canvas at a scaled size and read it back as a blob. */
+function encodeCanvas(
+  image: HTMLImageElement,
+  width: number,
+  height: number,
+  quality: number,
+): Promise<Blob | null> {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return Promise.resolve(null);
+  ctx.drawImage(image, 0, 0, width, height);
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
+  });
+}
+
+/**
+ * Downscale a photo or signature to at most `MAX_UPLOAD_EDGE` on its longest
+ * edge, re-encode it as JPEG at `UPLOAD_JPEG_QUALITY`, and step the quality
+ * down until the result fits `MAX_UPLOAD_BYTES`. Falls back to the original
+ * file when the browser cannot decode or re-encode it.
+ */
+export async function resizeImageFile(file: File): Promise<File> {
+  let image: HTMLImageElement;
+  try {
+    image = await loadImage(file);
+  } catch {
+    return file;
+  }
+  const longest = Math.max(image.naturalWidth, image.naturalHeight);
+  const scale = longest > MAX_UPLOAD_EDGE ? MAX_UPLOAD_EDGE / longest : 1;
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+  let quality = UPLOAD_JPEG_QUALITY;
+  let blob = await encodeCanvas(image, width, height, quality);
+  while (blob && blob.size > MAX_UPLOAD_BYTES && quality > 0.4) {
+    quality = Math.round((quality - 0.1) * 10) / 10;
+    blob = await encodeCanvas(image, width, height, quality);
+  }
+  if (!blob) return file;
+  const name = file.name.replace(/\.[^.]+$/, "") || "upload";
+  return new File([blob], `${name}.jpg`, { type: "image/jpeg" });
+}
+
 /** Motoko `Time.now()` nanoseconds -> JS Date. Returns null when invalid. */
 export function timestampToDate(timestamp: Timestamp): Date | null {
   const date = new Date(Number(timestamp / 1_000_000n));

@@ -506,6 +506,8 @@ service : {
   /// Change a roadie's position or crew (Admin/Store Manager only).
   changePosition: (id: RoadieId, mainPositionId: PositionId,
    secondPositionId: opt PositionId, crewId: opt CrewId) -> ();
+  /// Check a candidate kiosk PIN. Returns true when it matches the stored hash.
+  checkKioskPin: (pin: text) -> (bool) query;
   /// Create a crew (Admin/Store Manager only).
   createCrew: (name: text) -> (CrewId);
   /// Create a leader talk (Admin/Store Manager only).
@@ -551,6 +553,9 @@ service : {
   /// Read the orientation check-off for a roadie (Admin/Store Manager only).
   getOrientationCheckoff: (roadieId: RoadieId) ->
    (opt OrientationCheckoff) query;
+  /// Read a roadie's photo bytes by id, for a caller allowed to see the roadie.
+  /// Returns null when the roadie has no photo or is not visible to the caller.
+  getPhoto: (id: RoadieId) -> (opt PhotoRef) query;
   /// Read retention settings.
   getRetentionSettings: () -> (RetentionSettings) query;
   /// Read one roadie card.
@@ -559,10 +564,15 @@ service : {
   getRosterSummary: () -> (vec RosterSummary) query;
   /// Read one submission (Admin/Store Manager only).
   getSignup: (id: SignupId) -> (opt SignupSubmission) query;
+  /// Read a pending submission's photo bytes by id (Admin/Store Manager only).
+  /// Returns null when the submission has no photo.
+  getSignupPhoto: (id: SignupId) -> (opt PhotoRef) query;
   /// Read the store configuration.
   getStoreInfo: () -> (StoreInfo) query;
   /// Read a training group with its unassigned and off-shift lists.
   getTrainingGroup: (id: TrainingGroupId) -> (opt TrainingGroupView) query;
+  /// True when an Admin has set a kiosk PIN.
+  hasKioskPin: () -> (bool) query;
   isCallerAdmin: () -> (bool) query;
   /// Compute whether a roadie is a minor as of now.
   isMinor: (id: RoadieId) -> (bool) query;
@@ -588,7 +598,9 @@ service : {
   listRosterForPosition: (positionId: PositionId) -> (vec Roadie) query;
   /// List the opening schedule.
   listSchedule: () -> (vec ScheduleEvent) query;
-  /// List trainer notes for a roadie.
+  /// List trainer notes for a roadie. Restricted the same way roadies are:
+  /// Integration sees nothing, and a trainer sees notes only for roadies in
+  /// their assigned stations.
   listTrainerNotes: (roadieId: RoadieId) -> (vec TrainerNote) query;
   /// Record attendance for a roadie (Admin/Store Manager only).
   recordAttendance: ("record": AttendanceRecord) -> ();
@@ -609,6 +621,8 @@ service : {
   /// Save the current store configuration as a template (Admin only).
   saveStoreTemplate: (name: text) -> ();
   schema: () -> (text) query;
+  /// Set the kiosk staff PIN (Admin only). Stored hashed; never returned.
+  setKioskPin: (pin: text) -> ();
   /// Record per-roadie attendance for a leader talk (Admin/Store Manager only).
   setLeaderTalkAttendance: (id: LeaderTalkId, attendees: vec RoadieId) -> ();
   /// Submit a new sign-up from the kiosk (Kiosk, Store Manager or Admin only).

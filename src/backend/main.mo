@@ -26,6 +26,7 @@ import SignupApi "mixins/signup-api";
 import AccessApi "mixins/access-api";
 import Phase23Api "mixins/phase23-api";
 import ExportApi "mixins/export-api";
+import KioskApi "mixins/kiosk-api";
 import SeedApi "mixins/seed-api";
 import ApiDocMixin "mixins/api-doc";
 
@@ -52,6 +53,9 @@ actor {
 
   let accessGrants : Map.Map<Principal, Access.AccessGrant>;
   let pendingUsers : Map.Map<Principal, Access.PendingUser>;
+
+  // Admin-set kiosk staff PIN, stored only as a hash.
+  let kioskPin : { var value : ?Text };
 
   let orientationCheckoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>;
   let attendance : Map.Map<Nat, Phase23.AttendanceRecord>;
@@ -109,6 +113,7 @@ actor {
     counters,
   );
   include ExportApi(accessGrants, roadies, positions, orientationCheckoffs, changeLog, counters);
+  include KioskApi(accessGrants, kioskPin);
 
   // --- Idempotent runtime re-seed ---
   include SeedApi(

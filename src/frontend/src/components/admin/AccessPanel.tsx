@@ -24,8 +24,10 @@ import { useI18n } from "@/hooks/useI18n";
 import {
   useAccessGrants,
   useAdminCount,
+  useHasKioskPin,
   usePositions,
   useRemoveUser,
+  useSetKioskPin,
   useStoreInfo,
   useUpdateAccessEnd,
   useUpdateTrainerStations,
@@ -39,7 +41,7 @@ import {
   timestampToDate,
 } from "@/lib/format";
 import { useActor } from "@caffeineai/core-infrastructure";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 const ALL_ROLES: Role[] = [
@@ -375,6 +377,156 @@ function GrantRow({
   );
 }
 
+/**
+ * Set the kiosk staff PIN. The kiosk sign-out verifies the entered PIN against
+ * the stored hash, so without a PIN the kiosk can never be signed out. Only an
+ * Admin may set it; the backend stores a one-way hash and never returns it.
+ */
+function KioskPinSection() {
+  const c = useAdminCopy();
+  const hasPin = useHasKioskPin();
+  const savePin = useSetKioskPin();
+  const [pin, setPin] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const submit = () => {
+    setSaved(false);
+    const value = pin.trim();
+    if (!value) {
+      setError(c.kioskPinRequired);
+      return;
+    }
+    if (value !== confirm.trim()) {
+      setError(c.kioskPinMismatch);
+      return;
+    }
+    setError(null);
+    savePin.mutate(value, {
+      onSuccess: () => {
+        setPin("");
+        setConfirm("");
+        setSaved(true);
+      },
+      onError: () => setError(c.kioskPinError),
+    });
+  };
+
+  return (
+    <div
+      data-ocid="admin.kiosk_pin.section"
+      className="mb-5 rounded-md border border-border bg-muted/30 p-4"
+    >
+      <div className="flex items-start gap-3">
+        <ShieldCheck
+          className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+          aria-hidden="true"
+        />
+        <div className="min-w-0">
+          <h3 className="font-display text-sm font-semibold uppercase tracking-wide">
+            {c.kioskPinTitle}
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {c.kioskPinDescription}
+          </p>
+          <p
+            data-ocid="admin.kiosk_pin.status"
+            className={`mt-2 text-sm font-medium ${
+              hasPin.isLoading
+                ? "text-muted-foreground"
+                : hasPin.data
+                  ? "text-accent"
+                  : "text-destructive"
+            }`}
+          >
+            {hasPin.isLoading
+              ? c.kioskPinLoading
+              : hasPin.data
+                ? c.kioskPinSet
+                : c.kioskPinNotSet}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="kiosk-pin-new">{c.kioskPinLabel}</Label>
+          <Input
+            id="kiosk-pin-new"
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            value={pin}
+            data-ocid="admin.kiosk_pin.input"
+            className="touch-target"
+            placeholder={c.kioskPinPlaceholder}
+            onChange={(event) => {
+              setSaved(false);
+              setError(null);
+              setPin(event.target.value);
+            }}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="kiosk-pin-confirm">{c.kioskPinConfirmLabel}</Label>
+          <Input
+            id="kiosk-pin-confirm"
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            value={confirm}
+            data-ocid="admin.kiosk_pin.confirm_input"
+            className="touch-target"
+            placeholder={c.kioskPinConfirmPlaceholder}
+            onChange={(event) => {
+              setSaved(false);
+              setError(null);
+              setConfirm(event.target.value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") submit();
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          className="touch-target"
+          data-ocid="admin.kiosk_pin.save_button"
+          disabled={savePin.isPending}
+          onClick={submit}
+        >
+          {savePin.isPending && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+          )}
+          {c.kioskPinSave}
+        </Button>
+        {saved && (
+          <p
+            className="text-sm font-medium text-accent"
+            data-ocid="admin.kiosk_pin.success_state"
+          >
+            {c.kioskPinSaved}
+          </p>
+        )}
+        {error && (
+          <p
+            role="alert"
+            data-ocid="admin.kiosk_pin.error_state"
+            className="text-sm font-medium text-destructive"
+          >
+            {error}
+          </p>
+        )}
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">{c.kioskPinHint}</p>
+    </div>
+  );
+}
+
 export function AccessPanel() {
   const { t } = useI18n();
   const c = useAdminCopy();
@@ -388,6 +540,7 @@ export function AccessPanel() {
       description={c.accessDescription}
       ocid="admin.access.section"
     >
+      <KioskPinSection />
       <p className="mb-3 text-sm text-muted-foreground">
         {t("admin.access.adminCount", {
           count: (adminCount.data ?? 0n).toString(),

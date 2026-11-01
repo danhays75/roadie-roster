@@ -79,9 +79,11 @@ mixin (
     Phase23Lib.updateTrainerNote(accessGrants, trainerNotes, changeLog, counters, caller, note);
   };
 
-  /// List trainer notes for a roadie.
+  /// List trainer notes for a roadie. Restricted the same way roadies are:
+  /// Integration sees nothing, and a trainer sees notes only for roadies in
+  /// their assigned stations.
   public query ({ caller }) func listTrainerNotes(roadieId : Common.RoadieId) : async [Phase23.TrainerNote] {
-    Phase23Lib.listTrainerNotes(accessGrants, trainerNotes, caller, roadieId);
+    Phase23Lib.listTrainerNotes(accessGrants, trainerNotes, roadies, caller, roadieId);
   };
 
   /// Create a leader talk (Admin/Store Manager only).

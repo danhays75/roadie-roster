@@ -580,6 +580,10 @@ export interface backendInterface {
      */
     changePosition(id: RoadieId, mainPositionId: PositionId, secondPositionId: PositionId | null, crewId: CrewId | null): Promise<void>;
     /**
+     * / Check a candidate kiosk PIN. Returns true when it matches the stored hash.
+     */
+    checkKioskPin(pin: string): Promise<boolean>;
+    /**
      * / Create a crew (Admin/Store Manager only).
      */
     createCrew(name: string): Promise<CrewId>;
@@ -653,6 +657,11 @@ export interface backendInterface {
      */
     getOrientationCheckoff(roadieId: RoadieId): Promise<OrientationCheckoff | null>;
     /**
+     * / Read a roadie's photo bytes by id, for a caller allowed to see the roadie.
+     * / Returns null when the roadie has no photo or is not visible to the caller.
+     */
+    getPhoto(id: RoadieId): Promise<PhotoRef | null>;
+    /**
      * / Read retention settings.
      */
     getRetentionSettings(): Promise<RetentionSettings>;
@@ -669,6 +678,11 @@ export interface backendInterface {
      */
     getSignup(id: SignupId): Promise<SignupSubmission | null>;
     /**
+     * / Read a pending submission's photo bytes by id (Admin/Store Manager only).
+     * / Returns null when the submission has no photo.
+     */
+    getSignupPhoto(id: SignupId): Promise<PhotoRef | null>;
+    /**
      * / Read the store configuration.
      */
     getStoreInfo(): Promise<StoreInfo>;
@@ -676,6 +690,10 @@ export interface backendInterface {
      * / Read a training group with its unassigned and off-shift lists.
      */
     getTrainingGroup(id: TrainingGroupId): Promise<TrainingGroupView | null>;
+    /**
+     * / True when an Admin has set a kiosk PIN.
+     */
+    hasKioskPin(): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     /**
      * / Compute whether a roadie is a minor as of now.
@@ -726,7 +744,9 @@ export interface backendInterface {
      */
     listSchedule(): Promise<Array<ScheduleEvent>>;
     /**
-     * / List trainer notes for a roadie.
+     * / List trainer notes for a roadie. Restricted the same way roadies are:
+     * / Integration sees nothing, and a trainer sees notes only for roadies in
+     * / their assigned stations.
      */
     listTrainerNotes(roadieId: RoadieId): Promise<Array<TrainerNote>>;
     /**
@@ -764,6 +784,10 @@ export interface backendInterface {
      */
     saveStoreTemplate(name: string): Promise<void>;
     schema(): Promise<string>;
+    /**
+     * / Set the kiosk staff PIN (Admin only). Stored hashed; never returned.
+     */
+    setKioskPin(pin: string): Promise<void>;
     /**
      * / Record per-roadie attendance for a leader talk (Admin/Store Manager only).
      */
@@ -1140,6 +1164,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async checkKioskPin(arg0: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.checkKioskPin(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.checkKioskPin(arg0);
+            return result;
+        }
+    }
     async createCrew(arg0: string): Promise<CrewId> {
         if (this.processError) {
             try {
@@ -1386,6 +1424,20 @@ export class Backend implements backendInterface {
             return from_candid_opt_n77(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getPhoto(arg0: RoadieId): Promise<PhotoRef | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getPhoto(arg0);
+                return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getPhoto(arg0);
+            return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getRetentionSettings(): Promise<RetentionSettings> {
         if (this.processError) {
             try {
@@ -1404,14 +1456,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getRoadie(arg0);
-                return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n79(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getRoadie(arg0);
-            return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n79(this._uploadFile, this._downloadFile, result);
         }
     }
     async getRosterSummary(): Promise<Array<RosterSummary>> {
@@ -1442,6 +1494,20 @@ export class Backend implements backendInterface {
             return from_candid_opt_n94(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getSignupPhoto(arg0: SignupId): Promise<PhotoRef | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getSignupPhoto(arg0);
+                return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getSignupPhoto(arg0);
+            return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getStoreInfo(): Promise<StoreInfo> {
         if (this.processError) {
             try {
@@ -1468,6 +1534,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getTrainingGroup(arg0);
             return from_candid_opt_n101(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async hasKioskPin(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.hasKioskPin();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.hasKioskPin();
+            return result;
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -1792,6 +1872,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async setKioskPin(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setKioskPin(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setKioskPin(arg0);
+            return result;
+        }
+    }
     async setLeaderTalkAttendance(arg0: LeaderTalkId, arg1: Array<RoadieId>): Promise<void> {
         if (this.processError) {
             try {
@@ -2020,8 +2114,8 @@ export class Backend implements backendInterface {
 function from_candid_AccessGrant_n73(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AccessGrant): AccessGrant {
     return from_candid_record_n74(_uploadFile, _downloadFile, value);
 }
-function from_candid_ArchiveReason_n87(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ArchiveReason): ArchiveReason {
-    return from_candid_variant_n88(_uploadFile, _downloadFile, value);
+function from_candid_ArchiveReason_n88(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ArchiveReason): ArchiveReason {
+    return from_candid_variant_n89(_uploadFile, _downloadFile, value);
 }
 function from_candid_AttendanceRecord_n108(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AttendanceRecord): AttendanceRecord {
     return from_candid_record_n109(_uploadFile, _downloadFile, value);
@@ -2068,11 +2162,11 @@ function from_candid_Result_n49(_uploadFile: (file: ExternalBlob) => Promise<Uin
 function from_candid_RoadieProfile_n90(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RoadieProfile): RoadieProfile {
     return from_candid_record_n91(_uploadFile, _downloadFile, value);
 }
-function from_candid_RoadieStatus_n81(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RoadieStatus): RoadieStatus {
+function from_candid_RoadieStatus_n82(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RoadieStatus): RoadieStatus {
     return "active" in value ? RoadieStatus.active : "hired" in value ? RoadieStatus.hired : "inTraining" in value ? RoadieStatus.inTraining : "paperworkDone" in value ? RoadieStatus.paperworkDone : "oriented" in value ? RoadieStatus.oriented : "certified" in value ? RoadieStatus.certified : "needsMoreTime" in value ? RoadieStatus.needsMoreTime : "archived" in value ? RoadieStatus.archived : value;
 }
-function from_candid_Roadie_n79(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Roadie): Roadie {
-    return from_candid_record_n80(_uploadFile, _downloadFile, value);
+function from_candid_Roadie_n80(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Roadie): Roadie {
+    return from_candid_record_n81(_uploadFile, _downloadFile, value);
 }
 function from_candid_Role_n76(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Role): Role {
     return "integration" in value ? Role.integration : "admin" in value ? Role.admin : "trainingManager" in value ? Role.trainingManager : "trainer" in value ? Role.trainer : "leadership" in value ? Role.leadership : "visitingManager" in value ? Role.visitingManager : "storeManager" in value ? Role.storeManager : "kiosk" in value ? Role.kiosk : value;
@@ -2158,26 +2252,26 @@ function from_candid_opt_n75(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
 function from_candid_opt_n77(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_OrientationCheckoff]): OrientationCheckoff | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n78(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Roadie]): Roadie | null {
-    return value.length === 0 ? null : from_candid_Roadie_n79(_uploadFile, _downloadFile, value[0]);
-}
-function from_candid_opt_n82(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_EventId]): EventId | null {
+function from_candid_opt_n78(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_PhotoRef]): PhotoRef | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n83(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_PositionId]): PositionId | null {
+function from_candid_opt_n79(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Roadie]): Roadie | null {
+    return value.length === 0 ? null : from_candid_Roadie_n80(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n83(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_EventId]): EventId | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n84(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_ContactSet]): ContactSet | null {
+function from_candid_opt_n84(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_PositionId]): PositionId | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n85(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_ContactSet]): ContactSet | null {
     return value.length === 0 ? null : from_candid_ContactSet_n59(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n85(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_CrewId]): CrewId | null {
+function from_candid_opt_n86(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_CrewId]): CrewId | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n86(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_ArchiveReason]): ArchiveReason | null {
-    return value.length === 0 ? null : from_candid_ArchiveReason_n87(_uploadFile, _downloadFile, value[0]);
-}
-function from_candid_opt_n89(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_PhotoRef]): PhotoRef | null {
-    return value.length === 0 ? null : value[0];
+function from_candid_opt_n87(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_ArchiveReason]): ArchiveReason | null {
+    return value.length === 0 ? null : from_candid_ArchiveReason_n88(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n92(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_ShirtSize]): ShirtSize | null {
     return value.length === 0 ? null : value[0];
@@ -2228,7 +2322,7 @@ function from_candid_record_n100(_uploadFile: (file: ExternalBlob) => Promise<Ui
         leaderTalkName: value.leaderTalkName,
         appName: value.appName,
         leaderTalkSize: value.leaderTalkSize,
-        logo: record_opt_to_undefined(from_candid_opt_n89(_uploadFile, _downloadFile, value.logo)),
+        logo: record_opt_to_undefined(from_candid_opt_n78(_uploadFile, _downloadFile, value.logo)),
         amShiftStart: value.amShiftStart,
         openingDate: value.openingDate,
         pmShiftEnd: value.pmShiftEnd,
@@ -2294,7 +2388,7 @@ function from_candid_record_n109(_uploadFile: (file: ExternalBlob) => Promise<Ui
     state: AttendanceState;
 } {
     return {
-        eventId: record_opt_to_undefined(from_candid_opt_n82(_uploadFile, _downloadFile, value.eventId)),
+        eventId: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.eventId)),
         roadieId: value.roadieId,
         recordedAt: value.recordedAt,
         recordedBy: value.recordedBy,
@@ -2653,7 +2747,7 @@ function from_candid_record_n74(_uploadFile: (file: ExternalBlob) => Promise<Uin
         accessEndsAt: record_opt_to_undefined(from_candid_opt_n61(_uploadFile, _downloadFile, value.accessEndsAt))
     };
 }
-function from_candid_record_n80(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n81(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: _RoadieId;
     status: _RoadieStatus;
     orientationEventId: [] | [_EventId];
@@ -2694,20 +2788,20 @@ function from_candid_record_n80(_uploadFile: (file: ExternalBlob) => Promise<Uin
 } {
     return {
         id: value.id,
-        status: from_candid_RoadieStatus_n81(_uploadFile, _downloadFile, value.status),
-        orientationEventId: record_opt_to_undefined(from_candid_opt_n82(_uploadFile, _downloadFile, value.orientationEventId)),
+        status: from_candid_RoadieStatus_n82(_uploadFile, _downloadFile, value.status),
+        orientationEventId: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.orientationEventId)),
         mainPositionId: value.mainPositionId,
-        crossTrainedPositionId: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.crossTrainedPositionId)),
+        crossTrainedPositionId: record_opt_to_undefined(from_candid_opt_n84(_uploadFile, _downloadFile, value.crossTrainedPositionId)),
         corporateEmployeeId: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.corporateEmployeeId)),
-        contactSet: record_opt_to_undefined(from_candid_opt_n84(_uploadFile, _downloadFile, value.contactSet)),
-        crewId: record_opt_to_undefined(from_candid_opt_n85(_uploadFile, _downloadFile, value.crewId)),
+        contactSet: record_opt_to_undefined(from_candid_opt_n85(_uploadFile, _downloadFile, value.contactSet)),
+        crewId: record_opt_to_undefined(from_candid_opt_n86(_uploadFile, _downloadFile, value.crewId)),
         signedBy: record_opt_to_undefined(from_candid_opt_n62(_uploadFile, _downloadFile, value.signedBy)),
         birthdayMonthDay: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.birthdayMonthDay)),
         isMinor: value.isMinor,
-        archivedReason: record_opt_to_undefined(from_candid_opt_n86(_uploadFile, _downloadFile, value.archivedReason)),
-        photo: record_opt_to_undefined(from_candid_opt_n89(_uploadFile, _downloadFile, value.photo)),
+        archivedReason: record_opt_to_undefined(from_candid_opt_n87(_uploadFile, _downloadFile, value.archivedReason)),
+        photo: record_opt_to_undefined(from_candid_opt_n78(_uploadFile, _downloadFile, value.photo)),
         hiredAt: value.hiredAt,
-        secondPositionId: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.secondPositionId)),
+        secondPositionId: record_opt_to_undefined(from_candid_opt_n84(_uploadFile, _downloadFile, value.secondPositionId)),
         profile: from_candid_RoadieProfile_n90(_uploadFile, _downloadFile, value.profile),
         startDate: record_opt_to_undefined(from_candid_opt_n30(_uploadFile, _downloadFile, value.startDate)),
         archivedAt: record_opt_to_undefined(from_candid_opt_n61(_uploadFile, _downloadFile, value.archivedAt))
@@ -2781,7 +2875,7 @@ function from_candid_record_n96(_uploadFile: (file: ExternalBlob) => Promise<Uin
         signature: record_opt_to_undefined(from_candid_opt_n63(_uploadFile, _downloadFile, value.signature)),
         contactSet: from_candid_ContactSet_n59(_uploadFile, _downloadFile, value.contactSet),
         submittedAt: value.submittedAt,
-        photo: record_opt_to_undefined(from_candid_opt_n89(_uploadFile, _downloadFile, value.photo)),
+        photo: record_opt_to_undefined(from_candid_opt_n78(_uploadFile, _downloadFile, value.photo)),
         profile: from_candid_RoadieProfile_n90(_uploadFile, _downloadFile, value.profile)
     };
 }
@@ -2957,7 +3051,7 @@ function from_candid_variant_n56(_uploadFile: (file: ExternalBlob) => Promise<Ui
         text: value.text
     } : value;
 }
-function from_candid_variant_n88(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n89(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     noShow: null;
 } | {
     quitDuringTraining: null;
@@ -3059,7 +3153,7 @@ function from_candid_vec_n115(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     return value.map((x)=>from_candid_SignupSubmission_n95(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n116(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Roadie>): Array<Roadie> {
-    return value.map((x)=>from_candid_Roadie_n79(_uploadFile, _downloadFile, x));
+    return value.map((x)=>from_candid_Roadie_n80(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n117(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_ScheduleEvent>): Array<ScheduleEvent> {
     return value.map((x)=>from_candid_ScheduleEvent_n118(_uploadFile, _downloadFile, x));

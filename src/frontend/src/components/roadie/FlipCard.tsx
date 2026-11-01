@@ -2,11 +2,12 @@ import type { Crew, Position, Roadie } from "@/backend";
 import { RoadieStatus } from "@/backend";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StoreLogo } from "@/components/StoreLogo";
+import { RoadiePhoto } from "@/components/roadie/RoadiePhoto";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/hooks/useI18n";
-import { refToDataUrl, roadieStatusLabel } from "@/lib/format";
+import { roadieStatusLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { ImageIcon, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { useState } from "react";
 
 function statusTone(status: RoadieStatus) {
@@ -105,20 +106,13 @@ export function FlipCard({
             </div>
 
             <div className="flex flex-1 flex-col items-center gap-4 p-6 text-center">
-              <div className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-4 border-primary bg-muted">
-                {roadie.photo ? (
-                  <img
-                    src={refToDataUrl(roadie.photo) ?? undefined}
-                    alt={name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <ImageIcon
-                    className="h-12 w-12 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                )}
-              </div>
+              <RoadiePhoto
+                id={roadie.id}
+                name={name}
+                ocid="roadie.card.photo"
+                className="h-40 w-40 border-4"
+                iconClassName="h-12 w-12"
+              />
 
               <div className="min-w-0">
                 <h2 className="break-words font-display text-2xl font-bold uppercase tracking-tight text-foreground">

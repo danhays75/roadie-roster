@@ -29,7 +29,7 @@ import { KioskWelcome } from "@/components/kiosk/KioskWelcome";
 import { useKioskCopy } from "@/components/kiosk/copy";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/hooks/useI18n";
-import { dateToDateOnly, fileToRef } from "@/lib/format";
+import { dateToDateOnly, fileToRef, resizeImageFile } from "@/lib/format";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Send } from "lucide-react";
@@ -47,8 +47,17 @@ const STEP_KEYS = [
 ] as const;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-/** A basic phone format: at least 7 digits, optional +, spaces, dashes, parens. */
+/** A basic phone format: optional +, spaces, dashes, parens, at least 7 digits. */
 const PHONE_RE = /^\+?[\d\s().-]{7,}$/;
+/** Count the actual digits in a phone string. */
+function phoneDigitCount(value: string): number {
+  return (value.match(/\d/g) ?? []).length;
+}
+/** A phone is valid when it matches the format and carries at least 7 digits. */
+function isValidPhone(value: string): boolean {
+  const trimmed = value.trim();
+  return PHONE_RE.test(trimmed) && phoneDigitCount(trimmed) >= 7;
+}
 const MIN_AGE = 14;
 const MAX_AGE = 100;
 const MAX_SHIFTS = 7;
@@ -99,7 +108,6 @@ function toProfile(details: KioskDetails): RoadieProfile {
 function toContactSet(
   contact: KioskContact,
   availability: Set<string>,
-  signatureRef: Uint8Array | null,
 ): ContactSet {
   const slots: AvailabilitySlot[] = [];
   for (const key of availability) {
@@ -113,10 +121,6 @@ function toContactSet(
     emergencyContactName: contact.emergencyContactName.trim(),
     emergencyContactPhone: contact.emergencyContactPhone.trim(),
     availability: slots,
-    availabilitySignature: signatureRef ?? undefined,
-    availabilitySignedAt: signatureRef
-      ? BigInt(Date.now()) * 1_000_000n
-      : undefined,
     availabilityResignPending: false,
   };
 }
@@ -136,7 +140,36 @@ export default function KioskPage() {
   const [signature, setSignature] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const resetAll = useCallback(() => {
+  const submit = useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Backend is not ready");
+      // Resize the photo and signature concurrently: they are independent, and
+      // a slow decode on one must not delay the other.
+      const [photoRef, signatureRef] = await Promise.all([
+        photo ? resizeImageFile(photo).then(fileToRef) : Promise.resolve(null),
+        signature
+          ? resizeImageFile(signature).then(fileToRef)
+          : Promise.resolve(null),
+      ]);
+      return actor.submitSignup(
+        toProfile(details),
+        photoRef,
+        signatureRef,
+        toContactSet(contact, availability),
+      );
+    },
+    onSuccess: () => {
+      // Keep the roadie's chosen language for the success screen; the
+      // 10-second reset below returns the kiosk to English for the next person.
+      resetForm();
+      setPhase("success");
+    },
+  });
+
+  const { reset: resetSubmit } = submit;
+
+  /** Clear the collected answers and any submit error, keeping the language. */
+  const resetForm = useCallback(() => {
     setPhase("welcome");
     setStep(0);
     setPhoto(null);
@@ -145,28 +178,14 @@ export default function KioskPage() {
     setAvailability(new Set());
     setSignature(null);
     setErrors({});
+    resetSubmit();
+  }, [resetSubmit]);
+
+  /** Clear the answers, the submit error and the language for the next person. */
+  const resetAll = useCallback(() => {
+    resetForm();
     setLocale("en");
-  }, [setLocale]);
-
-  const submit = useMutation({
-    mutationFn: async () => {
-      if (!actor) throw new Error("Backend is not ready");
-      const photoRef = photo ? await fileToRef(photo) : null;
-      const signatureRef = signature ? await fileToRef(signature) : null;
-      return actor.submitSignup(
-        toProfile(details),
-        photoRef,
-        signatureRef,
-        toContactSet(contact, availability, signatureRef),
-      );
-    },
-    onSuccess: () => {
-      resetAll();
-      setPhase("success");
-    },
-  });
-
-  const { reset: resetSubmit } = submit;
+  }, [resetForm, setLocale]);
 
   // Auto-reset: the success screen clears after 10 seconds, and any step with
   // no input for 90 seconds returns the kiosk to the welcome screen.
@@ -188,7 +207,6 @@ export default function KioskPage() {
     const arm = () => {
       clearIdleTimer();
       idleTimer.current = setTimeout(() => {
-        resetSubmit();
         resetAll();
       }, IDLE_RESET_MS);
     };
@@ -204,7 +222,7 @@ export default function KioskPage() {
       clearIdleTimer();
       for (const event of events) window.removeEventListener(event, arm);
     };
-  }, [phase, resetAll, resetSubmit, clearIdleTimer]);
+  }, [phase, resetAll, clearIdleTimer]);
 
   const toggleSlot = (day: Weekday, shift: Shift) => {
     setAvailability((current) => {
@@ -233,7 +251,7 @@ export default function KioskPage() {
       if (!EMAIL_RE.test(contact.email.trim()))
         next.email = t("error.emailInvalid");
       if (!contact.phone.trim()) next.phone = t("error.phoneRequired");
-      else if (!PHONE_RE.test(contact.phone.trim()))
+      else if (!isValidPhone(contact.phone))
         next.phone = t("error.phoneInvalid");
       if (!contact.dateOfBirth) {
         next.dateOfBirth = t("error.dobRequired");
@@ -252,7 +270,7 @@ export default function KioskPage() {
         next.emergencyContactName = t("error.emergencyRequired");
       if (!contact.emergencyContactPhone.trim())
         next.emergencyContactPhone = t("error.emergencyPhoneRequired");
-      else if (!PHONE_RE.test(contact.emergencyContactPhone.trim()))
+      else if (!isValidPhone(contact.emergencyContactPhone))
         next.emergencyContactPhone = t("error.emergencyPhoneInvalid");
     }
     if (index === 3 && availability.size === 0) {
@@ -335,6 +353,7 @@ export default function KioskPage() {
         {step === 4 && (
           <KioskSignatureStep
             hasSignature={!!signature}
+            signature={signature}
             onSigned={setSignature}
             onClear={clearSignature}
             error={errors.signature}

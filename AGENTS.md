@@ -40,10 +40,6 @@
 
 ## Learnings
 
-- Contact-set redaction must return an empty array rather than undefined for non-manager roles so the redaction is observable and consistent.
-- A Kiosk-role login must be redirected to /kiosk in the root shell (KioskRedirect inside ApprovalGate children); every dashboard/roster/store read traps for it.
-- ApprovalGate must wait for useActor's actor before calling bootstrapAdmin, or the call is lost while the backend initializes.
-- A key missing from the copy dictionaries (src/frontend/src/lib/copy.ts and src/frontend/src/components/kiosk/copy.ts) falls through to the raw key string, so every key a page renders must exist in every locale.
 - The kiosk availability and review steps render kiosk.weekday.* day labels; the kiosk dictionary keys must carry that prefix.
 - The Admin page tab bar renders admin.section.* labels from lib/copy.ts, while admin panels use the separate typed useAdminCopy; both must be checked.
 - Fresh install replays migrations/00000000_000000.mo (OldActor={}) so 18 positions/218 build-to and 12 schedule events seed correctly; applied migrations are frozen read-only, so any later change needs a new migration file.
@@ -65,3 +61,7 @@
 - getContactSet returns Array<ContactSet>; read element 0, empty array means none.
 - The platform injects the favicon/app icon at deploy; app code must not add favicon files or /__meta/ assets.
 - The kiosk signature canvas is not exposed as an accessible element, so browser-driven testing cannot draw a signature; verify signature capture manually.
+- Roadie photos render only in pages/Roster.tsx and components/roadie/FlipCard.tsx; both use the shared RoadiePhoto component backed by useRoadiePhoto(id), which queries getPhoto(id) with staleTime Infinity and memoizes refToDataUrl(photo).
+- A test actor lacking getPhoto makes the queryFn throw, which React Query records as an error so the placeholder still renders and no <img> appears.
+- The roadie card page is src/frontend/src/pages/RoadieCard.tsx and its photo lives in components/roadie/FlipCard.tsx; there is no components/roadie/RoadieCard.tsx.
+- Two tests were already failing before this draft and remain the recorded pre-existing baseline: src/frontend/src/__tests__/export-variants.test.ts (Shareable vs Full non-contact cells) and one PocketIC backend test (contact-set change-log visibility for a non-manager role).

@@ -208,15 +208,59 @@ module {
     ignore ChangeLog.record(changeLog, counters, caller, "updateTrainerNote", ?note.roadieId, false, "Edited trainer note");
   };
 
-  /// List trainer notes for a roadie (Admin/Store Manager/Trainer).
+  /// List trainer notes for a roadie. Restricted the same way roadies are:
+  /// Integration sees nothing, and a trainer sees notes only for roadies in
+  /// their assigned stations. Admin, Store Manager, Training Manager,
+  /// Leadership and visiting managers can see all notes.
   public func listTrainerNotes(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     trainerNotes : Map.Map<Nat, Phase23.TrainerNote>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     caller : Principal,
     roadieId : Common.RoadieId,
   ) : [Phase23.TrainerNote] {
-    ignore Auth.requireReadable(accessGrants, caller);
-    trainerNotes.values().filter(func n = n.roadieId == roadieId).toArray();
+    let role = Auth.requireReadable(accessGrants, caller);
+    // Integration sees only the Shareable export, so it sees no notes.
+    if (role == #integration) {
+      return [];
+    };
+    // A trainer sees notes only for roadies in their assigned stations.
+    if (role == #trainer) {
+      switch (roadies.get(roadieId)) {
+        case (?roadie) {
+          if (not roadieVisibleToRole(roadie, role, accessGrants, caller)) {
+            return [];
+          };
+        };
+        case null { return [] };
+      };
+    };
+    trainerNotes.values().filter(func(n) = n.roadieId == roadieId).toArray();
+  };
+
+  /// Internal: whether a roadie is visible to a role. A trainer sees only
+  /// roadies in their approved stations; a trainer with no approved stations
+  /// sees no roadies. Integration sees only the Shareable export.
+  func roadieVisibleToRole(
+    roadie : Roadie.Roadie,
+    role : Common.Role,
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    caller : Principal,
+  ) : Bool {
+    switch (role) {
+      case (#integration) { false };
+      case (#trainer) {
+        switch (accessGrants.get(caller)) {
+          case (?grant) {
+            grant.trainerPositionIds.any(func(pid) =
+              pid == roadie.mainPositionId or roadie.secondPositionId == ?pid
+            );
+          };
+          case null { false };
+        };
+      };
+      case (_) { true };
+    };
   };
 
   /// Create a leader talk (Admin/Store Manager only).

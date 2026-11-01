@@ -3,7 +3,17 @@ import { useKioskCopy } from "@/components/kiosk/copy";
 import { Button } from "@/components/ui/button";
 import { useCamera } from "@caffeineai/camera";
 import { Camera, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+/** Read a `File` into a data URL for previewing without a storage round trip. */
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not read the photo"));
+    reader.readAsDataURL(file);
+  });
+}
 
 /**
  * Photo step: live device-camera preview with capture, retake and switch.
@@ -37,15 +47,23 @@ export function KioskPhotoStep({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // The preview data URL is derived once per captured file and memoized, so a
+  // re-render never re-reads the file.
+  const previewDataUrl = useMemo(() => photo, [photo]);
+
   useEffect(() => {
-    if (!photo) {
+    if (!previewDataUrl) {
       setPreviewUrl(null);
       return;
     }
-    const url = URL.createObjectURL(photo);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [photo]);
+    let active = true;
+    void fileToDataUrl(previewDataUrl).then((url) => {
+      if (active) setPreviewUrl(url);
+    });
+    return () => {
+      active = false;
+    };
+  }, [previewDataUrl]);
 
   useEffect(() => {
     if (isSupported) void startCamera();

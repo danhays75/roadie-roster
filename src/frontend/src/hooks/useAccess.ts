@@ -44,18 +44,22 @@ export const NAV_ITEMS: NavItem[] = [
 
 /** Resolve the caller's access state from the backend grant. */
 export function useAccessState(): AccessState {
-  const { data, isLoading, isError, error } = useMyAccess();
+  const { data, isLoading, isError, error, isReady } = useMyAccess();
   return useMemo(() => {
-    if (isLoading) return { kind: "loading" };
+    // Until the backend actor is ready the read has not run; report loading so
+    // the waiting screen does not flash before the grant is known.
+    if (!isReady || isLoading) return { kind: "loading" };
+    // Prefer a resolved grant over a failed poll: one transient error must not
+    // replace the app (or a kiosk sign-up in progress) with the error screen.
+    if (data) return { kind: "granted", grant: data };
     if (isError) {
       return {
         kind: "error",
         message: error instanceof Error ? error.message : "Unknown error",
       };
     }
-    if (!data) return { kind: "pending" };
-    return { kind: "granted", grant: data };
-  }, [data, isLoading, isError, error]);
+    return { kind: "pending" };
+  }, [data, isLoading, isError, error, isReady]);
 }
 
 /** Whether the given role may see a nav item. */

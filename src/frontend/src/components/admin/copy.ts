@@ -125,6 +125,22 @@ export interface AdminCopy {
 
   accessDescription: string;
 
+  kioskPinTitle: string;
+  kioskPinDescription: string;
+  kioskPinLoading: string;
+  kioskPinSet: string;
+  kioskPinNotSet: string;
+  kioskPinLabel: string;
+  kioskPinPlaceholder: string;
+  kioskPinConfirmLabel: string;
+  kioskPinConfirmPlaceholder: string;
+  kioskPinSave: string;
+  kioskPinSaved: string;
+  kioskPinError: string;
+  kioskPinRequired: string;
+  kioskPinMismatch: string;
+  kioskPinHint: string;
+
   actionEdit: string;
   actionDelete: string;
   actionCancel: string;
@@ -266,6 +282,24 @@ const en: AdminCopy = {
   templateSaveError: "We couldn't save the store template.",
 
   accessDescription: "Who can sign in, and with which role.",
+
+  kioskPinTitle: "Kiosk staff PIN",
+  kioskPinDescription:
+    "The PIN staff enter to sign out of the kiosk on a shared device.",
+  kioskPinLoading: "Checking the staff PIN…",
+  kioskPinSet: "A staff PIN is set.",
+  kioskPinNotSet: "No staff PIN is set yet. The kiosk cannot be signed out.",
+  kioskPinLabel: "New staff PIN",
+  kioskPinPlaceholder: "Enter a PIN",
+  kioskPinConfirmLabel: "Confirm staff PIN",
+  kioskPinConfirmPlaceholder: "Re-enter the PIN",
+  kioskPinSave: "Save PIN",
+  kioskPinSaved: "Staff PIN saved.",
+  kioskPinError: "We couldn't save the staff PIN.",
+  kioskPinRequired: "Enter a PIN.",
+  kioskPinMismatch: "The PINs do not match.",
+  kioskPinHint:
+    "Only a one-way hash is stored. The PIN is never shown again after saving.",
 
   actionEdit: "Edit",
   actionDelete: "Delete",
@@ -411,6 +445,25 @@ const es: AdminCopy = {
   templateSaveError: "No pudimos guardar la plantilla de tienda.",
 
   accessDescription: "Quién puede iniciar sesión y con qué rol.",
+
+  kioskPinTitle: "PIN del personal del quiosco",
+  kioskPinDescription:
+    "El PIN que el personal ingresa para cerrar la sesión del quiosco en un dispositivo compartido.",
+  kioskPinLoading: "Comprobando el PIN del personal…",
+  kioskPinSet: "Hay un PIN del personal configurado.",
+  kioskPinNotSet:
+    "Aún no hay un PIN del personal. No se puede cerrar la sesión del quiosco.",
+  kioskPinLabel: "Nuevo PIN del personal",
+  kioskPinPlaceholder: "Ingresa un PIN",
+  kioskPinConfirmLabel: "Confirmar PIN del personal",
+  kioskPinConfirmPlaceholder: "Vuelve a ingresar el PIN",
+  kioskPinSave: "Guardar PIN",
+  kioskPinSaved: "PIN del personal guardado.",
+  kioskPinError: "No pudimos guardar el PIN del personal.",
+  kioskPinRequired: "Ingresa un PIN.",
+  kioskPinMismatch: "Los PIN no coinciden.",
+  kioskPinHint:
+    "Solo se guarda un hash de una vía. El PIN nunca se vuelve a mostrar tras guardarlo.",
 
   actionEdit: "Editar",
   actionDelete: "Eliminar",

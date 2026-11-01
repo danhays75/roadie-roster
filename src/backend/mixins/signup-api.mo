@@ -36,6 +36,12 @@ mixin (
     SignupLib.getSignup(accessGrants, signups, caller, id);
   };
 
+  /// Read a pending submission's photo bytes by id (Admin/Store Manager only).
+  /// Returns null when the submission has no photo.
+  public query ({ caller }) func getSignupPhoto(id : Common.SignupId) : async ?Common.PhotoRef {
+    SignupLib.getSignupPhoto(accessGrants, signups, caller, id);
+  };
+
   /// Find duplicate cards matching a submission (Admin/Store Manager only).
   public query ({ caller }) func findDuplicates(id : Common.SignupId) : async [Signup.DuplicateMatch] {
     SignupLib.findDuplicates(accessGrants, signups, roadies, caller, id);

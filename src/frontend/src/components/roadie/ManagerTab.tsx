@@ -5,6 +5,7 @@ import { SHIFTS, WEEKDAYS } from "@/components/roadie/constants";
 import {
   useChecklists,
   useContactSet,
+  useResignAvailability,
   useRoadieChangeLog,
   useUpdateContactSet,
 } from "@/components/roadie/useRoadieActions";
@@ -322,8 +323,8 @@ function SignaturePad({
 
 /**
  * Availability grid with the manager re-sign flow. The manager draws on the
- * canvas and the drawn bytes are stored in the contact set's manager signature
- * field, alongside the signed-at timestamp.
+ * canvas and the drawn bytes are stored through the re-sign mutation, which
+ * records the manager signature and clears the pending re-sign flag.
  */
 function AvailabilityPanel({
   id,
@@ -333,7 +334,7 @@ function AvailabilityPanel({
   contactSet: ContactSet;
 }) {
   const { t } = useI18n();
-  const update = useUpdateContactSet();
+  const resign = useResignAvailability();
   const [drawn, setDrawn] = useState<Uint8Array | null>(null);
   const selected = new Set(
     contactSet.availability.map((slot) => `${slot.day}:${slot.shift}`),
@@ -341,15 +342,8 @@ function AvailabilityPanel({
 
   const saveSignature = () => {
     if (!drawn) return;
-    update.mutate(
-      {
-        id,
-        contactSet: {
-          ...contactSet,
-          managerSignature: drawn,
-          managerSignedAt: BigInt(Date.now()) * 1_000_000n,
-        },
-      },
+    resign.mutate(
+      { id, signature: drawn },
       {
         onSuccess: () => {
           setDrawn(null);
@@ -371,9 +365,19 @@ function AvailabilityPanel({
           </StatusBadge>
         )}
         <span className="text-sm text-muted-foreground">
-          {contactSet.managerSignature
-            ? `${t("roadie.field.availabilitySignature")}: ${refToDataUrl(contactSet.managerSignature) ?? ""}`
-            : t("roadie.unsigned")}
+          {contactSet.managerSignature ? (
+            <span className="inline-flex items-center gap-2">
+              {t("roadie.field.availabilitySignature")}:
+              <img
+                src={refToDataUrl(contactSet.managerSignature) ?? ""}
+                alt={t("roadie.field.availabilitySignature")}
+                data-ocid="roadie.availability.signature_image"
+                className="h-10 w-auto rounded border border-border bg-white"
+              />
+            </span>
+          ) : (
+            t("roadie.unsigned")
+          )}
         </span>
         {contactSet.managerSignedAt !== undefined && (
           <span className="text-sm text-muted-foreground">
@@ -452,14 +456,14 @@ function AvailabilityPanel({
           <Button
             type="button"
             className="touch-target"
-            disabled={!drawn || update.isPending}
+            disabled={!drawn || resign.isPending}
             data-ocid="roadie.availability.resign_button"
             onClick={saveSignature}
           >
             <PenLine className="mr-2 h-4 w-4" aria-hidden="true" />
             {t("roadie.field.availabilitySignature")}
           </Button>
-          {update.isSuccess && (
+          {resign.isSuccess && (
             <output
               data-ocid="roadie.availability.success_state"
               className="text-sm text-accent"
@@ -467,7 +471,7 @@ function AvailabilityPanel({
               {t("roadie.signed")}
             </output>
           )}
-          {update.isError && (
+          {resign.isError && (
             <span
               role="alert"
               data-ocid="roadie.availability.error_state"
