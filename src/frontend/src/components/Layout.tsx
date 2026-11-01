@@ -1,7 +1,13 @@
 import type { Role } from "@/backend";
+import { SignOutButton } from "@/components/InternetIdentity";
 import { StoreLogo } from "@/components/StoreLogo";
 import { Button } from "@/components/ui/button";
-import { NAV_ITEMS, canSeeNavItem, useAccessState } from "@/hooks/useAccess";
+import {
+  NAV_ITEMS,
+  canApprove,
+  canSeeNavItem,
+  useAccessState,
+} from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
 import { usePendingUsers } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
@@ -23,7 +29,8 @@ function NavLinks({
 }) {
   const { t } = useI18n();
   const role = useCurrentRole();
-  const { data: pending } = usePendingUsers();
+  // Only admins may read the pending-users queue; a non-admin read traps.
+  const { data: pending } = usePendingUsers(canApprove(role));
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const pendingCount = pending?.length ?? 0;
 
@@ -94,27 +101,40 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           <NavLinks className="hidden lg:block" />
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={menuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
-            aria-expanded={menuOpen}
-            data-ocid="nav.menu.toggle"
-            className="touch-target text-white hover:bg-white/10 hover:text-white lg:hidden"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            {menuOpen ? (
-              <X className="h-5 w-5" aria-hidden="true" />
-            ) : (
-              <Menu className="h-5 w-5" aria-hidden="true" />
-            )}
-          </Button>
+          <div className="flex items-center gap-1">
+            <SignOutButton
+              label={t("nav.signOut")}
+              ocid="nav.sign_out_button"
+              className="touch-target hidden items-center gap-2 rounded-md px-3 py-2 font-display text-sm font-medium uppercase tracking-wider text-white/75 transition-colors hover:bg-white/10 hover:text-white lg:inline-flex"
+            />
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={menuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
+              aria-expanded={menuOpen}
+              data-ocid="nav.menu.toggle"
+              className="touch-target text-white hover:bg-white/10 hover:text-white lg:hidden"
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              {menuOpen ? (
+                <X className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <Menu className="h-5 w-5" aria-hidden="true" />
+              )}
+            </Button>
+          </div>
         </div>
 
         {menuOpen && (
           <div className="border-t border-white/10 px-4 pb-4 pt-2 lg:hidden">
             <NavLinks onNavigate={() => setMenuOpen(false)} />
+            <SignOutButton
+              label={t("nav.signOut")}
+              ocid="nav.sign_out_button.mobile"
+              className="touch-target mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 font-display text-sm font-medium uppercase tracking-wider text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+            />
           </div>
         )}
 

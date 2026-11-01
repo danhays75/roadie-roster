@@ -6,6 +6,10 @@ import {
   needsConfirmation,
 } from "@/components/approvals/ApprovalRoleSelect";
 import { TrainerStationsPicker } from "@/components/approvals/TrainerStationsPicker";
+import {
+  DEFAULT_TIME_ZONE,
+  zonedWallTimeToDate,
+} from "@/components/approvals/timeZone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +21,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useI18n } from "@/hooks/useI18n";
-import { useApproveUser, usePositions, useRoadies } from "@/hooks/useQueries";
+import {
+  useApproveUser,
+  usePositions,
+  useRoadies,
+  useStoreInfo,
+} from "@/hooks/useQueries";
 import { dateToTimestamp, formatTimestamp, shortPrincipal } from "@/lib/format";
 import { UserCheck } from "lucide-react";
 import { useState } from "react";
@@ -30,7 +39,10 @@ export function PendingApprovalCard({ user }: { user: PendingUser }) {
   const { t } = useI18n();
   const { data: positions } = usePositions();
   const { data: roadies } = useRoadies();
+  const { data: storeInfo } = useStoreInfo();
   const approve = useApproveUser();
+
+  const timeZone = storeInfo?.timeZone || DEFAULT_TIME_ZONE;
 
   const [role, setRole] = useState<Role | "">("");
   const [stationIds, setStationIds] = useState<string[]>([]);
@@ -56,7 +68,9 @@ export function PendingApprovalCard({ user }: { user: PendingUser }) {
           ? stationIds.map((id) => BigInt(id))
           : [],
         accessEndsAt: accessEnd
-          ? dateToTimestamp(new Date(accessEnd))
+          ? dateToTimestamp(
+              zonedWallTimeToDate(accessEnd, 23, 59, 59, timeZone),
+            )
           : undefined,
         linkedRoadieId: linkedRoadieId ? BigInt(linkedRoadieId) : undefined,
       },

@@ -44,7 +44,12 @@ export const EMPTY_DETAILS: KioskDetails = {
 };
 
 const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"] as const;
-const HAT_SIZES = ["One size", "S/M", "L/XL"] as const;
+/** Hat sizes carry a copy key so the option label is translated. */
+const HAT_SIZES = [
+  { value: "One size", key: "hat.oneSize" },
+  { value: "S/M", key: "hat.sm" },
+  { value: "L/XL", key: "hat.lxl" },
+] as const;
 
 /** Details step: identity, personality and role preferences. */
 export function KioskDetailsStep({
@@ -81,7 +86,7 @@ export function KioskDetailsStep({
             id="kiosk-name"
             data-ocid="kiosk.name.input"
             value={value.name}
-            autoComplete="name"
+            autoComplete="off"
             aria-invalid={!!errors.name}
             onChange={(e) => set("name", e.target.value)}
             className="touch-target"
@@ -97,6 +102,7 @@ export function KioskDetailsStep({
             id="kiosk-preferred"
             data-ocid="kiosk.preferred_name.input"
             value={value.preferredName}
+            autoComplete="off"
             onChange={(e) => set("preferredName", e.target.value)}
             className="touch-target"
           />
@@ -107,6 +113,7 @@ export function KioskDetailsStep({
             id="kiosk-hometown"
             data-ocid="kiosk.hometown.input"
             value={value.hometown}
+            autoComplete="off"
             onChange={(e) => set("hometown", e.target.value)}
             className="touch-target"
           />
@@ -123,6 +130,7 @@ export function KioskDetailsStep({
             data-ocid="kiosk.position.input"
             value={value.positionAppliedFor}
             placeholder={t("field.positionPlaceholder")}
+            autoComplete="off"
             aria-invalid={!!errors.positionAppliedFor}
             onChange={(e) => set("positionAppliedFor", e.target.value)}
             className="touch-target"
@@ -165,8 +173,8 @@ export function KioskDetailsStep({
             </SelectTrigger>
             <SelectContent>
               {HAT_SIZES.map((size) => (
-                <SelectItem key={size} value={size}>
-                  {size}
+                <SelectItem key={size.value} value={size.value}>
+                  {t(size.key)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -184,8 +192,10 @@ export function KioskDetailsStep({
             type="number"
             inputMode="numeric"
             min={0}
-            max={14}
+            max={7}
+            autoComplete="off"
             value={value.shiftsWantedPerWeek}
+            aria-invalid={!!errors.shiftsWantedPerWeek}
             onChange={(e) => set("shiftsWantedPerWeek", e.target.value)}
             className="touch-target"
           />
@@ -227,6 +237,7 @@ export function KioskDetailsStep({
             data-ocid="kiosk.hobbies.textarea"
             value={value.hobbies}
             rows={2}
+            autoComplete="off"
             onChange={(e) => set("hobbies", e.target.value)}
           />
         </KioskField>
@@ -237,6 +248,7 @@ export function KioskDetailsStep({
             data-ocid="kiosk.favorite_movie.textarea"
             value={value.favoriteMovie}
             rows={2}
+            autoComplete="off"
             onChange={(e) => set("favoriteMovie", e.target.value)}
           />
         </KioskField>
@@ -247,6 +259,7 @@ export function KioskDetailsStep({
             data-ocid="kiosk.favorite_snack.textarea"
             value={value.favoriteSnack}
             rows={2}
+            autoComplete="off"
             onChange={(e) => set("favoriteSnack", e.target.value)}
           />
         </KioskField>
@@ -257,6 +270,7 @@ export function KioskDetailsStep({
             data-ocid="kiosk.fun_fact.textarea"
             value={value.funFact}
             rows={2}
+            autoComplete="off"
             onChange={(e) => set("funFact", e.target.value)}
           />
         </KioskField>
@@ -268,6 +282,7 @@ export function KioskDetailsStep({
           data-ocid="kiosk.goal_here.textarea"
           value={value.goalHere}
           rows={3}
+          autoComplete="off"
           onChange={(e) => set("goalHere", e.target.value)}
         />
       </KioskField>

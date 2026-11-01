@@ -92,7 +92,7 @@ actor {
     counters,
   );
   include RoadieApi(accessGrants, roadies, crews, positions, changeLog, counters);
-  include SignupApi(accessGrants, signups, roadies, positions, changeLog, counters);
+  include SignupApi(accessGrants, signups, roadies, positions, storeInfo, changeLog, counters);
   include AccessApi(accessGrants, pendingUsers, accessControlState);
   include Phase23Api(
     accessGrants,
@@ -170,7 +170,6 @@ actor {
             weekdayLunch = null;
           };
           photo = null;
-          signature = null;
           mainPositionId = 0;
           secondPositionId = null;
           crossTrainedPositionId = null;
@@ -180,6 +179,8 @@ actor {
           status = #hired;
           corporateEmployeeId = null;
           contactSet = null;
+          isMinor = false;
+          birthdayMonthDay = null;
           archivedReason = null;
           archivedAt = null;
           hiredAt = 0;
@@ -264,6 +265,9 @@ actor {
             availabilitySignature = null;
             availabilitySignedAt = null;
             availabilityResignPending = false;
+            managerSignature = null;
+            managerSignedAt = null;
+            managerSignedBy = null;
           };
           status = #pending;
         })

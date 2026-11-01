@@ -11,13 +11,19 @@ const BACKEND_WASM = process.env.BACKEND_WASM ?? "";
 const BASELINE_WASM = process.env.BACKEND_WASM_BASELINE;
 
 const DAY_NS = 24n * 60n * 60n * 1_000_000_000n;
-const EIGHTEEN_YEARS_NS = 18n * 365n * DAY_NS;
 const NOW_NS = BigInt(Date.now()) * 1_000_000n;
 
-/** A date of birth that makes the roadie an adult today. */
-const ADULT_DOB = NOW_NS - EIGHTEEN_YEARS_NS - 30n * DAY_NS;
-/** A date of birth that makes the roadie a minor today. */
-const MINOR_DOB = NOW_NS - 16n * 365n * DAY_NS;
+/**
+ * A date of birth that makes the roadie a clear adult today. The age gate
+ * compares real calendar age in store time, so this is well past 21 to clear
+ * every seeded position's minimum age (the highest is 21 for Bartenders).
+ */
+const ADULT_DOB = NOW_NS - 25n * 365n * DAY_NS;
+/**
+ * A date of birth that makes the roadie a minor today but old enough for the
+ * 16+ positions (Hosts), so a move into a 21+ position is the only block.
+ */
+const MINOR_DOB = NOW_NS - 16n * 365n * DAY_NS - 180n * DAY_NS;
 
 function profile(name: string) {
   return {
@@ -37,6 +43,11 @@ function profile(name: string) {
   };
 }
 
+/** A SignatureRef is a byte vector, not a string. */
+function sig(text: string): Uint8Array {
+  return new TextEncoder().encode(text);
+}
+
 function contactSet(phone: string, email: string, dob: bigint) {
   return {
     phone,
@@ -47,9 +58,14 @@ function contactSet(phone: string, email: string, dob: bigint) {
     availability: [
       { day: { wed: null } as const, shift: { am: null } as const },
     ],
-    availabilitySignature: [] as [] | [string],
+    availabilitySignature: [] as [] | [Uint8Array],
     availabilitySignedAt: [] as [] | [bigint],
     availabilityResignPending: false,
+    // The manager's approval signature is stored separately from the roadie's
+    // own availability signature; both are optional on a fresh submission.
+    managerSignature: [] as [] | [Uint8Array],
+    managerSignedAt: [] as [] | [bigint],
+    managerSignedBy: [] as [] | [unknown],
   };
 }
 
@@ -110,6 +126,9 @@ describe("backend access, signup and export contract", () => {
   });
 
   it("rejects every read for a Kiosk login but allows a sign-up", async () => {
+    // approveUser only acts on a principal that is actually pending, so the
+    // caller must register through the public requestAccess flow first.
+    await kiosk.requestAccess();
     await admin.approveUser({
       principal: kioskIdentity.getPrincipal(),
       role: { kiosk: null },
@@ -132,10 +151,13 @@ describe("backend access, signup and export contract", () => {
   });
 
   it("never returns contact-set fields to a non-manager role", async () => {
+    await trainer.requestAccess();
+    // Give the trainer a station so it can read the roadie card at all; a
+    // trainer with no stations sees no roadies (covered separately).
     await admin.approveUser({
       principal: trainerIdentity.getPrincipal(),
       role: { trainer: null },
-      trainerPositionIds: [],
+      trainerPositionIds: [0n],
       accessEndsAt: [],
       linkedRoadieId: [],
     });
@@ -155,12 +177,15 @@ describe("backend access, signup and export contract", () => {
         orientationEventId: [],
         startDate: [],
       },
-      "sig",
+      sig("sig"),
     );
 
     const asAdmin = await admin.getRoadie(roadieId);
     expect(asAdmin[0]?.contactSet[0]?.phone).toBe("+1-555-0002");
 
+    // A non-manager's roadie card carries no contact set at all (the optional
+    // decodes to an empty array), while the dedicated getContactSet read
+    // returns an empty array too.
     const asTrainer = await trainer.getRoadie(roadieId);
     expect(asTrainer[0]?.contactSet).toEqual([]);
 
@@ -188,7 +213,7 @@ describe("backend access, signup and export contract", () => {
           orientationEventId: [],
           startDate: [],
         },
-        "sig",
+        sig("sig"),
       ),
     ).rejects.toThrow();
   });
@@ -222,7 +247,7 @@ describe("backend access, signup and export contract", () => {
         orientationEventId: [],
         startDate: [],
       },
-      "sig",
+      sig("sig"),
     );
     const afterApprove = await admin.getDashboard();
     expect(afterApprove.hired).toBe(before.hired + 1n);
@@ -231,7 +256,8 @@ describe("backend access, signup and export contract", () => {
     const afterArchive = await admin.getDashboard();
     expect(afterArchive.hired).toBe(before.hired);
 
-    await admin.rehireRoadie(roadieId, []);
+    // A rehire always requires a non-blank reason.
+    await admin.rehireRoadie(roadieId, ["Rehired for the season"]);
     const afterRehire = await admin.getDashboard();
     expect(afterRehire.hired).toBe(before.hired + 1n);
   });
@@ -282,7 +308,7 @@ describe("backend access, signup and export contract", () => {
         orientationEventId: [],
         startDate: [],
       },
-      "sig",
+      sig("sig"),
     );
     // A contact-set-touching entry, recorded for managers only.
     await admin.updateContactSet(roadieId, contactSet("+1-555-0006", "changed@example.com", ADULT_DOB));
@@ -293,10 +319,12 @@ describe("backend access, signup and export contract", () => {
     ).toBe(true);
 
     const asTrainer = await trainer.listChangeLog();
+    // Contact-set-touching entries are hidden from a non-manager...
     expect(
       asTrainer.some((entry) => entry.action === "updateContactSet"),
     ).toBe(false);
-    // Non-contact entries remain visible to the trainer.
+    // ...but a non-contact entry about a roadie in the trainer's station stays
+    // visible.
     expect(asTrainer.some((entry) => entry.action === "approveSignup")).toBe(true);
   });
 
@@ -317,7 +345,7 @@ describe("backend access, signup and export contract", () => {
         orientationEventId: [],
         startDate: [],
       },
-      "sig",
+      sig("sig"),
     );
     const afterApprove = await admin.getDashboard();
     expect(afterApprove.hired).toBe(before.hired + 1n);
@@ -327,24 +355,37 @@ describe("backend access, signup and export contract", () => {
     const afterChange = await admin.getDashboard();
     expect(afterChange.hired).toBe(before.hired + 1n);
 
-    // A minor cannot be moved into a 21+ position.
+    // A minor cannot be moved into a 21+ position. The age gate uses the
+    // canister's own clock, which can differ from the host clock, so anchor the
+    // date of birth to a timestamp the canister itself reported.
+    const clockProbeId = await admin.submitSignup(
+      profile("Clock Probe"),
+      [],
+      [],
+      contactSet("+1-555-0099", "clockprobe@example.com", ADULT_DOB),
+    );
+    const clockProbe = await admin.getSignup(clockProbeId);
+    const canisterNow = clockProbe[0]!.submittedAt;
+    const minorDob = canisterNow - 16n * 365n * DAY_NS - 200n * DAY_NS;
     const minorSignupId = await admin.submitSignup(
       profile("Minor Change Position"),
       [],
       [],
-      contactSet("+1-555-0008", "minorchangepos@example.com", MINOR_DOB),
+      contactSet("+1-555-0008", "minorchangepos@example.com", minorDob),
     );
+    // Position 1 (Hosts) has minimumAge 16, so a minor can be approved there.
     const minorRoadieId = await admin.approveSignup(
       minorSignupId,
       {
-        mainPositionId: 0n,
+        mainPositionId: 1n,
         secondPositionId: [],
         crewId: [],
         orientationEventId: [],
         startDate: [],
       },
-      "sig",
+      sig("sig"),
     );
+    // Position 2 (Bartenders) has minimumAge 21, so the move is blocked.
     await expect(admin.changePosition(minorRoadieId, 2n, [], [])).rejects.toThrow();
   });
 
@@ -364,7 +405,7 @@ describe("backend access, signup and export contract", () => {
         orientationEventId: [],
         startDate: [],
       },
-      "sig",
+      sig("sig"),
     );
 
     // Admin: a one-element array carrying the real contact set.
@@ -410,6 +451,7 @@ describe("backend access, signup and export contract", () => {
       pic!.createActor<_SERVICE>(idlFactory, canisterId),
       managerIdentity,
     );
+    await manager.requestAccess();
     await admin.approveUser({
       principal: managerIdentity.getPrincipal(),
       role: { storeManager: null },
@@ -433,7 +475,7 @@ describe("backend access, signup and export contract", () => {
         orientationEventId: [],
         startDate: [],
       },
-      "sig",
+      sig("sig"),
     );
 
     // A manager can read the record, but a Kiosk login cannot read it at all.
@@ -447,5 +489,83 @@ describe("backend access, signup and export contract", () => {
     ).rejects.toThrow();
     const unchanged = await admin.getRoadie(roadieId);
     expect(unchanged[0]?.profile.name).toBe("Isolation Target");
+  });
+
+  it("stores the manager's approval signature separately from the roadie's own", async () => {
+    const signupId = await admin.submitSignup(
+      profile("Signature Target"),
+      [],
+      [],
+      contactSet("+1-555-0011", "signature@example.com", ADULT_DOB),
+    );
+    const roadieId = await admin.approveSignup(
+      signupId,
+      {
+        mainPositionId: 0n,
+        secondPositionId: [],
+        crewId: [],
+        orientationEventId: [],
+        startDate: [],
+      },
+      sig("manager-signature-bytes"),
+    );
+
+    const roadie = await admin.getRoadie(roadieId);
+    const contact = roadie[0]?.contactSet[0];
+    // The manager's drawn signature is stored in its own field, with the
+    // signing principal recorded, and never overwrites the roadie's signature.
+    expect(contact?.managerSignature[0]).toEqual(sig("manager-signature-bytes"));
+    expect(contact?.managerSignedAt[0]).toBeGreaterThan(0n);
+    expect(contact?.managerSignedBy[0]?.toText()).toBe(
+      adminIdentity.getPrincipal().toText(),
+    );
+    expect(contact?.availabilitySignature).toEqual([]);
+  });
+
+  it("builds an access end date of 11:59:59 PM America/Chicago on the chosen day", async () => {
+    // 2027-02-08 is CST (UTC-6), so 23:59:59 local is 2027-02-09T05:59:59Z.
+    const day = BigInt(Date.UTC(2027, 1, 8)) * 1_000_000n;
+    const endsAt = await admin.accessEndForDay(day);
+    expect(endsAt).toBe(
+      BigInt(Date.UTC(2027, 1, 9, 5, 59, 59)) * 1_000_000n,
+    );
+  });
+
+  it("refuses to archive or unarchive through updateRoadieStatus", async () => {
+    const signupId = await admin.submitSignup(
+      profile("Status Target"),
+      [],
+      [],
+      contactSet("+1-555-0012", "status@example.com", ADULT_DOB),
+    );
+    const roadieId = await admin.approveSignup(
+      signupId,
+      {
+        mainPositionId: 0n,
+        secondPositionId: [],
+        crewId: [],
+        orientationEventId: [],
+        startDate: [],
+      },
+      sig("sig"),
+    );
+
+    // updateRoadieStatus may move between active statuses...
+    await admin.updateRoadieStatus(roadieId, { paperworkDone: null });
+    const updated = await admin.getRoadie(roadieId);
+    expect(updated[0]?.status).toEqual({ paperworkDone: null });
+
+    // ...but it can never archive a roadie.
+    await expect(
+      admin.updateRoadieStatus(roadieId, { archived: null }),
+    ).rejects.toThrow();
+
+    // Archiving requires the dedicated path, and a rehire requires a reason.
+    await admin.archiveRoadie(roadieId, { other: "test" });
+    await expect(admin.rehireRoadie(roadieId, [])).rejects.toThrow();
+    await expect(admin.rehireRoadie(roadieId, ["   "])).rejects.toThrow();
+    await admin.rehireRoadie(roadieId, ["Rehired for the season"]);
+    const rehired = await admin.getRoadie(roadieId);
+    expect(rehired[0]?.status).toEqual({ hired: null });
   });
 });

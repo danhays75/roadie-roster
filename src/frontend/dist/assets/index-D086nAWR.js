@@ -33109,10 +33109,10 @@ var Result__1 = Variant({
 		})
 	})
 });
-var AlertId = Nat;
 var DateOnly = Int;
-var RoadieId = Nat;
 var Timestamp = Int;
+var AlertId = Nat;
+var RoadieId = Nat;
 var Shift$1 = Variant({
 	"am": Null,
 	"pm": Null
@@ -33138,7 +33138,7 @@ var ApprovalDecision = Record({
 	"secondPositionId": Opt(PositionId),
 	"startDate": Opt(DateOnly)
 });
-var SignatureRef = Text;
+var SignatureRef = Vec(Nat8);
 var Role$1 = Variant({
 	"integration": Null,
 	"admin": Null,
@@ -33168,14 +33168,29 @@ var UserRole = Variant({
 	"user": Null,
 	"guest": Null
 });
+var Weekday$1 = Variant({
+	"fri": Null,
+	"mon": Null,
+	"sat": Null,
+	"sun": Null,
+	"thu": Null,
+	"tue": Null,
+	"wed": Null
+});
+var Email = Text;
 var Phone = Text;
 var ExportRow = Record({
 	"dateHired": Opt(DateOnly),
+	"dateOfBirth": Opt(DateOnly),
+	"availabilityByDay": Vec(Tuple(Weekday$1, Vec(Shift$1))),
 	"name": Text,
 	"onboardingComplete": Bool,
+	"email": Opt(Email),
 	"availability": Vec(Shift$1),
 	"foodHandlers": Bool,
 	"shirtSize": Opt(Text),
+	"emergencyContactPhone": Opt(Phone),
+	"emergencyContactName": Opt(Text),
 	"policiesComplete": Bool,
 	"phone": Opt(Phone),
 	"alcoholCert": Bool,
@@ -33188,11 +33203,17 @@ var OverviewRow = Record({
 	"totalPar": Nat
 });
 var ExportData = Record({
+	"fohNeed": Nat,
 	"fohTotal": Nat,
 	"groups": Vec(Tuple(Text, Vec(ExportRow))),
 	"bohTotal": Nat,
 	"overview": Vec(OverviewRow),
-	"grandTotal": Nat
+	"bohNeed": Nat,
+	"grandTotal": Nat,
+	"grandTotalPar": Nat,
+	"bohTotalPar": Nat,
+	"fohTotalPar": Nat,
+	"grandNeed": Nat
 });
 var LeaderTalkId = Nat;
 var LeaderTalk = Record({
@@ -33273,20 +33294,13 @@ var Checklists = Record({
 	"paperwork": Vec(ChecklistItem),
 	"orientationUniform": Vec(ChecklistItem)
 });
-var Email = Text;
 var AvailabilitySlot = Record({
-	"day": Variant({
-		"fri": Null,
-		"mon": Null,
-		"sat": Null,
-		"sun": Null,
-		"thu": Null,
-		"tue": Null,
-		"wed": Null
-	}),
+	"day": Weekday$1,
 	"shift": Shift$1
 });
 var ContactSet = Record({
+	"managerSignedAt": Opt(Timestamp),
+	"managerSignedBy": Opt(Principal),
 	"availabilitySignedAt": Opt(Timestamp),
 	"dateOfBirth": DateOnly,
 	"email": Email,
@@ -33295,7 +33309,8 @@ var ContactSet = Record({
 	"availabilityResignPending": Bool,
 	"emergencyContactPhone": Phone,
 	"emergencyContactName": Text,
-	"phone": Phone
+	"phone": Phone,
+	"managerSignature": Opt(SignatureRef)
 });
 var AccessGrant = Record({
 	"principal": Principal,
@@ -33330,7 +33345,7 @@ var RoadieStatus$1 = Variant({
 	"needsMoreTime": Null,
 	"archived": Null
 });
-var PhotoRef = Text;
+var PhotoRef = Vec(Nat8);
 var PersonName = Text;
 var ShirtSize = Text;
 var HatSize = Text;
@@ -33353,13 +33368,14 @@ var Roadie = Record({
 	"id": RoadieId,
 	"status": RoadieStatus$1,
 	"orientationEventId": Opt(EventId),
-	"signature": Opt(SignatureRef),
 	"mainPositionId": PositionId,
 	"crossTrainedPositionId": Opt(PositionId),
 	"corporateEmployeeId": Opt(Text),
 	"contactSet": Opt(ContactSet),
 	"crewId": Opt(CrewId),
 	"signedBy": Opt(Principal),
+	"birthdayMonthDay": Opt(Text),
+	"isMinor": Bool,
 	"archivedReason": Opt(ArchiveReason),
 	"photo": Opt(PhotoRef),
 	"hiredAt": Timestamp,
@@ -33468,6 +33484,7 @@ Service({
 	"_initialize_access_control": Func([], [], []),
 	"_internet_identity_sign_in_finish": Func([], [Result__1], []),
 	"_internet_identity_sign_in_start": Func([], [Vec(Nat8)], []),
+	"accessEndForDay": Func([DateOnly], [Timestamp], ["query"]),
 	"acknowledgeAlert": Func([AlertId], [], []),
 	"addTrainerNote": Func([TrainerNote], [Nat], []),
 	"adjustBuildTo": Func([
@@ -33604,10 +33621,10 @@ var idlFactory = ({ IDL }) => {
 		"ok": IDL.Null,
 		"err": Error
 	});
-	const AlertId = IDL.Nat;
 	const DateOnly = IDL.Int;
-	const RoadieId = IDL.Nat;
 	const Timestamp = IDL.Int;
+	const AlertId = IDL.Nat;
+	const RoadieId = IDL.Nat;
 	const Shift = IDL.Variant({
 		"am": IDL.Null,
 		"pm": IDL.Null
@@ -33633,7 +33650,7 @@ var idlFactory = ({ IDL }) => {
 		"secondPositionId": IDL.Opt(PositionId),
 		"startDate": IDL.Opt(DateOnly)
 	});
-	const SignatureRef = IDL.Text;
+	const SignatureRef = IDL.Vec(IDL.Nat8);
 	const Role = IDL.Variant({
 		"integration": IDL.Null,
 		"admin": IDL.Null,
@@ -33663,14 +33680,29 @@ var idlFactory = ({ IDL }) => {
 		"user": IDL.Null,
 		"guest": IDL.Null
 	});
+	const Weekday = IDL.Variant({
+		"fri": IDL.Null,
+		"mon": IDL.Null,
+		"sat": IDL.Null,
+		"sun": IDL.Null,
+		"thu": IDL.Null,
+		"tue": IDL.Null,
+		"wed": IDL.Null
+	});
+	const Email = IDL.Text;
 	const Phone = IDL.Text;
 	const ExportRow = IDL.Record({
 		"dateHired": IDL.Opt(DateOnly),
+		"dateOfBirth": IDL.Opt(DateOnly),
+		"availabilityByDay": IDL.Vec(IDL.Tuple(Weekday, IDL.Vec(Shift))),
 		"name": IDL.Text,
 		"onboardingComplete": IDL.Bool,
+		"email": IDL.Opt(Email),
 		"availability": IDL.Vec(Shift),
 		"foodHandlers": IDL.Bool,
 		"shirtSize": IDL.Opt(IDL.Text),
+		"emergencyContactPhone": IDL.Opt(Phone),
+		"emergencyContactName": IDL.Opt(IDL.Text),
 		"policiesComplete": IDL.Bool,
 		"phone": IDL.Opt(Phone),
 		"alcoholCert": IDL.Bool,
@@ -33683,11 +33715,17 @@ var idlFactory = ({ IDL }) => {
 		"totalPar": IDL.Nat
 	});
 	const ExportData = IDL.Record({
+		"fohNeed": IDL.Nat,
 		"fohTotal": IDL.Nat,
 		"groups": IDL.Vec(IDL.Tuple(IDL.Text, IDL.Vec(ExportRow))),
 		"bohTotal": IDL.Nat,
 		"overview": IDL.Vec(OverviewRow),
-		"grandTotal": IDL.Nat
+		"bohNeed": IDL.Nat,
+		"grandTotal": IDL.Nat,
+		"grandTotalPar": IDL.Nat,
+		"bohTotalPar": IDL.Nat,
+		"fohTotalPar": IDL.Nat,
+		"grandNeed": IDL.Nat
 	});
 	const LeaderTalkId = IDL.Nat;
 	const LeaderTalk = IDL.Record({
@@ -33770,21 +33808,13 @@ var idlFactory = ({ IDL }) => {
 		"paperwork": IDL.Vec(ChecklistItem),
 		"orientationUniform": IDL.Vec(ChecklistItem)
 	});
-	const Email = IDL.Text;
-	const Weekday = IDL.Variant({
-		"fri": IDL.Null,
-		"mon": IDL.Null,
-		"sat": IDL.Null,
-		"sun": IDL.Null,
-		"thu": IDL.Null,
-		"tue": IDL.Null,
-		"wed": IDL.Null
-	});
 	const AvailabilitySlot = IDL.Record({
 		"day": Weekday,
 		"shift": Shift
 	});
 	const ContactSet = IDL.Record({
+		"managerSignedAt": IDL.Opt(Timestamp),
+		"managerSignedBy": IDL.Opt(IDL.Principal),
 		"availabilitySignedAt": IDL.Opt(Timestamp),
 		"dateOfBirth": DateOnly,
 		"email": Email,
@@ -33793,7 +33823,8 @@ var idlFactory = ({ IDL }) => {
 		"availabilityResignPending": IDL.Bool,
 		"emergencyContactPhone": Phone,
 		"emergencyContactName": IDL.Text,
-		"phone": Phone
+		"phone": Phone,
+		"managerSignature": IDL.Opt(SignatureRef)
 	});
 	const AccessGrant = IDL.Record({
 		"principal": IDL.Principal,
@@ -33828,7 +33859,7 @@ var idlFactory = ({ IDL }) => {
 		"needsMoreTime": IDL.Null,
 		"archived": IDL.Null
 	});
-	const PhotoRef = IDL.Text;
+	const PhotoRef = IDL.Vec(IDL.Nat8);
 	const PersonName = IDL.Text;
 	const ShirtSize = IDL.Text;
 	const HatSize = IDL.Text;
@@ -33851,13 +33882,14 @@ var idlFactory = ({ IDL }) => {
 		"id": RoadieId,
 		"status": RoadieStatus,
 		"orientationEventId": IDL.Opt(EventId),
-		"signature": IDL.Opt(SignatureRef),
 		"mainPositionId": PositionId,
 		"crossTrainedPositionId": IDL.Opt(PositionId),
 		"corporateEmployeeId": IDL.Opt(IDL.Text),
 		"contactSet": IDL.Opt(ContactSet),
 		"crewId": IDL.Opt(CrewId),
 		"signedBy": IDL.Opt(IDL.Principal),
+		"birthdayMonthDay": IDL.Opt(IDL.Text),
+		"isMinor": IDL.Bool,
 		"archivedReason": IDL.Opt(ArchiveReason),
 		"photo": IDL.Opt(PhotoRef),
 		"hiredAt": Timestamp,
@@ -33969,6 +34001,7 @@ var idlFactory = ({ IDL }) => {
 		"_initialize_access_control": IDL.Func([], [], []),
 		"_internet_identity_sign_in_finish": IDL.Func([], [Result__1], []),
 		"_internet_identity_sign_in_start": IDL.Func([], [IDL.Vec(IDL.Nat8)], []),
+		"accessEndForDay": IDL.Func([DateOnly], [Timestamp], ["query"]),
 		"acknowledgeAlert": IDL.Func([AlertId], [], []),
 		"addTrainerNote": IDL.Func([TrainerNote], [IDL.Nat], []),
 		"adjustBuildTo": IDL.Func([
@@ -34234,6 +34267,15 @@ var Backend = class {
 		}
 		else return await this.actor._internet_identity_sign_in_start();
 	}
+	async accessEndForDay(arg0) {
+		if (this.processError) try {
+			return await this.actor.accessEndForDay(arg0);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else return await this.actor.accessEndForDay(arg0);
+	}
 	async acknowledgeAlert(arg0) {
 		if (this.processError) try {
 			return await this.actor.acknowledgeAlert(arg0);
@@ -34343,12 +34385,12 @@ var Backend = class {
 	}
 	async changePosition(arg0, arg1, arg2, arg3) {
 		if (this.processError) try {
-			return await this.actor.changePosition(arg0, arg1, to_candid_opt_n35(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n36(this._uploadFile, this._downloadFile, arg3));
+			return await this.actor.changePosition(arg0, arg1, to_candid_opt_n39(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n40(this._uploadFile, this._downloadFile, arg3));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.changePosition(arg0, arg1, to_candid_opt_n35(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n36(this._uploadFile, this._downloadFile, arg3));
+		else return await this.actor.changePosition(arg0, arg1, to_candid_opt_n39(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n40(this._uploadFile, this._downloadFile, arg3));
 	}
 	async createCrew(arg0) {
 		if (this.processError) try {
@@ -34370,30 +34412,30 @@ var Backend = class {
 	}
 	async createPosition(arg0) {
 		if (this.processError) try {
-			return await this.actor.createPosition(to_candid_Position_n37(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.createPosition(to_candid_Position_n41(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.createPosition(to_candid_Position_n37(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.createPosition(to_candid_Position_n41(this._uploadFile, this._downloadFile, arg0));
 	}
 	async createScheduleEvent(arg0) {
 		if (this.processError) try {
-			return await this.actor.createScheduleEvent(to_candid_ScheduleEvent_n40(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.createScheduleEvent(to_candid_ScheduleEvent_n44(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.createScheduleEvent(to_candid_ScheduleEvent_n40(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.createScheduleEvent(to_candid_ScheduleEvent_n44(this._uploadFile, this._downloadFile, arg0));
 	}
 	async createTrainingGroup(arg0) {
 		if (this.processError) try {
-			return await this.actor.createTrainingGroup(to_candid_TrainingGroup_n43(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.createTrainingGroup(to_candid_TrainingGroup_n47(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.createTrainingGroup(to_candid_TrainingGroup_n43(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.createTrainingGroup(to_candid_TrainingGroup_n47(this._uploadFile, this._downloadFile, arg0));
 	}
 	async deletePosition(arg0) {
 		if (this.processError) try {
@@ -34425,14 +34467,14 @@ var Backend = class {
 	async execute(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.execute(arg0);
-			return from_candid_Result_n45(this._uploadFile, this._downloadFile, result);
+			return from_candid_Result_n49(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.execute(arg0);
-			return from_candid_Result_n45(this._uploadFile, this._downloadFile, result);
+			return from_candid_Result_n49(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async findDuplicates(arg0) {
@@ -34456,14 +34498,14 @@ var Backend = class {
 	async getCallerUserRole() {
 		if (this.processError) try {
 			const result = await this.actor.getCallerUserRole();
-			return from_candid_UserRole_n53(this._uploadFile, this._downloadFile, result);
+			return from_candid_UserRole_n57(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getCallerUserRole();
-			return from_candid_UserRole_n53(this._uploadFile, this._downloadFile, result);
+			return from_candid_UserRole_n57(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getChecklists() {
@@ -34478,53 +34520,53 @@ var Backend = class {
 	async getContactSet(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getContactSet(arg0);
-			return from_candid_vec_n54(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n58(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getContactSet(arg0);
-			return from_candid_vec_n54(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n58(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getDashboard() {
 		if (this.processError) try {
 			const result = await this.actor.getDashboard();
-			return from_candid_record_n63(this._uploadFile, this._downloadFile, result);
+			return from_candid_record_n67(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getDashboard();
-			return from_candid_record_n63(this._uploadFile, this._downloadFile, result);
+			return from_candid_record_n67(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getMyAccess() {
 		if (this.processError) try {
 			const result = await this.actor.getMyAccess();
-			return from_candid_opt_n68(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n72(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getMyAccess();
-			return from_candid_opt_n68(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n72(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getOrientationCheckoff(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getOrientationCheckoff(arg0);
-			return from_candid_opt_n73(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n77(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getOrientationCheckoff(arg0);
-			return from_candid_opt_n73(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n77(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getRetentionSettings() {
@@ -34539,14 +34581,14 @@ var Backend = class {
 	async getRoadie(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getRoadie(arg0);
-			return from_candid_opt_n74(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getRoadie(arg0);
-			return from_candid_opt_n74(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getRosterSummary() {
@@ -34561,40 +34603,40 @@ var Backend = class {
 	async getSignup(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getSignup(arg0);
-			return from_candid_opt_n91(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n94(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getSignup(arg0);
-			return from_candid_opt_n91(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n94(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getStoreInfo() {
 		if (this.processError) try {
 			const result = await this.actor.getStoreInfo();
-			return from_candid_StoreInfo_n96(this._uploadFile, this._downloadFile, result);
+			return from_candid_StoreInfo_n99(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getStoreInfo();
-			return from_candid_StoreInfo_n96(this._uploadFile, this._downloadFile, result);
+			return from_candid_StoreInfo_n99(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getTrainingGroup(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getTrainingGroup(arg0);
-			return from_candid_opt_n98(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n101(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getTrainingGroup(arg0);
-			return from_candid_opt_n98(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n101(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async isCallerAdmin() {
@@ -34618,14 +34660,14 @@ var Backend = class {
 	async listAccessGrants() {
 		if (this.processError) try {
 			const result = await this.actor.listAccessGrants();
-			return from_candid_vec_n103(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n106(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listAccessGrants();
-			return from_candid_vec_n103(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n106(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listAlerts() {
@@ -34640,27 +34682,27 @@ var Backend = class {
 	async listAttendanceForEvent(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.listAttendanceForEvent(arg0);
-			return from_candid_vec_n104(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n107(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listAttendanceForEvent(arg0);
-			return from_candid_vec_n104(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n107(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listChangeLog() {
 		if (this.processError) try {
 			const result = await this.actor.listChangeLog();
-			return from_candid_vec_n109(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n112(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listChangeLog();
-			return from_candid_vec_n109(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n112(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listCrews() {
@@ -34675,14 +34717,14 @@ var Backend = class {
 	async listPendingSignups() {
 		if (this.processError) try {
 			const result = await this.actor.listPendingSignups();
-			return from_candid_vec_n112(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n115(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listPendingSignups();
-			return from_candid_vec_n112(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n115(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listPendingUsers() {
@@ -34697,94 +34739,94 @@ var Backend = class {
 	async listPositions() {
 		if (this.processError) try {
 			const result = await this.actor.listPositions();
-			return from_candid_vec_n64(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n68(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listPositions();
-			return from_candid_vec_n64(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n68(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listRoadies() {
 		if (this.processError) try {
 			const result = await this.actor.listRoadies();
-			return from_candid_vec_n113(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n116(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listRoadies();
-			return from_candid_vec_n113(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n116(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listRosterForPosition(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.listRosterForPosition(arg0);
-			return from_candid_vec_n113(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n116(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listRosterForPosition(arg0);
-			return from_candid_vec_n113(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n116(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listSchedule() {
 		if (this.processError) try {
 			const result = await this.actor.listSchedule();
-			return from_candid_vec_n114(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n117(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listSchedule();
-			return from_candid_vec_n114(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n117(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listTrainerNotes(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.listTrainerNotes(arg0);
-			return from_candid_vec_n119(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n122(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listTrainerNotes(arg0);
-			return from_candid_vec_n119(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n122(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async recordAttendance(arg0) {
 		if (this.processError) try {
-			return await this.actor.recordAttendance(to_candid_AttendanceRecord_n122(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.recordAttendance(to_candid_AttendanceRecord_n125(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.recordAttendance(to_candid_AttendanceRecord_n122(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.recordAttendance(to_candid_AttendanceRecord_n125(this._uploadFile, this._downloadFile, arg0));
 	}
 	async recordFinalSignOff(arg0) {
 		if (this.processError) try {
-			return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n125(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n128(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n125(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n128(this._uploadFile, this._downloadFile, arg0));
 	}
 	async rehireRoadie(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.rehireRoadie(arg0, to_candid_opt_n129(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.rehireRoadie(arg0, to_candid_opt_n132(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.rehireRoadie(arg0, to_candid_opt_n129(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.rehireRoadie(arg0, to_candid_opt_n132(this._uploadFile, this._downloadFile, arg1));
 	}
 	async rejectSignup(arg0) {
 		if (this.processError) try {
@@ -34851,21 +34893,21 @@ var Backend = class {
 	}
 	async submitSignup(arg0, arg1, arg2, arg3) {
 		if (this.processError) try {
-			return await this.actor.submitSignup(to_candid_RoadieProfile_n130(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n132(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n133(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n134(this._uploadFile, this._downloadFile, arg3));
+			return await this.actor.submitSignup(to_candid_RoadieProfile_n133(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n135(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n136(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n137(this._uploadFile, this._downloadFile, arg3));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.submitSignup(to_candid_RoadieProfile_n130(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n132(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n133(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n134(this._uploadFile, this._downloadFile, arg3));
+		else return await this.actor.submitSignup(to_candid_RoadieProfile_n133(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n135(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n136(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n137(this._uploadFile, this._downloadFile, arg3));
 	}
 	async updateAccessEnd(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateAccessEnd(arg0, to_candid_opt_n140(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateAccessEnd(arg0, to_candid_opt_n143(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateAccessEnd(arg0, to_candid_opt_n140(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateAccessEnd(arg0, to_candid_opt_n143(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateChecklists(arg0) {
 		if (this.processError) try {
@@ -34878,12 +34920,12 @@ var Backend = class {
 	}
 	async updateContactSet(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n134(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n137(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n134(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n137(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateOrientationCheckoff(arg0) {
 		if (this.processError) try {
@@ -34896,12 +34938,12 @@ var Backend = class {
 	}
 	async updatePosition(arg0) {
 		if (this.processError) try {
-			return await this.actor.updatePosition(to_candid_Position_n37(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.updatePosition(to_candid_Position_n41(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updatePosition(to_candid_Position_n37(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.updatePosition(to_candid_Position_n41(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateRetentionSettings(arg0) {
 		if (this.processError) try {
@@ -34914,39 +34956,39 @@ var Backend = class {
 	}
 	async updateRoadieDetails(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n130(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n133(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n130(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n133(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateRoadieStatus(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n141(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n144(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n141(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n144(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateScheduleEvent(arg0) {
 		if (this.processError) try {
-			return await this.actor.updateScheduleEvent(to_candid_ScheduleEvent_n40(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.updateScheduleEvent(to_candid_ScheduleEvent_n44(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateScheduleEvent(to_candid_ScheduleEvent_n40(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.updateScheduleEvent(to_candid_ScheduleEvent_n44(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateStoreInfo(arg0) {
 		if (this.processError) try {
-			return await this.actor.updateStoreInfo(to_candid_StoreInfo_n142(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.updateStoreInfo(to_candid_StoreInfo_n145(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateStoreInfo(to_candid_StoreInfo_n142(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.updateStoreInfo(to_candid_StoreInfo_n145(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateTrainerNote(arg0) {
 		if (this.processError) try {
@@ -34968,12 +35010,12 @@ var Backend = class {
 	}
 	async updateTrainingGroup(arg0) {
 		if (this.processError) try {
-			return await this.actor.updateTrainingGroup(to_candid_TrainingGroup_n43(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.updateTrainingGroup(to_candid_TrainingGroup_n47(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateTrainingGroup(to_candid_TrainingGroup_n43(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.updateTrainingGroup(to_candid_TrainingGroup_n47(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateUserRole(arg0, arg1) {
 		if (this.processError) try {
@@ -34985,34 +35027,34 @@ var Backend = class {
 		else return await this.actor.updateUserRole(arg0, to_candid_Role_n19(this._uploadFile, this._downloadFile, arg1));
 	}
 };
-function from_candid_AccessGrant_n69(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n70(_uploadFile, _downloadFile, value);
+function from_candid_AccessGrant_n73(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n74(_uploadFile, _downloadFile, value);
 }
-function from_candid_ArchiveReason_n84(_uploadFile, _downloadFile, value) {
-	return from_candid_variant_n85(_uploadFile, _downloadFile, value);
+function from_candid_ArchiveReason_n87(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n88(_uploadFile, _downloadFile, value);
 }
-function from_candid_AttendanceRecord_n105(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n106(_uploadFile, _downloadFile, value);
+function from_candid_AttendanceRecord_n108(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n109(_uploadFile, _downloadFile, value);
 }
-function from_candid_AttendanceState_n108(_uploadFile, _downloadFile, value) {
+function from_candid_AttendanceState_n111(_uploadFile, _downloadFile, value) {
 	return "present" in value ? "present" : "late" in value ? "late" : "absent" in value ? "absent" : value;
 }
-function from_candid_AvailabilitySlot_n60(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n61(_uploadFile, _downloadFile, value);
+function from_candid_AvailabilitySlot_n65(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n66(_uploadFile, _downloadFile, value);
 }
-function from_candid_Cell_n49(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n50(_uploadFile, _downloadFile, value);
+function from_candid_Cell_n53(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n54(_uploadFile, _downloadFile, value);
 }
-function from_candid_ChangeLogEntry_n110(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n111(_uploadFile, _downloadFile, value);
+function from_candid_ChangeLogEntry_n113(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n114(_uploadFile, _downloadFile, value);
 }
-function from_candid_ContactSet_n55(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n56(_uploadFile, _downloadFile, value);
+function from_candid_ContactSet_n59(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n60(_uploadFile, _downloadFile, value);
 }
 function from_candid_Error_n10(_uploadFile, _downloadFile, value) {
 	return from_candid_variant_n11(_uploadFile, _downloadFile, value);
 }
-function from_candid_EventKind_n118(_uploadFile, _downloadFile, value) {
+function from_candid_EventKind_n121(_uploadFile, _downloadFile, value) {
 	return "other" in value ? "other" : "signOff" in value ? "signOff" : "deadline" in value ? "deadline" : "friendsAndFamily" in value ? "friendsAndFamily" : "openingDay" in value ? "openingDay" : "trainingDay" in value ? "trainingDay" : "orientation" in value ? "orientation" : value;
 }
 function from_candid_ExportData_n23(_uploadFile, _downloadFile, value) {
@@ -35021,344 +35063,142 @@ function from_candid_ExportData_n23(_uploadFile, _downloadFile, value) {
 function from_candid_ExportRow_n28(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n29(_uploadFile, _downloadFile, value);
 }
-function from_candid_House_n67(_uploadFile, _downloadFile, value) {
+function from_candid_House_n71(_uploadFile, _downloadFile, value) {
 	return "boh" in value ? "boh" : "foh" in value ? "foh" : value;
 }
-function from_candid_Position_n65(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n66(_uploadFile, _downloadFile, value);
+function from_candid_Position_n69(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n70(_uploadFile, _downloadFile, value);
 }
 function from_candid_Result__1_n8(_uploadFile, _downloadFile, value) {
 	return from_candid_variant_n9(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_n45(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n46(_uploadFile, _downloadFile, value);
+function from_candid_Result_n49(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n50(_uploadFile, _downloadFile, value);
 }
-function from_candid_RoadieProfile_n87(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n88(_uploadFile, _downloadFile, value);
+function from_candid_RoadieProfile_n90(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n91(_uploadFile, _downloadFile, value);
 }
-function from_candid_RoadieStatus_n77(_uploadFile, _downloadFile, value) {
+function from_candid_RoadieStatus_n81(_uploadFile, _downloadFile, value) {
 	return "active" in value ? "active" : "hired" in value ? "hired" : "inTraining" in value ? "inTraining" : "paperworkDone" in value ? "paperworkDone" : "oriented" in value ? "oriented" : "certified" in value ? "certified" : "needsMoreTime" in value ? "needsMoreTime" : "archived" in value ? "archived" : value;
 }
-function from_candid_Roadie_n75(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n76(_uploadFile, _downloadFile, value);
+function from_candid_Roadie_n79(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n80(_uploadFile, _downloadFile, value);
 }
-function from_candid_Role_n72(_uploadFile, _downloadFile, value) {
+function from_candid_Role_n76(_uploadFile, _downloadFile, value) {
 	return "integration" in value ? "integration" : "admin" in value ? "admin" : "trainingManager" in value ? "trainingManager" : "trainer" in value ? "trainer" : "leadership" in value ? "leadership" : "visitingManager" in value ? "visitingManager" : "storeManager" in value ? "storeManager" : "kiosk" in value ? "kiosk" : value;
 }
-function from_candid_ScheduleEvent_n115(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n116(_uploadFile, _downloadFile, value);
+function from_candid_ScheduleEvent_n118(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n119(_uploadFile, _downloadFile, value);
 }
-function from_candid_Shift_n32(_uploadFile, _downloadFile, value) {
+function from_candid_Shift_n35(_uploadFile, _downloadFile, value) {
 	return "am" in value ? "am" : "pm" in value ? "pm" : value;
 }
-function from_candid_SignupStatus_n94(_uploadFile, _downloadFile, value) {
-	return from_candid_variant_n95(_uploadFile, _downloadFile, value);
+function from_candid_SignupStatus_n97(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n98(_uploadFile, _downloadFile, value);
 }
-function from_candid_SignupSubmission_n92(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n93(_uploadFile, _downloadFile, value);
+function from_candid_SignupSubmission_n95(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n96(_uploadFile, _downloadFile, value);
 }
-function from_candid_StoreInfo_n96(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n97(_uploadFile, _downloadFile, value);
-}
-function from_candid_TrainerNote_n120(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n121(_uploadFile, _downloadFile, value);
-}
-function from_candid_TrainingGroupView_n99(_uploadFile, _downloadFile, value) {
+function from_candid_StoreInfo_n99(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n100(_uploadFile, _downloadFile, value);
 }
-function from_candid_TrainingGroup_n101(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n102(_uploadFile, _downloadFile, value);
+function from_candid_TrainerNote_n123(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n124(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n53(_uploadFile, _downloadFile, value) {
+function from_candid_TrainingGroupView_n102(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n103(_uploadFile, _downloadFile, value);
+}
+function from_candid_TrainingGroup_n104(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n105(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n57(_uploadFile, _downloadFile, value) {
 	return "admin" in value ? "admin" : "user" in value ? "user" : "guest" in value ? "guest" : value;
 }
-function from_candid_Value_n51(_uploadFile, _downloadFile, value) {
-	return from_candid_variant_n52(_uploadFile, _downloadFile, value);
+function from_candid_Value_n55(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n56(_uploadFile, _downloadFile, value);
 }
-function from_candid_Weekday_n62(_uploadFile, _downloadFile, value) {
+function from_candid_Weekday_n33(_uploadFile, _downloadFile, value) {
 	return "fri" in value ? "fri" : "mon" in value ? "mon" : "sat" in value ? "sat" : "sun" in value ? "sun" : "thu" in value ? "thu" : "tue" in value ? "tue" : "wed" in value ? "wed" : value;
 }
 function from_candid__ImmutableObjectStorageRefillResult_n4(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n107(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_Shift_n32(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n101(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_TrainingGroupView_n102(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n117(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n110(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_Shift_n35(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n120(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n30(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n33(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n36(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n34(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n37(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n57(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n58(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n38(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n68(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_AccessGrant_n69(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n61(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n62(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n63(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n7(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n71(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n72(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_AccessGrant_n73(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n75(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n73(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n77(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n74(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_Roadie_n75(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n78(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n79(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n80(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_ContactSet_n55(_uploadFile, _downloadFile, value[0]);
-}
-function from_candid_opt_n81(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
+	return value.length === 0 ? null : from_candid_Roadie_n79(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n82(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n83(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_ArchiveReason_n84(_uploadFile, _downloadFile, value[0]);
+	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n84(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_ContactSet_n59(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n85(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n86(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
+	return value.length === 0 ? null : from_candid_ArchiveReason_n87(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n89(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n90(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n92(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n91(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_SignupSubmission_n92(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n93(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n98(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_TrainingGroupView_n99(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n94(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_SignupSubmission_n95(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_record_n100(_uploadFile, _downloadFile, value) {
-	return {
-		offThisShift: value.offThisShift,
-		unassigned: value.unassigned,
-		group: from_candid_TrainingGroup_n101(_uploadFile, _downloadFile, value.group)
-	};
-}
-function from_candid_record_n102(_uploadFile, _downloadFile, value) {
-	return {
-		id: value.id,
-		day: value.day,
-		trainerPrincipal: record_opt_to_undefined(from_candid_opt_n82(_uploadFile, _downloadFile, value.trainerPrincipal)),
-		memberRoadieIds: value.memberRoadieIds,
-		positionId: value.positionId,
-		shift: from_candid_Shift_n32(_uploadFile, _downloadFile, value.shift)
-	};
-}
-function from_candid_record_n106(_uploadFile, _downloadFile, value) {
-	return {
-		eventId: record_opt_to_undefined(from_candid_opt_n78(_uploadFile, _downloadFile, value.eventId)),
-		roadieId: value.roadieId,
-		recordedAt: value.recordedAt,
-		recordedBy: value.recordedBy,
-		shift: record_opt_to_undefined(from_candid_opt_n107(_uploadFile, _downloadFile, value.shift)),
-		state: from_candid_AttendanceState_n108(_uploadFile, _downloadFile, value.state)
-	};
-}
-function from_candid_record_n111(_uploadFile, _downloadFile, value) {
-	return {
-		at: value.at,
-		by: value.by,
-		id: value.id,
-		action: value.action,
-		detail: value.detail,
-		touchesContactSet: value.touchesContactSet,
-		subjectRoadieId: record_opt_to_undefined(from_candid_opt_n71(_uploadFile, _downloadFile, value.subjectRoadieId))
-	};
-}
-function from_candid_record_n116(_uploadFile, _downloadFile, value) {
-	return {
-		id: value.id,
-		end: record_opt_to_undefined(from_candid_opt_n117(_uploadFile, _downloadFile, value.end)),
-		kind: from_candid_EventKind_n118(_uploadFile, _downloadFile, value.kind),
-		name: value.name,
-		start: value.start
-	};
-}
-function from_candid_record_n121(_uploadFile, _downloadFile, value) {
-	return {
-		id: value.id,
-		day: value.day,
-		didWell: value.didWell,
-		roadieId: value.roadieId,
-		createdAt: value.createdAt,
-		author: value.author,
-		shift: from_candid_Shift_n32(_uploadFile, _downloadFile, value.shift),
-		workOn: value.workOn
-	};
-}
-function from_candid_record_n24(_uploadFile, _downloadFile, value) {
-	return {
-		fohTotal: value.fohTotal,
-		groups: from_candid_vec_n25(_uploadFile, _downloadFile, value.groups),
-		bohTotal: value.bohTotal,
-		overview: value.overview,
-		grandTotal: value.grandTotal
-	};
-}
-function from_candid_record_n29(_uploadFile, _downloadFile, value) {
-	return {
-		dateHired: record_opt_to_undefined(from_candid_opt_n30(_uploadFile, _downloadFile, value.dateHired)),
-		name: value.name,
-		onboardingComplete: value.onboardingComplete,
-		availability: from_candid_vec_n31(_uploadFile, _downloadFile, value.availability),
-		foodHandlers: value.foodHandlers,
-		shirtSize: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.shirtSize)),
-		policiesComplete: value.policiesComplete,
-		phone: record_opt_to_undefined(from_candid_opt_n34(_uploadFile, _downloadFile, value.phone)),
-		alcoholCert: value.alcoholCert,
-		weekdayLunch: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.weekdayLunch))
-	};
-}
-function from_candid_record_n46(_uploadFile, _downloadFile, value) {
-	return {
-		hasMore: value.hasMore,
-		rows: from_candid_vec_n47(_uploadFile, _downloadFile, value.rows)
-	};
-}
-function from_candid_record_n5(_uploadFile, _downloadFile, value) {
-	return {
-		success: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.success)),
-		topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
-	};
-}
-function from_candid_record_n50(_uploadFile, _downloadFile, value) {
-	return {
-		value: from_candid_Value_n51(_uploadFile, _downloadFile, value.value),
-		name: value.name
-	};
-}
-function from_candid_record_n56(_uploadFile, _downloadFile, value) {
-	return {
-		availabilitySignedAt: record_opt_to_undefined(from_candid_opt_n57(_uploadFile, _downloadFile, value.availabilitySignedAt)),
-		dateOfBirth: value.dateOfBirth,
-		email: value.email,
-		availabilitySignature: record_opt_to_undefined(from_candid_opt_n58(_uploadFile, _downloadFile, value.availabilitySignature)),
-		availability: from_candid_vec_n59(_uploadFile, _downloadFile, value.availability),
-		availabilityResignPending: value.availabilityResignPending,
-		emergencyContactPhone: value.emergencyContactPhone,
-		emergencyContactName: value.emergencyContactName,
-		phone: value.phone
-	};
-}
-function from_candid_record_n61(_uploadFile, _downloadFile, value) {
-	return {
-		day: from_candid_Weekday_n62(_uploadFile, _downloadFile, value.day),
-		shift: from_candid_Shift_n32(_uploadFile, _downloadFile, value.shift)
-	};
-}
-function from_candid_record_n63(_uploadFile, _downloadFile, value) {
-	return {
-		boh: from_candid_vec_n64(_uploadFile, _downloadFile, value.boh),
-		foh: from_candid_vec_n64(_uploadFile, _downloadFile, value.foh),
-		hired: value.hired,
-		showedAtOrientation: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.showedAtOrientation)),
-		certified: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.certified)),
-		stillNeeded: value.stillNeeded,
-		buildToTotal: value.buildToTotal
-	};
-}
-function from_candid_record_n66(_uploadFile, _downloadFile, value) {
-	return {
-		id: value.id,
-		openingBuildTo: value.openingBuildTo,
-		crewManager: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.crewManager)),
-		house: from_candid_House_n67(_uploadFile, _downloadFile, value.house),
-		afterOpeningBuildTo: value.afterOpeningBuildTo,
-		minimumAge: value.minimumAge,
-		code: value.code,
-		name: value.name,
-		shirtsRequired: value.shirtsRequired,
-		needsAlcoholCert: value.needsAlcoholCert,
-		hatsRequired: value.hatsRequired
-	};
-}
-function from_candid_record_n70(_uploadFile, _downloadFile, value) {
-	return {
-		principal: value.principal,
-		linkedRoadieId: record_opt_to_undefined(from_candid_opt_n71(_uploadFile, _downloadFile, value.linkedRoadieId)),
-		approvedAt: value.approvedAt,
-		approvedBy: value.approvedBy,
-		role: from_candid_Role_n72(_uploadFile, _downloadFile, value.role),
-		trainerPositionIds: value.trainerPositionIds,
-		accessEndsAt: record_opt_to_undefined(from_candid_opt_n57(_uploadFile, _downloadFile, value.accessEndsAt))
-	};
-}
-function from_candid_record_n76(_uploadFile, _downloadFile, value) {
-	return {
-		id: value.id,
-		status: from_candid_RoadieStatus_n77(_uploadFile, _downloadFile, value.status),
-		orientationEventId: record_opt_to_undefined(from_candid_opt_n78(_uploadFile, _downloadFile, value.orientationEventId)),
-		signature: record_opt_to_undefined(from_candid_opt_n58(_uploadFile, _downloadFile, value.signature)),
-		mainPositionId: value.mainPositionId,
-		crossTrainedPositionId: record_opt_to_undefined(from_candid_opt_n79(_uploadFile, _downloadFile, value.crossTrainedPositionId)),
-		corporateEmployeeId: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.corporateEmployeeId)),
-		contactSet: record_opt_to_undefined(from_candid_opt_n80(_uploadFile, _downloadFile, value.contactSet)),
-		crewId: record_opt_to_undefined(from_candid_opt_n81(_uploadFile, _downloadFile, value.crewId)),
-		signedBy: record_opt_to_undefined(from_candid_opt_n82(_uploadFile, _downloadFile, value.signedBy)),
-		archivedReason: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.archivedReason)),
-		photo: record_opt_to_undefined(from_candid_opt_n86(_uploadFile, _downloadFile, value.photo)),
-		hiredAt: value.hiredAt,
-		secondPositionId: record_opt_to_undefined(from_candid_opt_n79(_uploadFile, _downloadFile, value.secondPositionId)),
-		profile: from_candid_RoadieProfile_n87(_uploadFile, _downloadFile, value.profile),
-		startDate: record_opt_to_undefined(from_candid_opt_n30(_uploadFile, _downloadFile, value.startDate)),
-		archivedAt: record_opt_to_undefined(from_candid_opt_n57(_uploadFile, _downloadFile, value.archivedAt))
-	};
-}
-function from_candid_record_n88(_uploadFile, _downloadFile, value) {
-	return {
-		favoriteSnack: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteSnack)),
-		positionAppliedFor: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.positionAppliedFor)),
-		goalHere: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.goalHere)),
-		name: value.name,
-		hometown: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.hometown)),
-		preferredName: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.preferredName)),
-		shirtSize: record_opt_to_undefined(from_candid_opt_n89(_uploadFile, _downloadFile, value.shirtSize)),
-		hatSize: record_opt_to_undefined(from_candid_opt_n90(_uploadFile, _downloadFile, value.hatSize)),
-		shiftsWantedPerWeek: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.shiftsWantedPerWeek)),
-		favoriteMovie: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteMovie)),
-		funFact: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.funFact)),
-		hobbies: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.hobbies)),
-		weekdayLunch: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.weekdayLunch))
-	};
-}
-function from_candid_record_n93(_uploadFile, _downloadFile, value) {
-	return {
-		id: value.id,
-		status: from_candid_SignupStatus_n94(_uploadFile, _downloadFile, value.status),
-		signature: record_opt_to_undefined(from_candid_opt_n58(_uploadFile, _downloadFile, value.signature)),
-		contactSet: from_candid_ContactSet_n55(_uploadFile, _downloadFile, value.contactSet),
-		submittedAt: value.submittedAt,
-		photo: record_opt_to_undefined(from_candid_opt_n86(_uploadFile, _downloadFile, value.photo)),
-		profile: from_candid_RoadieProfile_n87(_uploadFile, _downloadFile, value.profile)
-	};
-}
-function from_candid_record_n97(_uploadFile, _downloadFile, value) {
 	return {
 		amShiftEnd: value.amShiftEnd,
 		pmShiftStart: value.pmShiftStart,
@@ -35366,7 +35206,7 @@ function from_candid_record_n97(_uploadFile, _downloadFile, value) {
 		leaderTalkName: value.leaderTalkName,
 		appName: value.appName,
 		leaderTalkSize: value.leaderTalkSize,
-		logo: record_opt_to_undefined(from_candid_opt_n86(_uploadFile, _downloadFile, value.logo)),
+		logo: record_opt_to_undefined(from_candid_opt_n89(_uploadFile, _downloadFile, value.logo)),
 		amShiftStart: value.amShiftStart,
 		openingDate: value.openingDate,
 		pmShiftEnd: value.pmShiftEnd,
@@ -35377,8 +35217,231 @@ function from_candid_record_n97(_uploadFile, _downloadFile, value) {
 		storePhone: value.storePhone
 	};
 }
+function from_candid_record_n103(_uploadFile, _downloadFile, value) {
+	return {
+		offThisShift: value.offThisShift,
+		unassigned: value.unassigned,
+		group: from_candid_TrainingGroup_n104(_uploadFile, _downloadFile, value.group)
+	};
+}
+function from_candid_record_n105(_uploadFile, _downloadFile, value) {
+	return {
+		id: value.id,
+		day: value.day,
+		trainerPrincipal: record_opt_to_undefined(from_candid_opt_n62(_uploadFile, _downloadFile, value.trainerPrincipal)),
+		memberRoadieIds: value.memberRoadieIds,
+		positionId: value.positionId,
+		shift: from_candid_Shift_n35(_uploadFile, _downloadFile, value.shift)
+	};
+}
+function from_candid_record_n109(_uploadFile, _downloadFile, value) {
+	return {
+		eventId: record_opt_to_undefined(from_candid_opt_n82(_uploadFile, _downloadFile, value.eventId)),
+		roadieId: value.roadieId,
+		recordedAt: value.recordedAt,
+		recordedBy: value.recordedBy,
+		shift: record_opt_to_undefined(from_candid_opt_n110(_uploadFile, _downloadFile, value.shift)),
+		state: from_candid_AttendanceState_n111(_uploadFile, _downloadFile, value.state)
+	};
+}
+function from_candid_record_n114(_uploadFile, _downloadFile, value) {
+	return {
+		at: value.at,
+		by: value.by,
+		id: value.id,
+		action: value.action,
+		detail: value.detail,
+		touchesContactSet: value.touchesContactSet,
+		subjectRoadieId: record_opt_to_undefined(from_candid_opt_n75(_uploadFile, _downloadFile, value.subjectRoadieId))
+	};
+}
+function from_candid_record_n119(_uploadFile, _downloadFile, value) {
+	return {
+		id: value.id,
+		end: record_opt_to_undefined(from_candid_opt_n120(_uploadFile, _downloadFile, value.end)),
+		kind: from_candid_EventKind_n121(_uploadFile, _downloadFile, value.kind),
+		name: value.name,
+		start: value.start
+	};
+}
+function from_candid_record_n124(_uploadFile, _downloadFile, value) {
+	return {
+		id: value.id,
+		day: value.day,
+		didWell: value.didWell,
+		roadieId: value.roadieId,
+		createdAt: value.createdAt,
+		author: value.author,
+		shift: from_candid_Shift_n35(_uploadFile, _downloadFile, value.shift),
+		workOn: value.workOn
+	};
+}
+function from_candid_record_n24(_uploadFile, _downloadFile, value) {
+	return {
+		fohNeed: value.fohNeed,
+		fohTotal: value.fohTotal,
+		groups: from_candid_vec_n25(_uploadFile, _downloadFile, value.groups),
+		bohTotal: value.bohTotal,
+		overview: value.overview,
+		bohNeed: value.bohNeed,
+		grandTotal: value.grandTotal,
+		grandTotalPar: value.grandTotalPar,
+		bohTotalPar: value.bohTotalPar,
+		fohTotalPar: value.fohTotalPar,
+		grandNeed: value.grandNeed
+	};
+}
+function from_candid_record_n29(_uploadFile, _downloadFile, value) {
+	return {
+		dateHired: record_opt_to_undefined(from_candid_opt_n30(_uploadFile, _downloadFile, value.dateHired)),
+		dateOfBirth: record_opt_to_undefined(from_candid_opt_n30(_uploadFile, _downloadFile, value.dateOfBirth)),
+		availabilityByDay: from_candid_vec_n31(_uploadFile, _downloadFile, value.availabilityByDay),
+		name: value.name,
+		onboardingComplete: value.onboardingComplete,
+		email: record_opt_to_undefined(from_candid_opt_n36(_uploadFile, _downloadFile, value.email)),
+		availability: from_candid_vec_n34(_uploadFile, _downloadFile, value.availability),
+		foodHandlers: value.foodHandlers,
+		shirtSize: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.shirtSize)),
+		emergencyContactPhone: record_opt_to_undefined(from_candid_opt_n38(_uploadFile, _downloadFile, value.emergencyContactPhone)),
+		emergencyContactName: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.emergencyContactName)),
+		policiesComplete: value.policiesComplete,
+		phone: record_opt_to_undefined(from_candid_opt_n38(_uploadFile, _downloadFile, value.phone)),
+		alcoholCert: value.alcoholCert,
+		weekdayLunch: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.weekdayLunch))
+	};
+}
+function from_candid_record_n5(_uploadFile, _downloadFile, value) {
+	return {
+		success: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.success)),
+		topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
+	};
+}
+function from_candid_record_n50(_uploadFile, _downloadFile, value) {
+	return {
+		hasMore: value.hasMore,
+		rows: from_candid_vec_n51(_uploadFile, _downloadFile, value.rows)
+	};
+}
+function from_candid_record_n54(_uploadFile, _downloadFile, value) {
+	return {
+		value: from_candid_Value_n55(_uploadFile, _downloadFile, value.value),
+		name: value.name
+	};
+}
+function from_candid_record_n60(_uploadFile, _downloadFile, value) {
+	return {
+		managerSignedAt: record_opt_to_undefined(from_candid_opt_n61(_uploadFile, _downloadFile, value.managerSignedAt)),
+		managerSignedBy: record_opt_to_undefined(from_candid_opt_n62(_uploadFile, _downloadFile, value.managerSignedBy)),
+		availabilitySignedAt: record_opt_to_undefined(from_candid_opt_n61(_uploadFile, _downloadFile, value.availabilitySignedAt)),
+		dateOfBirth: value.dateOfBirth,
+		email: value.email,
+		availabilitySignature: record_opt_to_undefined(from_candid_opt_n63(_uploadFile, _downloadFile, value.availabilitySignature)),
+		availability: from_candid_vec_n64(_uploadFile, _downloadFile, value.availability),
+		availabilityResignPending: value.availabilityResignPending,
+		emergencyContactPhone: value.emergencyContactPhone,
+		emergencyContactName: value.emergencyContactName,
+		phone: value.phone,
+		managerSignature: record_opt_to_undefined(from_candid_opt_n63(_uploadFile, _downloadFile, value.managerSignature))
+	};
+}
+function from_candid_record_n66(_uploadFile, _downloadFile, value) {
+	return {
+		day: from_candid_Weekday_n33(_uploadFile, _downloadFile, value.day),
+		shift: from_candid_Shift_n35(_uploadFile, _downloadFile, value.shift)
+	};
+}
+function from_candid_record_n67(_uploadFile, _downloadFile, value) {
+	return {
+		boh: from_candid_vec_n68(_uploadFile, _downloadFile, value.boh),
+		foh: from_candid_vec_n68(_uploadFile, _downloadFile, value.foh),
+		hired: value.hired,
+		showedAtOrientation: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.showedAtOrientation)),
+		certified: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.certified)),
+		stillNeeded: value.stillNeeded,
+		buildToTotal: value.buildToTotal
+	};
+}
+function from_candid_record_n70(_uploadFile, _downloadFile, value) {
+	return {
+		id: value.id,
+		openingBuildTo: value.openingBuildTo,
+		crewManager: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.crewManager)),
+		house: from_candid_House_n71(_uploadFile, _downloadFile, value.house),
+		afterOpeningBuildTo: value.afterOpeningBuildTo,
+		minimumAge: value.minimumAge,
+		code: value.code,
+		name: value.name,
+		shirtsRequired: value.shirtsRequired,
+		needsAlcoholCert: value.needsAlcoholCert,
+		hatsRequired: value.hatsRequired
+	};
+}
+function from_candid_record_n74(_uploadFile, _downloadFile, value) {
+	return {
+		principal: value.principal,
+		linkedRoadieId: record_opt_to_undefined(from_candid_opt_n75(_uploadFile, _downloadFile, value.linkedRoadieId)),
+		approvedAt: value.approvedAt,
+		approvedBy: value.approvedBy,
+		role: from_candid_Role_n76(_uploadFile, _downloadFile, value.role),
+		trainerPositionIds: value.trainerPositionIds,
+		accessEndsAt: record_opt_to_undefined(from_candid_opt_n61(_uploadFile, _downloadFile, value.accessEndsAt))
+	};
+}
+function from_candid_record_n80(_uploadFile, _downloadFile, value) {
+	return {
+		id: value.id,
+		status: from_candid_RoadieStatus_n81(_uploadFile, _downloadFile, value.status),
+		orientationEventId: record_opt_to_undefined(from_candid_opt_n82(_uploadFile, _downloadFile, value.orientationEventId)),
+		mainPositionId: value.mainPositionId,
+		crossTrainedPositionId: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.crossTrainedPositionId)),
+		corporateEmployeeId: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.corporateEmployeeId)),
+		contactSet: record_opt_to_undefined(from_candid_opt_n84(_uploadFile, _downloadFile, value.contactSet)),
+		crewId: record_opt_to_undefined(from_candid_opt_n85(_uploadFile, _downloadFile, value.crewId)),
+		signedBy: record_opt_to_undefined(from_candid_opt_n62(_uploadFile, _downloadFile, value.signedBy)),
+		birthdayMonthDay: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.birthdayMonthDay)),
+		isMinor: value.isMinor,
+		archivedReason: record_opt_to_undefined(from_candid_opt_n86(_uploadFile, _downloadFile, value.archivedReason)),
+		photo: record_opt_to_undefined(from_candid_opt_n89(_uploadFile, _downloadFile, value.photo)),
+		hiredAt: value.hiredAt,
+		secondPositionId: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.secondPositionId)),
+		profile: from_candid_RoadieProfile_n90(_uploadFile, _downloadFile, value.profile),
+		startDate: record_opt_to_undefined(from_candid_opt_n30(_uploadFile, _downloadFile, value.startDate)),
+		archivedAt: record_opt_to_undefined(from_candid_opt_n61(_uploadFile, _downloadFile, value.archivedAt))
+	};
+}
+function from_candid_record_n91(_uploadFile, _downloadFile, value) {
+	return {
+		favoriteSnack: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.favoriteSnack)),
+		positionAppliedFor: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.positionAppliedFor)),
+		goalHere: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.goalHere)),
+		name: value.name,
+		hometown: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.hometown)),
+		preferredName: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.preferredName)),
+		shirtSize: record_opt_to_undefined(from_candid_opt_n92(_uploadFile, _downloadFile, value.shirtSize)),
+		hatSize: record_opt_to_undefined(from_candid_opt_n93(_uploadFile, _downloadFile, value.hatSize)),
+		shiftsWantedPerWeek: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.shiftsWantedPerWeek)),
+		favoriteMovie: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.favoriteMovie)),
+		funFact: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.funFact)),
+		hobbies: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.hobbies)),
+		weekdayLunch: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.weekdayLunch))
+	};
+}
+function from_candid_record_n96(_uploadFile, _downloadFile, value) {
+	return {
+		id: value.id,
+		status: from_candid_SignupStatus_n97(_uploadFile, _downloadFile, value.status),
+		signature: record_opt_to_undefined(from_candid_opt_n63(_uploadFile, _downloadFile, value.signature)),
+		contactSet: from_candid_ContactSet_n59(_uploadFile, _downloadFile, value.contactSet),
+		submittedAt: value.submittedAt,
+		photo: record_opt_to_undefined(from_candid_opt_n89(_uploadFile, _downloadFile, value.photo)),
+		profile: from_candid_RoadieProfile_n90(_uploadFile, _downloadFile, value.profile)
+	};
+}
 function from_candid_tuple_n26(_uploadFile, _downloadFile, value) {
 	return [value[0], from_candid_vec_n27(_uploadFile, _downloadFile, value[1])];
+}
+function from_candid_tuple_n32(_uploadFile, _downloadFile, value) {
+	return [from_candid_Weekday_n33(_uploadFile, _downloadFile, value[0]), from_candid_vec_n34(_uploadFile, _downloadFile, value[1])];
 }
 function from_candid_variant_n11(_uploadFile, _downloadFile, value) {
 	return "FrontendOriginsNotConfigured" in value ? {
@@ -35413,7 +35476,7 @@ function from_candid_variant_n11(_uploadFile, _downloadFile, value) {
 		FrontendOriginMismatch: value.FrontendOriginMismatch
 	} : value;
 }
-function from_candid_variant_n52(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n56(_uploadFile, _downloadFile, value) {
 	return "int" in value ? {
 		__kind__: "int",
 		int: value.int
@@ -35434,7 +35497,7 @@ function from_candid_variant_n52(_uploadFile, _downloadFile, value) {
 		text: value.text
 	} : value;
 }
-function from_candid_variant_n85(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n88(_uploadFile, _downloadFile, value) {
 	return "noShow" in value ? {
 		__kind__: "noShow",
 		noShow: value.noShow
@@ -35461,7 +35524,7 @@ function from_candid_variant_n9(_uploadFile, _downloadFile, value) {
 		err: from_candid_Error_n10(_uploadFile, _downloadFile, value.err)
 	} : value;
 }
-function from_candid_variant_n95(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n98(_uploadFile, _downloadFile, value) {
 	return "pending" in value ? {
 		__kind__: "pending",
 		pending: value.pending
@@ -35473,26 +35536,26 @@ function from_candid_variant_n95(_uploadFile, _downloadFile, value) {
 		rejected: value.rejected
 	} : value;
 }
-function from_candid_vec_n103(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_AccessGrant_n69(_uploadFile, _downloadFile, x));
+function from_candid_vec_n106(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_AccessGrant_n73(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n104(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_AttendanceRecord_n105(_uploadFile, _downloadFile, x));
-}
-function from_candid_vec_n109(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_ChangeLogEntry_n110(_uploadFile, _downloadFile, x));
+function from_candid_vec_n107(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_AttendanceRecord_n108(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n112(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_SignupSubmission_n92(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_ChangeLogEntry_n113(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n113(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_Roadie_n75(_uploadFile, _downloadFile, x));
+function from_candid_vec_n115(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_SignupSubmission_n95(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n114(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_ScheduleEvent_n115(_uploadFile, _downloadFile, x));
+function from_candid_vec_n116(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_Roadie_n79(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n119(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_TrainerNote_n120(_uploadFile, _downloadFile, x));
+function from_candid_vec_n117(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_ScheduleEvent_n118(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n122(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_TrainerNote_n123(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n25(_uploadFile, _downloadFile, value) {
 	return value.map((x) => from_candid_tuple_n26(_uploadFile, _downloadFile, x));
@@ -35501,22 +35564,25 @@ function from_candid_vec_n27(_uploadFile, _downloadFile, value) {
 	return value.map((x) => from_candid_ExportRow_n28(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n31(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_Shift_n32(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_tuple_n32(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n47(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_vec_n48(_uploadFile, _downloadFile, x));
+function from_candid_vec_n34(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_Shift_n35(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n48(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_Cell_n49(_uploadFile, _downloadFile, x));
+function from_candid_vec_n51(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_vec_n52(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n54(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_ContactSet_n55(_uploadFile, _downloadFile, x));
+function from_candid_vec_n52(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_Cell_n53(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n59(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_AvailabilitySlot_n60(_uploadFile, _downloadFile, x));
+function from_candid_vec_n58(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_ContactSet_n59(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n64(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_Position_n65(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_AvailabilitySlot_n65(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n68(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_Position_n69(_uploadFile, _downloadFile, x));
 }
 function to_candid_ApprovalDecision_n15(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n16(_uploadFile, _downloadFile, value);
@@ -35527,61 +35593,61 @@ function to_candid_ApprovalRequest_n17(_uploadFile, _downloadFile, value) {
 function to_candid_ArchiveReason_n20(_uploadFile, _downloadFile, value) {
 	return to_candid_variant_n21(_uploadFile, _downloadFile, value);
 }
-function to_candid_AttendanceRecord_n122(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n123(_uploadFile, _downloadFile, value);
-}
-function to_candid_AttendanceState_n124(_uploadFile, _downloadFile, value) {
-	return value == "present" ? { present: null } : value == "late" ? { late: null } : value == "absent" ? { absent: null } : value;
-}
-function to_candid_AvailabilitySlot_n137(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n138(_uploadFile, _downloadFile, value);
-}
-function to_candid_ContactSet_n134(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n135(_uploadFile, _downloadFile, value);
-}
-function to_candid_EventKind_n42(_uploadFile, _downloadFile, value) {
-	return value == "other" ? { other: null } : value == "signOff" ? { signOff: null } : value == "deadline" ? { deadline: null } : value == "friendsAndFamily" ? { friendsAndFamily: null } : value == "openingDay" ? { openingDay: null } : value == "trainingDay" ? { trainingDay: null } : value == "orientation" ? { orientation: null } : value;
-}
-function to_candid_FinalSignOff_n125(_uploadFile, _downloadFile, value) {
+function to_candid_AttendanceRecord_n125(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n126(_uploadFile, _downloadFile, value);
 }
-function to_candid_House_n39(_uploadFile, _downloadFile, value) {
+function to_candid_AttendanceState_n127(_uploadFile, _downloadFile, value) {
+	return value == "present" ? { present: null } : value == "late" ? { late: null } : value == "absent" ? { absent: null } : value;
+}
+function to_candid_AvailabilitySlot_n140(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n141(_uploadFile, _downloadFile, value);
+}
+function to_candid_ContactSet_n137(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n138(_uploadFile, _downloadFile, value);
+}
+function to_candid_EventKind_n46(_uploadFile, _downloadFile, value) {
+	return value == "other" ? { other: null } : value == "signOff" ? { signOff: null } : value == "deadline" ? { deadline: null } : value == "friendsAndFamily" ? { friendsAndFamily: null } : value == "openingDay" ? { openingDay: null } : value == "trainingDay" ? { trainingDay: null } : value == "orientation" ? { orientation: null } : value;
+}
+function to_candid_FinalSignOff_n128(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n129(_uploadFile, _downloadFile, value);
+}
+function to_candid_House_n43(_uploadFile, _downloadFile, value) {
 	return value == "boh" ? { boh: null } : value == "foh" ? { foh: null } : value;
 }
-function to_candid_Position_n37(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n38(_uploadFile, _downloadFile, value);
+function to_candid_Position_n41(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n42(_uploadFile, _downloadFile, value);
 }
-function to_candid_RoadieProfile_n130(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n131(_uploadFile, _downloadFile, value);
+function to_candid_RoadieProfile_n133(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n134(_uploadFile, _downloadFile, value);
 }
-function to_candid_RoadieStatus_n141(_uploadFile, _downloadFile, value) {
+function to_candid_RoadieStatus_n144(_uploadFile, _downloadFile, value) {
 	return value == "active" ? { active: null } : value == "hired" ? { hired: null } : value == "inTraining" ? { inTraining: null } : value == "paperworkDone" ? { paperworkDone: null } : value == "oriented" ? { oriented: null } : value == "certified" ? { certified: null } : value == "needsMoreTime" ? { needsMoreTime: null } : value == "archived" ? { archived: null } : value;
 }
 function to_candid_Role_n19(_uploadFile, _downloadFile, value) {
 	return value == "integration" ? { integration: null } : value == "admin" ? { admin: null } : value == "trainingManager" ? { trainingManager: null } : value == "trainer" ? { trainer: null } : value == "leadership" ? { leadership: null } : value == "visitingManager" ? { visitingManager: null } : value == "storeManager" ? { storeManager: null } : value == "kiosk" ? { kiosk: null } : value;
 }
-function to_candid_ScheduleEvent_n40(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n41(_uploadFile, _downloadFile, value);
+function to_candid_ScheduleEvent_n44(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n45(_uploadFile, _downloadFile, value);
 }
 function to_candid_Shift_n14(_uploadFile, _downloadFile, value) {
 	return value == "am" ? { am: null } : value == "pm" ? { pm: null } : value;
 }
-function to_candid_SignOffOutcome_n127(_uploadFile, _downloadFile, value) {
-	return to_candid_variant_n128(_uploadFile, _downloadFile, value);
+function to_candid_SignOffOutcome_n130(_uploadFile, _downloadFile, value) {
+	return to_candid_variant_n131(_uploadFile, _downloadFile, value);
 }
-function to_candid_StoreInfo_n142(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n143(_uploadFile, _downloadFile, value);
+function to_candid_StoreInfo_n145(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n146(_uploadFile, _downloadFile, value);
 }
 function to_candid_TrainerNote_n12(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n13(_uploadFile, _downloadFile, value);
 }
-function to_candid_TrainingGroup_n43(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n44(_uploadFile, _downloadFile, value);
+function to_candid_TrainingGroup_n47(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n48(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n22(_uploadFile, _downloadFile, value) {
 	return value == "admin" ? { admin: null } : value == "user" ? { user: null } : value == "guest" ? { guest: null } : value;
 }
-function to_candid_Weekday_n139(_uploadFile, _downloadFile, value) {
+function to_candid_Weekday_n142(_uploadFile, _downloadFile, value) {
 	return value == "fri" ? { fri: null } : value == "mon" ? { mon: null } : value == "sat" ? { sat: null } : value == "sun" ? { sun: null } : value == "thu" ? { thu: null } : value == "tue" ? { tue: null } : value == "wed" ? { wed: null } : value;
 }
 function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value) {
@@ -35590,40 +35656,40 @@ function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _dow
 function to_candid_opt_n1(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value));
 }
-function to_candid_opt_n129(_uploadFile, _downloadFile, value) {
-	return value === null ? candid_none() : candid_some(value);
-}
 function to_candid_opt_n132(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n133(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n135(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n140(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n136(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n35(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n143(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n36(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n39(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_record_n123(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n40(_uploadFile, _downloadFile, value) {
+	return value === null ? candid_none() : candid_some(value);
+}
+function to_candid_record_n126(_uploadFile, _downloadFile, value) {
 	return {
 		eventId: value.eventId ? candid_some(value.eventId) : candid_none(),
 		roadieId: value.roadieId,
 		recordedAt: value.recordedAt,
 		recordedBy: value.recordedBy,
 		shift: value.shift ? candid_some(to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)) : candid_none(),
-		state: to_candid_AttendanceState_n124(_uploadFile, _downloadFile, value.state)
+		state: to_candid_AttendanceState_n127(_uploadFile, _downloadFile, value.state)
 	};
 }
-function to_candid_record_n126(_uploadFile, _downloadFile, value) {
+function to_candid_record_n129(_uploadFile, _downloadFile, value) {
 	return {
 		roadieId: value.roadieId,
 		signedAt: value.signedAt,
 		signedBy: value.signedBy,
-		outcome: to_candid_SignOffOutcome_n127(_uploadFile, _downloadFile, value.outcome),
+		outcome: to_candid_SignOffOutcome_n130(_uploadFile, _downloadFile, value.outcome),
 		futureTrainer: value.futureTrainer
 	};
 }
@@ -35639,7 +35705,7 @@ function to_candid_record_n13(_uploadFile, _downloadFile, value) {
 		workOn: value.workOn
 	};
 }
-function to_candid_record_n131(_uploadFile, _downloadFile, value) {
+function to_candid_record_n134(_uploadFile, _downloadFile, value) {
 	return {
 		favoriteSnack: value.favoriteSnack ? candid_some(value.favoriteSnack) : candid_none(),
 		positionAppliedFor: value.positionAppliedFor ? candid_some(value.positionAppliedFor) : candid_none(),
@@ -35656,26 +35722,29 @@ function to_candid_record_n131(_uploadFile, _downloadFile, value) {
 		weekdayLunch: value.weekdayLunch ? candid_some(value.weekdayLunch) : candid_none()
 	};
 }
-function to_candid_record_n135(_uploadFile, _downloadFile, value) {
+function to_candid_record_n138(_uploadFile, _downloadFile, value) {
 	return {
+		managerSignedAt: value.managerSignedAt ? candid_some(value.managerSignedAt) : candid_none(),
+		managerSignedBy: value.managerSignedBy ? candid_some(value.managerSignedBy) : candid_none(),
 		availabilitySignedAt: value.availabilitySignedAt ? candid_some(value.availabilitySignedAt) : candid_none(),
 		dateOfBirth: value.dateOfBirth,
 		email: value.email,
 		availabilitySignature: value.availabilitySignature ? candid_some(value.availabilitySignature) : candid_none(),
-		availability: to_candid_vec_n136(_uploadFile, _downloadFile, value.availability),
+		availability: to_candid_vec_n139(_uploadFile, _downloadFile, value.availability),
 		availabilityResignPending: value.availabilityResignPending,
 		emergencyContactPhone: value.emergencyContactPhone,
 		emergencyContactName: value.emergencyContactName,
-		phone: value.phone
+		phone: value.phone,
+		managerSignature: value.managerSignature ? candid_some(value.managerSignature) : candid_none()
 	};
 }
-function to_candid_record_n138(_uploadFile, _downloadFile, value) {
+function to_candid_record_n141(_uploadFile, _downloadFile, value) {
 	return {
-		day: to_candid_Weekday_n139(_uploadFile, _downloadFile, value.day),
+		day: to_candid_Weekday_n142(_uploadFile, _downloadFile, value.day),
 		shift: to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)
 	};
 }
-function to_candid_record_n143(_uploadFile, _downloadFile, value) {
+function to_candid_record_n146(_uploadFile, _downloadFile, value) {
 	return {
 		amShiftEnd: value.amShiftEnd,
 		pmShiftStart: value.pmShiftStart,
@@ -35715,12 +35784,12 @@ function to_candid_record_n18(_uploadFile, _downloadFile, value) {
 function to_candid_record_n3(_uploadFile, _downloadFile, value) {
 	return { proposed_top_up_amount: value.proposed_top_up_amount ? candid_some(value.proposed_top_up_amount) : candid_none() };
 }
-function to_candid_record_n38(_uploadFile, _downloadFile, value) {
+function to_candid_record_n42(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		openingBuildTo: value.openingBuildTo,
 		crewManager: value.crewManager ? candid_some(value.crewManager) : candid_none(),
-		house: to_candid_House_n39(_uploadFile, _downloadFile, value.house),
+		house: to_candid_House_n43(_uploadFile, _downloadFile, value.house),
 		afterOpeningBuildTo: value.afterOpeningBuildTo,
 		minimumAge: value.minimumAge,
 		code: value.code,
@@ -35730,16 +35799,16 @@ function to_candid_record_n38(_uploadFile, _downloadFile, value) {
 		hatsRequired: value.hatsRequired
 	};
 }
-function to_candid_record_n41(_uploadFile, _downloadFile, value) {
+function to_candid_record_n45(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		end: value.end ? candid_some(value.end) : candid_none(),
-		kind: to_candid_EventKind_n42(_uploadFile, _downloadFile, value.kind),
+		kind: to_candid_EventKind_n46(_uploadFile, _downloadFile, value.kind),
 		name: value.name,
 		start: value.start
 	};
 }
-function to_candid_record_n44(_uploadFile, _downloadFile, value) {
+function to_candid_record_n48(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		day: value.day,
@@ -35749,14 +35818,14 @@ function to_candid_record_n44(_uploadFile, _downloadFile, value) {
 		shift: to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)
 	};
 }
-function to_candid_variant_n128(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n131(_uploadFile, _downloadFile, value) {
 	return value.__kind__ === "certified" ? { certified: value.certified } : value.__kind__ === "needsMoreTime" ? { needsMoreTime: value.needsMoreTime } : value;
 }
 function to_candid_variant_n21(_uploadFile, _downloadFile, value) {
 	return value.__kind__ === "noShow" ? { noShow: value.noShow } : value.__kind__ === "quitDuringTraining" ? { quitDuringTraining: value.quitDuringTraining } : value.__kind__ === "other" ? { other: value.other } : value.__kind__ === "letGo" ? { letGo: value.letGo } : value.__kind__ === "tookAnotherJob" ? { tookAnotherJob: value.tookAnotherJob } : value;
 }
-function to_candid_vec_n136(_uploadFile, _downloadFile, value) {
-	return value.map((x) => to_candid_AvailabilitySlot_n137(_uploadFile, _downloadFile, x));
+function to_candid_vec_n139(_uploadFile, _downloadFile, value) {
+	return value.map((x) => to_candid_AvailabilitySlot_n140(_uploadFile, _downloadFile, x));
 }
 function createActor(canisterId, _uploadFile, _downloadFile, options = {}) {
 	const agent = options.agent || HttpAgent.createSync({ ...options.agentOptions });
@@ -35766,6 +35835,228 @@ function createActor(canisterId, _uploadFile, _downloadFile, options = {}) {
 		canisterId,
 		...options.actorOptions
 	}), _uploadFile, _downloadFile, options.processError);
+}
+//#endregion
+//#region src/components/InternetIdentity.tsx
+/**
+* Sign out of Internet Identity: cancel every in-flight query, clear the React
+* Query cache, then clear the identity. Cancelling before clearing stops a
+* late response from repopulating the cache for the next principal.
+*/
+function useSignOut() {
+	const { clear } = useInternetIdentity();
+	const queryClient = useQueryClient();
+	return (0, import_react.useCallback)(() => {
+		queryClient.cancelQueries();
+		queryClient.clear();
+		clear();
+	}, [clear, queryClient]);
+}
+function SignInButton({ className }) {
+	const { identity, login, clear, isInitializing, isLoggingIn, isLoginError } = useInternetIdentity();
+	const queryClient = useQueryClient();
+	const authenticated = !!identity && !identity.getPrincipal().isAnonymous();
+	let label = authenticated ? "Sign out" : "Sign in with Internet Identity";
+	if (isInitializing) label = "Loading sign-in…";
+	else if (isLoggingIn) label = "Signing in…";
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+		type: "button",
+		"data-ocid": "auth.button",
+		className,
+		disabled: isInitializing || isLoggingIn,
+		onClick: () => {
+			if (authenticated) {
+				queryClient.cancelQueries();
+				queryClient.clear();
+				clear();
+			} else login();
+		},
+		children: label
+	}), isLoginError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+		role: "alert",
+		"data-ocid": "auth.error_state",
+		children: "Sign-in did not complete. Please try again."
+	})] });
+}
+/** Each signed-in principal gets its own mounted cache boundary. */
+function PrivateQueryBoundary({ children }) {
+	const [queries] = (0, import_react.useState)(() => new QueryClient());
+	(0, import_react.useEffect)(() => () => {
+		queries.cancelQueries();
+		queries.clear();
+	}, [queries]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(QueryClientProvider, {
+		client: queries,
+		children
+	});
+}
+/** Mount private queries only after sign-in, and isolate their cache when the principal changes. */
+function RequireSignIn({ children, fallback }) {
+	const { identity, isInitializing, isLoggingIn } = useInternetIdentity();
+	const principal = identity && !identity.getPrincipal().isAnonymous() ? identity.getPrincipal().toText() : void 0;
+	if (isInitializing || isLoggingIn) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("output", {
+		"data-ocid": "auth.loading_state",
+		children: "Loading your session…"
+	});
+	if (principal === void 0) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children: fallback ?? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SignInButton, {}) });
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PrivateQueryBoundary, { children }, principal);
+}
+/** Complete first-generation private-app entry point: branded copy cannot remove the sign-in action. */
+function AuthenticatedApp({ children, title = "Sign in to continue", description = "Sign in with Internet Identity to access your private workspace.", className, buttonClassName }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RequireSignIn, {
+		fallback: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+			"aria-label": "Sign in",
+			"data-ocid": "auth.panel",
+			className: className ?? "flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+					className: "font-display text-3xl font-semibold",
+					children: title
+				}),
+				description && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "max-w-md text-muted-foreground",
+					children: description
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SignInButton, { className: buttonClassName ?? "rounded-md bg-primary px-5 py-3 font-medium text-primary-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60" })
+			]
+		}),
+		children
+	});
+}
+/**
+* A sign-out control that cancels in-flight queries, clears the React Query
+* cache, then clears Internet Identity. Used in the app header, the waiting and
+* error gates, and the kiosk's PIN-protected staff sign-out.
+*/
+function SignOutButton({ label, className, ocid = "auth.sign_out_button" }) {
+	const signOut = useSignOut();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+		type: "button",
+		"data-ocid": ocid,
+		className,
+		onClick: signOut,
+		children: label
+	});
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-compose-refs@1.1.2_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-compose-refs/dist/index.mjs
+function setRef(ref, value) {
+	if (typeof ref === "function") return ref(value);
+	else if (ref !== null && ref !== void 0) ref.current = value;
+}
+function composeRefs(...refs) {
+	return (node) => {
+		let hasCleanup = false;
+		const cleanups = refs.map((ref) => {
+			const cleanup = setRef(ref, node);
+			if (!hasCleanup && typeof cleanup == "function") hasCleanup = true;
+			return cleanup;
+		});
+		if (hasCleanup) return () => {
+			for (let i = 0; i < cleanups.length; i++) {
+				const cleanup = cleanups[i];
+				if (typeof cleanup == "function") cleanup();
+				else setRef(refs[i], null);
+			}
+		};
+	};
+}
+function useComposedRefs(...refs) {
+	return import_react.useCallback(composeRefs(...refs), refs);
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-slot@1.2.4_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-slot/dist/index.mjs
+var REACT_LAZY_TYPE = Symbol.for("react.lazy");
+var use = import_react[" use ".trim().toString()];
+function isPromiseLike(value) {
+	return typeof value === "object" && value !== null && "then" in value;
+}
+function isLazyComponent(element) {
+	return element != null && typeof element === "object" && "$$typeof" in element && element.$$typeof === REACT_LAZY_TYPE && "_payload" in element && isPromiseLike(element._payload);
+}
+// @__NO_SIDE_EFFECTS__
+function createSlot$1(ownerName) {
+	const SlotClone = /* @__PURE__ */ createSlotClone$1(ownerName);
+	const Slot2 = import_react.forwardRef((props, forwardedRef) => {
+		let { children, ...slotProps } = props;
+		if (isLazyComponent(children) && typeof use === "function") children = use(children._payload);
+		const childrenArray = import_react.Children.toArray(children);
+		const slottable = childrenArray.find(isSlottable$1);
+		if (slottable) {
+			const newElement = slottable.props.children;
+			const newChildren = childrenArray.map((child) => {
+				if (child === slottable) {
+					if (import_react.Children.count(newElement) > 1) return import_react.Children.only(null);
+					return import_react.isValidElement(newElement) ? newElement.props.children : null;
+				} else return child;
+			});
+			return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlotClone, {
+				...slotProps,
+				ref: forwardedRef,
+				children: import_react.isValidElement(newElement) ? import_react.cloneElement(newElement, void 0, newChildren) : null
+			});
+		}
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlotClone, {
+			...slotProps,
+			ref: forwardedRef,
+			children
+		});
+	});
+	Slot2.displayName = `${ownerName}.Slot`;
+	return Slot2;
+}
+var Slot$2 = /* @__PURE__ */ createSlot$1("Slot");
+// @__NO_SIDE_EFFECTS__
+function createSlotClone$1(ownerName) {
+	const SlotClone = import_react.forwardRef((props, forwardedRef) => {
+		let { children, ...slotProps } = props;
+		if (isLazyComponent(children) && typeof use === "function") children = use(children._payload);
+		if (import_react.isValidElement(children)) {
+			const childrenRef = getElementRef$2(children);
+			const props2 = mergeProps$1(slotProps, children.props);
+			if (children.type !== import_react.Fragment) props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
+			return import_react.cloneElement(children, props2);
+		}
+		return import_react.Children.count(children) > 1 ? import_react.Children.only(null) : null;
+	});
+	SlotClone.displayName = `${ownerName}.SlotClone`;
+	return SlotClone;
+}
+var SLOTTABLE_IDENTIFIER$1 = Symbol("radix.slottable");
+function isSlottable$1(child) {
+	return import_react.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER$1;
+}
+function mergeProps$1(slotProps, childProps) {
+	const overrideProps = { ...childProps };
+	for (const propName in childProps) {
+		const slotPropValue = slotProps[propName];
+		const childPropValue = childProps[propName];
+		if (/^on[A-Z]/.test(propName)) {
+			if (slotPropValue && childPropValue) overrideProps[propName] = (...args) => {
+				const result = childPropValue(...args);
+				slotPropValue(...args);
+				return result;
+			};
+			else if (slotPropValue) overrideProps[propName] = slotPropValue;
+		} else if (propName === "style") overrideProps[propName] = {
+			...slotPropValue,
+			...childPropValue
+		};
+		else if (propName === "className") overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
+	}
+	return {
+		...slotProps,
+		...overrideProps
+	};
+}
+function getElementRef$2(element) {
+	let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
+	let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+	if (mayWarn) return element.ref;
+	getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
+	mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+	if (mayWarn) return element.props.ref;
+	return element.props.ref || element.ref;
 }
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs
@@ -35782,6 +36073,59 @@ function clsx() {
 	for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
 	return n;
 }
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/class-variance-authority@0.7.1/node_modules/class-variance-authority/dist/index.mjs
+/**
+* Copyright 2022 Joe Bell. All rights reserved.
+*
+* This file is licensed to you under the Apache License, Version 2.0
+* (the "License"); you may not use this file except in compliance with the
+* License. You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+* WARRANTIES OR REPRESENTATIONS OF ANY KIND, either express or implied. See the
+* License for the specific language governing permissions and limitations under
+* the License.
+*/ var falsyToString = (value) => typeof value === "boolean" ? `${value}` : value === 0 ? "0" : value;
+var cx = clsx;
+var cva = (base, config) => (props) => {
+	var _config_compoundVariants;
+	if ((config === null || config === void 0 ? void 0 : config.variants) == null) return cx(base, props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
+	const { variants, defaultVariants } = config;
+	const getVariantClassNames = Object.keys(variants).map((variant) => {
+		const variantProp = props === null || props === void 0 ? void 0 : props[variant];
+		const defaultVariantProp = defaultVariants === null || defaultVariants === void 0 ? void 0 : defaultVariants[variant];
+		if (variantProp === null) return null;
+		const variantKey = falsyToString(variantProp) || falsyToString(defaultVariantProp);
+		return variants[variant][variantKey];
+	});
+	const propsWithoutUndefined = props && Object.entries(props).reduce((acc, param) => {
+		let [key, value] = param;
+		if (value === void 0) return acc;
+		acc[key] = value;
+		return acc;
+	}, {});
+	return cx(base, getVariantClassNames, config === null || config === void 0 ? void 0 : (_config_compoundVariants = config.compoundVariants) === null || _config_compoundVariants === void 0 ? void 0 : _config_compoundVariants.reduce((acc, param) => {
+		let { class: cvClass, className: cvClassName, ...compoundVariantOptions } = param;
+		return Object.entries(compoundVariantOptions).every((param) => {
+			let [key, value] = param;
+			return Array.isArray(value) ? value.includes({
+				...defaultVariants,
+				...propsWithoutUndefined
+			}[key]) : {
+				...defaultVariants,
+				...propsWithoutUndefined
+			}[key] === value;
+		}) ? [
+			...acc,
+			cvClass,
+			cvClassName
+		] : acc;
+	}, []), props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
+};
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/tailwind-merge@2.6.1/node_modules/tailwind-merge/dist/bundle-mjs.mjs
 var CLASS_PART_SEPARATOR = "-";
@@ -38323,230 +38667,6 @@ function cn(...inputs) {
 	return twMerge(clsx(inputs));
 }
 //#endregion
-//#region src/components/StoreLogo.tsx
-/**
-* The store mark: a navy disc with a red ring, a white star and three white
-* stripes. Rendered as inline SVG so it stays crisp at every size and always
-* uses the exact brand colors (navy #14284B, red #B22234, white).
-*/
-function StoreLogo({ className, title = "Roadie store logo" }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", {
-		viewBox: "0 0 64 64",
-		role: "img",
-		"aria-label": title,
-		"data-ocid": "store.logo",
-		className: cn("h-10 w-10 shrink-0", className),
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("title", { children: title }),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
-				cx: "32",
-				cy: "32",
-				r: "31",
-				fill: "#B22234"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
-				cx: "32",
-				cy: "32",
-				r: "27",
-				fill: "#14284B"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
-				d: "M32 13.5l4.6 9.3 10.3 1.5-7.45 7.26 1.76 10.25L32 36.98l-9.21 4.84 1.76-10.25L17.1 24.3l10.3-1.5z",
-				fill: "#FFFFFF"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", {
-				x: "20",
-				y: "45",
-				width: "24",
-				height: "2.6",
-				rx: "1.3",
-				fill: "#FFFFFF"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", {
-				x: "23",
-				y: "50",
-				width: "18",
-				height: "2.6",
-				rx: "1.3",
-				fill: "#FFFFFF"
-			})
-		]
-	});
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-compose-refs@1.1.2_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-compose-refs/dist/index.mjs
-function setRef(ref, value) {
-	if (typeof ref === "function") return ref(value);
-	else if (ref !== null && ref !== void 0) ref.current = value;
-}
-function composeRefs(...refs) {
-	return (node) => {
-		let hasCleanup = false;
-		const cleanups = refs.map((ref) => {
-			const cleanup = setRef(ref, node);
-			if (!hasCleanup && typeof cleanup == "function") hasCleanup = true;
-			return cleanup;
-		});
-		if (hasCleanup) return () => {
-			for (let i = 0; i < cleanups.length; i++) {
-				const cleanup = cleanups[i];
-				if (typeof cleanup == "function") cleanup();
-				else setRef(refs[i], null);
-			}
-		};
-	};
-}
-function useComposedRefs(...refs) {
-	return import_react.useCallback(composeRefs(...refs), refs);
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-slot@1.2.4_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-slot/dist/index.mjs
-var REACT_LAZY_TYPE = Symbol.for("react.lazy");
-var use = import_react[" use ".trim().toString()];
-function isPromiseLike(value) {
-	return typeof value === "object" && value !== null && "then" in value;
-}
-function isLazyComponent(element) {
-	return element != null && typeof element === "object" && "$$typeof" in element && element.$$typeof === REACT_LAZY_TYPE && "_payload" in element && isPromiseLike(element._payload);
-}
-// @__NO_SIDE_EFFECTS__
-function createSlot$1(ownerName) {
-	const SlotClone = /* @__PURE__ */ createSlotClone$1(ownerName);
-	const Slot2 = import_react.forwardRef((props, forwardedRef) => {
-		let { children, ...slotProps } = props;
-		if (isLazyComponent(children) && typeof use === "function") children = use(children._payload);
-		const childrenArray = import_react.Children.toArray(children);
-		const slottable = childrenArray.find(isSlottable$1);
-		if (slottable) {
-			const newElement = slottable.props.children;
-			const newChildren = childrenArray.map((child) => {
-				if (child === slottable) {
-					if (import_react.Children.count(newElement) > 1) return import_react.Children.only(null);
-					return import_react.isValidElement(newElement) ? newElement.props.children : null;
-				} else return child;
-			});
-			return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlotClone, {
-				...slotProps,
-				ref: forwardedRef,
-				children: import_react.isValidElement(newElement) ? import_react.cloneElement(newElement, void 0, newChildren) : null
-			});
-		}
-		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlotClone, {
-			...slotProps,
-			ref: forwardedRef,
-			children
-		});
-	});
-	Slot2.displayName = `${ownerName}.Slot`;
-	return Slot2;
-}
-var Slot$2 = /* @__PURE__ */ createSlot$1("Slot");
-// @__NO_SIDE_EFFECTS__
-function createSlotClone$1(ownerName) {
-	const SlotClone = import_react.forwardRef((props, forwardedRef) => {
-		let { children, ...slotProps } = props;
-		if (isLazyComponent(children) && typeof use === "function") children = use(children._payload);
-		if (import_react.isValidElement(children)) {
-			const childrenRef = getElementRef$2(children);
-			const props2 = mergeProps$1(slotProps, children.props);
-			if (children.type !== import_react.Fragment) props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
-			return import_react.cloneElement(children, props2);
-		}
-		return import_react.Children.count(children) > 1 ? import_react.Children.only(null) : null;
-	});
-	SlotClone.displayName = `${ownerName}.SlotClone`;
-	return SlotClone;
-}
-var SLOTTABLE_IDENTIFIER$1 = Symbol("radix.slottable");
-function isSlottable$1(child) {
-	return import_react.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER$1;
-}
-function mergeProps$1(slotProps, childProps) {
-	const overrideProps = { ...childProps };
-	for (const propName in childProps) {
-		const slotPropValue = slotProps[propName];
-		const childPropValue = childProps[propName];
-		if (/^on[A-Z]/.test(propName)) {
-			if (slotPropValue && childPropValue) overrideProps[propName] = (...args) => {
-				const result = childPropValue(...args);
-				slotPropValue(...args);
-				return result;
-			};
-			else if (slotPropValue) overrideProps[propName] = slotPropValue;
-		} else if (propName === "style") overrideProps[propName] = {
-			...slotPropValue,
-			...childPropValue
-		};
-		else if (propName === "className") overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
-	}
-	return {
-		...slotProps,
-		...overrideProps
-	};
-}
-function getElementRef$2(element) {
-	let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
-	let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-	if (mayWarn) return element.ref;
-	getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
-	mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-	if (mayWarn) return element.props.ref;
-	return element.props.ref || element.ref;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/class-variance-authority@0.7.1/node_modules/class-variance-authority/dist/index.mjs
-/**
-* Copyright 2022 Joe Bell. All rights reserved.
-*
-* This file is licensed to you under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with the
-* License. You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-* WARRANTIES OR REPRESENTATIONS OF ANY KIND, either express or implied. See the
-* License for the specific language governing permissions and limitations under
-* the License.
-*/ var falsyToString = (value) => typeof value === "boolean" ? `${value}` : value === 0 ? "0" : value;
-var cx = clsx;
-var cva = (base, config) => (props) => {
-	var _config_compoundVariants;
-	if ((config === null || config === void 0 ? void 0 : config.variants) == null) return cx(base, props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
-	const { variants, defaultVariants } = config;
-	const getVariantClassNames = Object.keys(variants).map((variant) => {
-		const variantProp = props === null || props === void 0 ? void 0 : props[variant];
-		const defaultVariantProp = defaultVariants === null || defaultVariants === void 0 ? void 0 : defaultVariants[variant];
-		if (variantProp === null) return null;
-		const variantKey = falsyToString(variantProp) || falsyToString(defaultVariantProp);
-		return variants[variant][variantKey];
-	});
-	const propsWithoutUndefined = props && Object.entries(props).reduce((acc, param) => {
-		let [key, value] = param;
-		if (value === void 0) return acc;
-		acc[key] = value;
-		return acc;
-	}, {});
-	return cx(base, getVariantClassNames, config === null || config === void 0 ? void 0 : (_config_compoundVariants = config.compoundVariants) === null || _config_compoundVariants === void 0 ? void 0 : _config_compoundVariants.reduce((acc, param) => {
-		let { class: cvClass, className: cvClassName, ...compoundVariantOptions } = param;
-		return Object.entries(compoundVariantOptions).every((param) => {
-			let [key, value] = param;
-			return Array.isArray(value) ? value.includes({
-				...defaultVariants,
-				...propsWithoutUndefined
-			}[key]) : {
-				...defaultVariants,
-				...propsWithoutUndefined
-			}[key] === value;
-		}) ? [
-			...acc,
-			cvClass,
-			cvClassName
-		] : acc;
-	}, []), props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
-};
-//#endregion
 //#region src/components/ui/button.tsx
 var buttonVariants = cva("inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive", {
 	variants: {
@@ -38580,1105 +38700,6 @@ function Button({ className, variant, size, asChild = false, ...props }) {
 		})),
 		...props
 	});
-}
-//#endregion
-//#region src/hooks/useQueries.ts
-function useMyAccess() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["myAccess"],
-		queryFn: async () => {
-			if (!actor) return null;
-			return actor.getMyAccess();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function usePendingUsers() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["pendingUsers"],
-		queryFn: async () => {
-			if (!actor) return [];
-			return actor.listPendingUsers();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function usePendingSignups() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["pendingSignups"],
-		queryFn: async () => {
-			if (!actor) return [];
-			return actor.listPendingSignups();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function useSignupDuplicates(id) {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["signupDuplicates", id?.toString()],
-		queryFn: async () => {
-			if (!actor || id === void 0) return [];
-			return actor.findDuplicates(id);
-		},
-		enabled: !!actor && !isFetching && id !== void 0
-	});
-}
-function useApproveSignup() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (args) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.approveSignup(args.id, args.decision, args.signature);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["pendingSignups"] });
-			queryClient.invalidateQueries({ queryKey: ["roadies"] });
-			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-			queryClient.invalidateQueries({ queryKey: ["changeLog"] });
-		}
-	});
-}
-function useRejectSignup() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (id) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.rejectSignup(id);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["pendingSignups"] });
-		}
-	});
-}
-function useRequestAccess() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async () => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.requestAccess();
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["myAccess"] });
-			queryClient.invalidateQueries({ queryKey: ["pendingUsers"] });
-		}
-	});
-}
-/**
-* Bridge the platform's first-admin grant into the app's own access model.
-* Idempotent: the backend only persists a grant while no app Admin exists and
-* the caller is already a platform admin, so it is safe to call for every
-* signed-in caller. Returns true once the caller holds an app Admin grant.
-*/
-function useBootstrapAdmin() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async () => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.bootstrapAdmin();
-		},
-		onSuccess: (granted) => {
-			if (granted) {
-				queryClient.invalidateQueries({ queryKey: ["myAccess"] });
-				queryClient.invalidateQueries({ queryKey: ["pendingUsers"] });
-				queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
-				queryClient.invalidateQueries({ queryKey: ["adminCount"] });
-			}
-		}
-	});
-}
-function useAccessGrants() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["accessGrants"],
-		queryFn: async () => {
-			if (!actor) return [];
-			return actor.listAccessGrants();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function useAdminCount() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["adminCount"],
-		queryFn: async () => {
-			if (!actor) return 0n;
-			return actor.adminCount();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function useApproveUser() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (request) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.approveUser(request);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["pendingUsers"] });
-			queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
-			queryClient.invalidateQueries({ queryKey: ["adminCount"] });
-		}
-	});
-}
-function useUpdateUserRole() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (args) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.updateUserRole(args.principal, args.role);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
-			queryClient.invalidateQueries({ queryKey: ["adminCount"] });
-		}
-	});
-}
-function useRemoveUser() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (principal) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.removeUser(principal);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
-			queryClient.invalidateQueries({ queryKey: ["adminCount"] });
-		}
-	});
-}
-function useStoreInfo() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["storeInfo"],
-		queryFn: async () => {
-			if (!actor) return null;
-			return actor.getStoreInfo();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function usePositions() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["positions"],
-		queryFn: async () => {
-			if (!actor) return [];
-			return actor.listPositions();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function useSchedule() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["schedule"],
-		queryFn: async () => {
-			if (!actor) return [];
-			return actor.listSchedule();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function useUpdateStoreInfo() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (info) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.updateStoreInfo(info);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["storeInfo"] });
-		}
-	});
-}
-function useCreatePosition() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (position) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.createPosition(position);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["positions"] });
-			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-		}
-	});
-}
-function useUpdatePosition() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (position) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.updatePosition(position);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["positions"] });
-			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-		}
-	});
-}
-function useDeletePosition() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (id) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.deletePosition(id);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["positions"] });
-			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-		}
-	});
-}
-function useCreateScheduleEvent() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (event) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.createScheduleEvent(event);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["schedule"] });
-		}
-	});
-}
-function useUpdateScheduleEvent() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (event) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.updateScheduleEvent(event);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["schedule"] });
-		}
-	});
-}
-function useDeleteScheduleEvent() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (id) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.deleteScheduleEvent(id);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["schedule"] });
-		}
-	});
-}
-function useChecklists$1() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["checklists"],
-		queryFn: async () => {
-			if (!actor) return null;
-			return actor.getChecklists();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function useUpdateChecklists() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (value) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.updateChecklists(value);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["checklists"] });
-		}
-	});
-}
-function useRetentionSettings() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["retentionSettings"],
-		queryFn: async () => {
-			if (!actor) return null;
-			return actor.getRetentionSettings();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function useUpdateRetentionSettings() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (settings) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.updateRetentionSettings(settings);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["retentionSettings"] });
-		}
-	});
-}
-function useSaveStoreTemplate() {
-	const { actor } = useActor(createActor);
-	return useMutation({ mutationFn: async (name) => {
-		if (!actor) throw new Error("Backend is not ready");
-		return actor.saveStoreTemplate(name);
-	} });
-}
-function useRoadies() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["roadies"],
-		queryFn: async () => {
-			if (!actor) return [];
-			return actor.listRoadies();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function useRoadie(id) {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["roadie", id?.toString()],
-		queryFn: async () => {
-			if (!actor || id === void 0) return null;
-			return actor.getRoadie(id);
-		},
-		enabled: !!actor && !isFetching && id !== void 0
-	});
-}
-function useCrews() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["crews"],
-		queryFn: async () => {
-			if (!actor) return [];
-			return actor.listCrews();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function useDashboard() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["dashboard"],
-		queryFn: async () => {
-			if (!actor) return null;
-			return actor.getDashboard();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-/**
-* Per-position roster counts: on-hand roadies and open spots. The backend
-* derives both from the position's build-to target, so the dashboard panels
-* read on-hand and open spots from this summary rather than recounting.
-*/
-function useRosterSummary() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["rosterSummary"],
-		queryFn: async () => {
-			if (!actor) return [];
-			return actor.getRosterSummary();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function useShareableExport() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["export", "shareable"],
-		queryFn: async () => {
-			if (!actor) return null;
-			return actor.buildShareableExport();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-function useFullExport() {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["export", "full"],
-		queryFn: async () => {
-			if (!actor) return null;
-			return actor.buildFullExport();
-		},
-		enabled: !!actor && !isFetching
-	});
-}
-//#endregion
-//#region src/hooks/useAccess.ts
-/** Roles allowed to archive or rehire a roadie. */
-var ARCHIVE_ROLES = [Role.storeManager, Role.admin];
-/** Roles allowed to see the Admin surface. */
-var ADMIN_ROLES = [Role.admin];
-/** Roles allowed to see the approvals queue. */
-var APPROVAL_ROLES = [Role.admin];
-/** Roles allowed to see the kiosk sign-up surface. */
-var KIOSK_ROLES = [
-	Role.kiosk,
-	Role.admin,
-	Role.storeManager
-];
-/** Roles allowed to see the export surface. */
-var EXPORT_ROLES = [
-	Role.admin,
-	Role.storeManager,
-	Role.trainingManager,
-	Role.leadership
-];
-/** The full navigation model; each item declares which roles may see it. */
-var NAV_ITEMS = [
-	{
-		labelKey: "nav.today",
-		to: "/today",
-		allowedRoles: []
-	},
-	{
-		labelKey: "nav.dashboard",
-		to: "/dashboard",
-		allowedRoles: []
-	},
-	{
-		labelKey: "nav.roster",
-		to: "/roster",
-		allowedRoles: []
-	},
-	{
-		labelKey: "nav.approvals",
-		to: "/approvals",
-		allowedRoles: APPROVAL_ROLES,
-		badge: "pendingApprovals"
-	},
-	{
-		labelKey: "nav.admin",
-		to: "/admin",
-		allowedRoles: ADMIN_ROLES
-	},
-	{
-		labelKey: "nav.kiosk",
-		to: "/kiosk",
-		allowedRoles: KIOSK_ROLES
-	},
-	{
-		labelKey: "nav.export",
-		to: "/export",
-		allowedRoles: EXPORT_ROLES
-	}
-];
-/** Resolve the caller's access state from the backend grant. */
-function useAccessState() {
-	const { data, isLoading, isError, error } = useMyAccess();
-	return (0, import_react.useMemo)(() => {
-		if (isLoading) return { kind: "loading" };
-		if (isError) return {
-			kind: "error",
-			message: error instanceof Error ? error.message : "Unknown error"
-		};
-		if (!data) return { kind: "pending" };
-		return {
-			kind: "granted",
-			grant: data
-		};
-	}, [
-		data,
-		isLoading,
-		isError,
-		error
-	]);
-}
-/** Whether the given role may see a nav item. */
-function canSeeNavItem(item, role) {
-	if (item.allowedRoles.length === 0) return true;
-	if (!role) return false;
-	return item.allowedRoles.includes(role);
-}
-/** Whether the given role may archive or rehire. */
-function canArchive(role) {
-	return !!role && ARCHIVE_ROLES.includes(role);
-}
-var dictionaries = {
-	en: {
-		"app.name": "Roadie",
-		"app.tagline": "Restaurant crew hiring roster",
-		"nav.today": "Today",
-		"nav.dashboard": "Dashboard",
-		"nav.roster": "Roster",
-		"nav.admin": "Admin",
-		"nav.approvals": "Approve new hires",
-		"nav.kiosk": "Kiosk",
-		"nav.export": "Export",
-		"nav.signOut": "Sign out",
-		"nav.openMenu": "Open navigation menu",
-		"nav.closeMenu": "Close navigation menu",
-		"auth.title": "Sign in to Roadie",
-		"auth.description": "Sign in with Internet Identity to view the store roster and hiring pipeline.",
-		"auth.loading": "Loading your session…",
-		"gate.pending.title": "Waiting for approval",
-		"gate.pending.body": "Your sign-in was received. An admin needs to approve your account and assign a role before you can continue.",
-		"gate.pending.hint": "Check back shortly — this page updates automatically.",
-		"gate.error.title": "We couldn't load your access",
-		"gate.error.body": "Something went wrong while checking your account.",
-		"gate.retry": "Try again",
-		"dashboard.title": "Dashboard",
-		"dashboard.subtitle": "Hiring progress toward opening day",
-		"dashboard.kpi.hired": "Hired",
-		"dashboard.kpi.buildTo": "Build-to total",
-		"dashboard.kpi.stillNeeded": "Still needed",
-		"dashboard.kpi.showedAtOrientation": "Showed at orientation",
-		"dashboard.kpi.certified": "Certified",
-		"dashboard.section.foh": "Front of house",
-		"dashboard.section.boh": "Back of house",
-		"dashboard.position.hiredOf": "{hired} of {total}",
-		"dashboard.empty": "No positions have been configured yet.",
-		"dashboard.loading": "Loading dashboard…",
-		"dashboard.error": "We couldn't load the dashboard.",
-		"roster.title": "Roster",
-		"roster.subtitle": "Every roadie in the pipeline",
-		"roster.search": "Search roadies",
-		"roster.searchPlaceholder": "Search by name or position",
-		"roster.filter.all": "All",
-		"roster.filter.active": "Active",
-		"roster.filter.archived": "Archived",
-		"roster.empty": "No roadies match your search.",
-		"roster.emptyAll": "No roadies have been added yet.",
-		"roster.loading": "Loading roster…",
-		"roster.error": "We couldn't load the roster.",
-		"roster.viewCard": "View card",
-		"roster.archived": "Archived",
-		"roadie.title": "Roadie card",
-		"roadie.back": "Back to roster",
-		"roadie.notFound": "That roadie card could not be found.",
-		"roadie.loading": "Loading roadie card…",
-		"roadie.error": "We couldn't load this roadie card.",
-		"roadie.section.details": "Details",
-		"roadie.section.contact": "Contact",
-		"roadie.section.availability": "Availability",
-		"roadie.field.position": "Position",
-		"roadie.field.secondPosition": "Second position",
-		"roadie.field.crew": "Crew",
-		"roadie.field.hiredAt": "Hired",
-		"roadie.field.startDate": "Start date",
-		"roadie.field.status": "Status",
-		"roadie.field.phone": "Phone",
-		"roadie.field.email": "Email",
-		"roadie.field.emergencyContact": "Emergency contact",
-		"roadie.field.emergencyPhone": "Emergency phone",
-		"roadie.field.shirtSize": "Shirt size",
-		"roadie.field.hatSize": "Hat size",
-		"roadie.field.hometown": "Hometown",
-		"roadie.field.funFact": "Fun fact",
-		"roadie.field.hobbies": "Hobbies",
-		"roadie.field.favoriteSnack": "Favorite snack",
-		"roadie.field.favoriteMovie": "Favorite movie",
-		"roadie.field.goalHere": "Goal here",
-		"roadie.field.weekdayLunch": "Available weekday lunch",
-		"roadie.field.none": "Not provided",
-		"roadie.action.archive": "Archive",
-		"roadie.action.rehire": "Rehire",
-		"roadie.action.edit": "Edit details",
-		"roadie.action.changePosition": "Change position or crew",
-		"roadie.action.flip": "Flip card",
-		"roadie.action.flipBack": "Show front",
-		"roadie.openingTeam": "#975 Opening Team",
-		"roadie.positionCode": "Position code",
-		"roadie.minor": "Minor",
-		"roadie.section.manager": "Manager",
-		"roadie.section.card": "Card",
-		"roadie.section.paperwork": "Paperwork checklist",
-		"roadie.section.changeHistory": "Change history",
-		"roadie.field.preferredName": "Preferred name",
-		"roadie.field.birthday": "Birthday",
-		"roadie.field.orientation": "Orientation session",
-		"roadie.field.crossTrained": "Cross-trained position",
-		"roadie.field.corporateId": "Corporate employee ID",
-		"roadie.field.availabilitySignature": "Availability signature",
-		"roadie.field.availabilitySignedAt": "Availability signed",
-		"roadie.field.availability": "Availability",
-		"roadie.field.weekdayLunchShort": "Weekday lunch",
-		"roadie.field.shiftsWanted": "Shifts wanted per week",
-		"roadie.field.positionAppliedFor": "Position applied for",
-		"roadie.resignPending": "Re-sign pending",
-		"roadie.signed": "Signed",
-		"roadie.unsigned": "Not signed",
-		"roadie.managerOnly": "Visible to Admin and Store Manager only.",
-		"roadie.manager.empty": "No manager details recorded yet.",
-		"roadie.paperwork.empty": "No paperwork items configured.",
-		"roadie.changeHistory.empty": "No changes recorded for this roadie.",
-		"roadie.changeHistory.touchesContact": "Contact set",
-		"roadie.edit.title": "Edit details",
-		"roadie.edit.description": "Update this roadie's profile. Contact details are managed in the Manager tab.",
-		"roadie.edit.save": "Save details",
-		"roadie.edit.saved": "Details saved.",
-		"roadie.edit.error": "We couldn't save those details.",
-		"roadie.changePosition.title": "Change position or crew",
-		"roadie.changePosition.description": "Moving a roadie re-checks paperwork and minimum age for the new position.",
-		"roadie.changePosition.main": "Main position",
-		"roadie.changePosition.second": "Second position",
-		"roadie.changePosition.crew": "Crew",
-		"roadie.changePosition.save": "Move roadie",
-		"roadie.changePosition.saved": "Position updated.",
-		"roadie.changePosition.error": "We couldn't change that position.",
-		"roadie.archive.title": "Move to no longer a roadie",
-		"roadie.archive.description": "Choose a reason. The card is archived and kept in history.",
-		"roadie.archive.reason": "Reason",
-		"roadie.archive.reason.required": "Choose a reason before archiving.",
-		"roadie.archive.other": "Other reason",
-		"roadie.archive.other.required": "Describe the reason.",
-		"roadie.archive.confirm": "Archive roadie",
-		"roadie.archive.saved": "Roadie archived.",
-		"roadie.archive.error": "We couldn't archive that roadie.",
-		"roadie.rehire.title": "Rehire roadie",
-		"roadie.rehire.description": "The roadie returns to Hired and keeps their history.",
-		"roadie.rehire.warn": "This card was archived as {reason}. Rehiring needs a reason and fresh contact details and signatures.",
-		"roadie.rehire.reason": "Reason for rehire",
-		"roadie.rehire.reason.required": "A reason is required for this rehire.",
-		"roadie.rehire.confirm": "Rehire roadie",
-		"roadie.rehire.saved": "Roadie rehired.",
-		"roadie.rehire.error": "We couldn't rehire that roadie.",
-		"roadie.reason.noShow": "No-show",
-		"roadie.reason.quitDuringTraining": "Quit during training",
-		"roadie.reason.tookAnotherJob": "Took another job",
-		"roadie.reason.letGo": "Let go",
-		"roadie.reason.other": "Other",
-		"roadie.status.hired": "Hired",
-		"roadie.status.paperworkDone": "Paperwork done",
-		"roadie.status.archived": "Archived",
-		"roadie.weekday.mon": "Mon",
-		"roadie.weekday.tue": "Tue",
-		"roadie.weekday.wed": "Wed",
-		"roadie.weekday.thu": "Thu",
-		"roadie.weekday.fri": "Fri",
-		"roadie.weekday.sat": "Sat",
-		"roadie.weekday.sun": "Sun",
-		"roadie.shift.am": "AM",
-		"roadie.shift.pm": "PM",
-		"approvals.title": "Approve new hires",
-		"approvals.subtitle": "Pending sign-ins waiting for a role",
-		"approvals.empty": "No one is waiting for approval.",
-		"approvals.loading": "Loading pending users…",
-		"approvals.error": "We couldn't load pending users.",
-		"approvals.requestedAt": "Requested",
-		"approvals.principal": "Principal",
-		"approvals.action.approve": "Approve",
-		"approvals.action.reject": "Reject",
-		"approvals.role.label": "Role",
-		"approvals.role.placeholder": "Select a role",
-		"approvals.role.required": "Choose a role before approving.",
-		"approvals.stations.label": "Trainer stations",
-		"approvals.stations.hint": "Required when the role is Trainer.",
-		"approvals.accessEnd.label": "Access ends",
-		"approvals.accessEnd.hint": "Optional. Access ends at 11:59 PM Central store time on this date.",
-		"approvals.link.label": "Link to existing person",
-		"approvals.link.hint": "Optional. Connect this login to an existing roadie card.",
-		"approvals.link.none": "Do not link",
-		"approvals.confirm.title": "Confirm role",
-		"approvals.confirm.body": "You are about to grant {role} access. This is a high-privilege role.",
-		"approvals.confirm.action": "Confirm and approve",
-		"approvals.cancel": "Cancel",
-		"approvals.success": "Access granted.",
-		"approvals.error.generic": "We couldn't approve that user.",
-		"approvals.signup.section": "Pending sign-ups",
-		"approvals.signup.submittedAt": "Submitted",
-		"approvals.signup.pending": "Pending",
-		"approvals.signup.loading": "Loading pending sign-ups…",
-		"approvals.signup.error": "We couldn't load pending sign-ups.",
-		"approvals.signup.empty": "No sign-ups are waiting for review.",
-		"approvals.signup.duplicates.loading": "Checking for duplicates…",
-		"approvals.signup.duplicates.none": "No duplicate cards found.",
-		"approvals.signup.duplicates.title": "Possible duplicates",
-		"approvals.signup.duplicates.row": "Card #{id} matched on {field}",
-		"approvals.signup.main.label": "Main position",
-		"approvals.signup.main.placeholder": "Select a position",
-		"approvals.signup.main.required": "Choose a main position before approving.",
-		"approvals.signup.second.label": "Second position",
-		"approvals.signup.second.none": "No second position",
-		"approvals.signup.crew.label": "Crew",
-		"approvals.signup.crew.none": "No crew",
-		"approvals.signup.orientation.label": "Orientation session",
-		"approvals.signup.orientation.placeholder": "Select a session",
-		"approvals.signup.orientation.hint": "Past sessions are hidden. Defaults to the session for the position's house.",
-		"approvals.signup.start.label": "Start date",
-		"approvals.signup.signature.label": "Manager signature",
-		"approvals.signup.signature.placeholder": "Type your full name",
-		"approvals.signup.signature.required": "Sign before approving.",
-		"approvals.signup.minor.blocked": "This applicant is a minor and the position requires a higher minimum age.",
-		"approvals.signup.action.approve": "Sign and approve",
-		"approvals.signup.approve.error": "We couldn't approve that sign-up.",
-		"approvals.users.section": "Pending sign-ins",
-		"admin.title": "Admin",
-		"admin.subtitle": "Manage access, roles and store settings",
-		"admin.section.access": "Access grants",
-		"admin.section.store": "Store settings",
-		"admin.section.positions": "Positions",
-		"admin.section.schedule": "Schedule",
-		"admin.section.checklists": "Checklists",
-		"admin.section.template": "Store template",
-		"admin.section.crews": "Crews",
-		"admin.section.changeLog": "Change log",
-		"admin.access.empty": "No access grants yet.",
-		"admin.access.loading": "Loading access grants…",
-		"admin.access.error": "We couldn't load access grants.",
-		"admin.access.role": "Role",
-		"admin.access.stations": "Stations",
-		"admin.access.accessEnd": "Access ends",
-		"admin.access.approvedAt": "Approved",
-		"admin.access.action.changeRole": "Change role",
-		"admin.access.action.remove": "Remove access",
-		"admin.access.lastAdmin": "The last admin cannot be removed.",
-		"admin.access.adminCount": "{count} admins",
-		"admin.store.loading": "Loading store settings…",
-		"admin.store.error": "We couldn't load store settings.",
-		"admin.store.save": "Save settings",
-		"admin.store.saved": "Store settings saved.",
-		"admin.positions.empty": "No positions configured.",
-		"admin.crews.empty": "No crews configured.",
-		"admin.changeLog.empty": "No changes recorded yet.",
-		"admin.changeLog.loading": "Loading change log…",
-		"admin.changeLog.error": "We couldn't load the change log.",
-		"today.title": "Today",
-		"today.placeholder.title": "Today is coming soon",
-		"today.placeholder.body": "The daily view — orientation, training and sign-offs — will live here. For now, use the Dashboard and Roster.",
-		"kiosk.title": "Kiosk",
-		"kiosk.subtitle": "Self-service sign-up",
-		"kiosk.placeholder.title": "Kiosk sign-up",
-		"kiosk.placeholder.body": "The kiosk sign-up flow is being prepared. This screen will let new roadies submit their details on a shared device.",
-		"export.title": "Export",
-		"export.subtitle": "Download the roster for reporting",
-		"export.shareable": "Shareable export",
-		"export.shareable.hint": "Roster summary without contact details.",
-		"export.full": "Full export",
-		"export.full.hint": "Includes contact details. Admin and Store Manager only.",
-		"export.full.locked": "Contact details are visible only to Admin and Store Manager.",
-		"export.action.download": "Download CSV",
-		"export.loading": "Building export…",
-		"export.error": "We couldn't build that export.",
-		"export.empty": "There is nothing to export yet.",
-		"export.grandTotal": "Grand total",
-		"export.fohTotal": "Front of house",
-		"export.bohTotal": "Back of house",
-		"common.loading": "Loading…",
-		"common.error": "Something went wrong.",
-		"common.retry": "Retry",
-		"common.cancel": "Cancel",
-		"common.confirm": "Confirm",
-		"common.close": "Close",
-		"common.save": "Save",
-		"common.none": "None",
-		"common.optional": "Optional",
-		"common.required": "Required",
-		"common.yes": "Yes",
-		"common.no": "No",
-		"footer.attribution": "Built with love using caffeine.ai"
-	},
-	es: {
-		"app.name": "Roadie",
-		"app.tagline": "Plantilla de contratación del equipo",
-		"nav.today": "Hoy",
-		"nav.dashboard": "Panel",
-		"nav.roster": "Plantilla",
-		"nav.admin": "Administración",
-		"nav.approvals": "Aprobar nuevos",
-		"nav.kiosk": "Quiosco",
-		"nav.export": "Exportar",
-		"nav.signOut": "Cerrar sesión",
-		"nav.openMenu": "Abrir menú de navegación",
-		"nav.closeMenu": "Cerrar menú de navegación",
-		"auth.title": "Inicia sesión en Roadie",
-		"auth.description": "Inicia sesión con Internet Identity para ver la plantilla y el proceso de contratación.",
-		"auth.loading": "Cargando tu sesión…",
-		"gate.pending.title": "Esperando aprobación",
-		"gate.pending.body": "Recibimos tu inicio de sesión. Un administrador debe aprobar tu cuenta y asignarte un rol antes de continuar.",
-		"gate.pending.hint": "Vuelve pronto — esta página se actualiza automáticamente.",
-		"gate.error.title": "No pudimos cargar tu acceso",
-		"gate.error.body": "Algo salió mal al comprobar tu cuenta.",
-		"gate.retry": "Reintentar",
-		"dashboard.title": "Panel",
-		"dashboard.subtitle": "Progreso de contratación hacia la apertura",
-		"dashboard.kpi.hired": "Contratados",
-		"dashboard.kpi.buildTo": "Meta total",
-		"dashboard.kpi.stillNeeded": "Faltan",
-		"dashboard.kpi.showedAtOrientation": "Asistieron a orientación",
-		"dashboard.kpi.certified": "Certificados",
-		"dashboard.section.foh": "Sala",
-		"dashboard.section.boh": "Cocina",
-		"dashboard.position.hiredOf": "{hired} de {total}",
-		"dashboard.empty": "Aún no se han configurado puestos.",
-		"dashboard.loading": "Cargando panel…",
-		"dashboard.error": "No pudimos cargar el panel.",
-		"roster.title": "Plantilla",
-		"roster.subtitle": "Todos los roadies del proceso",
-		"roster.search": "Buscar roadies",
-		"roster.searchPlaceholder": "Buscar por nombre o puesto",
-		"roster.filter.all": "Todos",
-		"roster.filter.active": "Activos",
-		"roster.filter.archived": "Archivados",
-		"roster.empty": "Ningún roadie coincide con tu búsqueda.",
-		"roster.emptyAll": "Aún no se ha añadido ningún roadie.",
-		"roster.loading": "Cargando plantilla…",
-		"roster.error": "No pudimos cargar la plantilla.",
-		"roster.viewCard": "Ver ficha",
-		"roster.archived": "Archivado",
-		"roadie.title": "Ficha del roadie",
-		"roadie.back": "Volver a la plantilla",
-		"roadie.notFound": "No se encontró esa ficha.",
-		"roadie.loading": "Cargando ficha…",
-		"roadie.error": "No pudimos cargar esta ficha.",
-		"roadie.section.details": "Detalles",
-		"roadie.section.contact": "Contacto",
-		"roadie.section.availability": "Disponibilidad",
-		"roadie.field.position": "Puesto",
-		"roadie.field.secondPosition": "Segundo puesto",
-		"roadie.field.crew": "Equipo",
-		"roadie.field.hiredAt": "Contratado",
-		"roadie.field.startDate": "Fecha de inicio",
-		"roadie.field.status": "Estado",
-		"roadie.field.phone": "Teléfono",
-		"roadie.field.email": "Correo",
-		"roadie.field.emergencyContact": "Contacto de emergencia",
-		"roadie.field.emergencyPhone": "Teléfono de emergencia",
-		"roadie.field.shirtSize": "Talla de camiseta",
-		"roadie.field.hatSize": "Talla de gorra",
-		"roadie.field.hometown": "Ciudad natal",
-		"roadie.field.funFact": "Dato curioso",
-		"roadie.field.hobbies": "Pasatiempos",
-		"roadie.field.favoriteSnack": "Snack favorito",
-		"roadie.field.favoriteMovie": "Película favorita",
-		"roadie.field.goalHere": "Meta aquí",
-		"roadie.field.weekdayLunch": "Disponible para almuerzo entre semana",
-		"roadie.field.none": "No proporcionado",
-		"roadie.action.archive": "Archivar",
-		"roadie.action.rehire": "Recontratar",
-		"roadie.action.edit": "Editar datos",
-		"roadie.action.changePosition": "Cambiar puesto o equipo",
-		"roadie.action.flip": "Girar ficha",
-		"roadie.action.flipBack": "Ver frente",
-		"roadie.openingTeam": "#975 Equipo de apertura",
-		"roadie.positionCode": "Código de puesto",
-		"roadie.minor": "Menor",
-		"roadie.section.manager": "Gerente",
-		"roadie.section.card": "Ficha",
-		"roadie.section.paperwork": "Lista de papeleo",
-		"roadie.section.changeHistory": "Historial de cambios",
-		"roadie.field.preferredName": "Nombre preferido",
-		"roadie.field.birthday": "Cumpleaños",
-		"roadie.field.orientation": "Sesión de orientación",
-		"roadie.field.crossTrained": "Puesto con entrenamiento cruzado",
-		"roadie.field.corporateId": "ID de empleado corporativo",
-		"roadie.field.availabilitySignature": "Firma de disponibilidad",
-		"roadie.field.availabilitySignedAt": "Disponibilidad firmada",
-		"roadie.field.availability": "Disponibilidad",
-		"roadie.field.weekdayLunchShort": "Almuerzo entre semana",
-		"roadie.field.shiftsWanted": "Turnos deseados por semana",
-		"roadie.field.positionAppliedFor": "Puesto solicitado",
-		"roadie.resignPending": "Firma pendiente",
-		"roadie.signed": "Firmado",
-		"roadie.unsigned": "Sin firmar",
-		"roadie.managerOnly": "Visible solo para Admin y Gerente de tienda.",
-		"roadie.manager.empty": "Aún no hay datos de gerente.",
-		"roadie.paperwork.empty": "No hay elementos de papeleo configurados.",
-		"roadie.changeHistory.empty": "No hay cambios registrados para este roadie.",
-		"roadie.changeHistory.touchesContact": "Datos de contacto",
-		"roadie.edit.title": "Editar datos",
-		"roadie.edit.description": "Actualiza el perfil de este roadie. Los datos de contacto se gestionan en la pestaña Gerente.",
-		"roadie.edit.save": "Guardar datos",
-		"roadie.edit.saved": "Datos guardados.",
-		"roadie.edit.error": "No pudimos guardar esos datos.",
-		"roadie.changePosition.title": "Cambiar puesto o equipo",
-		"roadie.changePosition.description": "Mover a un roadie vuelve a comprobar el papeleo y la edad mínima del nuevo puesto.",
-		"roadie.changePosition.main": "Puesto principal",
-		"roadie.changePosition.second": "Segundo puesto",
-		"roadie.changePosition.crew": "Equipo",
-		"roadie.changePosition.save": "Mover roadie",
-		"roadie.changePosition.saved": "Puesto actualizado.",
-		"roadie.changePosition.error": "No pudimos cambiar ese puesto.",
-		"roadie.archive.title": "Marcar como ya no es roadie",
-		"roadie.archive.description": "Elige un motivo. La ficha se archiva y se conserva en el historial.",
-		"roadie.archive.reason": "Motivo",
-		"roadie.archive.reason.required": "Elige un motivo antes de archivar.",
-		"roadie.archive.other": "Otro motivo",
-		"roadie.archive.other.required": "Describe el motivo.",
-		"roadie.archive.confirm": "Archivar roadie",
-		"roadie.archive.saved": "Roadie archivado.",
-		"roadie.archive.error": "No pudimos archivar a ese roadie.",
-		"roadie.rehire.title": "Recontratar roadie",
-		"roadie.rehire.description": "El roadie vuelve a Contratado y conserva su historial.",
-		"roadie.rehire.warn": "Esta ficha se archivó como {reason}. Recontratar requiere un motivo y datos de contacto y firmas nuevos.",
-		"roadie.rehire.reason": "Motivo de recontratación",
-		"roadie.rehire.reason.required": "Se requiere un motivo para esta recontratación.",
-		"roadie.rehire.confirm": "Recontratar roadie",
-		"roadie.rehire.saved": "Roadie recontratado.",
-		"roadie.rehire.error": "No pudimos recontratar a ese roadie.",
-		"roadie.reason.noShow": "No se presentó",
-		"roadie.reason.quitDuringTraining": "Renunció durante el entrenamiento",
-		"roadie.reason.tookAnotherJob": "Tomó otro trabajo",
-		"roadie.reason.letGo": "Despedido",
-		"roadie.reason.other": "Otro",
-		"roadie.status.hired": "Contratado",
-		"roadie.status.paperworkDone": "Papeleo listo",
-		"roadie.status.archived": "Archivado",
-		"roadie.weekday.mon": "Lun",
-		"roadie.weekday.tue": "Mar",
-		"roadie.weekday.wed": "Mié",
-		"roadie.weekday.thu": "Jue",
-		"roadie.weekday.fri": "Vie",
-		"roadie.weekday.sat": "Sáb",
-		"roadie.weekday.sun": "Dom",
-		"roadie.shift.am": "AM",
-		"roadie.shift.pm": "PM",
-		"approvals.title": "Aprobar nuevos",
-		"approvals.subtitle": "Inicios de sesión pendientes de un rol",
-		"approvals.empty": "Nadie está esperando aprobación.",
-		"approvals.loading": "Cargando usuarios pendientes…",
-		"approvals.error": "No pudimos cargar los usuarios pendientes.",
-		"approvals.requestedAt": "Solicitado",
-		"approvals.principal": "Principal",
-		"approvals.action.approve": "Aprobar",
-		"approvals.action.reject": "Rechazar",
-		"approvals.role.label": "Rol",
-		"approvals.role.placeholder": "Selecciona un rol",
-		"approvals.role.required": "Elige un rol antes de aprobar.",
-		"approvals.stations.label": "Estaciones de entrenador",
-		"approvals.stations.hint": "Obligatorio cuando el rol es Entrenador.",
-		"approvals.accessEnd.label": "El acceso termina",
-		"approvals.accessEnd.hint": "Opcional. El acceso termina a las 11:59 PM hora Central de la tienda en esta fecha.",
-		"approvals.link.label": "Vincular a una persona existente",
-		"approvals.link.hint": "Opcional. Conecta este inicio de sesión a una ficha existente.",
-		"approvals.link.none": "No vincular",
-		"approvals.confirm.title": "Confirmar rol",
-		"approvals.confirm.body": "Estás a punto de otorgar acceso de {role}. Es un rol de alto privilegio.",
-		"approvals.confirm.action": "Confirmar y aprobar",
-		"approvals.cancel": "Cancelar",
-		"approvals.success": "Acceso otorgado.",
-		"approvals.error.generic": "No pudimos aprobar a ese usuario.",
-		"approvals.signup.section": "Registros pendientes",
-		"approvals.signup.submittedAt": "Enviado",
-		"approvals.signup.pending": "Pendiente",
-		"approvals.signup.loading": "Cargando registros pendientes…",
-		"approvals.signup.error": "No pudimos cargar los registros pendientes.",
-		"approvals.signup.empty": "No hay registros esperando revisión.",
-		"approvals.signup.duplicates.loading": "Buscando duplicados…",
-		"approvals.signup.duplicates.none": "No se encontraron fichas duplicadas.",
-		"approvals.signup.duplicates.title": "Posibles duplicados",
-		"approvals.signup.duplicates.row": "Ficha #{id} coincide en {field}",
-		"approvals.signup.main.label": "Puesto principal",
-		"approvals.signup.main.placeholder": "Selecciona un puesto",
-		"approvals.signup.main.required": "Elige un puesto principal antes de aprobar.",
-		"approvals.signup.second.label": "Segundo puesto",
-		"approvals.signup.second.none": "Sin segundo puesto",
-		"approvals.signup.crew.label": "Equipo",
-		"approvals.signup.crew.none": "Sin equipo",
-		"approvals.signup.orientation.label": "Sesión de orientación",
-		"approvals.signup.orientation.placeholder": "Selecciona una sesión",
-		"approvals.signup.orientation.hint": "Las sesiones pasadas se ocultan. Por defecto, la sesión del área del puesto.",
-		"approvals.signup.start.label": "Fecha de inicio",
-		"approvals.signup.signature.label": "Firma del gerente",
-		"approvals.signup.signature.placeholder": "Escribe tu nombre completo",
-		"approvals.signup.signature.required": "Firma antes de aprobar.",
-		"approvals.signup.minor.blocked": "Este solicitante es menor y el puesto exige una edad mínima mayor.",
-		"approvals.signup.action.approve": "Firmar y aprobar",
-		"approvals.signup.approve.error": "No pudimos aprobar ese registro.",
-		"approvals.users.section": "Inicios de sesión pendientes",
-		"admin.title": "Administración",
-		"admin.subtitle": "Gestiona accesos, roles y ajustes de la tienda",
-		"admin.section.access": "Accesos otorgados",
-		"admin.section.store": "Ajustes de la tienda",
-		"admin.section.positions": "Puestos",
-		"admin.section.schedule": "Calendario",
-		"admin.section.checklists": "Listas de verificación",
-		"admin.section.template": "Plantilla de tienda",
-		"admin.section.crews": "Equipos",
-		"admin.section.changeLog": "Registro de cambios",
-		"admin.access.empty": "Aún no hay accesos otorgados.",
-		"admin.access.loading": "Cargando accesos…",
-		"admin.access.error": "No pudimos cargar los accesos.",
-		"admin.access.role": "Rol",
-		"admin.access.stations": "Estaciones",
-		"admin.access.accessEnd": "El acceso termina",
-		"admin.access.approvedAt": "Aprobado",
-		"admin.access.action.changeRole": "Cambiar rol",
-		"admin.access.action.remove": "Quitar acceso",
-		"admin.access.lastAdmin": "No se puede quitar al último administrador.",
-		"admin.access.adminCount": "{count} administradores",
-		"admin.store.loading": "Cargando ajustes…",
-		"admin.store.error": "No pudimos cargar los ajustes de la tienda.",
-		"admin.store.save": "Guardar ajustes",
-		"admin.store.saved": "Ajustes de la tienda guardados.",
-		"admin.positions.empty": "No hay puestos configurados.",
-		"admin.crews.empty": "No hay equipos configurados.",
-		"admin.changeLog.empty": "Aún no hay cambios registrados.",
-		"admin.changeLog.loading": "Cargando registro de cambios…",
-		"admin.changeLog.error": "No pudimos cargar el registro de cambios.",
-		"today.title": "Hoy",
-		"today.placeholder.title": "Hoy llegará pronto",
-		"today.placeholder.body": "La vista diaria — orientación, entrenamiento y firmas — vivirá aquí. Por ahora, usa el Panel y la Plantilla.",
-		"kiosk.title": "Quiosco",
-		"kiosk.subtitle": "Registro de autoservicio",
-		"kiosk.placeholder.title": "Registro en quiosco",
-		"kiosk.placeholder.body": "El flujo de registro del quiosco se está preparando. Esta pantalla permitirá a los nuevos roadies enviar sus datos en un dispositivo compartido.",
-		"export.title": "Exportar",
-		"export.subtitle": "Descarga la plantilla para informes",
-		"export.shareable": "Exportación compartible",
-		"export.shareable.hint": "Resumen de la plantilla sin datos de contacto.",
-		"export.full": "Exportación completa",
-		"export.full.hint": "Incluye datos de contacto. Solo Admin y Gerente de tienda.",
-		"export.full.locked": "Los datos de contacto solo son visibles para Admin y Gerente de tienda.",
-		"export.action.download": "Descargar CSV",
-		"export.loading": "Generando exportación…",
-		"export.error": "No pudimos generar esa exportación.",
-		"export.empty": "Aún no hay nada que exportar.",
-		"export.grandTotal": "Total general",
-		"export.fohTotal": "Sala",
-		"export.bohTotal": "Cocina",
-		"common.loading": "Cargando…",
-		"common.error": "Algo salió mal.",
-		"common.retry": "Reintentar",
-		"common.cancel": "Cancelar",
-		"common.confirm": "Confirmar",
-		"common.close": "Cerrar",
-		"common.save": "Guardar",
-		"common.none": "Ninguno",
-		"common.optional": "Opcional",
-		"common.required": "Obligatorio",
-		"common.yes": "Sí",
-		"common.no": "No",
-		"footer.attribution": "Hecho con cariño usando caffeine.ai"
-	}
-};
-//#endregion
-//#region src/hooks/useI18n.ts
-var I18nContext = (0, import_react.createContext)(null);
-function translate(locale, key, vars) {
-	let value = (dictionaries[locale] ?? dictionaries.en)[key] ?? dictionaries.en[key] ?? key;
-	if (vars) for (const [name, replacement] of Object.entries(vars)) value = value.replaceAll(`{${name}}`, String(replacement));
-	return value;
-}
-/** Access the copy dictionary. Falls back to English outside a provider. */
-function useI18n() {
-	const ctx = (0, import_react.useContext)(I18nContext);
-	if (ctx) return ctx;
-	return {
-		locale: "en",
-		setLocale: () => {},
-		t: (key, vars) => translate("en", key, vars)
-	};
 }
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/lucide-react@0.511.0_react@19.1.5/node_modules/lucide-react/dist/esm/shared/src/utils.js
@@ -40591,6 +39612,1373 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
+//#region src/components/States.tsx
+/** A layout-matched loading state. */
+function LoadingState({ label = "Loading…", className, ocid = "page.loading_state" }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("output", {
+		"data-ocid": ocid,
+		className: cn("flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card p-8 text-muted-foreground", className),
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
+			className: "h-6 w-6 animate-spin text-primary",
+			"aria-hidden": "true"
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			className: "text-sm",
+			children: label
+		})]
+	});
+}
+/** A recoverable error state. */
+function ErrorState({ title = "Something went wrong", message, onRetry, className, ocid = "page.error_state" }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		"data-ocid": ocid,
+		className: cn("flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-destructive/30 bg-card p-8 text-center", className),
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TriangleAlert, {
+				className: "h-6 w-6 text-destructive",
+				"aria-hidden": "true"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "font-display text-lg font-semibold uppercase tracking-wide text-foreground",
+				children: title
+			}), message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "mt-1 text-sm text-muted-foreground",
+				children: message
+			})] }),
+			onRetry && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+				type: "button",
+				variant: "outline",
+				className: "touch-target",
+				"data-ocid": "page.retry_button",
+				onClick: onRetry,
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, {
+					className: "mr-2 h-4 w-4",
+					"aria-hidden": "true"
+				}), "Retry"]
+			})
+		]
+	});
+}
+/** A helpful empty state with an optional action. */
+function EmptyState({ title, message, action, className, ocid = "page.empty_state" }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		"data-ocid": ocid,
+		className: cn("flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card p-8 text-center", className),
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Inbox, {
+				className: "h-7 w-7 text-muted-foreground",
+				"aria-hidden": "true"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "font-display text-lg font-semibold uppercase tracking-wide text-foreground",
+				children: title
+			}), message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "mx-auto mt-1 max-w-md text-sm text-muted-foreground",
+				children: message
+			})] }),
+			action
+		]
+	});
+}
+//#endregion
+//#region src/components/StoreLogo.tsx
+/**
+* The store mark: a navy disc with a red ring, a white star and three white
+* stripes. Rendered as inline SVG so it stays crisp at every size and always
+* uses the exact brand colors (navy #14284B, red #B22234, white).
+*/
+function StoreLogo({ className, title = "Roadie store logo" }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", {
+		viewBox: "0 0 64 64",
+		role: "img",
+		"aria-label": title,
+		"data-ocid": "store.logo",
+		className: cn("h-10 w-10 shrink-0", className),
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("title", { children: title }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+				cx: "32",
+				cy: "32",
+				r: "31",
+				fill: "#B22234"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+				cx: "32",
+				cy: "32",
+				r: "27",
+				fill: "#14284B"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
+				d: "M32 13.5l4.6 9.3 10.3 1.5-7.45 7.26 1.76 10.25L32 36.98l-9.21 4.84 1.76-10.25L17.1 24.3l10.3-1.5z",
+				fill: "#FFFFFF"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", {
+				x: "20",
+				y: "45",
+				width: "24",
+				height: "2.6",
+				rx: "1.3",
+				fill: "#FFFFFF"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", {
+				x: "23",
+				y: "50",
+				width: "18",
+				height: "2.6",
+				rx: "1.3",
+				fill: "#FFFFFF"
+			})
+		]
+	});
+}
+//#endregion
+//#region src/hooks/useQueries.ts
+function useMyAccess() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["myAccess"],
+		queryFn: async () => {
+			if (!actor) return null;
+			return actor.getMyAccess();
+		},
+		enabled: !!actor && !isFetching,
+		refetchInterval: 5e3,
+		refetchIntervalInBackground: false
+	});
+}
+/**
+* The pending sign-in queue. Only admins may read it, so callers pass
+* `enabled` (typically `canApprove(role)`) to avoid a trapping read for every
+* other role.
+*/
+function usePendingUsers(enabled = true) {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["pendingUsers"],
+		queryFn: async () => {
+			if (!actor) return [];
+			return actor.listPendingUsers();
+		},
+		enabled: enabled && !!actor && !isFetching
+	});
+}
+function usePendingSignups() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["pendingSignups"],
+		queryFn: async () => {
+			if (!actor) return [];
+			return actor.listPendingSignups();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+function useSignupDuplicates(id) {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["signupDuplicates", id?.toString()],
+		queryFn: async () => {
+			if (!actor || id === void 0) return [];
+			return actor.findDuplicates(id);
+		},
+		enabled: !!actor && !isFetching && id !== void 0
+	});
+}
+function useApproveSignup() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (args) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.approveSignup(args.id, args.decision, args.signature);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["pendingSignups"] });
+			queryClient.invalidateQueries({ queryKey: ["roadies"] });
+			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+			queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+		}
+	});
+}
+function useRejectSignup() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (id) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.rejectSignup(id);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["pendingSignups"] });
+		}
+	});
+}
+function useRequestAccess() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async () => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.requestAccess();
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["myAccess"] });
+			queryClient.invalidateQueries({ queryKey: ["pendingUsers"] });
+		}
+	});
+}
+/**
+* Bridge the platform's first-admin grant into the app's own access model.
+* Idempotent: the backend only persists a grant while no app Admin exists and
+* the caller is already a platform admin, so it is safe to call for every
+* signed-in caller. Returns true once the caller holds an app Admin grant.
+*/
+function useBootstrapAdmin() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async () => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.bootstrapAdmin();
+		},
+		onSuccess: (granted) => {
+			if (granted) {
+				queryClient.invalidateQueries({ queryKey: ["myAccess"] });
+				queryClient.invalidateQueries({ queryKey: ["pendingUsers"] });
+				queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
+				queryClient.invalidateQueries({ queryKey: ["adminCount"] });
+			}
+		}
+	});
+}
+function useAccessGrants() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["accessGrants"],
+		queryFn: async () => {
+			if (!actor) return [];
+			return actor.listAccessGrants();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+function useAdminCount() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["adminCount"],
+		queryFn: async () => {
+			if (!actor) return 0n;
+			return actor.adminCount();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+function useApproveUser() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (request) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.approveUser(request);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["pendingUsers"] });
+			queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
+			queryClient.invalidateQueries({ queryKey: ["adminCount"] });
+		}
+	});
+}
+function useUpdateUserRole() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (args) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.updateUserRole(args.principal, args.role);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
+			queryClient.invalidateQueries({ queryKey: ["adminCount"] });
+		}
+	});
+}
+function useUpdateTrainerStations() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (args) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.updateTrainerStations(args.principal, args.positionIds);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
+		}
+	});
+}
+function useUpdateAccessEnd() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (args) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.updateAccessEnd(args.principal, args.accessEndsAt);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
+		}
+	});
+}
+function useRemoveUser() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (principal) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.removeUser(principal);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
+			queryClient.invalidateQueries({ queryKey: ["adminCount"] });
+		}
+	});
+}
+function useStoreInfo() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["storeInfo"],
+		queryFn: async () => {
+			if (!actor) return null;
+			return actor.getStoreInfo();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+function usePositions() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["positions"],
+		queryFn: async () => {
+			if (!actor) return [];
+			return actor.listPositions();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+function useSchedule() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["schedule"],
+		queryFn: async () => {
+			if (!actor) return [];
+			return actor.listSchedule();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+function useUpdateStoreInfo() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (info) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.updateStoreInfo(info);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["storeInfo"] });
+		}
+	});
+}
+function useCreatePosition() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (position) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.createPosition(position);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["positions"] });
+			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+		}
+	});
+}
+function useUpdatePosition() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (position) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.updatePosition(position);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["positions"] });
+			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+		}
+	});
+}
+function useDeletePosition() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (id) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.deletePosition(id);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["positions"] });
+			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+		}
+	});
+}
+function useCreateScheduleEvent() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (event) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.createScheduleEvent(event);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["schedule"] });
+		}
+	});
+}
+function useUpdateScheduleEvent() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (event) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.updateScheduleEvent(event);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["schedule"] });
+		}
+	});
+}
+function useDeleteScheduleEvent() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (id) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.deleteScheduleEvent(id);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["schedule"] });
+		}
+	});
+}
+function useChecklists$1() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["checklists"],
+		queryFn: async () => {
+			if (!actor) return null;
+			return actor.getChecklists();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+function useUpdateChecklists() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (value) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.updateChecklists(value);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["checklists"] });
+		}
+	});
+}
+function useRetentionSettings() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["retentionSettings"],
+		queryFn: async () => {
+			if (!actor) return null;
+			return actor.getRetentionSettings();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+function useUpdateRetentionSettings() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (settings) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.updateRetentionSettings(settings);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["retentionSettings"] });
+		}
+	});
+}
+function useSaveStoreTemplate() {
+	const { actor } = useActor(createActor);
+	return useMutation({ mutationFn: async (name) => {
+		if (!actor) throw new Error("Backend is not ready");
+		return actor.saveStoreTemplate(name);
+	} });
+}
+function useRoadies() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["roadies"],
+		queryFn: async () => {
+			if (!actor) return [];
+			return actor.listRoadies();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+function useRoadie(id) {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["roadie", id?.toString()],
+		queryFn: async () => {
+			if (!actor || id === void 0) return null;
+			return actor.getRoadie(id);
+		},
+		enabled: !!actor && !isFetching && id !== void 0
+	});
+}
+function useCrews() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["crews"],
+		queryFn: async () => {
+			if (!actor) return [];
+			return actor.listCrews();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+function useDashboard() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["dashboard"],
+		queryFn: async () => {
+			if (!actor) return null;
+			return actor.getDashboard();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+/**
+* Per-position roster counts: on-hand roadies and open spots. The backend
+* derives both from the position's build-to target, so the dashboard panels
+* read on-hand and open spots from this summary rather than recounting.
+*/
+function useRosterSummary() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["rosterSummary"],
+		queryFn: async () => {
+			if (!actor) return [];
+			return actor.getRosterSummary();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+function useShareableExport() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["export", "shareable"],
+		queryFn: async () => {
+			if (!actor) return null;
+			return actor.buildShareableExport();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+/**
+* The Full export, including contact details. This is a mutation rather than a
+* query so the expensive build runs only when an Admin or Store Manager taps
+* Download, never on page load. The caller invokes `mutateAsync()` from the
+* download handler and passes the returned data to the workbook builder.
+*/
+function useFullExport() {
+	const { actor } = useActor(createActor);
+	return useMutation({ mutationFn: async () => {
+		if (!actor) throw new Error("Backend is not ready");
+		return actor.buildFullExport();
+	} });
+}
+//#endregion
+//#region src/hooks/useAccess.ts
+/** Roles allowed to archive or rehire a roadie. */
+var ARCHIVE_ROLES = [Role.storeManager, Role.admin];
+/** Roles allowed to see the Admin surface. */
+var ADMIN_ROLES = [Role.admin];
+/** Roles allowed to see the approvals queue. */
+var APPROVAL_ROLES = [Role.admin, Role.storeManager];
+/** Roles allowed to see the kiosk sign-up surface. */
+var KIOSK_ROLES = [
+	Role.kiosk,
+	Role.admin,
+	Role.storeManager
+];
+/** Roles allowed to see the export surface. */
+var EXPORT_ROLES = [
+	Role.admin,
+	Role.storeManager,
+	Role.trainingManager,
+	Role.leadership
+];
+/** Roles allowed to edit a roadie's details or change their position. */
+var EDIT_ROADIE_ROLES = [Role.admin, Role.storeManager];
+/** The full navigation model; each item declares which roles may see it. */
+var NAV_ITEMS = [
+	{
+		labelKey: "nav.today",
+		to: "/today",
+		allowedRoles: []
+	},
+	{
+		labelKey: "nav.dashboard",
+		to: "/dashboard",
+		allowedRoles: []
+	},
+	{
+		labelKey: "nav.roster",
+		to: "/roster",
+		allowedRoles: []
+	},
+	{
+		labelKey: "nav.approvals",
+		to: "/approvals",
+		allowedRoles: APPROVAL_ROLES,
+		badge: "pendingApprovals"
+	},
+	{
+		labelKey: "nav.admin",
+		to: "/admin",
+		allowedRoles: ADMIN_ROLES
+	},
+	{
+		labelKey: "nav.kiosk",
+		to: "/kiosk",
+		allowedRoles: KIOSK_ROLES
+	},
+	{
+		labelKey: "nav.export",
+		to: "/export",
+		allowedRoles: EXPORT_ROLES
+	}
+];
+/** Resolve the caller's access state from the backend grant. */
+function useAccessState() {
+	const { data, isLoading, isError, error } = useMyAccess();
+	return (0, import_react.useMemo)(() => {
+		if (isLoading) return { kind: "loading" };
+		if (isError) return {
+			kind: "error",
+			message: error instanceof Error ? error.message : "Unknown error"
+		};
+		if (!data) return { kind: "pending" };
+		return {
+			kind: "granted",
+			grant: data
+		};
+	}, [
+		data,
+		isLoading,
+		isError,
+		error
+	]);
+}
+/** Whether the given role may see a nav item. */
+function canSeeNavItem(item, role) {
+	if (item.allowedRoles.length === 0) return true;
+	if (!role) return false;
+	return item.allowedRoles.includes(role);
+}
+/** Whether the given role may archive or rehire. */
+function canArchive(role) {
+	return !!role && ARCHIVE_ROLES.includes(role);
+}
+/** Whether the given role may open the Admin surface. */
+function canAdmin(role) {
+	return !!role && ADMIN_ROLES.includes(role);
+}
+/** Whether the given role may open the approvals queue. */
+function canApprove(role) {
+	return !!role && APPROVAL_ROLES.includes(role);
+}
+/** Whether the given role may open the export surface. */
+function canExport(role) {
+	return !!role && EXPORT_ROLES.includes(role);
+}
+/** Whether the given role may edit a roadie's details or position. */
+function canEditRoadie(role) {
+	return !!role && EDIT_ROADIE_ROLES.includes(role);
+}
+var dictionaries = {
+	en: {
+		"app.name": "Roadie",
+		"app.tagline": "Restaurant crew hiring roster",
+		"nav.today": "Today",
+		"nav.dashboard": "Dashboard",
+		"nav.roster": "Roster",
+		"nav.admin": "Admin",
+		"nav.approvals": "Approve new hires",
+		"nav.kiosk": "Kiosk",
+		"nav.export": "Export",
+		"nav.signOut": "Sign out",
+		"nav.openMenu": "Open navigation menu",
+		"nav.closeMenu": "Close navigation menu",
+		"auth.title": "Sign in to Roadie",
+		"auth.description": "Sign in with Internet Identity to view the store roster and hiring pipeline.",
+		"auth.loading": "Loading your session…",
+		"gate.pending.title": "Waiting for approval",
+		"gate.pending.body": "Your sign-in was received. An admin needs to approve your account and assign a role before you can continue.",
+		"gate.pending.hint": "Check back shortly — this page updates automatically.",
+		"gate.error.title": "We couldn't load your access",
+		"gate.error.body": "Something went wrong while checking your account.",
+		"gate.retry": "Try again",
+		"gate.signOut": "Sign out",
+		"guard.title": "You don't have access to this page",
+		"guard.body": "Your role doesn't include this page. Use the navigation to reach a page you can open.",
+		"guard.back": "Go to dashboard",
+		"dashboard.title": "Dashboard",
+		"dashboard.subtitle": "Hiring progress toward opening day",
+		"dashboard.kpi.hired": "Hired",
+		"dashboard.kpi.buildTo": "Build-to total",
+		"dashboard.kpi.stillNeeded": "Still needed",
+		"dashboard.kpi.showedAtOrientation": "Showed at orientation",
+		"dashboard.kpi.certified": "Certified",
+		"dashboard.section.foh": "Front of house",
+		"dashboard.section.boh": "Back of house",
+		"dashboard.position.hiredOf": "{hired} of {total}",
+		"dashboard.empty": "No positions have been configured yet.",
+		"dashboard.loading": "Loading dashboard…",
+		"dashboard.error": "We couldn't load the dashboard.",
+		"dashboard.kpi.hired.hint": "On hand now",
+		"dashboard.kpi.buildTo.hint": "Opening target",
+		"dashboard.kpi.stillNeeded.hint": "To reach build-to",
+		"dashboard.kpi.orientation.hint": "Awaiting phase",
+		"dashboard.kpi.certified.hint": "Awaiting phase",
+		"dashboard.position.onHandOf": "{onHand} on hand · build to {target}",
+		"dashboard.position.needed": "{count} needed",
+		"dashboard.position.over": "{count} over",
+		"dashboard.position.filled": "Filled",
+		"dashboard.position.progressLabel": "{name}: {onHand} of {target} hired",
+		"dashboard.panel.empty": "No positions in this house yet.",
+		"dashboard.countdown.label": "Countdown to opening",
+		"dashboard.countdown.noDate": "Opening date not set",
+		"dashboard.countdown.days": "Days",
+		"dashboard.countdown.hours": "Hours",
+		"dashboard.countdown.minutes": "Min",
+		"dashboard.timeline.now": "Now",
+		"dashboard.timeline.empty": "No schedule events have been added yet.",
+		"dashboard.adjust.mode": "Adjust build to",
+		"dashboard.adjust.done": "Done adjusting",
+		"dashboard.adjust.hint": "Each tap saves a +1 or −1 change to the build-to target and is logged.",
+		"dashboard.adjust.opening": "Opening build to",
+		"dashboard.adjust.afterOpening": "After-opening build to",
+		"dashboard.adjust.increase": "Increase {label}",
+		"dashboard.adjust.decrease": "Decrease {label}",
+		"dashboard.adjust.saving": "Saving…",
+		"dashboard.adjust.error": "We couldn't save that change.",
+		"dashboard.roster.title": "Position roster",
+		"dashboard.roster.summary": "{onHand} on hand · build to {target}",
+		"dashboard.roster.loading": "Loading roster…",
+		"dashboard.roster.error": "We couldn't load this roster.",
+		"dashboard.roster.empty": "No roadies or open spots for this position.",
+		"dashboard.roster.openSpot": "Open spot",
+		"dashboard.roster.archivedTitle": "No longer a roadie",
+		"dashboard.roster.rehire": "Rehire",
+		"dashboard.roster.rehireError": "We couldn't rehire that roadie.",
+		"roster.title": "Roster",
+		"roster.subtitle": "Every roadie in the pipeline",
+		"roster.search": "Search roadies",
+		"roster.searchPlaceholder": "Search by name or position",
+		"roster.filter.all": "All",
+		"roster.filter.active": "Active",
+		"roster.filter.archived": "Archived",
+		"roster.empty": "No roadies match your search.",
+		"roster.emptyAll": "No roadies have been added yet.",
+		"roster.loading": "Loading roster…",
+		"roster.error": "We couldn't load the roster.",
+		"roster.viewCard": "View card",
+		"roster.archived": "Archived",
+		"roadie.title": "Roadie card",
+		"roadie.back": "Back to roster",
+		"roadie.notFound": "That roadie card could not be found.",
+		"roadie.loading": "Loading roadie card…",
+		"roadie.error": "We couldn't load this roadie card.",
+		"roadie.section.details": "Details",
+		"roadie.section.contact": "Contact",
+		"roadie.section.availability": "Availability",
+		"roadie.field.position": "Position",
+		"roadie.field.secondPosition": "Second position",
+		"roadie.field.crew": "Crew",
+		"roadie.field.hiredAt": "Hired",
+		"roadie.field.startDate": "Start date",
+		"roadie.field.status": "Status",
+		"roadie.field.phone": "Phone",
+		"roadie.field.email": "Email",
+		"roadie.field.emergencyContact": "Emergency contact",
+		"roadie.field.emergencyPhone": "Emergency phone",
+		"roadie.field.shirtSize": "Shirt size",
+		"roadie.field.hatSize": "Hat size",
+		"roadie.field.hometown": "Hometown",
+		"roadie.field.funFact": "Fun fact",
+		"roadie.field.hobbies": "Hobbies",
+		"roadie.field.favoriteSnack": "Favorite snack",
+		"roadie.field.favoriteMovie": "Favorite movie",
+		"roadie.field.goalHere": "Goal here",
+		"roadie.field.weekdayLunch": "Available weekday lunch",
+		"roadie.field.none": "Not provided",
+		"roadie.action.archive": "Archive",
+		"roadie.action.rehire": "Rehire",
+		"roadie.action.edit": "Edit details",
+		"roadie.action.changePosition": "Change position or crew",
+		"roadie.action.flip": "Flip card",
+		"roadie.action.flipBack": "Show front",
+		"roadie.openingTeam": "#975 Opening Team",
+		"roadie.positionCode": "Position code",
+		"roadie.minor": "Minor",
+		"roadie.section.manager": "Manager",
+		"roadie.section.card": "Card",
+		"roadie.section.paperwork": "Paperwork checklist",
+		"roadie.section.changeHistory": "Change history",
+		"roadie.field.preferredName": "Preferred name",
+		"roadie.field.birthday": "Birthday",
+		"roadie.field.orientation": "Orientation session",
+		"roadie.field.crossTrained": "Cross-trained position",
+		"roadie.field.corporateId": "Corporate employee ID",
+		"roadie.field.availabilitySignature": "Availability signature",
+		"roadie.field.availabilitySignedAt": "Availability signed",
+		"roadie.field.availability": "Availability",
+		"roadie.field.weekdayLunchShort": "Weekday lunch",
+		"roadie.field.shiftsWanted": "Shifts wanted per week",
+		"roadie.field.positionAppliedFor": "Position applied for",
+		"roadie.resignPending": "Re-sign pending",
+		"roadie.signed": "Signed",
+		"roadie.unsigned": "Not signed",
+		"roadie.managerOnly": "Visible to Admin and Store Manager only.",
+		"roadie.manager.empty": "No manager details recorded yet.",
+		"roadie.paperwork.empty": "No paperwork items configured.",
+		"roadie.changeHistory.empty": "No changes recorded for this roadie.",
+		"roadie.changeHistory.touchesContact": "Contact set",
+		"roadie.edit.title": "Edit details",
+		"roadie.edit.description": "Update this roadie's profile. Contact details are managed in the Manager tab.",
+		"roadie.edit.save": "Save details",
+		"roadie.edit.saved": "Details saved.",
+		"roadie.edit.error": "We couldn't save those details.",
+		"roadie.changePosition.title": "Change position or crew",
+		"roadie.changePosition.description": "Moving a roadie re-checks paperwork and minimum age for the new position.",
+		"roadie.changePosition.main": "Main position",
+		"roadie.changePosition.second": "Second position",
+		"roadie.changePosition.crew": "Crew",
+		"roadie.changePosition.save": "Move roadie",
+		"roadie.changePosition.saved": "Position updated.",
+		"roadie.changePosition.error": "We couldn't change that position.",
+		"roadie.archive.title": "Move to no longer a roadie",
+		"roadie.archive.description": "Choose a reason. The card is archived and kept in history.",
+		"roadie.archive.reason": "Reason",
+		"roadie.archive.reason.required": "Choose a reason before archiving.",
+		"roadie.archive.other": "Other reason",
+		"roadie.archive.other.required": "Describe the reason.",
+		"roadie.archive.confirm": "Archive roadie",
+		"roadie.archive.saved": "Roadie archived.",
+		"roadie.archive.error": "We couldn't archive that roadie.",
+		"roadie.rehire.title": "Rehire roadie",
+		"roadie.rehire.description": "The roadie returns to Hired and keeps their history.",
+		"roadie.rehire.warn": "This card was archived as {reason}. Rehiring needs a reason and fresh contact details and signatures.",
+		"roadie.rehire.reason": "Reason for rehire",
+		"roadie.rehire.reason.required": "A reason is required for this rehire.",
+		"roadie.rehire.confirm": "Rehire roadie",
+		"roadie.rehire.saved": "Roadie rehired.",
+		"roadie.rehire.error": "We couldn't rehire that roadie.",
+		"roadie.reason.noShow": "No-show",
+		"roadie.reason.quitDuringTraining": "Quit during training",
+		"roadie.reason.tookAnotherJob": "Took another job",
+		"roadie.reason.letGo": "Let go",
+		"roadie.reason.other": "Other",
+		"roadie.status.hired": "Hired",
+		"roadie.status.paperworkDone": "Paperwork done",
+		"roadie.status.archived": "Archived",
+		"roadie.weekday.mon": "Mon",
+		"roadie.weekday.tue": "Tue",
+		"roadie.weekday.wed": "Wed",
+		"roadie.weekday.thu": "Thu",
+		"roadie.weekday.fri": "Fri",
+		"roadie.weekday.sat": "Sat",
+		"roadie.weekday.sun": "Sun",
+		"roadie.shift.am": "AM",
+		"roadie.shift.pm": "PM",
+		"approvals.title": "Approve new hires",
+		"approvals.subtitle": "Pending sign-ins waiting for a role",
+		"approvals.empty": "No one is waiting for approval.",
+		"approvals.loading": "Loading pending users…",
+		"approvals.error": "We couldn't load pending users.",
+		"approvals.requestedAt": "Requested",
+		"approvals.principal": "Principal",
+		"approvals.action.approve": "Approve",
+		"approvals.action.reject": "Reject",
+		"approvals.role.label": "Role",
+		"approvals.role.placeholder": "Select a role",
+		"approvals.role.required": "Choose a role before approving.",
+		"approvals.stations.label": "Trainer stations",
+		"approvals.stations.hint": "Required when the role is Trainer.",
+		"approvals.accessEnd.label": "Access ends",
+		"approvals.accessEnd.hint": "Optional. Access ends at 11:59 PM Central store time on this date.",
+		"approvals.link.label": "Link to existing person",
+		"approvals.link.hint": "Optional. Connect this login to an existing roadie card.",
+		"approvals.link.none": "Do not link",
+		"approvals.confirm.title": "Confirm role",
+		"approvals.confirm.body": "You are about to grant {role} access. This is a high-privilege role.",
+		"approvals.confirm.action": "Confirm and approve",
+		"approvals.cancel": "Cancel",
+		"approvals.success": "Access granted.",
+		"approvals.error.generic": "We couldn't approve that user.",
+		"approvals.signup.section": "Pending sign-ups",
+		"approvals.signup.submittedAt": "Submitted",
+		"approvals.signup.pending": "Pending",
+		"approvals.signup.loading": "Loading pending sign-ups…",
+		"approvals.signup.error": "We couldn't load pending sign-ups.",
+		"approvals.signup.empty": "No sign-ups are waiting for review.",
+		"approvals.signup.duplicates.loading": "Checking for duplicates…",
+		"approvals.signup.duplicates.none": "No duplicate cards found.",
+		"approvals.signup.duplicates.title": "Possible duplicates",
+		"approvals.signup.duplicates.row": "Card #{id} matched on {field}",
+		"approvals.signup.main.label": "Main position",
+		"approvals.signup.main.placeholder": "Select a position",
+		"approvals.signup.main.required": "Choose a main position before approving.",
+		"approvals.signup.second.label": "Second position",
+		"approvals.signup.second.none": "No second position",
+		"approvals.signup.crew.label": "Crew",
+		"approvals.signup.crew.none": "No crew",
+		"approvals.signup.orientation.label": "Orientation session",
+		"approvals.signup.orientation.placeholder": "Select a session",
+		"approvals.signup.orientation.hint": "Past sessions are hidden. Defaults to the session for the position's house.",
+		"approvals.signup.start.label": "Start date",
+		"approvals.signup.signature.label": "Manager signature",
+		"approvals.signup.signature.placeholder": "Type your full name",
+		"approvals.signup.signature.required": "Sign before approving.",
+		"approvals.signup.minor.blocked": "This applicant is a minor and the position requires a higher minimum age.",
+		"approvals.signup.action.approve": "Sign and approve",
+		"approvals.signup.approve.error": "We couldn't approve that sign-up.",
+		"approvals.users.section": "Pending sign-ins",
+		"admin.title": "Admin",
+		"admin.subtitle": "Manage access, roles and store settings",
+		"admin.section.access": "Access grants",
+		"admin.section.store": "Store settings",
+		"admin.section.positions": "Positions",
+		"admin.section.schedule": "Schedule",
+		"admin.section.checklists": "Checklists",
+		"admin.section.template": "Store template",
+		"admin.section.crews": "Crews",
+		"admin.section.changeLog": "Change log",
+		"admin.access.empty": "No access grants yet.",
+		"admin.access.loading": "Loading access grants…",
+		"admin.access.error": "We couldn't load access grants.",
+		"admin.access.role": "Role",
+		"admin.access.stations": "Stations",
+		"admin.access.accessEnd": "Access ends",
+		"admin.access.approvedAt": "Approved",
+		"admin.access.action.changeRole": "Change role",
+		"admin.access.action.remove": "Remove access",
+		"admin.access.lastAdmin": "The last admin cannot be removed.",
+		"admin.access.adminCount": "{count} admins",
+		"admin.store.loading": "Loading store settings…",
+		"admin.store.error": "We couldn't load store settings.",
+		"admin.store.save": "Save settings",
+		"admin.store.saved": "Store settings saved.",
+		"admin.positions.empty": "No positions configured.",
+		"admin.crews.empty": "No crews configured.",
+		"admin.changeLog.empty": "No changes recorded yet.",
+		"admin.changeLog.loading": "Loading change log…",
+		"admin.changeLog.error": "We couldn't load the change log.",
+		"today.title": "Today",
+		"today.placeholder.title": "Today is coming soon",
+		"today.placeholder.body": "The daily view — orientation, training and sign-offs — will live here. For now, use the Dashboard and Roster.",
+		"kiosk.title": "Kiosk",
+		"kiosk.subtitle": "Self-service sign-up",
+		"kiosk.placeholder.title": "Kiosk sign-up",
+		"kiosk.placeholder.body": "The kiosk sign-up flow is being prepared. This screen will let new roadies submit their details on a shared device.",
+		"kiosk.signOut.open": "Staff sign out",
+		"kiosk.signOut.title": "Staff sign out",
+		"kiosk.signOut.body": "Enter the staff PIN to sign out of the kiosk on this device.",
+		"kiosk.signOut.pinLabel": "Staff PIN",
+		"kiosk.signOut.pinPlaceholder": "Enter PIN",
+		"kiosk.signOut.confirm": "Sign out",
+		"kiosk.signOut.cancel": "Cancel",
+		"kiosk.signOut.error": "That PIN is not correct.",
+		"export.title": "Export",
+		"export.subtitle": "Download the roster for reporting",
+		"export.shareable": "Shareable export",
+		"export.shareable.hint": "Roster summary without contact details.",
+		"export.full": "Full export",
+		"export.full.hint": "Includes contact details. Admin and Store Manager only.",
+		"export.full.locked": "Contact details are visible only to Admin and Store Manager.",
+		"export.action.download": "Download CSV",
+		"export.loading": "Building export…",
+		"export.error": "We couldn't build that export.",
+		"export.empty": "There is nothing to export yet.",
+		"export.grandTotal": "Grand total",
+		"export.fohTotal": "Front of house",
+		"export.bohTotal": "Back of house",
+		"common.loading": "Loading…",
+		"common.error": "Something went wrong.",
+		"common.retry": "Retry",
+		"common.cancel": "Cancel",
+		"common.confirm": "Confirm",
+		"common.close": "Close",
+		"common.save": "Save",
+		"common.none": "None",
+		"common.optional": "Optional",
+		"common.required": "Required",
+		"common.yes": "Yes",
+		"common.no": "No",
+		"footer.attribution": "Built with love using caffeine.ai"
+	},
+	es: {
+		"app.name": "Roadie",
+		"app.tagline": "Plantilla de contratación del equipo",
+		"nav.today": "Hoy",
+		"nav.dashboard": "Panel",
+		"nav.roster": "Plantilla",
+		"nav.admin": "Administración",
+		"nav.approvals": "Aprobar nuevos",
+		"nav.kiosk": "Quiosco",
+		"nav.export": "Exportar",
+		"nav.signOut": "Cerrar sesión",
+		"nav.openMenu": "Abrir menú de navegación",
+		"nav.closeMenu": "Cerrar menú de navegación",
+		"auth.title": "Inicia sesión en Roadie",
+		"auth.description": "Inicia sesión con Internet Identity para ver la plantilla y el proceso de contratación.",
+		"auth.loading": "Cargando tu sesión…",
+		"gate.pending.title": "Esperando aprobación",
+		"gate.pending.body": "Recibimos tu inicio de sesión. Un administrador debe aprobar tu cuenta y asignarte un rol antes de continuar.",
+		"gate.pending.hint": "Vuelve pronto — esta página se actualiza automáticamente.",
+		"gate.error.title": "No pudimos cargar tu acceso",
+		"gate.error.body": "Algo salió mal al comprobar tu cuenta.",
+		"gate.retry": "Reintentar",
+		"gate.signOut": "Cerrar sesión",
+		"guard.title": "No tienes acceso a esta página",
+		"guard.body": "Tu rol no incluye esta página. Usa la navegación para ir a una página que puedas abrir.",
+		"guard.back": "Ir al panel",
+		"dashboard.title": "Panel",
+		"dashboard.subtitle": "Progreso de contratación hacia la apertura",
+		"dashboard.kpi.hired": "Contratados",
+		"dashboard.kpi.buildTo": "Meta total",
+		"dashboard.kpi.stillNeeded": "Faltan",
+		"dashboard.kpi.showedAtOrientation": "Asistieron a orientación",
+		"dashboard.kpi.certified": "Certificados",
+		"dashboard.section.foh": "Sala",
+		"dashboard.section.boh": "Cocina",
+		"dashboard.position.hiredOf": "{hired} de {total}",
+		"dashboard.empty": "Aún no se han configurado puestos.",
+		"dashboard.loading": "Cargando panel…",
+		"dashboard.error": "No pudimos cargar el panel.",
+		"dashboard.kpi.hired.hint": "En plantilla ahora",
+		"dashboard.kpi.buildTo.hint": "Meta de apertura",
+		"dashboard.kpi.stillNeeded.hint": "Para llegar a la meta",
+		"dashboard.kpi.orientation.hint": "Fase pendiente",
+		"dashboard.kpi.certified.hint": "Fase pendiente",
+		"dashboard.position.onHandOf": "{onHand} en plantilla · meta {target}",
+		"dashboard.position.needed": "Faltan {count}",
+		"dashboard.position.over": "{count} de más",
+		"dashboard.position.filled": "Completo",
+		"dashboard.position.progressLabel": "{name}: {onHand} de {target} contratados",
+		"dashboard.panel.empty": "Aún no hay puestos en esta área.",
+		"dashboard.countdown.label": "Cuenta atrás para la apertura",
+		"dashboard.countdown.noDate": "Fecha de apertura sin definir",
+		"dashboard.countdown.days": "Días",
+		"dashboard.countdown.hours": "Horas",
+		"dashboard.countdown.minutes": "Min",
+		"dashboard.timeline.now": "Ahora",
+		"dashboard.timeline.empty": "Aún no se han añadido eventos al calendario.",
+		"dashboard.adjust.mode": "Ajustar meta",
+		"dashboard.adjust.done": "Terminar ajuste",
+		"dashboard.adjust.hint": "Cada toque guarda un cambio de +1 o −1 en la meta y queda registrado.",
+		"dashboard.adjust.opening": "Meta de apertura",
+		"dashboard.adjust.afterOpening": "Meta posterior a la apertura",
+		"dashboard.adjust.increase": "Aumentar {label}",
+		"dashboard.adjust.decrease": "Reducir {label}",
+		"dashboard.adjust.saving": "Guardando…",
+		"dashboard.adjust.error": "No pudimos guardar ese cambio.",
+		"dashboard.roster.title": "Plantilla del puesto",
+		"dashboard.roster.summary": "{onHand} en plantilla · meta {target}",
+		"dashboard.roster.loading": "Cargando plantilla…",
+		"dashboard.roster.error": "No pudimos cargar esta plantilla.",
+		"dashboard.roster.empty": "No hay roadies ni vacantes para este puesto.",
+		"dashboard.roster.openSpot": "Vacante",
+		"dashboard.roster.archivedTitle": "Ya no es roadie",
+		"dashboard.roster.rehire": "Recontratar",
+		"dashboard.roster.rehireError": "No pudimos recontratar a ese roadie.",
+		"roster.title": "Plantilla",
+		"roster.subtitle": "Todos los roadies del proceso",
+		"roster.search": "Buscar roadies",
+		"roster.searchPlaceholder": "Buscar por nombre o puesto",
+		"roster.filter.all": "Todos",
+		"roster.filter.active": "Activos",
+		"roster.filter.archived": "Archivados",
+		"roster.empty": "Ningún roadie coincide con tu búsqueda.",
+		"roster.emptyAll": "Aún no se ha añadido ningún roadie.",
+		"roster.loading": "Cargando plantilla…",
+		"roster.error": "No pudimos cargar la plantilla.",
+		"roster.viewCard": "Ver ficha",
+		"roster.archived": "Archivado",
+		"roadie.title": "Ficha del roadie",
+		"roadie.back": "Volver a la plantilla",
+		"roadie.notFound": "No se encontró esa ficha.",
+		"roadie.loading": "Cargando ficha…",
+		"roadie.error": "No pudimos cargar esta ficha.",
+		"roadie.section.details": "Detalles",
+		"roadie.section.contact": "Contacto",
+		"roadie.section.availability": "Disponibilidad",
+		"roadie.field.position": "Puesto",
+		"roadie.field.secondPosition": "Segundo puesto",
+		"roadie.field.crew": "Equipo",
+		"roadie.field.hiredAt": "Contratado",
+		"roadie.field.startDate": "Fecha de inicio",
+		"roadie.field.status": "Estado",
+		"roadie.field.phone": "Teléfono",
+		"roadie.field.email": "Correo",
+		"roadie.field.emergencyContact": "Contacto de emergencia",
+		"roadie.field.emergencyPhone": "Teléfono de emergencia",
+		"roadie.field.shirtSize": "Talla de camiseta",
+		"roadie.field.hatSize": "Talla de gorra",
+		"roadie.field.hometown": "Ciudad natal",
+		"roadie.field.funFact": "Dato curioso",
+		"roadie.field.hobbies": "Pasatiempos",
+		"roadie.field.favoriteSnack": "Snack favorito",
+		"roadie.field.favoriteMovie": "Película favorita",
+		"roadie.field.goalHere": "Meta aquí",
+		"roadie.field.weekdayLunch": "Disponible para almuerzo entre semana",
+		"roadie.field.none": "No proporcionado",
+		"roadie.action.archive": "Archivar",
+		"roadie.action.rehire": "Recontratar",
+		"roadie.action.edit": "Editar datos",
+		"roadie.action.changePosition": "Cambiar puesto o equipo",
+		"roadie.action.flip": "Girar ficha",
+		"roadie.action.flipBack": "Ver frente",
+		"roadie.openingTeam": "#975 Equipo de apertura",
+		"roadie.positionCode": "Código de puesto",
+		"roadie.minor": "Menor",
+		"roadie.section.manager": "Gerente",
+		"roadie.section.card": "Ficha",
+		"roadie.section.paperwork": "Lista de papeleo",
+		"roadie.section.changeHistory": "Historial de cambios",
+		"roadie.field.preferredName": "Nombre preferido",
+		"roadie.field.birthday": "Cumpleaños",
+		"roadie.field.orientation": "Sesión de orientación",
+		"roadie.field.crossTrained": "Puesto con entrenamiento cruzado",
+		"roadie.field.corporateId": "ID de empleado corporativo",
+		"roadie.field.availabilitySignature": "Firma de disponibilidad",
+		"roadie.field.availabilitySignedAt": "Disponibilidad firmada",
+		"roadie.field.availability": "Disponibilidad",
+		"roadie.field.weekdayLunchShort": "Almuerzo entre semana",
+		"roadie.field.shiftsWanted": "Turnos deseados por semana",
+		"roadie.field.positionAppliedFor": "Puesto solicitado",
+		"roadie.resignPending": "Firma pendiente",
+		"roadie.signed": "Firmado",
+		"roadie.unsigned": "Sin firmar",
+		"roadie.managerOnly": "Visible solo para Admin y Gerente de tienda.",
+		"roadie.manager.empty": "Aún no hay datos de gerente.",
+		"roadie.paperwork.empty": "No hay elementos de papeleo configurados.",
+		"roadie.changeHistory.empty": "No hay cambios registrados para este roadie.",
+		"roadie.changeHistory.touchesContact": "Datos de contacto",
+		"roadie.edit.title": "Editar datos",
+		"roadie.edit.description": "Actualiza el perfil de este roadie. Los datos de contacto se gestionan en la pestaña Gerente.",
+		"roadie.edit.save": "Guardar datos",
+		"roadie.edit.saved": "Datos guardados.",
+		"roadie.edit.error": "No pudimos guardar esos datos.",
+		"roadie.changePosition.title": "Cambiar puesto o equipo",
+		"roadie.changePosition.description": "Mover a un roadie vuelve a comprobar el papeleo y la edad mínima del nuevo puesto.",
+		"roadie.changePosition.main": "Puesto principal",
+		"roadie.changePosition.second": "Segundo puesto",
+		"roadie.changePosition.crew": "Equipo",
+		"roadie.changePosition.save": "Mover roadie",
+		"roadie.changePosition.saved": "Puesto actualizado.",
+		"roadie.changePosition.error": "No pudimos cambiar ese puesto.",
+		"roadie.archive.title": "Marcar como ya no es roadie",
+		"roadie.archive.description": "Elige un motivo. La ficha se archiva y se conserva en el historial.",
+		"roadie.archive.reason": "Motivo",
+		"roadie.archive.reason.required": "Elige un motivo antes de archivar.",
+		"roadie.archive.other": "Otro motivo",
+		"roadie.archive.other.required": "Describe el motivo.",
+		"roadie.archive.confirm": "Archivar roadie",
+		"roadie.archive.saved": "Roadie archivado.",
+		"roadie.archive.error": "No pudimos archivar a ese roadie.",
+		"roadie.rehire.title": "Recontratar roadie",
+		"roadie.rehire.description": "El roadie vuelve a Contratado y conserva su historial.",
+		"roadie.rehire.warn": "Esta ficha se archivó como {reason}. Recontratar requiere un motivo y datos de contacto y firmas nuevos.",
+		"roadie.rehire.reason": "Motivo de recontratación",
+		"roadie.rehire.reason.required": "Se requiere un motivo para esta recontratación.",
+		"roadie.rehire.confirm": "Recontratar roadie",
+		"roadie.rehire.saved": "Roadie recontratado.",
+		"roadie.rehire.error": "No pudimos recontratar a ese roadie.",
+		"roadie.reason.noShow": "No se presentó",
+		"roadie.reason.quitDuringTraining": "Renunció durante el entrenamiento",
+		"roadie.reason.tookAnotherJob": "Tomó otro trabajo",
+		"roadie.reason.letGo": "Despedido",
+		"roadie.reason.other": "Otro",
+		"roadie.status.hired": "Contratado",
+		"roadie.status.paperworkDone": "Papeleo listo",
+		"roadie.status.archived": "Archivado",
+		"roadie.weekday.mon": "Lun",
+		"roadie.weekday.tue": "Mar",
+		"roadie.weekday.wed": "Mié",
+		"roadie.weekday.thu": "Jue",
+		"roadie.weekday.fri": "Vie",
+		"roadie.weekday.sat": "Sáb",
+		"roadie.weekday.sun": "Dom",
+		"roadie.shift.am": "AM",
+		"roadie.shift.pm": "PM",
+		"approvals.title": "Aprobar nuevos",
+		"approvals.subtitle": "Inicios de sesión pendientes de un rol",
+		"approvals.empty": "Nadie está esperando aprobación.",
+		"approvals.loading": "Cargando usuarios pendientes…",
+		"approvals.error": "No pudimos cargar los usuarios pendientes.",
+		"approvals.requestedAt": "Solicitado",
+		"approvals.principal": "Principal",
+		"approvals.action.approve": "Aprobar",
+		"approvals.action.reject": "Rechazar",
+		"approvals.role.label": "Rol",
+		"approvals.role.placeholder": "Selecciona un rol",
+		"approvals.role.required": "Elige un rol antes de aprobar.",
+		"approvals.stations.label": "Estaciones de entrenador",
+		"approvals.stations.hint": "Obligatorio cuando el rol es Entrenador.",
+		"approvals.accessEnd.label": "El acceso termina",
+		"approvals.accessEnd.hint": "Opcional. El acceso termina a las 11:59 PM hora Central de la tienda en esta fecha.",
+		"approvals.link.label": "Vincular a una persona existente",
+		"approvals.link.hint": "Opcional. Conecta este inicio de sesión a una ficha existente.",
+		"approvals.link.none": "No vincular",
+		"approvals.confirm.title": "Confirmar rol",
+		"approvals.confirm.body": "Estás a punto de otorgar acceso de {role}. Es un rol de alto privilegio.",
+		"approvals.confirm.action": "Confirmar y aprobar",
+		"approvals.cancel": "Cancelar",
+		"approvals.success": "Acceso otorgado.",
+		"approvals.error.generic": "No pudimos aprobar a ese usuario.",
+		"approvals.signup.section": "Registros pendientes",
+		"approvals.signup.submittedAt": "Enviado",
+		"approvals.signup.pending": "Pendiente",
+		"approvals.signup.loading": "Cargando registros pendientes…",
+		"approvals.signup.error": "No pudimos cargar los registros pendientes.",
+		"approvals.signup.empty": "No hay registros esperando revisión.",
+		"approvals.signup.duplicates.loading": "Buscando duplicados…",
+		"approvals.signup.duplicates.none": "No se encontraron fichas duplicadas.",
+		"approvals.signup.duplicates.title": "Posibles duplicados",
+		"approvals.signup.duplicates.row": "Ficha #{id} coincide en {field}",
+		"approvals.signup.main.label": "Puesto principal",
+		"approvals.signup.main.placeholder": "Selecciona un puesto",
+		"approvals.signup.main.required": "Elige un puesto principal antes de aprobar.",
+		"approvals.signup.second.label": "Segundo puesto",
+		"approvals.signup.second.none": "Sin segundo puesto",
+		"approvals.signup.crew.label": "Equipo",
+		"approvals.signup.crew.none": "Sin equipo",
+		"approvals.signup.orientation.label": "Sesión de orientación",
+		"approvals.signup.orientation.placeholder": "Selecciona una sesión",
+		"approvals.signup.orientation.hint": "Las sesiones pasadas se ocultan. Por defecto, la sesión del área del puesto.",
+		"approvals.signup.start.label": "Fecha de inicio",
+		"approvals.signup.signature.label": "Firma del gerente",
+		"approvals.signup.signature.placeholder": "Escribe tu nombre completo",
+		"approvals.signup.signature.required": "Firma antes de aprobar.",
+		"approvals.signup.minor.blocked": "Este solicitante es menor y el puesto exige una edad mínima mayor.",
+		"approvals.signup.action.approve": "Firmar y aprobar",
+		"approvals.signup.approve.error": "No pudimos aprobar ese registro.",
+		"approvals.users.section": "Inicios de sesión pendientes",
+		"admin.title": "Administración",
+		"admin.subtitle": "Gestiona accesos, roles y ajustes de la tienda",
+		"admin.section.access": "Accesos otorgados",
+		"admin.section.store": "Ajustes de la tienda",
+		"admin.section.positions": "Puestos",
+		"admin.section.schedule": "Calendario",
+		"admin.section.checklists": "Listas de verificación",
+		"admin.section.template": "Plantilla de tienda",
+		"admin.section.crews": "Equipos",
+		"admin.section.changeLog": "Registro de cambios",
+		"admin.access.empty": "Aún no hay accesos otorgados.",
+		"admin.access.loading": "Cargando accesos…",
+		"admin.access.error": "No pudimos cargar los accesos.",
+		"admin.access.role": "Rol",
+		"admin.access.stations": "Estaciones",
+		"admin.access.accessEnd": "El acceso termina",
+		"admin.access.approvedAt": "Aprobado",
+		"admin.access.action.changeRole": "Cambiar rol",
+		"admin.access.action.remove": "Quitar acceso",
+		"admin.access.lastAdmin": "No se puede quitar al último administrador.",
+		"admin.access.adminCount": "{count} administradores",
+		"admin.store.loading": "Cargando ajustes…",
+		"admin.store.error": "No pudimos cargar los ajustes de la tienda.",
+		"admin.store.save": "Guardar ajustes",
+		"admin.store.saved": "Ajustes de la tienda guardados.",
+		"admin.positions.empty": "No hay puestos configurados.",
+		"admin.crews.empty": "No hay equipos configurados.",
+		"admin.changeLog.empty": "Aún no hay cambios registrados.",
+		"admin.changeLog.loading": "Cargando registro de cambios…",
+		"admin.changeLog.error": "No pudimos cargar el registro de cambios.",
+		"today.title": "Hoy",
+		"today.placeholder.title": "Hoy llegará pronto",
+		"today.placeholder.body": "La vista diaria — orientación, entrenamiento y firmas — vivirá aquí. Por ahora, usa el Panel y la Plantilla.",
+		"kiosk.title": "Quiosco",
+		"kiosk.subtitle": "Registro de autoservicio",
+		"kiosk.placeholder.title": "Registro en quiosco",
+		"kiosk.placeholder.body": "El flujo de registro del quiosco se está preparando. Esta pantalla permitirá a los nuevos roadies enviar sus datos en un dispositivo compartido.",
+		"kiosk.signOut.open": "Salida del personal",
+		"kiosk.signOut.title": "Salida del personal",
+		"kiosk.signOut.body": "Ingresa el PIN del personal para cerrar la sesión del quiosco en este dispositivo.",
+		"kiosk.signOut.pinLabel": "PIN del personal",
+		"kiosk.signOut.pinPlaceholder": "Ingresa el PIN",
+		"kiosk.signOut.confirm": "Cerrar sesión",
+		"kiosk.signOut.cancel": "Cancelar",
+		"kiosk.signOut.error": "Ese PIN no es correcto.",
+		"export.title": "Exportar",
+		"export.subtitle": "Descarga la plantilla para informes",
+		"export.shareable": "Exportación compartible",
+		"export.shareable.hint": "Resumen de la plantilla sin datos de contacto.",
+		"export.full": "Exportación completa",
+		"export.full.hint": "Incluye datos de contacto. Solo Admin y Gerente de tienda.",
+		"export.full.locked": "Los datos de contacto solo son visibles para Admin y Gerente de tienda.",
+		"export.action.download": "Descargar CSV",
+		"export.loading": "Generando exportación…",
+		"export.error": "No pudimos generar esa exportación.",
+		"export.empty": "Aún no hay nada que exportar.",
+		"export.grandTotal": "Total general",
+		"export.fohTotal": "Sala",
+		"export.bohTotal": "Cocina",
+		"common.loading": "Cargando…",
+		"common.error": "Algo salió mal.",
+		"common.retry": "Reintentar",
+		"common.cancel": "Cancelar",
+		"common.confirm": "Confirmar",
+		"common.close": "Cerrar",
+		"common.save": "Guardar",
+		"common.none": "Ninguno",
+		"common.optional": "Opcional",
+		"common.required": "Obligatorio",
+		"common.yes": "Sí",
+		"common.no": "No",
+		"footer.attribution": "Hecho con cariño usando caffeine.ai"
+	}
+};
+//#endregion
+//#region src/hooks/useI18n.ts
+var I18nContext = (0, import_react.createContext)(null);
+function translate(locale, key, vars) {
+	let value = (dictionaries[locale] ?? dictionaries.en)[key] ?? dictionaries.en[key] ?? key;
+	if (vars) for (const [name, replacement] of Object.entries(vars)) value = value.replaceAll(`{${name}}`, String(replacement));
+	return value;
+}
+/** Access the copy dictionary. Falls back to English outside a provider. */
+function useI18n() {
+	const ctx = (0, import_react.useContext)(I18nContext);
+	if (ctx) return ctx;
+	return {
+		locale: "en",
+		setLocale: () => {},
+		t: (key, vars) => translate("en", key, vars)
+	};
+}
+//#endregion
 //#region src/components/ApprovalGate.tsx
 /**
 * The access gate. Anyone who signs in without an access grant lands here until
@@ -40632,6 +41020,11 @@ function ApprovalGate({ children }) {
 		requestAccess.mutate();
 	}, [access.kind, requestAccess]);
 	if (access.kind === "granted") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children });
+	if (access.kind === "loading") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		"data-ocid": "gate.loading_state",
+		className: "flex min-h-dvh items-center justify-center bg-background px-6",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("common.loading") })
+	});
 	if (access.kind === "error") return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		"data-ocid": "gate.error_state",
 		className: "mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-6 text-center",
@@ -40648,12 +41041,19 @@ function ApprovalGate({ children }) {
 				className: "text-sm text-muted-foreground",
 				children: t("gate.error.body")
 			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-				type: "button",
-				className: "touch-target",
-				"data-ocid": "gate.retry_button",
-				onClick: () => window.location.reload(),
-				children: t("gate.retry")
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex flex-wrap items-center justify-center gap-2",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+					type: "button",
+					className: "touch-target",
+					"data-ocid": "gate.retry_button",
+					onClick: () => window.location.reload(),
+					children: t("gate.retry")
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SignOutButton, {
+					label: t("gate.signOut"),
+					ocid: "gate.sign_out_button",
+					className: "touch-target rounded-md border border-input bg-card px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-muted"
+				})]
 			})
 		]
 	});
@@ -40680,81 +41080,13 @@ function ApprovalGate({ children }) {
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				className: "text-xs text-muted-foreground",
 				children: t("gate.pending.hint")
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SignOutButton, {
+				label: t("gate.signOut"),
+				ocid: "gate.sign_out_button",
+				className: "touch-target rounded-md border border-input bg-card px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-muted"
 			})
 		]
-	});
-}
-//#endregion
-//#region src/components/InternetIdentity.tsx
-function SignInButton({ className }) {
-	const { identity, login, clear, isInitializing, isLoggingIn, isLoginError } = useInternetIdentity();
-	const queryClient = useQueryClient();
-	const authenticated = !!identity && !identity.getPrincipal().isAnonymous();
-	let label = authenticated ? "Sign out" : "Sign in with Internet Identity";
-	if (isInitializing) label = "Loading sign-in…";
-	else if (isLoggingIn) label = "Signing in…";
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-		type: "button",
-		"data-ocid": "auth.button",
-		className,
-		disabled: isInitializing || isLoggingIn,
-		onClick: () => {
-			if (authenticated) {
-				queryClient.cancelQueries();
-				queryClient.clear();
-				clear();
-			} else login();
-		},
-		children: label
-	}), isLoginError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-		role: "alert",
-		"data-ocid": "auth.error_state",
-		children: "Sign-in did not complete. Please try again."
-	})] });
-}
-/** Each signed-in principal gets its own mounted cache boundary. */
-function PrivateQueryBoundary({ children }) {
-	const [queries] = (0, import_react.useState)(() => new QueryClient());
-	(0, import_react.useEffect)(() => () => {
-		queries.cancelQueries();
-		queries.clear();
-	}, [queries]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(QueryClientProvider, {
-		client: queries,
-		children
-	});
-}
-/** Mount private queries only after sign-in, and isolate their cache when the principal changes. */
-function RequireSignIn({ children, fallback }) {
-	const { identity, isInitializing, isLoggingIn } = useInternetIdentity();
-	const principal = identity && !identity.getPrincipal().isAnonymous() ? identity.getPrincipal().toText() : void 0;
-	if (isInitializing || isLoggingIn) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("output", {
-		"data-ocid": "auth.loading_state",
-		children: "Loading your session…"
-	});
-	if (principal === void 0) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children: fallback ?? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SignInButton, {}) });
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PrivateQueryBoundary, { children }, principal);
-}
-/** Complete first-generation private-app entry point: branded copy cannot remove the sign-in action. */
-function AuthenticatedApp({ children, title = "Sign in to continue", description = "Sign in with Internet Identity to access your private workspace.", className, buttonClassName }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RequireSignIn, {
-		fallback: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
-			"aria-label": "Sign in",
-			"data-ocid": "auth.panel",
-			className: className ?? "flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground",
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
-					className: "font-display text-3xl font-semibold",
-					children: title
-				}),
-				description && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "max-w-md text-muted-foreground",
-					children: description
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SignInButton, { className: buttonClassName ?? "rounded-md bg-primary px-5 py-3 font-medium text-primary-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60" })
-			]
-		}),
-		children
 	});
 }
 //#endregion
@@ -45135,7 +45467,7 @@ function useCurrentRole() {
 function NavLinks({ onNavigate, className }) {
 	const { t } = useI18n();
 	const role = useCurrentRole();
-	const { data: pending } = usePendingUsers();
+	const { data: pending } = usePendingUsers(canApprove(role));
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const pendingCount = pending?.length ?? 0;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("nav", {
@@ -45191,28 +45523,39 @@ function Layout({ children }) {
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(NavLinks, { className: "hidden lg:block" }),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-								type: "button",
-								variant: "ghost",
-								size: "icon",
-								"aria-label": menuOpen ? t("nav.closeMenu") : t("nav.openMenu"),
-								"aria-expanded": menuOpen,
-								"data-ocid": "nav.menu.toggle",
-								className: "touch-target text-white hover:bg-white/10 hover:text-white lg:hidden",
-								onClick: () => setMenuOpen((open) => !open),
-								children: menuOpen ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, {
-									className: "h-5 w-5",
-									"aria-hidden": "true"
-								}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Menu, {
-									className: "h-5 w-5",
-									"aria-hidden": "true"
-								})
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "flex items-center gap-1",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SignOutButton, {
+									label: t("nav.signOut"),
+									ocid: "nav.sign_out_button",
+									className: "touch-target hidden items-center gap-2 rounded-md px-3 py-2 font-display text-sm font-medium uppercase tracking-wider text-white/75 transition-colors hover:bg-white/10 hover:text-white lg:inline-flex"
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+									type: "button",
+									variant: "ghost",
+									size: "icon",
+									"aria-label": menuOpen ? t("nav.closeMenu") : t("nav.openMenu"),
+									"aria-expanded": menuOpen,
+									"data-ocid": "nav.menu.toggle",
+									className: "touch-target text-white hover:bg-white/10 hover:text-white lg:hidden",
+									onClick: () => setMenuOpen((open) => !open),
+									children: menuOpen ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, {
+										className: "h-5 w-5",
+										"aria-hidden": "true"
+									}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Menu, {
+										className: "h-5 w-5",
+										"aria-hidden": "true"
+									})
+								})]
 							})
 						]
 					}),
-					menuOpen && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					menuOpen && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "border-t border-white/10 px-4 pb-4 pt-2 lg:hidden",
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(NavLinks, { onNavigate: () => setMenuOpen(false) })
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(NavLinks, { onNavigate: () => setMenuOpen(false) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SignOutButton, {
+							label: t("nav.signOut"),
+							ocid: "nav.sign_out_button.mobile",
+							className: "touch-target mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 font-display text-sm font-medium uppercase tracking-wider text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+						})]
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 						className: "stripe-flag",
@@ -45246,98 +45589,1979 @@ function Layout({ children }) {
 		]
 	});
 }
-//#endregion
-//#region src/components/States.tsx
-/** A layout-matched loading state. */
-function LoadingState({ label = "Loading…", className, ocid = "page.loading_state" }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("output", {
-		"data-ocid": ocid,
-		className: cn("flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card p-8 text-muted-foreground", className),
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
-			className: "h-6 w-6 animate-spin text-primary",
-			"aria-hidden": "true"
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-			className: "text-sm",
-			children: label
-		})]
-	});
+typeof window !== "undefined" && window.document && window.document.createElement;
+function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
+	return function handleEvent(event) {
+		originalEventHandler?.(event);
+		if (checkForDefaultPrevented === false || !event.defaultPrevented) return ourEventHandler?.(event);
+	};
 }
-/** A recoverable error state. */
-function ErrorState({ title = "Something went wrong", message, onRetry, className, ocid = "page.error_state" }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		"data-ocid": ocid,
-		className: cn("flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-destructive/30 bg-card p-8 text-center", className),
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TriangleAlert, {
-				className: "h-6 w-6 text-destructive",
-				"aria-hidden": "true"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "font-display text-lg font-semibold uppercase tracking-wide text-foreground",
-				children: title
-			}), message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "mt-1 text-sm text-muted-foreground",
-				children: message
-			})] }),
-			onRetry && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-				type: "button",
-				variant: "outline",
-				className: "touch-target",
-				"data-ocid": "page.retry_button",
-				onClick: onRetry,
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, {
-					className: "mr-2 h-4 w-4",
-					"aria-hidden": "true"
-				}), "Retry"]
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-context@1.1.2_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-context/dist/index.mjs
+function createContext2(rootComponentName, defaultContext) {
+	const Context = import_react.createContext(defaultContext);
+	const Provider = (props) => {
+		const { children, ...context } = props;
+		const value = import_react.useMemo(() => context, Object.values(context));
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Context.Provider, {
+			value,
+			children
+		});
+	};
+	Provider.displayName = rootComponentName + "Provider";
+	function useContext2(consumerName) {
+		const context = import_react.useContext(Context);
+		if (context) return context;
+		if (defaultContext !== void 0) return defaultContext;
+		throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
+	}
+	return [Provider, useContext2];
+}
+function createContextScope(scopeName, createContextScopeDeps = []) {
+	let defaultContexts = [];
+	function createContext3(rootComponentName, defaultContext) {
+		const BaseContext = import_react.createContext(defaultContext);
+		const index = defaultContexts.length;
+		defaultContexts = [...defaultContexts, defaultContext];
+		const Provider = (props) => {
+			const { scope, children, ...context } = props;
+			const Context = scope?.[scopeName]?.[index] || BaseContext;
+			const value = import_react.useMemo(() => context, Object.values(context));
+			return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Context.Provider, {
+				value,
+				children
+			});
+		};
+		Provider.displayName = rootComponentName + "Provider";
+		function useContext2(consumerName, scope) {
+			const Context = scope?.[scopeName]?.[index] || BaseContext;
+			const context = import_react.useContext(Context);
+			if (context) return context;
+			if (defaultContext !== void 0) return defaultContext;
+			throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
+		}
+		return [Provider, useContext2];
+	}
+	const createScope = () => {
+		const scopeContexts = defaultContexts.map((defaultContext) => {
+			return import_react.createContext(defaultContext);
+		});
+		return function useScope(scope) {
+			const contexts = scope?.[scopeName] || scopeContexts;
+			return import_react.useMemo(() => ({ [`__scope${scopeName}`]: {
+				...scope,
+				[scopeName]: contexts
+			} }), [scope, contexts]);
+		};
+	};
+	createScope.scopeName = scopeName;
+	return [createContext3, composeContextScopes(createScope, ...createContextScopeDeps)];
+}
+function composeContextScopes(...scopes) {
+	const baseScope = scopes[0];
+	if (scopes.length === 1) return baseScope;
+	const createScope = () => {
+		const scopeHooks = scopes.map((createScope2) => ({
+			useScope: createScope2(),
+			scopeName: createScope2.scopeName
+		}));
+		return function useComposedScopes(overrideScopes) {
+			const nextScopes = scopeHooks.reduce((nextScopes2, { useScope, scopeName }) => {
+				const currentScope = useScope(overrideScopes)[`__scope${scopeName}`];
+				return {
+					...nextScopes2,
+					...currentScope
+				};
+			}, {});
+			return import_react.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
+		};
+	};
+	createScope.scopeName = baseScope.scopeName;
+	return createScope;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-layout-effect@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-layout-effect/dist/index.mjs
+var useLayoutEffect2 = globalThis?.document ? import_react.useLayoutEffect : () => {};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-id@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-id/dist/index.mjs
+var useReactId = import_react[" useId ".trim().toString()] || (() => void 0);
+var count$1 = 0;
+function useId(deterministicId) {
+	const [id, setId] = import_react.useState(useReactId());
+	useLayoutEffect2(() => {
+		if (!deterministicId) setId((reactId) => reactId ?? String(count$1++));
+	}, [deterministicId]);
+	return deterministicId || (id ? `radix-${id}` : "");
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-controllable-state@1.2.2_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-controllable-state/dist/index.mjs
+var useInsertionEffect = import_react[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
+function useControllableState({ prop, defaultProp, onChange = () => {}, caller }) {
+	const [uncontrolledProp, setUncontrolledProp, onChangeRef] = useUncontrolledState({
+		defaultProp,
+		onChange
+	});
+	const isControlled = prop !== void 0;
+	const value = isControlled ? prop : uncontrolledProp;
+	{
+		const isControlledRef = import_react.useRef(prop !== void 0);
+		import_react.useEffect(() => {
+			const wasControlled = isControlledRef.current;
+			if (wasControlled !== isControlled) console.warn(`${caller} is changing from ${wasControlled ? "controlled" : "uncontrolled"} to ${isControlled ? "controlled" : "uncontrolled"}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`);
+			isControlledRef.current = isControlled;
+		}, [isControlled, caller]);
+	}
+	return [value, import_react.useCallback((nextValue) => {
+		if (isControlled) {
+			const value2 = isFunction$1(nextValue) ? nextValue(prop) : nextValue;
+			if (value2 !== prop) onChangeRef.current?.(value2);
+		} else setUncontrolledProp(nextValue);
+	}, [
+		isControlled,
+		prop,
+		setUncontrolledProp,
+		onChangeRef
+	])];
+}
+function useUncontrolledState({ defaultProp, onChange }) {
+	const [value, setValue] = import_react.useState(defaultProp);
+	const prevValueRef = import_react.useRef(value);
+	const onChangeRef = import_react.useRef(onChange);
+	useInsertionEffect(() => {
+		onChangeRef.current = onChange;
+	}, [onChange]);
+	import_react.useEffect(() => {
+		if (prevValueRef.current !== value) {
+			onChangeRef.current?.(value);
+			prevValueRef.current = value;
+		}
+	}, [value, prevValueRef]);
+	return [
+		value,
+		setValue,
+		onChangeRef
+	];
+}
+function isFunction$1(value) {
+	return typeof value === "function";
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-slot@1.2.3_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-slot/dist/index.mjs
+// @__NO_SIDE_EFFECTS__
+function createSlot(ownerName) {
+	const SlotClone = /* @__PURE__ */ createSlotClone(ownerName);
+	const Slot2 = import_react.forwardRef((props, forwardedRef) => {
+		const { children, ...slotProps } = props;
+		const childrenArray = import_react.Children.toArray(children);
+		const slottable = childrenArray.find(isSlottable);
+		if (slottable) {
+			const newElement = slottable.props.children;
+			const newChildren = childrenArray.map((child) => {
+				if (child === slottable) {
+					if (import_react.Children.count(newElement) > 1) return import_react.Children.only(null);
+					return import_react.isValidElement(newElement) ? newElement.props.children : null;
+				} else return child;
+			});
+			return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlotClone, {
+				...slotProps,
+				ref: forwardedRef,
+				children: import_react.isValidElement(newElement) ? import_react.cloneElement(newElement, void 0, newChildren) : null
+			});
+		}
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlotClone, {
+			...slotProps,
+			ref: forwardedRef,
+			children
+		});
+	});
+	Slot2.displayName = `${ownerName}.Slot`;
+	return Slot2;
+}
+// @__NO_SIDE_EFFECTS__
+function createSlotClone(ownerName) {
+	const SlotClone = import_react.forwardRef((props, forwardedRef) => {
+		const { children, ...slotProps } = props;
+		if (import_react.isValidElement(children)) {
+			const childrenRef = getElementRef$1(children);
+			const props2 = mergeProps(slotProps, children.props);
+			if (children.type !== import_react.Fragment) props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
+			return import_react.cloneElement(children, props2);
+		}
+		return import_react.Children.count(children) > 1 ? import_react.Children.only(null) : null;
+	});
+	SlotClone.displayName = `${ownerName}.SlotClone`;
+	return SlotClone;
+}
+var SLOTTABLE_IDENTIFIER = Symbol("radix.slottable");
+function isSlottable(child) {
+	return import_react.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
+}
+function mergeProps(slotProps, childProps) {
+	const overrideProps = { ...childProps };
+	for (const propName in childProps) {
+		const slotPropValue = slotProps[propName];
+		const childPropValue = childProps[propName];
+		if (/^on[A-Z]/.test(propName)) {
+			if (slotPropValue && childPropValue) overrideProps[propName] = (...args) => {
+				const result = childPropValue(...args);
+				slotPropValue(...args);
+				return result;
+			};
+			else if (slotPropValue) overrideProps[propName] = slotPropValue;
+		} else if (propName === "style") overrideProps[propName] = {
+			...slotPropValue,
+			...childPropValue
+		};
+		else if (propName === "className") overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
+	}
+	return {
+		...slotProps,
+		...overrideProps
+	};
+}
+function getElementRef$1(element) {
+	let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
+	let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+	if (mayWarn) return element.ref;
+	getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
+	mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+	if (mayWarn) return element.props.ref;
+	return element.props.ref || element.ref;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-primitive@2.1.3_@types+react-dom@19.1.11_@types+react@19.1.17__@types+r_309699a331ceb1f69dcb31d3df00e5e5/node_modules/@radix-ui/react-primitive/dist/index.mjs
+var Primitive$1 = [
+	"a",
+	"button",
+	"div",
+	"form",
+	"h2",
+	"h3",
+	"img",
+	"input",
+	"label",
+	"li",
+	"nav",
+	"ol",
+	"p",
+	"select",
+	"span",
+	"svg",
+	"ul"
+].reduce((primitive, node) => {
+	const Slot = /* @__PURE__ */ createSlot(`Primitive.${node}`);
+	const Node = import_react.forwardRef((props, forwardedRef) => {
+		const { asChild, ...primitiveProps } = props;
+		const Comp = asChild ? Slot : node;
+		if (typeof window !== "undefined") window[Symbol.for("radix-ui")] = true;
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Comp, {
+			...primitiveProps,
+			ref: forwardedRef
+		});
+	});
+	Node.displayName = `Primitive.${node}`;
+	return {
+		...primitive,
+		[node]: Node
+	};
+}, {});
+function dispatchDiscreteCustomEvent(target, event) {
+	if (target) import_react_dom.flushSync(() => target.dispatchEvent(event));
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-callback-ref@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-callback-ref/dist/index.mjs
+function useCallbackRef$1(callback) {
+	const callbackRef = import_react.useRef(callback);
+	import_react.useEffect(() => {
+		callbackRef.current = callback;
+	});
+	return import_react.useMemo(() => (...args) => callbackRef.current?.(...args), []);
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-escape-keydown@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-escape-keydown/dist/index.mjs
+function useEscapeKeydown(onEscapeKeyDownProp, ownerDocument = globalThis?.document) {
+	const onEscapeKeyDown = useCallbackRef$1(onEscapeKeyDownProp);
+	import_react.useEffect(() => {
+		const handleKeyDown = (event) => {
+			if (event.key === "Escape") onEscapeKeyDown(event);
+		};
+		ownerDocument.addEventListener("keydown", handleKeyDown, { capture: true });
+		return () => ownerDocument.removeEventListener("keydown", handleKeyDown, { capture: true });
+	}, [onEscapeKeyDown, ownerDocument]);
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-dismissable-layer@1.1.11_@types+react-dom@19.1.11_@types+react@19.1.17__04759484545efd16289eb59f8087867a/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs
+var DISMISSABLE_LAYER_NAME = "DismissableLayer";
+var CONTEXT_UPDATE = "dismissableLayer.update";
+var POINTER_DOWN_OUTSIDE = "dismissableLayer.pointerDownOutside";
+var FOCUS_OUTSIDE = "dismissableLayer.focusOutside";
+var originalBodyPointerEvents;
+var DismissableLayerContext = import_react.createContext({
+	layers: /* @__PURE__ */ new Set(),
+	layersWithOutsidePointerEventsDisabled: /* @__PURE__ */ new Set(),
+	branches: /* @__PURE__ */ new Set()
+});
+var DismissableLayer = import_react.forwardRef((props, forwardedRef) => {
+	const { disableOutsidePointerEvents = false, onEscapeKeyDown, onPointerDownOutside, onFocusOutside, onInteractOutside, onDismiss, ...layerProps } = props;
+	const context = import_react.useContext(DismissableLayerContext);
+	const [node, setNode] = import_react.useState(null);
+	const ownerDocument = node?.ownerDocument ?? globalThis?.document;
+	const [, force] = import_react.useState({});
+	const composedRefs = useComposedRefs(forwardedRef, (node2) => setNode(node2));
+	const layers = Array.from(context.layers);
+	const [highestLayerWithOutsidePointerEventsDisabled] = [...context.layersWithOutsidePointerEventsDisabled].slice(-1);
+	const highestLayerWithOutsidePointerEventsDisabledIndex = layers.indexOf(highestLayerWithOutsidePointerEventsDisabled);
+	const index = node ? layers.indexOf(node) : -1;
+	const isBodyPointerEventsDisabled = context.layersWithOutsidePointerEventsDisabled.size > 0;
+	const isPointerEventsEnabled = index >= highestLayerWithOutsidePointerEventsDisabledIndex;
+	const pointerDownOutside = usePointerDownOutside((event) => {
+		const target = event.target;
+		const isPointerDownOnBranch = [...context.branches].some((branch) => branch.contains(target));
+		if (!isPointerEventsEnabled || isPointerDownOnBranch) return;
+		onPointerDownOutside?.(event);
+		onInteractOutside?.(event);
+		if (!event.defaultPrevented) onDismiss?.();
+	}, ownerDocument);
+	const focusOutside = useFocusOutside((event) => {
+		const target = event.target;
+		if ([...context.branches].some((branch) => branch.contains(target))) return;
+		onFocusOutside?.(event);
+		onInteractOutside?.(event);
+		if (!event.defaultPrevented) onDismiss?.();
+	}, ownerDocument);
+	useEscapeKeydown((event) => {
+		if (!(index === context.layers.size - 1)) return;
+		onEscapeKeyDown?.(event);
+		if (!event.defaultPrevented && onDismiss) {
+			event.preventDefault();
+			onDismiss();
+		}
+	}, ownerDocument);
+	import_react.useEffect(() => {
+		if (!node) return;
+		if (disableOutsidePointerEvents) {
+			if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
+				originalBodyPointerEvents = ownerDocument.body.style.pointerEvents;
+				ownerDocument.body.style.pointerEvents = "none";
+			}
+			context.layersWithOutsidePointerEventsDisabled.add(node);
+		}
+		context.layers.add(node);
+		dispatchUpdate();
+		return () => {
+			if (disableOutsidePointerEvents && context.layersWithOutsidePointerEventsDisabled.size === 1) ownerDocument.body.style.pointerEvents = originalBodyPointerEvents;
+		};
+	}, [
+		node,
+		ownerDocument,
+		disableOutsidePointerEvents,
+		context
+	]);
+	import_react.useEffect(() => {
+		return () => {
+			if (!node) return;
+			context.layers.delete(node);
+			context.layersWithOutsidePointerEventsDisabled.delete(node);
+			dispatchUpdate();
+		};
+	}, [node, context]);
+	import_react.useEffect(() => {
+		const handleUpdate = () => force({});
+		document.addEventListener(CONTEXT_UPDATE, handleUpdate);
+		return () => document.removeEventListener(CONTEXT_UPDATE, handleUpdate);
+	}, []);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
+		...layerProps,
+		ref: composedRefs,
+		style: {
+			pointerEvents: isBodyPointerEventsDisabled ? isPointerEventsEnabled ? "auto" : "none" : void 0,
+			...props.style
+		},
+		onFocusCapture: composeEventHandlers(props.onFocusCapture, focusOutside.onFocusCapture),
+		onBlurCapture: composeEventHandlers(props.onBlurCapture, focusOutside.onBlurCapture),
+		onPointerDownCapture: composeEventHandlers(props.onPointerDownCapture, pointerDownOutside.onPointerDownCapture)
+	});
+});
+DismissableLayer.displayName = DISMISSABLE_LAYER_NAME;
+var BRANCH_NAME = "DismissableLayerBranch";
+var DismissableLayerBranch = import_react.forwardRef((props, forwardedRef) => {
+	const context = import_react.useContext(DismissableLayerContext);
+	const ref = import_react.useRef(null);
+	const composedRefs = useComposedRefs(forwardedRef, ref);
+	import_react.useEffect(() => {
+		const node = ref.current;
+		if (node) {
+			context.branches.add(node);
+			return () => {
+				context.branches.delete(node);
+			};
+		}
+	}, [context.branches]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
+		...props,
+		ref: composedRefs
+	});
+});
+DismissableLayerBranch.displayName = BRANCH_NAME;
+function usePointerDownOutside(onPointerDownOutside, ownerDocument = globalThis?.document) {
+	const handlePointerDownOutside = useCallbackRef$1(onPointerDownOutside);
+	const isPointerInsideReactTreeRef = import_react.useRef(false);
+	const handleClickRef = import_react.useRef(() => {});
+	import_react.useEffect(() => {
+		const handlePointerDown = (event) => {
+			if (event.target && !isPointerInsideReactTreeRef.current) {
+				let handleAndDispatchPointerDownOutsideEvent2 = function() {
+					handleAndDispatchCustomEvent(POINTER_DOWN_OUTSIDE, handlePointerDownOutside, eventDetail, { discrete: true });
+				};
+				const eventDetail = { originalEvent: event };
+				if (event.pointerType === "touch") {
+					ownerDocument.removeEventListener("click", handleClickRef.current);
+					handleClickRef.current = handleAndDispatchPointerDownOutsideEvent2;
+					ownerDocument.addEventListener("click", handleClickRef.current, { once: true });
+				} else handleAndDispatchPointerDownOutsideEvent2();
+			} else ownerDocument.removeEventListener("click", handleClickRef.current);
+			isPointerInsideReactTreeRef.current = false;
+		};
+		const timerId = window.setTimeout(() => {
+			ownerDocument.addEventListener("pointerdown", handlePointerDown);
+		}, 0);
+		return () => {
+			window.clearTimeout(timerId);
+			ownerDocument.removeEventListener("pointerdown", handlePointerDown);
+			ownerDocument.removeEventListener("click", handleClickRef.current);
+		};
+	}, [ownerDocument, handlePointerDownOutside]);
+	return { onPointerDownCapture: () => isPointerInsideReactTreeRef.current = true };
+}
+function useFocusOutside(onFocusOutside, ownerDocument = globalThis?.document) {
+	const handleFocusOutside = useCallbackRef$1(onFocusOutside);
+	const isFocusInsideReactTreeRef = import_react.useRef(false);
+	import_react.useEffect(() => {
+		const handleFocus = (event) => {
+			if (event.target && !isFocusInsideReactTreeRef.current) handleAndDispatchCustomEvent(FOCUS_OUTSIDE, handleFocusOutside, { originalEvent: event }, { discrete: false });
+		};
+		ownerDocument.addEventListener("focusin", handleFocus);
+		return () => ownerDocument.removeEventListener("focusin", handleFocus);
+	}, [ownerDocument, handleFocusOutside]);
+	return {
+		onFocusCapture: () => isFocusInsideReactTreeRef.current = true,
+		onBlurCapture: () => isFocusInsideReactTreeRef.current = false
+	};
+}
+function dispatchUpdate() {
+	const event = new CustomEvent(CONTEXT_UPDATE);
+	document.dispatchEvent(event);
+}
+function handleAndDispatchCustomEvent(name, handler, detail, { discrete }) {
+	const target = detail.originalEvent.target;
+	const event = new CustomEvent(name, {
+		bubbles: false,
+		cancelable: true,
+		detail
+	});
+	if (handler) target.addEventListener(name, handler, { once: true });
+	if (discrete) dispatchDiscreteCustomEvent(target, event);
+	else target.dispatchEvent(event);
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-focus-scope@1.1.7_@types+react-dom@19.1.11_@types+react@19.1.17__@types_743eb681fa5947458d78d51e929a6f1d/node_modules/@radix-ui/react-focus-scope/dist/index.mjs
+var AUTOFOCUS_ON_MOUNT = "focusScope.autoFocusOnMount";
+var AUTOFOCUS_ON_UNMOUNT = "focusScope.autoFocusOnUnmount";
+var EVENT_OPTIONS$1 = {
+	bubbles: false,
+	cancelable: true
+};
+var FOCUS_SCOPE_NAME = "FocusScope";
+var FocusScope = import_react.forwardRef((props, forwardedRef) => {
+	const { loop = false, trapped = false, onMountAutoFocus: onMountAutoFocusProp, onUnmountAutoFocus: onUnmountAutoFocusProp, ...scopeProps } = props;
+	const [container, setContainer] = import_react.useState(null);
+	const onMountAutoFocus = useCallbackRef$1(onMountAutoFocusProp);
+	const onUnmountAutoFocus = useCallbackRef$1(onUnmountAutoFocusProp);
+	const lastFocusedElementRef = import_react.useRef(null);
+	const composedRefs = useComposedRefs(forwardedRef, (node) => setContainer(node));
+	const focusScope = import_react.useRef({
+		paused: false,
+		pause() {
+			this.paused = true;
+		},
+		resume() {
+			this.paused = false;
+		}
+	}).current;
+	import_react.useEffect(() => {
+		if (trapped) {
+			let handleFocusIn2 = function(event) {
+				if (focusScope.paused || !container) return;
+				const target = event.target;
+				if (container.contains(target)) lastFocusedElementRef.current = target;
+				else focus(lastFocusedElementRef.current, { select: true });
+			}, handleFocusOut2 = function(event) {
+				if (focusScope.paused || !container) return;
+				const relatedTarget = event.relatedTarget;
+				if (relatedTarget === null) return;
+				if (!container.contains(relatedTarget)) focus(lastFocusedElementRef.current, { select: true });
+			}, handleMutations2 = function(mutations) {
+				if (document.activeElement !== document.body) return;
+				for (const mutation of mutations) if (mutation.removedNodes.length > 0) focus(container);
+			};
+			document.addEventListener("focusin", handleFocusIn2);
+			document.addEventListener("focusout", handleFocusOut2);
+			const mutationObserver = new MutationObserver(handleMutations2);
+			if (container) mutationObserver.observe(container, {
+				childList: true,
+				subtree: true
+			});
+			return () => {
+				document.removeEventListener("focusin", handleFocusIn2);
+				document.removeEventListener("focusout", handleFocusOut2);
+				mutationObserver.disconnect();
+			};
+		}
+	}, [
+		trapped,
+		container,
+		focusScope.paused
+	]);
+	import_react.useEffect(() => {
+		if (container) {
+			focusScopesStack.add(focusScope);
+			const previouslyFocusedElement = document.activeElement;
+			if (!container.contains(previouslyFocusedElement)) {
+				const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS$1);
+				container.addEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
+				container.dispatchEvent(mountEvent);
+				if (!mountEvent.defaultPrevented) {
+					focusFirst$1(removeLinks(getTabbableCandidates(container)), { select: true });
+					if (document.activeElement === previouslyFocusedElement) focus(container);
+				}
+			}
+			return () => {
+				container.removeEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
+				setTimeout(() => {
+					const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS$1);
+					container.addEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
+					container.dispatchEvent(unmountEvent);
+					if (!unmountEvent.defaultPrevented) focus(previouslyFocusedElement ?? document.body, { select: true });
+					container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
+					focusScopesStack.remove(focusScope);
+				}, 0);
+			};
+		}
+	}, [
+		container,
+		onMountAutoFocus,
+		onUnmountAutoFocus,
+		focusScope
+	]);
+	const handleKeyDown = import_react.useCallback((event) => {
+		if (!loop && !trapped) return;
+		if (focusScope.paused) return;
+		const isTabKey = event.key === "Tab" && !event.altKey && !event.ctrlKey && !event.metaKey;
+		const focusedElement = document.activeElement;
+		if (isTabKey && focusedElement) {
+			const container2 = event.currentTarget;
+			const [first, last] = getTabbableEdges(container2);
+			if (!(first && last)) {
+				if (focusedElement === container2) event.preventDefault();
+			} else if (!event.shiftKey && focusedElement === last) {
+				event.preventDefault();
+				if (loop) focus(first, { select: true });
+			} else if (event.shiftKey && focusedElement === first) {
+				event.preventDefault();
+				if (loop) focus(last, { select: true });
+			}
+		}
+	}, [
+		loop,
+		trapped,
+		focusScope.paused
+	]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
+		tabIndex: -1,
+		...scopeProps,
+		ref: composedRefs,
+		onKeyDown: handleKeyDown
+	});
+});
+FocusScope.displayName = FOCUS_SCOPE_NAME;
+function focusFirst$1(candidates, { select = false } = {}) {
+	const previouslyFocusedElement = document.activeElement;
+	for (const candidate of candidates) {
+		focus(candidate, { select });
+		if (document.activeElement !== previouslyFocusedElement) return;
+	}
+}
+function getTabbableEdges(container) {
+	const candidates = getTabbableCandidates(container);
+	return [findVisible(candidates, container), findVisible(candidates.reverse(), container)];
+}
+function getTabbableCandidates(container) {
+	const nodes = [];
+	const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, { acceptNode: (node) => {
+		const isHiddenInput = node.tagName === "INPUT" && node.type === "hidden";
+		if (node.disabled || node.hidden || isHiddenInput) return NodeFilter.FILTER_SKIP;
+		return node.tabIndex >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+	} });
+	while (walker.nextNode()) nodes.push(walker.currentNode);
+	return nodes;
+}
+function findVisible(elements, container) {
+	for (const element of elements) if (!isHidden(element, { upTo: container })) return element;
+}
+function isHidden(node, { upTo }) {
+	if (getComputedStyle(node).visibility === "hidden") return true;
+	while (node) {
+		if (upTo !== void 0 && node === upTo) return false;
+		if (getComputedStyle(node).display === "none") return true;
+		node = node.parentElement;
+	}
+	return false;
+}
+function isSelectableInput(element) {
+	return element instanceof HTMLInputElement && "select" in element;
+}
+function focus(element, { select = false } = {}) {
+	if (element && element.focus) {
+		const previouslyFocusedElement = document.activeElement;
+		element.focus({ preventScroll: true });
+		if (element !== previouslyFocusedElement && isSelectableInput(element) && select) element.select();
+	}
+}
+var focusScopesStack = createFocusScopesStack();
+function createFocusScopesStack() {
+	let stack = [];
+	return {
+		add(focusScope) {
+			const activeFocusScope = stack[0];
+			if (focusScope !== activeFocusScope) activeFocusScope?.pause();
+			stack = arrayRemove(stack, focusScope);
+			stack.unshift(focusScope);
+		},
+		remove(focusScope) {
+			stack = arrayRemove(stack, focusScope);
+			stack[0]?.resume();
+		}
+	};
+}
+function arrayRemove(array, item) {
+	const updatedArray = [...array];
+	const index = updatedArray.indexOf(item);
+	if (index !== -1) updatedArray.splice(index, 1);
+	return updatedArray;
+}
+function removeLinks(items) {
+	return items.filter((item) => item.tagName !== "A");
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-portal@1.1.9_@types+react-dom@19.1.11_@types+react@19.1.17__@types+reac_00d6c26182c5d909cf1a6f84c4ed5dcf/node_modules/@radix-ui/react-portal/dist/index.mjs
+var PORTAL_NAME$2 = "Portal";
+var Portal$2 = import_react.forwardRef((props, forwardedRef) => {
+	const { container: containerProp, ...portalProps } = props;
+	const [mounted, setMounted] = import_react.useState(false);
+	useLayoutEffect2(() => setMounted(true), []);
+	const container = containerProp || mounted && globalThis?.document?.body;
+	return container ? import_react_dom.createPortal(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
+		...portalProps,
+		ref: forwardedRef
+	}), container) : null;
+});
+Portal$2.displayName = PORTAL_NAME$2;
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-presence@1.1.5_@types+react-dom@19.1.11_@types+react@19.1.17__@types+re_21e2bb85425f53f6c7108cfe0018fd7c/node_modules/@radix-ui/react-presence/dist/index.mjs
+function useStateMachine(initialState, machine) {
+	return import_react.useReducer((state, event) => {
+		return machine[state][event] ?? state;
+	}, initialState);
+}
+var Presence = (props) => {
+	const { present, children } = props;
+	const presence = usePresence(present);
+	const child = typeof children === "function" ? children({ present: presence.isPresent }) : import_react.Children.only(children);
+	const ref = useComposedRefs(presence.ref, getElementRef(child));
+	return typeof children === "function" || presence.isPresent ? import_react.cloneElement(child, { ref }) : null;
+};
+Presence.displayName = "Presence";
+function usePresence(present) {
+	const [node, setNode] = import_react.useState();
+	const stylesRef = import_react.useRef(null);
+	const prevPresentRef = import_react.useRef(present);
+	const prevAnimationNameRef = import_react.useRef("none");
+	const [state, send] = useStateMachine(present ? "mounted" : "unmounted", {
+		mounted: {
+			UNMOUNT: "unmounted",
+			ANIMATION_OUT: "unmountSuspended"
+		},
+		unmountSuspended: {
+			MOUNT: "mounted",
+			ANIMATION_END: "unmounted"
+		},
+		unmounted: { MOUNT: "mounted" }
+	});
+	import_react.useEffect(() => {
+		const currentAnimationName = getAnimationName(stylesRef.current);
+		prevAnimationNameRef.current = state === "mounted" ? currentAnimationName : "none";
+	}, [state]);
+	useLayoutEffect2(() => {
+		const styles = stylesRef.current;
+		const wasPresent = prevPresentRef.current;
+		if (wasPresent !== present) {
+			const prevAnimationName = prevAnimationNameRef.current;
+			const currentAnimationName = getAnimationName(styles);
+			if (present) send("MOUNT");
+			else if (currentAnimationName === "none" || styles?.display === "none") send("UNMOUNT");
+			else if (wasPresent && prevAnimationName !== currentAnimationName) send("ANIMATION_OUT");
+			else send("UNMOUNT");
+			prevPresentRef.current = present;
+		}
+	}, [present, send]);
+	useLayoutEffect2(() => {
+		if (node) {
+			let timeoutId;
+			const ownerWindow = node.ownerDocument.defaultView ?? window;
+			const handleAnimationEnd = (event) => {
+				const isCurrentAnimation = getAnimationName(stylesRef.current).includes(CSS.escape(event.animationName));
+				if (event.target === node && isCurrentAnimation) {
+					send("ANIMATION_END");
+					if (!prevPresentRef.current) {
+						const currentFillMode = node.style.animationFillMode;
+						node.style.animationFillMode = "forwards";
+						timeoutId = ownerWindow.setTimeout(() => {
+							if (node.style.animationFillMode === "forwards") node.style.animationFillMode = currentFillMode;
+						});
+					}
+				}
+			};
+			const handleAnimationStart = (event) => {
+				if (event.target === node) prevAnimationNameRef.current = getAnimationName(stylesRef.current);
+			};
+			node.addEventListener("animationstart", handleAnimationStart);
+			node.addEventListener("animationcancel", handleAnimationEnd);
+			node.addEventListener("animationend", handleAnimationEnd);
+			return () => {
+				ownerWindow.clearTimeout(timeoutId);
+				node.removeEventListener("animationstart", handleAnimationStart);
+				node.removeEventListener("animationcancel", handleAnimationEnd);
+				node.removeEventListener("animationend", handleAnimationEnd);
+			};
+		} else send("ANIMATION_END");
+	}, [node, send]);
+	return {
+		isPresent: ["mounted", "unmountSuspended"].includes(state),
+		ref: import_react.useCallback((node2) => {
+			stylesRef.current = node2 ? getComputedStyle(node2) : null;
+			setNode(node2);
+		}, [])
+	};
+}
+function getAnimationName(styles) {
+	return styles?.animationName || "none";
+}
+function getElementRef(element) {
+	let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
+	let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+	if (mayWarn) return element.ref;
+	getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
+	mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+	if (mayWarn) return element.props.ref;
+	return element.props.ref || element.ref;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-focus-guards@1.1.3_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-focus-guards/dist/index.mjs
+var count = 0;
+function useFocusGuards() {
+	import_react.useEffect(() => {
+		const edgeGuards = document.querySelectorAll("[data-radix-focus-guard]");
+		document.body.insertAdjacentElement("afterbegin", edgeGuards[0] ?? createFocusGuard());
+		document.body.insertAdjacentElement("beforeend", edgeGuards[1] ?? createFocusGuard());
+		count++;
+		return () => {
+			if (count === 1) document.querySelectorAll("[data-radix-focus-guard]").forEach((node) => node.remove());
+			count--;
+		};
+	}, []);
+}
+function createFocusGuard() {
+	const element = document.createElement("span");
+	element.setAttribute("data-radix-focus-guard", "");
+	element.tabIndex = 0;
+	element.style.outline = "none";
+	element.style.opacity = "0";
+	element.style.position = "fixed";
+	element.style.pointerEvents = "none";
+	return element;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/tslib@2.8.1/node_modules/tslib/tslib.es6.mjs
+var __assign = function() {
+	__assign = Object.assign || function __assign(t) {
+		for (var s, i = 1, n = arguments.length; i < n; i++) {
+			s = arguments[i];
+			for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+		}
+		return t;
+	};
+	return __assign.apply(this, arguments);
+};
+function __rest(s, e) {
+	var t = {};
+	for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) t[p] = s[p];
+	if (s != null && typeof Object.getOwnPropertySymbols === "function") {
+		for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i])) t[p[i]] = s[p[i]];
+	}
+	return t;
+}
+function __spreadArray(to, from, pack) {
+	if (pack || arguments.length === 2) {
+		for (var i = 0, l = from.length, ar; i < l; i++) if (ar || !(i in from)) {
+			if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+			ar[i] = from[i];
+		}
+	}
+	return to.concat(ar || Array.prototype.slice.call(from));
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll-bar/dist/es2015/constants.js
+var zeroRightClassName = "right-scroll-bar-position";
+var fullWidthClassName = "width-before-scroll-bar";
+var noScrollbarsClassName = "with-scroll-bars-hidden";
+/**
+* Name of a CSS variable containing the amount of "hidden" scrollbar
+* ! might be undefined ! use will fallback!
+*/
+var removedBarSizeVariable = "--removed-body-scroll-bar-size";
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.1.17_react@19.1.5/node_modules/use-callback-ref/dist/es2015/assignRef.js
+/**
+* Assigns a value for a given ref, no matter of the ref format
+* @param {RefObject} ref - a callback function or ref object
+* @param value - a new value
+*
+* @see https://github.com/theKashey/use-callback-ref#assignref
+* @example
+* const refObject = useRef();
+* const refFn = (ref) => {....}
+*
+* assignRef(refObject, "refValue");
+* assignRef(refFn, "refValue");
+*/
+function assignRef(ref, value) {
+	if (typeof ref === "function") ref(value);
+	else if (ref) ref.current = value;
+	return ref;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.1.17_react@19.1.5/node_modules/use-callback-ref/dist/es2015/useRef.js
+/**
+* creates a MutableRef with ref change callback
+* @param initialValue - initial ref value
+* @param {Function} callback - a callback to run when value changes
+*
+* @example
+* const ref = useCallbackRef(0, (newValue, oldValue) => console.log(oldValue, '->', newValue);
+* ref.current = 1;
+* // prints 0 -> 1
+*
+* @see https://reactjs.org/docs/hooks-reference.html#useref
+* @see https://github.com/theKashey/use-callback-ref#usecallbackref---to-replace-reactuseref
+* @returns {MutableRefObject}
+*/
+function useCallbackRef(initialValue, callback) {
+	var ref = (0, import_react.useState)(function() {
+		return {
+			value: initialValue,
+			callback,
+			facade: {
+				get current() {
+					return ref.value;
+				},
+				set current(value) {
+					var last = ref.value;
+					if (last !== value) {
+						ref.value = value;
+						ref.callback(value, last);
+					}
+				}
+			}
+		};
+	})[0];
+	ref.callback = callback;
+	return ref.facade;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.1.17_react@19.1.5/node_modules/use-callback-ref/dist/es2015/useMergeRef.js
+var useIsomorphicLayoutEffect = typeof window !== "undefined" ? import_react.useLayoutEffect : import_react.useEffect;
+var currentValues = /* @__PURE__ */ new WeakMap();
+/**
+* Merges two or more refs together providing a single interface to set their value
+* @param {RefObject|Ref} refs
+* @returns {MutableRefObject} - a new ref, which translates all changes to {refs}
+*
+* @see {@link mergeRefs} a version without buit-in memoization
+* @see https://github.com/theKashey/use-callback-ref#usemergerefs
+* @example
+* const Component = React.forwardRef((props, ref) => {
+*   const ownRef = useRef();
+*   const domRef = useMergeRefs([ref, ownRef]); // 👈 merge together
+*   return <div ref={domRef}>...</div>
+* }
+*/
+function useMergeRefs(refs, defaultValue) {
+	var callbackRef = useCallbackRef(defaultValue || null, function(newValue) {
+		return refs.forEach(function(ref) {
+			return assignRef(ref, newValue);
+		});
+	});
+	useIsomorphicLayoutEffect(function() {
+		var oldValue = currentValues.get(callbackRef);
+		if (oldValue) {
+			var prevRefs_1 = new Set(oldValue);
+			var nextRefs_1 = new Set(refs);
+			var current_1 = callbackRef.current;
+			prevRefs_1.forEach(function(ref) {
+				if (!nextRefs_1.has(ref)) assignRef(ref, null);
+			});
+			nextRefs_1.forEach(function(ref) {
+				if (!prevRefs_1.has(ref)) assignRef(ref, current_1);
+			});
+		}
+		currentValues.set(callbackRef, refs);
+	}, [refs]);
+	return callbackRef;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-sidecar@1.1.3_@types+react@19.1.17_react@19.1.5/node_modules/use-sidecar/dist/es2015/medium.js
+function ItoI(a) {
+	return a;
+}
+function innerCreateMedium(defaults, middleware) {
+	if (middleware === void 0) middleware = ItoI;
+	var buffer = [];
+	var assigned = false;
+	return {
+		read: function() {
+			if (assigned) throw new Error("Sidecar: could not `read` from an `assigned` medium. `read` could be used only with `useMedium`.");
+			if (buffer.length) return buffer[buffer.length - 1];
+			return defaults;
+		},
+		useMedium: function(data) {
+			var item = middleware(data, assigned);
+			buffer.push(item);
+			return function() {
+				buffer = buffer.filter(function(x) {
+					return x !== item;
+				});
+			};
+		},
+		assignSyncMedium: function(cb) {
+			assigned = true;
+			while (buffer.length) {
+				var cbs = buffer;
+				buffer = [];
+				cbs.forEach(cb);
+			}
+			buffer = {
+				push: function(x) {
+					return cb(x);
+				},
+				filter: function() {
+					return buffer;
+				}
+			};
+		},
+		assignMedium: function(cb) {
+			assigned = true;
+			var pendingQueue = [];
+			if (buffer.length) {
+				var cbs = buffer;
+				buffer = [];
+				cbs.forEach(cb);
+				pendingQueue = buffer;
+			}
+			var executeQueue = function() {
+				var cbs = pendingQueue;
+				pendingQueue = [];
+				cbs.forEach(cb);
+			};
+			var cycle = function() {
+				return Promise.resolve().then(executeQueue);
+			};
+			cycle();
+			buffer = {
+				push: function(x) {
+					pendingQueue.push(x);
+					cycle();
+				},
+				filter: function(filter) {
+					pendingQueue = pendingQueue.filter(filter);
+					return buffer;
+				}
+			};
+		}
+	};
+}
+function createSidecarMedium(options) {
+	if (options === void 0) options = {};
+	var medium = innerCreateMedium(null);
+	medium.options = __assign({
+		async: true,
+		ssr: false
+	}, options);
+	return medium;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-sidecar@1.1.3_@types+react@19.1.17_react@19.1.5/node_modules/use-sidecar/dist/es2015/exports.js
+var SideCar = function(_a) {
+	var sideCar = _a.sideCar, rest = __rest(_a, ["sideCar"]);
+	if (!sideCar) throw new Error("Sidecar: please provide `sideCar` property to import the right car");
+	var Target = sideCar.read();
+	if (!Target) throw new Error("Sidecar medium not found");
+	return import_react.createElement(Target, __assign({}, rest));
+};
+SideCar.isSideCarExport = true;
+function exportSidecar(medium, exported) {
+	medium.useMedium(exported);
+	return SideCar;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/medium.js
+var effectCar = createSidecarMedium();
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/UI.js
+var nothing = function() {};
+/**
+* Removes scrollbar from the page and contain the scroll within the Lock
+*/
+var RemoveScroll = import_react.forwardRef(function(props, parentRef) {
+	var ref = import_react.useRef(null);
+	var _a = import_react.useState({
+		onScrollCapture: nothing,
+		onWheelCapture: nothing,
+		onTouchMoveCapture: nothing
+	}), callbacks = _a[0], setCallbacks = _a[1];
+	var forwardProps = props.forwardProps, children = props.children, className = props.className, removeScrollBar = props.removeScrollBar, enabled = props.enabled, shards = props.shards, sideCar = props.sideCar, noRelative = props.noRelative, noIsolation = props.noIsolation, inert = props.inert, allowPinchZoom = props.allowPinchZoom, _b = props.as, Container = _b === void 0 ? "div" : _b, gapMode = props.gapMode, rest = __rest(props, [
+		"forwardProps",
+		"children",
+		"className",
+		"removeScrollBar",
+		"enabled",
+		"shards",
+		"sideCar",
+		"noRelative",
+		"noIsolation",
+		"inert",
+		"allowPinchZoom",
+		"as",
+		"gapMode"
+	]);
+	var SideCar = sideCar;
+	var containerRef = useMergeRefs([ref, parentRef]);
+	var containerProps = __assign(__assign({}, rest), callbacks);
+	return import_react.createElement(import_react.Fragment, null, enabled && import_react.createElement(SideCar, {
+		sideCar: effectCar,
+		removeScrollBar,
+		shards,
+		noRelative,
+		noIsolation,
+		inert,
+		setCallbacks,
+		allowPinchZoom: !!allowPinchZoom,
+		lockRef: ref,
+		gapMode
+	}), forwardProps ? import_react.cloneElement(import_react.Children.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : import_react.createElement(Container, __assign({}, containerProps, {
+		className,
+		ref: containerRef
+	}), children));
+});
+RemoveScroll.defaultProps = {
+	enabled: true,
+	removeScrollBar: true,
+	inert: false
+};
+RemoveScroll.classNames = {
+	fullWidth: fullWidthClassName,
+	zeroRight: zeroRightClassName
+};
+var getNonce = function() {
+	if (typeof __webpack_nonce__ !== "undefined") return __webpack_nonce__;
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.1.17_react@19.1.5/node_modules/react-style-singleton/dist/es2015/singleton.js
+function makeStyleTag() {
+	if (!document) return null;
+	var tag = document.createElement("style");
+	tag.type = "text/css";
+	var nonce = getNonce();
+	if (nonce) tag.setAttribute("nonce", nonce);
+	return tag;
+}
+function injectStyles(tag, css) {
+	if (tag.styleSheet) tag.styleSheet.cssText = css;
+	else tag.appendChild(document.createTextNode(css));
+}
+function insertStyleTag(tag) {
+	(document.head || document.getElementsByTagName("head")[0]).appendChild(tag);
+}
+var stylesheetSingleton = function() {
+	var counter = 0;
+	var stylesheet = null;
+	return {
+		add: function(style) {
+			if (counter == 0) {
+				if (stylesheet = makeStyleTag()) {
+					injectStyles(stylesheet, style);
+					insertStyleTag(stylesheet);
+				}
+			}
+			counter++;
+		},
+		remove: function() {
+			counter--;
+			if (!counter && stylesheet) {
+				stylesheet.parentNode && stylesheet.parentNode.removeChild(stylesheet);
+				stylesheet = null;
+			}
+		}
+	};
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.1.17_react@19.1.5/node_modules/react-style-singleton/dist/es2015/hook.js
+/**
+* creates a hook to control style singleton
+* @see {@link styleSingleton} for a safer component version
+* @example
+* ```tsx
+* const useStyle = styleHookSingleton();
+* ///
+* useStyle('body { overflow: hidden}');
+*/
+var styleHookSingleton = function() {
+	var sheet = stylesheetSingleton();
+	return function(styles, isDynamic) {
+		import_react.useEffect(function() {
+			sheet.add(styles);
+			return function() {
+				sheet.remove();
+			};
+		}, [styles && isDynamic]);
+	};
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.1.17_react@19.1.5/node_modules/react-style-singleton/dist/es2015/component.js
+/**
+* create a Component to add styles on demand
+* - styles are added when first instance is mounted
+* - styles are removed when the last instance is unmounted
+* - changing styles in runtime does nothing unless dynamic is set. But with multiple components that can lead to the undefined behavior
+*/
+var styleSingleton = function() {
+	var useStyle = styleHookSingleton();
+	var Sheet = function(_a) {
+		var styles = _a.styles, dynamic = _a.dynamic;
+		useStyle(styles, dynamic);
+		return null;
+	};
+	return Sheet;
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll-bar/dist/es2015/utils.js
+var zeroGap = {
+	left: 0,
+	top: 0,
+	right: 0,
+	gap: 0
+};
+var parse = function(x) {
+	return parseInt(x || "", 10) || 0;
+};
+var getOffset = function(gapMode) {
+	var cs = window.getComputedStyle(document.body);
+	var left = cs[gapMode === "padding" ? "paddingLeft" : "marginLeft"];
+	var top = cs[gapMode === "padding" ? "paddingTop" : "marginTop"];
+	var right = cs[gapMode === "padding" ? "paddingRight" : "marginRight"];
+	return [
+		parse(left),
+		parse(top),
+		parse(right)
+	];
+};
+var getGapWidth = function(gapMode) {
+	if (gapMode === void 0) gapMode = "margin";
+	if (typeof window === "undefined") return zeroGap;
+	var offsets = getOffset(gapMode);
+	var documentWidth = document.documentElement.clientWidth;
+	var windowWidth = window.innerWidth;
+	return {
+		left: offsets[0],
+		top: offsets[1],
+		right: offsets[2],
+		gap: Math.max(0, windowWidth - documentWidth + offsets[2] - offsets[0])
+	};
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll-bar/dist/es2015/component.js
+var Style = styleSingleton();
+var lockAttribute = "data-scroll-locked";
+var getStyles = function(_a, allowRelative, gapMode, important) {
+	var left = _a.left, top = _a.top, right = _a.right, gap = _a.gap;
+	if (gapMode === void 0) gapMode = "margin";
+	return "\n  .".concat(noScrollbarsClassName, " {\n   overflow: hidden ").concat(important, ";\n   padding-right: ").concat(gap, "px ").concat(important, ";\n  }\n  body[").concat(lockAttribute, "] {\n    overflow: hidden ").concat(important, ";\n    overscroll-behavior: contain;\n    ").concat([
+		allowRelative && "position: relative ".concat(important, ";"),
+		gapMode === "margin" && "\n    padding-left: ".concat(left, "px;\n    padding-top: ").concat(top, "px;\n    padding-right: ").concat(right, "px;\n    margin-left:0;\n    margin-top:0;\n    margin-right: ").concat(gap, "px ").concat(important, ";\n    "),
+		gapMode === "padding" && "padding-right: ".concat(gap, "px ").concat(important, ";")
+	].filter(Boolean).join(""), "\n  }\n  \n  .").concat(zeroRightClassName, " {\n    right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " {\n    margin-right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(zeroRightClassName, " .").concat(zeroRightClassName, " {\n    right: 0 ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " .").concat(fullWidthClassName, " {\n    margin-right: 0 ").concat(important, ";\n  }\n  \n  body[").concat(lockAttribute, "] {\n    ").concat(removedBarSizeVariable, ": ").concat(gap, "px;\n  }\n");
+};
+var getCurrentUseCounter = function() {
+	var counter = parseInt(document.body.getAttribute("data-scroll-locked") || "0", 10);
+	return isFinite(counter) ? counter : 0;
+};
+var useLockAttribute = function() {
+	import_react.useEffect(function() {
+		document.body.setAttribute(lockAttribute, (getCurrentUseCounter() + 1).toString());
+		return function() {
+			var newCounter = getCurrentUseCounter() - 1;
+			if (newCounter <= 0) document.body.removeAttribute(lockAttribute);
+			else document.body.setAttribute(lockAttribute, newCounter.toString());
+		};
+	}, []);
+};
+/**
+* Removes page scrollbar and blocks page scroll when mounted
+*/
+var RemoveScrollBar = function(_a) {
+	var noRelative = _a.noRelative, noImportant = _a.noImportant, _b = _a.gapMode, gapMode = _b === void 0 ? "margin" : _b;
+	useLockAttribute();
+	var gap = import_react.useMemo(function() {
+		return getGapWidth(gapMode);
+	}, [gapMode]);
+	return import_react.createElement(Style, { styles: getStyles(gap, !noRelative, gapMode, !noImportant ? "!important" : "") });
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/aggresiveCapture.js
+var passiveSupported = false;
+if (typeof window !== "undefined") try {
+	var options = Object.defineProperty({}, "passive", { get: function() {
+		passiveSupported = true;
+		return true;
+	} });
+	window.addEventListener("test", options, options);
+	window.removeEventListener("test", options, options);
+} catch (err) {
+	passiveSupported = false;
+}
+var nonPassive = passiveSupported ? { passive: false } : false;
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/handleScroll.js
+var alwaysContainsScroll = function(node) {
+	return node.tagName === "TEXTAREA";
+};
+var elementCanBeScrolled = function(node, overflow) {
+	if (!(node instanceof Element)) return false;
+	var styles = window.getComputedStyle(node);
+	return styles[overflow] !== "hidden" && !(styles.overflowY === styles.overflowX && !alwaysContainsScroll(node) && styles[overflow] === "visible");
+};
+var elementCouldBeVScrolled = function(node) {
+	return elementCanBeScrolled(node, "overflowY");
+};
+var elementCouldBeHScrolled = function(node) {
+	return elementCanBeScrolled(node, "overflowX");
+};
+var locationCouldBeScrolled = function(axis, node) {
+	var ownerDocument = node.ownerDocument;
+	var current = node;
+	do {
+		if (typeof ShadowRoot !== "undefined" && current instanceof ShadowRoot) current = current.host;
+		if (elementCouldBeScrolled(axis, current)) {
+			var _a = getScrollVariables(axis, current);
+			if (_a[1] > _a[2]) return true;
+		}
+		current = current.parentNode;
+	} while (current && current !== ownerDocument.body);
+	return false;
+};
+var getVScrollVariables = function(_a) {
+	return [
+		_a.scrollTop,
+		_a.scrollHeight,
+		_a.clientHeight
+	];
+};
+var getHScrollVariables = function(_a) {
+	return [
+		_a.scrollLeft,
+		_a.scrollWidth,
+		_a.clientWidth
+	];
+};
+var elementCouldBeScrolled = function(axis, node) {
+	return axis === "v" ? elementCouldBeVScrolled(node) : elementCouldBeHScrolled(node);
+};
+var getScrollVariables = function(axis, node) {
+	return axis === "v" ? getVScrollVariables(node) : getHScrollVariables(node);
+};
+var getDirectionFactor = function(axis, direction) {
+	/**
+	* If the element's direction is rtl (right-to-left), then scrollLeft is 0 when the scrollbar is at its rightmost position,
+	* and then increasingly negative as you scroll towards the end of the content.
+	* @see https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollLeft
+	*/
+	return axis === "h" && direction === "rtl" ? -1 : 1;
+};
+var handleScroll = function(axis, endTarget, event, sourceDelta, noOverscroll) {
+	var directionFactor = getDirectionFactor(axis, window.getComputedStyle(endTarget).direction);
+	var delta = directionFactor * sourceDelta;
+	var target = event.target;
+	var targetInLock = endTarget.contains(target);
+	var shouldCancelScroll = false;
+	var isDeltaPositive = delta > 0;
+	var availableScroll = 0;
+	var availableScrollTop = 0;
+	do {
+		if (!target) break;
+		var _a = getScrollVariables(axis, target), position = _a[0];
+		var elementScroll = _a[1] - _a[2] - directionFactor * position;
+		if (position || elementScroll) {
+			if (elementCouldBeScrolled(axis, target)) {
+				availableScroll += elementScroll;
+				availableScrollTop += position;
+			}
+		}
+		var parent_1 = target.parentNode;
+		target = parent_1 && parent_1.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? parent_1.host : parent_1;
+	} while (!targetInLock && target !== document.body || targetInLock && (endTarget.contains(target) || endTarget === target));
+	if (isDeltaPositive && (noOverscroll && Math.abs(availableScroll) < 1 || !noOverscroll && delta > availableScroll)) shouldCancelScroll = true;
+	else if (!isDeltaPositive && (noOverscroll && Math.abs(availableScrollTop) < 1 || !noOverscroll && -delta > availableScrollTop)) shouldCancelScroll = true;
+	return shouldCancelScroll;
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/SideEffect.js
+var getTouchXY = function(event) {
+	return "changedTouches" in event ? [event.changedTouches[0].clientX, event.changedTouches[0].clientY] : [0, 0];
+};
+var getDeltaXY = function(event) {
+	return [event.deltaX, event.deltaY];
+};
+var extractRef = function(ref) {
+	return ref && "current" in ref ? ref.current : ref;
+};
+var deltaCompare = function(x, y) {
+	return x[0] === y[0] && x[1] === y[1];
+};
+var generateStyle = function(id) {
+	return "\n  .block-interactivity-".concat(id, " {pointer-events: none;}\n  .allow-interactivity-").concat(id, " {pointer-events: all;}\n");
+};
+var idCounter = 0;
+var lockStack = [];
+function RemoveScrollSideCar(props) {
+	var shouldPreventQueue = import_react.useRef([]);
+	var touchStartRef = import_react.useRef([0, 0]);
+	var activeAxis = import_react.useRef();
+	var id = import_react.useState(idCounter++)[0];
+	var Style = import_react.useState(styleSingleton)[0];
+	var lastProps = import_react.useRef(props);
+	import_react.useEffect(function() {
+		lastProps.current = props;
+	}, [props]);
+	import_react.useEffect(function() {
+		if (props.inert) {
+			document.body.classList.add("block-interactivity-".concat(id));
+			var allow_1 = __spreadArray([props.lockRef.current], (props.shards || []).map(extractRef), true).filter(Boolean);
+			allow_1.forEach(function(el) {
+				return el.classList.add("allow-interactivity-".concat(id));
+			});
+			return function() {
+				document.body.classList.remove("block-interactivity-".concat(id));
+				allow_1.forEach(function(el) {
+					return el.classList.remove("allow-interactivity-".concat(id));
+				});
+			};
+		}
+	}, [
+		props.inert,
+		props.lockRef.current,
+		props.shards
+	]);
+	var shouldCancelEvent = import_react.useCallback(function(event, parent) {
+		if ("touches" in event && event.touches.length === 2 || event.type === "wheel" && event.ctrlKey) return !lastProps.current.allowPinchZoom;
+		var touch = getTouchXY(event);
+		var touchStart = touchStartRef.current;
+		var deltaX = "deltaX" in event ? event.deltaX : touchStart[0] - touch[0];
+		var deltaY = "deltaY" in event ? event.deltaY : touchStart[1] - touch[1];
+		var currentAxis;
+		var target = event.target;
+		var moveDirection = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
+		if ("touches" in event && moveDirection === "h" && target.type === "range") return false;
+		var selection = window.getSelection();
+		var anchorNode = selection && selection.anchorNode;
+		if (anchorNode ? anchorNode === target || anchorNode.contains(target) : false) return false;
+		var canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
+		if (!canBeScrolledInMainDirection) return true;
+		if (canBeScrolledInMainDirection) currentAxis = moveDirection;
+		else {
+			currentAxis = moveDirection === "v" ? "h" : "v";
+			canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
+		}
+		if (!canBeScrolledInMainDirection) return false;
+		if (!activeAxis.current && "changedTouches" in event && (deltaX || deltaY)) activeAxis.current = currentAxis;
+		if (!currentAxis) return true;
+		var cancelingAxis = activeAxis.current || currentAxis;
+		return handleScroll(cancelingAxis, parent, event, cancelingAxis === "h" ? deltaX : deltaY, true);
+	}, []);
+	var shouldPrevent = import_react.useCallback(function(_event) {
+		var event = _event;
+		if (!lockStack.length || lockStack[lockStack.length - 1] !== Style) return;
+		var delta = "deltaY" in event ? getDeltaXY(event) : getTouchXY(event);
+		var sourceEvent = shouldPreventQueue.current.filter(function(e) {
+			return e.name === event.type && (e.target === event.target || event.target === e.shadowParent) && deltaCompare(e.delta, delta);
+		})[0];
+		if (sourceEvent && sourceEvent.should) {
+			if (event.cancelable) event.preventDefault();
+			return;
+		}
+		if (!sourceEvent) {
+			var shardNodes = (lastProps.current.shards || []).map(extractRef).filter(Boolean).filter(function(node) {
+				return node.contains(event.target);
+			});
+			if (shardNodes.length > 0 ? shouldCancelEvent(event, shardNodes[0]) : !lastProps.current.noIsolation) {
+				if (event.cancelable) event.preventDefault();
+			}
+		}
+	}, []);
+	var shouldCancel = import_react.useCallback(function(name, delta, target, should) {
+		var event = {
+			name,
+			delta,
+			target,
+			should,
+			shadowParent: getOutermostShadowParent(target)
+		};
+		shouldPreventQueue.current.push(event);
+		setTimeout(function() {
+			shouldPreventQueue.current = shouldPreventQueue.current.filter(function(e) {
+				return e !== event;
+			});
+		}, 1);
+	}, []);
+	var scrollTouchStart = import_react.useCallback(function(event) {
+		touchStartRef.current = getTouchXY(event);
+		activeAxis.current = void 0;
+	}, []);
+	var scrollWheel = import_react.useCallback(function(event) {
+		shouldCancel(event.type, getDeltaXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
+	}, []);
+	var scrollTouchMove = import_react.useCallback(function(event) {
+		shouldCancel(event.type, getTouchXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
+	}, []);
+	import_react.useEffect(function() {
+		lockStack.push(Style);
+		props.setCallbacks({
+			onScrollCapture: scrollWheel,
+			onWheelCapture: scrollWheel,
+			onTouchMoveCapture: scrollTouchMove
+		});
+		document.addEventListener("wheel", shouldPrevent, nonPassive);
+		document.addEventListener("touchmove", shouldPrevent, nonPassive);
+		document.addEventListener("touchstart", scrollTouchStart, nonPassive);
+		return function() {
+			lockStack = lockStack.filter(function(inst) {
+				return inst !== Style;
+			});
+			document.removeEventListener("wheel", shouldPrevent, nonPassive);
+			document.removeEventListener("touchmove", shouldPrevent, nonPassive);
+			document.removeEventListener("touchstart", scrollTouchStart, nonPassive);
+		};
+	}, []);
+	var removeScrollBar = props.removeScrollBar, inert = props.inert;
+	return import_react.createElement(import_react.Fragment, null, inert ? import_react.createElement(Style, { styles: generateStyle(id) }) : null, removeScrollBar ? import_react.createElement(RemoveScrollBar, {
+		noRelative: props.noRelative,
+		gapMode: props.gapMode
+	}) : null);
+}
+function getOutermostShadowParent(node) {
+	var shadowParent = null;
+	while (node !== null) {
+		if (node instanceof ShadowRoot) {
+			shadowParent = node.host;
+			node = node.host;
+		}
+		node = node.parentNode;
+	}
+	return shadowParent;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/sidecar.js
+var sidecar_default = exportSidecar(effectCar, RemoveScrollSideCar);
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/Combination.js
+var ReactRemoveScroll = import_react.forwardRef(function(props, ref) {
+	return import_react.createElement(RemoveScroll, __assign({}, props, {
+		ref,
+		sideCar: sidecar_default
+	}));
+});
+ReactRemoveScroll.classNames = RemoveScroll.classNames;
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/aria-hidden@1.2.6/node_modules/aria-hidden/dist/es2015/index.js
+var getDefaultParent = function(originalTarget) {
+	if (typeof document === "undefined") return null;
+	return (Array.isArray(originalTarget) ? originalTarget[0] : originalTarget).ownerDocument.body;
+};
+var counterMap = /* @__PURE__ */ new WeakMap();
+var uncontrolledNodes = /* @__PURE__ */ new WeakMap();
+var markerMap = {};
+var lockCount = 0;
+var unwrapHost = function(node) {
+	return node && (node.host || unwrapHost(node.parentNode));
+};
+var correctTargets = function(parent, targets) {
+	return targets.map(function(target) {
+		if (parent.contains(target)) return target;
+		var correctedTarget = unwrapHost(target);
+		if (correctedTarget && parent.contains(correctedTarget)) return correctedTarget;
+		console.error("aria-hidden", target, "in not contained inside", parent, ". Doing nothing");
+		return null;
+	}).filter(function(x) {
+		return Boolean(x);
+	});
+};
+/**
+* Marks everything except given node(or nodes) as aria-hidden
+* @param {Element | Element[]} originalTarget - elements to keep on the page
+* @param [parentNode] - top element, defaults to document.body
+* @param {String} [markerName] - a special attribute to mark every node
+* @param {String} [controlAttribute] - html Attribute to control
+* @return {Undo} undo command
+*/
+var applyAttributeToOthers = function(originalTarget, parentNode, markerName, controlAttribute) {
+	var targets = correctTargets(parentNode, Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
+	if (!markerMap[markerName]) markerMap[markerName] = /* @__PURE__ */ new WeakMap();
+	var markerCounter = markerMap[markerName];
+	var hiddenNodes = [];
+	var elementsToKeep = /* @__PURE__ */ new Set();
+	var elementsToStop = new Set(targets);
+	var keep = function(el) {
+		if (!el || elementsToKeep.has(el)) return;
+		elementsToKeep.add(el);
+		keep(el.parentNode);
+	};
+	targets.forEach(keep);
+	var deep = function(parent) {
+		if (!parent || elementsToStop.has(parent)) return;
+		Array.prototype.forEach.call(parent.children, function(node) {
+			if (elementsToKeep.has(node)) deep(node);
+			else try {
+				var attr = node.getAttribute(controlAttribute);
+				var alreadyHidden = attr !== null && attr !== "false";
+				var counterValue = (counterMap.get(node) || 0) + 1;
+				var markerValue = (markerCounter.get(node) || 0) + 1;
+				counterMap.set(node, counterValue);
+				markerCounter.set(node, markerValue);
+				hiddenNodes.push(node);
+				if (counterValue === 1 && alreadyHidden) uncontrolledNodes.set(node, true);
+				if (markerValue === 1) node.setAttribute(markerName, "true");
+				if (!alreadyHidden) node.setAttribute(controlAttribute, "true");
+			} catch (e) {
+				console.error("aria-hidden: cannot operate on ", node, e);
+			}
+		});
+	};
+	deep(parentNode);
+	elementsToKeep.clear();
+	lockCount++;
+	return function() {
+		hiddenNodes.forEach(function(node) {
+			var counterValue = counterMap.get(node) - 1;
+			var markerValue = markerCounter.get(node) - 1;
+			counterMap.set(node, counterValue);
+			markerCounter.set(node, markerValue);
+			if (!counterValue) {
+				if (!uncontrolledNodes.has(node)) node.removeAttribute(controlAttribute);
+				uncontrolledNodes.delete(node);
+			}
+			if (!markerValue) node.removeAttribute(markerName);
+		});
+		lockCount--;
+		if (!lockCount) {
+			counterMap = /* @__PURE__ */ new WeakMap();
+			counterMap = /* @__PURE__ */ new WeakMap();
+			uncontrolledNodes = /* @__PURE__ */ new WeakMap();
+			markerMap = {};
+		}
+	};
+};
+/**
+* Marks everything except given node(or nodes) as aria-hidden
+* @param {Element | Element[]} originalTarget - elements to keep on the page
+* @param [parentNode] - top element, defaults to document.body
+* @param {String} [markerName] - a special attribute to mark every node
+* @return {Undo} undo command
+*/
+var hideOthers = function(originalTarget, parentNode, markerName) {
+	if (markerName === void 0) markerName = "data-aria-hidden";
+	var targets = Array.from(Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
+	var activeParentNode = parentNode || getDefaultParent(originalTarget);
+	if (!activeParentNode) return function() {
+		return null;
+	};
+	targets.push.apply(targets, Array.from(activeParentNode.querySelectorAll("[aria-live], script")));
+	return applyAttributeToOthers(targets, activeParentNode, markerName, "aria-hidden");
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-dialog@1.1.15_@types+react-dom@19.1.11_@types+react@19.1.17__@types+rea_8cda88dee65e27ab93300d895457061b/node_modules/@radix-ui/react-dialog/dist/index.mjs
+var DIALOG_NAME = "Dialog";
+var [createDialogContext, createDialogScope] = createContextScope(DIALOG_NAME);
+var [DialogProvider, useDialogContext] = createDialogContext(DIALOG_NAME);
+var Dialog$1 = (props) => {
+	const { __scopeDialog, children, open: openProp, defaultOpen, onOpenChange, modal = true } = props;
+	const triggerRef = import_react.useRef(null);
+	const contentRef = import_react.useRef(null);
+	const [open, setOpen] = useControllableState({
+		prop: openProp,
+		defaultProp: defaultOpen ?? false,
+		onChange: onOpenChange,
+		caller: DIALOG_NAME
+	});
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogProvider, {
+		scope: __scopeDialog,
+		triggerRef,
+		contentRef,
+		contentId: useId(),
+		titleId: useId(),
+		descriptionId: useId(),
+		open,
+		onOpenChange: setOpen,
+		onOpenToggle: import_react.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
+		modal,
+		children
+	});
+};
+Dialog$1.displayName = DIALOG_NAME;
+var TRIGGER_NAME$3 = "DialogTrigger";
+var DialogTrigger = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeDialog, ...triggerProps } = props;
+	const context = useDialogContext(TRIGGER_NAME$3, __scopeDialog);
+	const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.button, {
+		type: "button",
+		"aria-haspopup": "dialog",
+		"aria-expanded": context.open,
+		"aria-controls": context.contentId,
+		"data-state": getState$2(context.open),
+		...triggerProps,
+		ref: composedTriggerRef,
+		onClick: composeEventHandlers(props.onClick, context.onOpenToggle)
+	});
+});
+DialogTrigger.displayName = TRIGGER_NAME$3;
+var PORTAL_NAME$1 = "DialogPortal";
+var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME$1, { forceMount: void 0 });
+var DialogPortal$1 = (props) => {
+	const { __scopeDialog, forceMount, children, container } = props;
+	const context = useDialogContext(PORTAL_NAME$1, __scopeDialog);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PortalProvider, {
+		scope: __scopeDialog,
+		forceMount,
+		children: import_react.Children.map(children, (child) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
+			present: forceMount || context.open,
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal$2, {
+				asChild: true,
+				container,
+				children: child
 			})
-		]
+		}))
+	});
+};
+DialogPortal$1.displayName = PORTAL_NAME$1;
+var OVERLAY_NAME = "DialogOverlay";
+var DialogOverlay$1 = import_react.forwardRef((props, forwardedRef) => {
+	const portalContext = usePortalContext(OVERLAY_NAME, props.__scopeDialog);
+	const { forceMount = portalContext.forceMount, ...overlayProps } = props;
+	const context = useDialogContext(OVERLAY_NAME, props.__scopeDialog);
+	return context.modal ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
+		present: forceMount || context.open,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogOverlayImpl, {
+			...overlayProps,
+			ref: forwardedRef
+		})
+	}) : null;
+});
+DialogOverlay$1.displayName = OVERLAY_NAME;
+var Slot$1 = /* @__PURE__ */ createSlot("DialogOverlay.RemoveScroll");
+var DialogOverlayImpl = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeDialog, ...overlayProps } = props;
+	const context = useDialogContext(OVERLAY_NAME, __scopeDialog);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ReactRemoveScroll, {
+		as: Slot$1,
+		allowPinchZoom: true,
+		shards: [context.contentRef],
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
+			"data-state": getState$2(context.open),
+			...overlayProps,
+			ref: forwardedRef,
+			style: {
+				pointerEvents: "auto",
+				...overlayProps.style
+			}
+		})
+	});
+});
+var CONTENT_NAME$3 = "DialogContent";
+var DialogContent$1 = import_react.forwardRef((props, forwardedRef) => {
+	const portalContext = usePortalContext(CONTENT_NAME$3, props.__scopeDialog);
+	const { forceMount = portalContext.forceMount, ...contentProps } = props;
+	const context = useDialogContext(CONTENT_NAME$3, props.__scopeDialog);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
+		present: forceMount || context.open,
+		children: context.modal ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogContentModal, {
+			...contentProps,
+			ref: forwardedRef
+		}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogContentNonModal, {
+			...contentProps,
+			ref: forwardedRef
+		})
+	});
+});
+DialogContent$1.displayName = CONTENT_NAME$3;
+var DialogContentModal = import_react.forwardRef((props, forwardedRef) => {
+	const context = useDialogContext(CONTENT_NAME$3, props.__scopeDialog);
+	const contentRef = import_react.useRef(null);
+	const composedRefs = useComposedRefs(forwardedRef, context.contentRef, contentRef);
+	import_react.useEffect(() => {
+		const content = contentRef.current;
+		if (content) return hideOthers(content);
+	}, []);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogContentImpl, {
+		...props,
+		ref: composedRefs,
+		trapFocus: context.open,
+		disableOutsidePointerEvents: true,
+		onCloseAutoFocus: composeEventHandlers(props.onCloseAutoFocus, (event) => {
+			event.preventDefault();
+			context.triggerRef.current?.focus();
+		}),
+		onPointerDownOutside: composeEventHandlers(props.onPointerDownOutside, (event) => {
+			const originalEvent = event.detail.originalEvent;
+			const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true;
+			if (originalEvent.button === 2 || ctrlLeftClick) event.preventDefault();
+		}),
+		onFocusOutside: composeEventHandlers(props.onFocusOutside, (event) => event.preventDefault())
+	});
+});
+var DialogContentNonModal = import_react.forwardRef((props, forwardedRef) => {
+	const context = useDialogContext(CONTENT_NAME$3, props.__scopeDialog);
+	const hasInteractedOutsideRef = import_react.useRef(false);
+	const hasPointerDownOutsideRef = import_react.useRef(false);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogContentImpl, {
+		...props,
+		ref: forwardedRef,
+		trapFocus: false,
+		disableOutsidePointerEvents: false,
+		onCloseAutoFocus: (event) => {
+			props.onCloseAutoFocus?.(event);
+			if (!event.defaultPrevented) {
+				if (!hasInteractedOutsideRef.current) context.triggerRef.current?.focus();
+				event.preventDefault();
+			}
+			hasInteractedOutsideRef.current = false;
+			hasPointerDownOutsideRef.current = false;
+		},
+		onInteractOutside: (event) => {
+			props.onInteractOutside?.(event);
+			if (!event.defaultPrevented) {
+				hasInteractedOutsideRef.current = true;
+				if (event.detail.originalEvent.type === "pointerdown") hasPointerDownOutsideRef.current = true;
+			}
+			const target = event.target;
+			if (context.triggerRef.current?.contains(target)) event.preventDefault();
+			if (event.detail.originalEvent.type === "focusin" && hasPointerDownOutsideRef.current) event.preventDefault();
+		}
+	});
+});
+var DialogContentImpl = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeDialog, trapFocus, onOpenAutoFocus, onCloseAutoFocus, ...contentProps } = props;
+	const context = useDialogContext(CONTENT_NAME$3, __scopeDialog);
+	const contentRef = import_react.useRef(null);
+	const composedRefs = useComposedRefs(forwardedRef, contentRef);
+	useFocusGuards();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FocusScope, {
+		asChild: true,
+		loop: true,
+		trapped: trapFocus,
+		onMountAutoFocus: onOpenAutoFocus,
+		onUnmountAutoFocus: onCloseAutoFocus,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DismissableLayer, {
+			role: "dialog",
+			id: context.contentId,
+			"aria-describedby": context.descriptionId,
+			"aria-labelledby": context.titleId,
+			"data-state": getState$2(context.open),
+			...contentProps,
+			ref: composedRefs,
+			onDismiss: () => context.onOpenChange(false)
+		})
+	}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TitleWarning, { titleId: context.titleId }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DescriptionWarning, {
+		contentRef,
+		descriptionId: context.descriptionId
+	})] })] });
+});
+var TITLE_NAME = "DialogTitle";
+var DialogTitle$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeDialog, ...titleProps } = props;
+	const context = useDialogContext(TITLE_NAME, __scopeDialog);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.h2, {
+		id: context.titleId,
+		...titleProps,
+		ref: forwardedRef
+	});
+});
+DialogTitle$1.displayName = TITLE_NAME;
+var DESCRIPTION_NAME = "DialogDescription";
+var DialogDescription$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeDialog, ...descriptionProps } = props;
+	const context = useDialogContext(DESCRIPTION_NAME, __scopeDialog);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.p, {
+		id: context.descriptionId,
+		...descriptionProps,
+		ref: forwardedRef
+	});
+});
+DialogDescription$1.displayName = DESCRIPTION_NAME;
+var CLOSE_NAME = "DialogClose";
+var DialogClose = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeDialog, ...closeProps } = props;
+	const context = useDialogContext(CLOSE_NAME, __scopeDialog);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.button, {
+		type: "button",
+		...closeProps,
+		ref: forwardedRef,
+		onClick: composeEventHandlers(props.onClick, () => context.onOpenChange(false))
+	});
+});
+DialogClose.displayName = CLOSE_NAME;
+function getState$2(open) {
+	return open ? "open" : "closed";
+}
+var TITLE_WARNING_NAME = "DialogTitleWarning";
+var [WarningProvider, useWarningContext] = createContext2(TITLE_WARNING_NAME, {
+	contentName: CONTENT_NAME$3,
+	titleName: TITLE_NAME,
+	docsSlug: "dialog"
+});
+var TitleWarning = ({ titleId }) => {
+	const titleWarningContext = useWarningContext(TITLE_WARNING_NAME);
+	const MESSAGE = `\`${titleWarningContext.contentName}\` requires a \`${titleWarningContext.titleName}\` for the component to be accessible for screen reader users.
+
+If you want to hide the \`${titleWarningContext.titleName}\`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/${titleWarningContext.docsSlug}`;
+	import_react.useEffect(() => {
+		if (titleId) {
+			if (!document.getElementById(titleId)) console.error(MESSAGE);
+		}
+	}, [MESSAGE, titleId]);
+	return null;
+};
+var DESCRIPTION_WARNING_NAME = "DialogDescriptionWarning";
+var DescriptionWarning = ({ contentRef, descriptionId }) => {
+	const MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby={undefined}\` for {${useWarningContext(DESCRIPTION_WARNING_NAME).contentName}}.`;
+	import_react.useEffect(() => {
+		const describedById = contentRef.current?.getAttribute("aria-describedby");
+		if (descriptionId && describedById) {
+			if (!document.getElementById(descriptionId)) console.warn(MESSAGE);
+		}
+	}, [
+		MESSAGE,
+		contentRef,
+		descriptionId
+	]);
+	return null;
+};
+var Root$4 = Dialog$1;
+var Portal$1 = DialogPortal$1;
+var Overlay = DialogOverlay$1;
+var Content$2 = DialogContent$1;
+var Title = DialogTitle$1;
+var Description = DialogDescription$1;
+var Close = DialogClose;
+//#endregion
+//#region src/components/ui/dialog.tsx
+function Dialog({ ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$4, {
+		"data-slot": "dialog",
+		...props
 	});
 }
-/** A helpful empty state with an optional action. */
-function EmptyState({ title, message, action, className, ocid = "page.empty_state" }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		"data-ocid": ocid,
-		className: cn("flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card p-8 text-center", className),
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Inbox, {
-				className: "h-7 w-7 text-muted-foreground",
-				"aria-hidden": "true"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "font-display text-lg font-semibold uppercase tracking-wide text-foreground",
-				children: title
-			}), message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "mx-auto mt-1 max-w-md text-sm text-muted-foreground",
-				children: message
-			})] }),
-			action
-		]
+function DialogPortal({ ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal$1, {
+		"data-slot": "dialog-portal",
+		...props
+	});
+}
+function DialogOverlay({ className, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Overlay, {
+		"data-slot": "dialog-overlay",
+		className: cn("data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50", className),
+		...props
+	});
+}
+function DialogContent({ className, children, showCloseButton = true, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogPortal, {
+		"data-slot": "dialog-portal",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogOverlay, {}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Content$2, {
+			"data-slot": "dialog-content",
+			className: cn("bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg", className),
+			...props,
+			children: [children, showCloseButton && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Close, {
+				"data-slot": "dialog-close",
+				className: "ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, {}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					className: "sr-only",
+					children: "Close"
+				})]
+			})]
+		})]
+	});
+}
+function DialogHeader({ className, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		"data-slot": "dialog-header",
+		className: cn("flex flex-col gap-2 text-center sm:text-left", className),
+		...props
+	});
+}
+function DialogFooter({ className, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		"data-slot": "dialog-footer",
+		className: cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className),
+		...props
+	});
+}
+function DialogTitle({ className, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Title, {
+		"data-slot": "dialog-title",
+		className: cn("text-lg leading-none font-semibold", className),
+		...props
+	});
+}
+function DialogDescription({ className, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Description, {
+		"data-slot": "dialog-description",
+		className: cn("text-muted-foreground text-sm", className),
+		...props
 	});
 }
 //#endregion
-//#region src/components/PageHeader.tsx
-/** A page title block with an optional action slot. */
-function PageHeader({ title, subtitle, action, className }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("header", {
-		className: cn("flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className),
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "min-w-0",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
-				className: "font-display text-3xl font-bold uppercase tracking-tight text-foreground md:text-4xl",
-				children: title
-			}), subtitle && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "mt-1 text-sm text-muted-foreground md:text-base",
-				children: subtitle
-			})]
-		}), action && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-			className: "flex shrink-0 items-center gap-2",
-			children: action
-		})]
+//#region src/components/ui/input.tsx
+function Input({ className, type, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+		type,
+		"data-slot": "input",
+		className: cn("file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm", "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]", "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive", className),
+		...props
 	});
 }
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-primitive@2.1.4_@types+react-dom@19.1.11_@types+react@19.1.17__@types+r_de8c80ca3f5e88f6f5c9b47d921af618/node_modules/@radix-ui/react-primitive/dist/index.mjs
-var Primitive$1 = [
+var Primitive = [
 	"a",
 	"button",
 	"div",
@@ -45376,7 +47600,7 @@ var Primitive$1 = [
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-label@2.1.8_@types+react-dom@19.1.11_@types+react@19.1.17__@types+react_e586ba67b9b1a3f07b8b4aab729b3189/node_modules/@radix-ui/react-label/dist/index.mjs
 var NAME$2 = "Label";
 var Label$1 = import_react.forwardRef((props, forwardedRef) => {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.label, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.label, {
 		...props,
 		ref: forwardedRef,
 		onMouseDown: (event) => {
@@ -45387,14 +47611,35 @@ var Label$1 = import_react.forwardRef((props, forwardedRef) => {
 	});
 });
 Label$1.displayName = NAME$2;
-var Root$4 = Label$1;
+var Root$3 = Label$1;
 //#endregion
 //#region src/components/ui/label.tsx
 function Label({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$4, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$3, {
 		"data-slot": "label",
 		className: cn("flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50", className),
 		...props
+	});
+}
+//#endregion
+//#region src/components/PageHeader.tsx
+/** A page title block with an optional action slot. */
+function PageHeader({ title, subtitle, action, className }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("header", {
+		className: cn("flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className),
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "min-w-0",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+				className: "font-display text-3xl font-bold uppercase tracking-tight text-foreground md:text-4xl",
+				children: title
+			}), subtitle && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "mt-1 text-sm text-muted-foreground md:text-base",
+				children: subtitle
+			})]
+		}), action && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			className: "flex shrink-0 items-center gap-2",
+			children: action
+		})]
 	});
 }
 //#endregion
@@ -45715,182 +47960,54 @@ function useAdminCopy() {
 	return adminCopy[locale] ?? adminCopy.en;
 }
 //#endregion
+//#region src/components/approvals/TrainerStationsPicker.tsx
+/**
+* Multi-select of trainer stations. Only rendered when the chosen role is
+* Trainer; the selection is required by the backend for that role.
+*/
+function TrainerStationsPicker({ positions, selectedIds, onChange }) {
+	const { t } = useI18n();
+	const toggle = (id) => {
+		onChange(selectedIds.includes(id) ? selectedIds.filter((value) => value !== id) : [...selectedIds, id]);
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("fieldset", {
+		className: "space-y-2 md:col-span-2",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("legend", {
+				className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+				children: t("approvals.stations.label")
+			}),
+			positions.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-sm text-muted-foreground",
+				children: t("admin.positions.empty")
+			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "flex flex-wrap gap-2",
+				children: positions.map((position) => {
+					const id = position.id.toString();
+					const checked = selectedIds.includes(id);
+					return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {
+						className: `touch-target flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${checked ? "border-primary bg-primary/10 text-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/50"}`,
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+							type: "checkbox",
+							className: "h-4 w-4 accent-[var(--primary)]",
+							checked,
+							"data-ocid": "approvals.station.checkbox",
+							onChange: () => toggle(id)
+						}), position.name]
+					}, id);
+				})
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-xs text-muted-foreground",
+				children: t("approvals.stations.hint")
+			})
+		]
+	});
+}
+//#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+number@1.1.1/node_modules/@radix-ui/number/dist/index.mjs
 function clamp$1(value, [min, max]) {
 	return Math.min(max, Math.max(min, value));
-}
-typeof window !== "undefined" && window.document && window.document.createElement;
-function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
-	return function handleEvent(event) {
-		originalEventHandler?.(event);
-		if (checkForDefaultPrevented === false || !event.defaultPrevented) return ourEventHandler?.(event);
-	};
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-context@1.1.2_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-context/dist/index.mjs
-function createContext2(rootComponentName, defaultContext) {
-	const Context = import_react.createContext(defaultContext);
-	const Provider = (props) => {
-		const { children, ...context } = props;
-		const value = import_react.useMemo(() => context, Object.values(context));
-		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Context.Provider, {
-			value,
-			children
-		});
-	};
-	Provider.displayName = rootComponentName + "Provider";
-	function useContext2(consumerName) {
-		const context = import_react.useContext(Context);
-		if (context) return context;
-		if (defaultContext !== void 0) return defaultContext;
-		throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
-	}
-	return [Provider, useContext2];
-}
-function createContextScope(scopeName, createContextScopeDeps = []) {
-	let defaultContexts = [];
-	function createContext3(rootComponentName, defaultContext) {
-		const BaseContext = import_react.createContext(defaultContext);
-		const index = defaultContexts.length;
-		defaultContexts = [...defaultContexts, defaultContext];
-		const Provider = (props) => {
-			const { scope, children, ...context } = props;
-			const Context = scope?.[scopeName]?.[index] || BaseContext;
-			const value = import_react.useMemo(() => context, Object.values(context));
-			return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Context.Provider, {
-				value,
-				children
-			});
-		};
-		Provider.displayName = rootComponentName + "Provider";
-		function useContext2(consumerName, scope) {
-			const Context = scope?.[scopeName]?.[index] || BaseContext;
-			const context = import_react.useContext(Context);
-			if (context) return context;
-			if (defaultContext !== void 0) return defaultContext;
-			throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
-		}
-		return [Provider, useContext2];
-	}
-	const createScope = () => {
-		const scopeContexts = defaultContexts.map((defaultContext) => {
-			return import_react.createContext(defaultContext);
-		});
-		return function useScope(scope) {
-			const contexts = scope?.[scopeName] || scopeContexts;
-			return import_react.useMemo(() => ({ [`__scope${scopeName}`]: {
-				...scope,
-				[scopeName]: contexts
-			} }), [scope, contexts]);
-		};
-	};
-	createScope.scopeName = scopeName;
-	return [createContext3, composeContextScopes(createScope, ...createContextScopeDeps)];
-}
-function composeContextScopes(...scopes) {
-	const baseScope = scopes[0];
-	if (scopes.length === 1) return baseScope;
-	const createScope = () => {
-		const scopeHooks = scopes.map((createScope2) => ({
-			useScope: createScope2(),
-			scopeName: createScope2.scopeName
-		}));
-		return function useComposedScopes(overrideScopes) {
-			const nextScopes = scopeHooks.reduce((nextScopes2, { useScope, scopeName }) => {
-				const currentScope = useScope(overrideScopes)[`__scope${scopeName}`];
-				return {
-					...nextScopes2,
-					...currentScope
-				};
-			}, {});
-			return import_react.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
-		};
-	};
-	createScope.scopeName = baseScope.scopeName;
-	return createScope;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-slot@1.2.3_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-slot/dist/index.mjs
-// @__NO_SIDE_EFFECTS__
-function createSlot(ownerName) {
-	const SlotClone = /* @__PURE__ */ createSlotClone(ownerName);
-	const Slot2 = import_react.forwardRef((props, forwardedRef) => {
-		const { children, ...slotProps } = props;
-		const childrenArray = import_react.Children.toArray(children);
-		const slottable = childrenArray.find(isSlottable);
-		if (slottable) {
-			const newElement = slottable.props.children;
-			const newChildren = childrenArray.map((child) => {
-				if (child === slottable) {
-					if (import_react.Children.count(newElement) > 1) return import_react.Children.only(null);
-					return import_react.isValidElement(newElement) ? newElement.props.children : null;
-				} else return child;
-			});
-			return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlotClone, {
-				...slotProps,
-				ref: forwardedRef,
-				children: import_react.isValidElement(newElement) ? import_react.cloneElement(newElement, void 0, newChildren) : null
-			});
-		}
-		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlotClone, {
-			...slotProps,
-			ref: forwardedRef,
-			children
-		});
-	});
-	Slot2.displayName = `${ownerName}.Slot`;
-	return Slot2;
-}
-// @__NO_SIDE_EFFECTS__
-function createSlotClone(ownerName) {
-	const SlotClone = import_react.forwardRef((props, forwardedRef) => {
-		const { children, ...slotProps } = props;
-		if (import_react.isValidElement(children)) {
-			const childrenRef = getElementRef$1(children);
-			const props2 = mergeProps(slotProps, children.props);
-			if (children.type !== import_react.Fragment) props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
-			return import_react.cloneElement(children, props2);
-		}
-		return import_react.Children.count(children) > 1 ? import_react.Children.only(null) : null;
-	});
-	SlotClone.displayName = `${ownerName}.SlotClone`;
-	return SlotClone;
-}
-var SLOTTABLE_IDENTIFIER = Symbol("radix.slottable");
-function isSlottable(child) {
-	return import_react.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
-}
-function mergeProps(slotProps, childProps) {
-	const overrideProps = { ...childProps };
-	for (const propName in childProps) {
-		const slotPropValue = slotProps[propName];
-		const childPropValue = childProps[propName];
-		if (/^on[A-Z]/.test(propName)) {
-			if (slotPropValue && childPropValue) overrideProps[propName] = (...args) => {
-				const result = childPropValue(...args);
-				slotPropValue(...args);
-				return result;
-			};
-			else if (slotPropValue) overrideProps[propName] = slotPropValue;
-		} else if (propName === "style") overrideProps[propName] = {
-			...slotPropValue,
-			...childPropValue
-		};
-		else if (propName === "className") overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
-	}
-	return {
-		...slotProps,
-		...overrideProps
-	};
-}
-function getElementRef$1(element) {
-	let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
-	let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-	if (mayWarn) return element.ref;
-	getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
-	mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-	if (mayWarn) return element.props.ref;
-	return element.props.ref || element.ref;
 }
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-collection@1.1.7_@types+react-dom@19.1.11_@types+react@19.1.17__@types+_60f944c86d7d4a96d0f33ac85e20f38f/node_modules/@radix-ui/react-collection/dist/index.mjs
@@ -45971,469 +48088,6 @@ var DirectionContext = import_react.createContext(void 0);
 function useDirection(localDir) {
 	const globalDir = import_react.useContext(DirectionContext);
 	return localDir || globalDir || "ltr";
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-primitive@2.1.3_@types+react-dom@19.1.11_@types+react@19.1.17__@types+r_309699a331ceb1f69dcb31d3df00e5e5/node_modules/@radix-ui/react-primitive/dist/index.mjs
-var Primitive = [
-	"a",
-	"button",
-	"div",
-	"form",
-	"h2",
-	"h3",
-	"img",
-	"input",
-	"label",
-	"li",
-	"nav",
-	"ol",
-	"p",
-	"select",
-	"span",
-	"svg",
-	"ul"
-].reduce((primitive, node) => {
-	const Slot = /* @__PURE__ */ createSlot(`Primitive.${node}`);
-	const Node = import_react.forwardRef((props, forwardedRef) => {
-		const { asChild, ...primitiveProps } = props;
-		const Comp = asChild ? Slot : node;
-		if (typeof window !== "undefined") window[Symbol.for("radix-ui")] = true;
-		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Comp, {
-			...primitiveProps,
-			ref: forwardedRef
-		});
-	});
-	Node.displayName = `Primitive.${node}`;
-	return {
-		...primitive,
-		[node]: Node
-	};
-}, {});
-function dispatchDiscreteCustomEvent(target, event) {
-	if (target) import_react_dom.flushSync(() => target.dispatchEvent(event));
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-callback-ref@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-callback-ref/dist/index.mjs
-function useCallbackRef$1(callback) {
-	const callbackRef = import_react.useRef(callback);
-	import_react.useEffect(() => {
-		callbackRef.current = callback;
-	});
-	return import_react.useMemo(() => (...args) => callbackRef.current?.(...args), []);
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-escape-keydown@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-escape-keydown/dist/index.mjs
-function useEscapeKeydown(onEscapeKeyDownProp, ownerDocument = globalThis?.document) {
-	const onEscapeKeyDown = useCallbackRef$1(onEscapeKeyDownProp);
-	import_react.useEffect(() => {
-		const handleKeyDown = (event) => {
-			if (event.key === "Escape") onEscapeKeyDown(event);
-		};
-		ownerDocument.addEventListener("keydown", handleKeyDown, { capture: true });
-		return () => ownerDocument.removeEventListener("keydown", handleKeyDown, { capture: true });
-	}, [onEscapeKeyDown, ownerDocument]);
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-dismissable-layer@1.1.11_@types+react-dom@19.1.11_@types+react@19.1.17__04759484545efd16289eb59f8087867a/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs
-var DISMISSABLE_LAYER_NAME = "DismissableLayer";
-var CONTEXT_UPDATE = "dismissableLayer.update";
-var POINTER_DOWN_OUTSIDE = "dismissableLayer.pointerDownOutside";
-var FOCUS_OUTSIDE = "dismissableLayer.focusOutside";
-var originalBodyPointerEvents;
-var DismissableLayerContext = import_react.createContext({
-	layers: /* @__PURE__ */ new Set(),
-	layersWithOutsidePointerEventsDisabled: /* @__PURE__ */ new Set(),
-	branches: /* @__PURE__ */ new Set()
-});
-var DismissableLayer = import_react.forwardRef((props, forwardedRef) => {
-	const { disableOutsidePointerEvents = false, onEscapeKeyDown, onPointerDownOutside, onFocusOutside, onInteractOutside, onDismiss, ...layerProps } = props;
-	const context = import_react.useContext(DismissableLayerContext);
-	const [node, setNode] = import_react.useState(null);
-	const ownerDocument = node?.ownerDocument ?? globalThis?.document;
-	const [, force] = import_react.useState({});
-	const composedRefs = useComposedRefs(forwardedRef, (node2) => setNode(node2));
-	const layers = Array.from(context.layers);
-	const [highestLayerWithOutsidePointerEventsDisabled] = [...context.layersWithOutsidePointerEventsDisabled].slice(-1);
-	const highestLayerWithOutsidePointerEventsDisabledIndex = layers.indexOf(highestLayerWithOutsidePointerEventsDisabled);
-	const index = node ? layers.indexOf(node) : -1;
-	const isBodyPointerEventsDisabled = context.layersWithOutsidePointerEventsDisabled.size > 0;
-	const isPointerEventsEnabled = index >= highestLayerWithOutsidePointerEventsDisabledIndex;
-	const pointerDownOutside = usePointerDownOutside((event) => {
-		const target = event.target;
-		const isPointerDownOnBranch = [...context.branches].some((branch) => branch.contains(target));
-		if (!isPointerEventsEnabled || isPointerDownOnBranch) return;
-		onPointerDownOutside?.(event);
-		onInteractOutside?.(event);
-		if (!event.defaultPrevented) onDismiss?.();
-	}, ownerDocument);
-	const focusOutside = useFocusOutside((event) => {
-		const target = event.target;
-		if ([...context.branches].some((branch) => branch.contains(target))) return;
-		onFocusOutside?.(event);
-		onInteractOutside?.(event);
-		if (!event.defaultPrevented) onDismiss?.();
-	}, ownerDocument);
-	useEscapeKeydown((event) => {
-		if (!(index === context.layers.size - 1)) return;
-		onEscapeKeyDown?.(event);
-		if (!event.defaultPrevented && onDismiss) {
-			event.preventDefault();
-			onDismiss();
-		}
-	}, ownerDocument);
-	import_react.useEffect(() => {
-		if (!node) return;
-		if (disableOutsidePointerEvents) {
-			if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
-				originalBodyPointerEvents = ownerDocument.body.style.pointerEvents;
-				ownerDocument.body.style.pointerEvents = "none";
-			}
-			context.layersWithOutsidePointerEventsDisabled.add(node);
-		}
-		context.layers.add(node);
-		dispatchUpdate();
-		return () => {
-			if (disableOutsidePointerEvents && context.layersWithOutsidePointerEventsDisabled.size === 1) ownerDocument.body.style.pointerEvents = originalBodyPointerEvents;
-		};
-	}, [
-		node,
-		ownerDocument,
-		disableOutsidePointerEvents,
-		context
-	]);
-	import_react.useEffect(() => {
-		return () => {
-			if (!node) return;
-			context.layers.delete(node);
-			context.layersWithOutsidePointerEventsDisabled.delete(node);
-			dispatchUpdate();
-		};
-	}, [node, context]);
-	import_react.useEffect(() => {
-		const handleUpdate = () => force({});
-		document.addEventListener(CONTEXT_UPDATE, handleUpdate);
-		return () => document.removeEventListener(CONTEXT_UPDATE, handleUpdate);
-	}, []);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-		...layerProps,
-		ref: composedRefs,
-		style: {
-			pointerEvents: isBodyPointerEventsDisabled ? isPointerEventsEnabled ? "auto" : "none" : void 0,
-			...props.style
-		},
-		onFocusCapture: composeEventHandlers(props.onFocusCapture, focusOutside.onFocusCapture),
-		onBlurCapture: composeEventHandlers(props.onBlurCapture, focusOutside.onBlurCapture),
-		onPointerDownCapture: composeEventHandlers(props.onPointerDownCapture, pointerDownOutside.onPointerDownCapture)
-	});
-});
-DismissableLayer.displayName = DISMISSABLE_LAYER_NAME;
-var BRANCH_NAME = "DismissableLayerBranch";
-var DismissableLayerBranch = import_react.forwardRef((props, forwardedRef) => {
-	const context = import_react.useContext(DismissableLayerContext);
-	const ref = import_react.useRef(null);
-	const composedRefs = useComposedRefs(forwardedRef, ref);
-	import_react.useEffect(() => {
-		const node = ref.current;
-		if (node) {
-			context.branches.add(node);
-			return () => {
-				context.branches.delete(node);
-			};
-		}
-	}, [context.branches]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-		...props,
-		ref: composedRefs
-	});
-});
-DismissableLayerBranch.displayName = BRANCH_NAME;
-function usePointerDownOutside(onPointerDownOutside, ownerDocument = globalThis?.document) {
-	const handlePointerDownOutside = useCallbackRef$1(onPointerDownOutside);
-	const isPointerInsideReactTreeRef = import_react.useRef(false);
-	const handleClickRef = import_react.useRef(() => {});
-	import_react.useEffect(() => {
-		const handlePointerDown = (event) => {
-			if (event.target && !isPointerInsideReactTreeRef.current) {
-				let handleAndDispatchPointerDownOutsideEvent2 = function() {
-					handleAndDispatchCustomEvent(POINTER_DOWN_OUTSIDE, handlePointerDownOutside, eventDetail, { discrete: true });
-				};
-				const eventDetail = { originalEvent: event };
-				if (event.pointerType === "touch") {
-					ownerDocument.removeEventListener("click", handleClickRef.current);
-					handleClickRef.current = handleAndDispatchPointerDownOutsideEvent2;
-					ownerDocument.addEventListener("click", handleClickRef.current, { once: true });
-				} else handleAndDispatchPointerDownOutsideEvent2();
-			} else ownerDocument.removeEventListener("click", handleClickRef.current);
-			isPointerInsideReactTreeRef.current = false;
-		};
-		const timerId = window.setTimeout(() => {
-			ownerDocument.addEventListener("pointerdown", handlePointerDown);
-		}, 0);
-		return () => {
-			window.clearTimeout(timerId);
-			ownerDocument.removeEventListener("pointerdown", handlePointerDown);
-			ownerDocument.removeEventListener("click", handleClickRef.current);
-		};
-	}, [ownerDocument, handlePointerDownOutside]);
-	return { onPointerDownCapture: () => isPointerInsideReactTreeRef.current = true };
-}
-function useFocusOutside(onFocusOutside, ownerDocument = globalThis?.document) {
-	const handleFocusOutside = useCallbackRef$1(onFocusOutside);
-	const isFocusInsideReactTreeRef = import_react.useRef(false);
-	import_react.useEffect(() => {
-		const handleFocus = (event) => {
-			if (event.target && !isFocusInsideReactTreeRef.current) handleAndDispatchCustomEvent(FOCUS_OUTSIDE, handleFocusOutside, { originalEvent: event }, { discrete: false });
-		};
-		ownerDocument.addEventListener("focusin", handleFocus);
-		return () => ownerDocument.removeEventListener("focusin", handleFocus);
-	}, [ownerDocument, handleFocusOutside]);
-	return {
-		onFocusCapture: () => isFocusInsideReactTreeRef.current = true,
-		onBlurCapture: () => isFocusInsideReactTreeRef.current = false
-	};
-}
-function dispatchUpdate() {
-	const event = new CustomEvent(CONTEXT_UPDATE);
-	document.dispatchEvent(event);
-}
-function handleAndDispatchCustomEvent(name, handler, detail, { discrete }) {
-	const target = detail.originalEvent.target;
-	const event = new CustomEvent(name, {
-		bubbles: false,
-		cancelable: true,
-		detail
-	});
-	if (handler) target.addEventListener(name, handler, { once: true });
-	if (discrete) dispatchDiscreteCustomEvent(target, event);
-	else target.dispatchEvent(event);
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-focus-guards@1.1.3_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-focus-guards/dist/index.mjs
-var count$1 = 0;
-function useFocusGuards() {
-	import_react.useEffect(() => {
-		const edgeGuards = document.querySelectorAll("[data-radix-focus-guard]");
-		document.body.insertAdjacentElement("afterbegin", edgeGuards[0] ?? createFocusGuard());
-		document.body.insertAdjacentElement("beforeend", edgeGuards[1] ?? createFocusGuard());
-		count$1++;
-		return () => {
-			if (count$1 === 1) document.querySelectorAll("[data-radix-focus-guard]").forEach((node) => node.remove());
-			count$1--;
-		};
-	}, []);
-}
-function createFocusGuard() {
-	const element = document.createElement("span");
-	element.setAttribute("data-radix-focus-guard", "");
-	element.tabIndex = 0;
-	element.style.outline = "none";
-	element.style.opacity = "0";
-	element.style.position = "fixed";
-	element.style.pointerEvents = "none";
-	return element;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-focus-scope@1.1.7_@types+react-dom@19.1.11_@types+react@19.1.17__@types_743eb681fa5947458d78d51e929a6f1d/node_modules/@radix-ui/react-focus-scope/dist/index.mjs
-var AUTOFOCUS_ON_MOUNT = "focusScope.autoFocusOnMount";
-var AUTOFOCUS_ON_UNMOUNT = "focusScope.autoFocusOnUnmount";
-var EVENT_OPTIONS$1 = {
-	bubbles: false,
-	cancelable: true
-};
-var FOCUS_SCOPE_NAME = "FocusScope";
-var FocusScope = import_react.forwardRef((props, forwardedRef) => {
-	const { loop = false, trapped = false, onMountAutoFocus: onMountAutoFocusProp, onUnmountAutoFocus: onUnmountAutoFocusProp, ...scopeProps } = props;
-	const [container, setContainer] = import_react.useState(null);
-	const onMountAutoFocus = useCallbackRef$1(onMountAutoFocusProp);
-	const onUnmountAutoFocus = useCallbackRef$1(onUnmountAutoFocusProp);
-	const lastFocusedElementRef = import_react.useRef(null);
-	const composedRefs = useComposedRefs(forwardedRef, (node) => setContainer(node));
-	const focusScope = import_react.useRef({
-		paused: false,
-		pause() {
-			this.paused = true;
-		},
-		resume() {
-			this.paused = false;
-		}
-	}).current;
-	import_react.useEffect(() => {
-		if (trapped) {
-			let handleFocusIn2 = function(event) {
-				if (focusScope.paused || !container) return;
-				const target = event.target;
-				if (container.contains(target)) lastFocusedElementRef.current = target;
-				else focus(lastFocusedElementRef.current, { select: true });
-			}, handleFocusOut2 = function(event) {
-				if (focusScope.paused || !container) return;
-				const relatedTarget = event.relatedTarget;
-				if (relatedTarget === null) return;
-				if (!container.contains(relatedTarget)) focus(lastFocusedElementRef.current, { select: true });
-			}, handleMutations2 = function(mutations) {
-				if (document.activeElement !== document.body) return;
-				for (const mutation of mutations) if (mutation.removedNodes.length > 0) focus(container);
-			};
-			document.addEventListener("focusin", handleFocusIn2);
-			document.addEventListener("focusout", handleFocusOut2);
-			const mutationObserver = new MutationObserver(handleMutations2);
-			if (container) mutationObserver.observe(container, {
-				childList: true,
-				subtree: true
-			});
-			return () => {
-				document.removeEventListener("focusin", handleFocusIn2);
-				document.removeEventListener("focusout", handleFocusOut2);
-				mutationObserver.disconnect();
-			};
-		}
-	}, [
-		trapped,
-		container,
-		focusScope.paused
-	]);
-	import_react.useEffect(() => {
-		if (container) {
-			focusScopesStack.add(focusScope);
-			const previouslyFocusedElement = document.activeElement;
-			if (!container.contains(previouslyFocusedElement)) {
-				const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS$1);
-				container.addEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
-				container.dispatchEvent(mountEvent);
-				if (!mountEvent.defaultPrevented) {
-					focusFirst$1(removeLinks(getTabbableCandidates(container)), { select: true });
-					if (document.activeElement === previouslyFocusedElement) focus(container);
-				}
-			}
-			return () => {
-				container.removeEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
-				setTimeout(() => {
-					const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS$1);
-					container.addEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
-					container.dispatchEvent(unmountEvent);
-					if (!unmountEvent.defaultPrevented) focus(previouslyFocusedElement ?? document.body, { select: true });
-					container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
-					focusScopesStack.remove(focusScope);
-				}, 0);
-			};
-		}
-	}, [
-		container,
-		onMountAutoFocus,
-		onUnmountAutoFocus,
-		focusScope
-	]);
-	const handleKeyDown = import_react.useCallback((event) => {
-		if (!loop && !trapped) return;
-		if (focusScope.paused) return;
-		const isTabKey = event.key === "Tab" && !event.altKey && !event.ctrlKey && !event.metaKey;
-		const focusedElement = document.activeElement;
-		if (isTabKey && focusedElement) {
-			const container2 = event.currentTarget;
-			const [first, last] = getTabbableEdges(container2);
-			if (!(first && last)) {
-				if (focusedElement === container2) event.preventDefault();
-			} else if (!event.shiftKey && focusedElement === last) {
-				event.preventDefault();
-				if (loop) focus(first, { select: true });
-			} else if (event.shiftKey && focusedElement === first) {
-				event.preventDefault();
-				if (loop) focus(last, { select: true });
-			}
-		}
-	}, [
-		loop,
-		trapped,
-		focusScope.paused
-	]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-		tabIndex: -1,
-		...scopeProps,
-		ref: composedRefs,
-		onKeyDown: handleKeyDown
-	});
-});
-FocusScope.displayName = FOCUS_SCOPE_NAME;
-function focusFirst$1(candidates, { select = false } = {}) {
-	const previouslyFocusedElement = document.activeElement;
-	for (const candidate of candidates) {
-		focus(candidate, { select });
-		if (document.activeElement !== previouslyFocusedElement) return;
-	}
-}
-function getTabbableEdges(container) {
-	const candidates = getTabbableCandidates(container);
-	return [findVisible(candidates, container), findVisible(candidates.reverse(), container)];
-}
-function getTabbableCandidates(container) {
-	const nodes = [];
-	const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, { acceptNode: (node) => {
-		const isHiddenInput = node.tagName === "INPUT" && node.type === "hidden";
-		if (node.disabled || node.hidden || isHiddenInput) return NodeFilter.FILTER_SKIP;
-		return node.tabIndex >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-	} });
-	while (walker.nextNode()) nodes.push(walker.currentNode);
-	return nodes;
-}
-function findVisible(elements, container) {
-	for (const element of elements) if (!isHidden(element, { upTo: container })) return element;
-}
-function isHidden(node, { upTo }) {
-	if (getComputedStyle(node).visibility === "hidden") return true;
-	while (node) {
-		if (upTo !== void 0 && node === upTo) return false;
-		if (getComputedStyle(node).display === "none") return true;
-		node = node.parentElement;
-	}
-	return false;
-}
-function isSelectableInput(element) {
-	return element instanceof HTMLInputElement && "select" in element;
-}
-function focus(element, { select = false } = {}) {
-	if (element && element.focus) {
-		const previouslyFocusedElement = document.activeElement;
-		element.focus({ preventScroll: true });
-		if (element !== previouslyFocusedElement && isSelectableInput(element) && select) element.select();
-	}
-}
-var focusScopesStack = createFocusScopesStack();
-function createFocusScopesStack() {
-	let stack = [];
-	return {
-		add(focusScope) {
-			const activeFocusScope = stack[0];
-			if (focusScope !== activeFocusScope) activeFocusScope?.pause();
-			stack = arrayRemove(stack, focusScope);
-			stack.unshift(focusScope);
-		},
-		remove(focusScope) {
-			stack = arrayRemove(stack, focusScope);
-			stack[0]?.resume();
-		}
-	};
-}
-function arrayRemove(array, item) {
-	const updatedArray = [...array];
-	const index = updatedArray.indexOf(item);
-	if (index !== -1) updatedArray.splice(index, 1);
-	return updatedArray;
-}
-function removeLinks(items) {
-	return items.filter((item) => item.tagName !== "A");
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-layout-effect@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-layout-effect/dist/index.mjs
-var useLayoutEffect2 = globalThis?.document ? import_react.useLayoutEffect : () => {};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-id@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-id/dist/index.mjs
-var useReactId = import_react[" useId ".trim().toString()] || (() => void 0);
-var count = 0;
-function useId(deterministicId) {
-	const [id, setId] = import_react.useState(useReactId());
-	useLayoutEffect2(() => {
-		if (!deterministicId) setId((reactId) => reactId ?? String(count++));
-	}, [deterministicId]);
-	return deterministicId || (id ? `radix-${id}` : "");
 }
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@floating-ui+utils@0.2.11/node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs
@@ -48091,7 +49745,7 @@ var arrow = (options, deps) => {
 var NAME$1 = "Arrow";
 var Arrow$1 = import_react.forwardRef((props, forwardedRef) => {
 	const { children, width = 10, height = 5, ...arrowProps } = props;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.svg, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.svg, {
 		...arrowProps,
 		ref: forwardedRef,
 		width,
@@ -48102,7 +49756,7 @@ var Arrow$1 = import_react.forwardRef((props, forwardedRef) => {
 	});
 });
 Arrow$1.displayName = NAME$1;
-var Root$3 = Arrow$1;
+var Root$2 = Arrow$1;
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-size@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-size/dist/index.mjs
 function useSize(element) {
@@ -48167,17 +49821,17 @@ var PopperAnchor = import_react.forwardRef((props, forwardedRef) => {
 		anchorRef.current = virtualRef?.current || ref.current;
 		if (previousAnchor !== anchorRef.current) context.onAnchorChange(anchorRef.current);
 	});
-	return virtualRef ? null : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+	return virtualRef ? null : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 		...anchorProps,
 		ref: composedRefs
 	});
 });
 PopperAnchor.displayName = ANCHOR_NAME;
-var CONTENT_NAME$3 = "PopperContent";
-var [PopperContentProvider, useContentContext] = createPopperContext(CONTENT_NAME$3);
+var CONTENT_NAME$2 = "PopperContent";
+var [PopperContentProvider, useContentContext] = createPopperContext(CONTENT_NAME$2);
 var PopperContent = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopePopper, side = "bottom", sideOffset = 0, align = "center", alignOffset = 0, arrowPadding = 0, avoidCollisions = true, collisionBoundary = [], collisionPadding: collisionPaddingProp = 0, sticky = "partial", hideWhenDetached = false, updatePositionStrategy = "optimized", onPlaced, ...contentProps } = props;
-	const context = usePopperContext(CONTENT_NAME$3, __scopePopper);
+	const context = usePopperContext(CONTENT_NAME$2, __scopePopper);
 	const [content, setContent] = import_react.useState(null);
 	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
 	const [arrow$4, setArrow] = import_react.useState(null);
@@ -48277,7 +49931,7 @@ var PopperContent = import_react.forwardRef((props, forwardedRef) => {
 			arrowX,
 			arrowY,
 			shouldHideArrow: cannotCenterArrow,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 				"data-side": placedSide,
 				"data-align": placedAlign,
 				...contentProps,
@@ -48290,7 +49944,7 @@ var PopperContent = import_react.forwardRef((props, forwardedRef) => {
 		})
 	});
 });
-PopperContent.displayName = CONTENT_NAME$3;
+PopperContent.displayName = CONTENT_NAME$2;
 var ARROW_NAME$1 = "PopperArrow";
 var OPPOSITE_SIDE = {
 	top: "bottom",
@@ -48323,7 +49977,7 @@ var PopperArrow = import_react.forwardRef(function PopperArrow2(props, forwarded
 			}[contentContext.placedSide],
 			visibility: contentContext.shouldHideArrow ? "hidden" : void 0
 		},
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$3, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$2, {
 			...arrowProps,
 			ref: forwardedRef,
 			style: {
@@ -48380,74 +50034,8 @@ function getSideAndAlignFromPlacement(placement) {
 }
 var Root2$2 = Popper;
 var Anchor = PopperAnchor;
-var Content$2 = PopperContent;
+var Content$1 = PopperContent;
 var Arrow = PopperArrow;
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-portal@1.1.9_@types+react-dom@19.1.11_@types+react@19.1.17__@types+reac_00d6c26182c5d909cf1a6f84c4ed5dcf/node_modules/@radix-ui/react-portal/dist/index.mjs
-var PORTAL_NAME$2 = "Portal";
-var Portal$2 = import_react.forwardRef((props, forwardedRef) => {
-	const { container: containerProp, ...portalProps } = props;
-	const [mounted, setMounted] = import_react.useState(false);
-	useLayoutEffect2(() => setMounted(true), []);
-	const container = containerProp || mounted && globalThis?.document?.body;
-	return container ? import_react_dom.createPortal(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-		...portalProps,
-		ref: forwardedRef
-	}), container) : null;
-});
-Portal$2.displayName = PORTAL_NAME$2;
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-controllable-state@1.2.2_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-controllable-state/dist/index.mjs
-var useInsertionEffect = import_react[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
-function useControllableState({ prop, defaultProp, onChange = () => {}, caller }) {
-	const [uncontrolledProp, setUncontrolledProp, onChangeRef] = useUncontrolledState({
-		defaultProp,
-		onChange
-	});
-	const isControlled = prop !== void 0;
-	const value = isControlled ? prop : uncontrolledProp;
-	{
-		const isControlledRef = import_react.useRef(prop !== void 0);
-		import_react.useEffect(() => {
-			const wasControlled = isControlledRef.current;
-			if (wasControlled !== isControlled) console.warn(`${caller} is changing from ${wasControlled ? "controlled" : "uncontrolled"} to ${isControlled ? "controlled" : "uncontrolled"}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`);
-			isControlledRef.current = isControlled;
-		}, [isControlled, caller]);
-	}
-	return [value, import_react.useCallback((nextValue) => {
-		if (isControlled) {
-			const value2 = isFunction$1(nextValue) ? nextValue(prop) : nextValue;
-			if (value2 !== prop) onChangeRef.current?.(value2);
-		} else setUncontrolledProp(nextValue);
-	}, [
-		isControlled,
-		prop,
-		setUncontrolledProp,
-		onChangeRef
-	])];
-}
-function useUncontrolledState({ defaultProp, onChange }) {
-	const [value, setValue] = import_react.useState(defaultProp);
-	const prevValueRef = import_react.useRef(value);
-	const onChangeRef = import_react.useRef(onChange);
-	useInsertionEffect(() => {
-		onChangeRef.current = onChange;
-	}, [onChange]);
-	import_react.useEffect(() => {
-		if (prevValueRef.current !== value) {
-			onChangeRef.current?.(value);
-			prevValueRef.current = value;
-		}
-	}, [value, prevValueRef]);
-	return [
-		value,
-		setValue,
-		onChangeRef
-	];
-}
-function isFunction$1(value) {
-	return typeof value === "function";
-}
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-previous@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-previous/dist/index.mjs
 function usePrevious(value) {
@@ -48479,7 +50067,7 @@ var VISUALLY_HIDDEN_STYLES = Object.freeze({
 });
 var NAME = "VisuallyHidden";
 var VisuallyHidden = import_react.forwardRef((props, forwardedRef) => {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
 		...props,
 		ref: forwardedRef,
 		style: {
@@ -48489,821 +50077,6 @@ var VisuallyHidden = import_react.forwardRef((props, forwardedRef) => {
 	});
 });
 VisuallyHidden.displayName = NAME;
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/aria-hidden@1.2.6/node_modules/aria-hidden/dist/es2015/index.js
-var getDefaultParent = function(originalTarget) {
-	if (typeof document === "undefined") return null;
-	return (Array.isArray(originalTarget) ? originalTarget[0] : originalTarget).ownerDocument.body;
-};
-var counterMap = /* @__PURE__ */ new WeakMap();
-var uncontrolledNodes = /* @__PURE__ */ new WeakMap();
-var markerMap = {};
-var lockCount = 0;
-var unwrapHost = function(node) {
-	return node && (node.host || unwrapHost(node.parentNode));
-};
-var correctTargets = function(parent, targets) {
-	return targets.map(function(target) {
-		if (parent.contains(target)) return target;
-		var correctedTarget = unwrapHost(target);
-		if (correctedTarget && parent.contains(correctedTarget)) return correctedTarget;
-		console.error("aria-hidden", target, "in not contained inside", parent, ". Doing nothing");
-		return null;
-	}).filter(function(x) {
-		return Boolean(x);
-	});
-};
-/**
-* Marks everything except given node(or nodes) as aria-hidden
-* @param {Element | Element[]} originalTarget - elements to keep on the page
-* @param [parentNode] - top element, defaults to document.body
-* @param {String} [markerName] - a special attribute to mark every node
-* @param {String} [controlAttribute] - html Attribute to control
-* @return {Undo} undo command
-*/
-var applyAttributeToOthers = function(originalTarget, parentNode, markerName, controlAttribute) {
-	var targets = correctTargets(parentNode, Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
-	if (!markerMap[markerName]) markerMap[markerName] = /* @__PURE__ */ new WeakMap();
-	var markerCounter = markerMap[markerName];
-	var hiddenNodes = [];
-	var elementsToKeep = /* @__PURE__ */ new Set();
-	var elementsToStop = new Set(targets);
-	var keep = function(el) {
-		if (!el || elementsToKeep.has(el)) return;
-		elementsToKeep.add(el);
-		keep(el.parentNode);
-	};
-	targets.forEach(keep);
-	var deep = function(parent) {
-		if (!parent || elementsToStop.has(parent)) return;
-		Array.prototype.forEach.call(parent.children, function(node) {
-			if (elementsToKeep.has(node)) deep(node);
-			else try {
-				var attr = node.getAttribute(controlAttribute);
-				var alreadyHidden = attr !== null && attr !== "false";
-				var counterValue = (counterMap.get(node) || 0) + 1;
-				var markerValue = (markerCounter.get(node) || 0) + 1;
-				counterMap.set(node, counterValue);
-				markerCounter.set(node, markerValue);
-				hiddenNodes.push(node);
-				if (counterValue === 1 && alreadyHidden) uncontrolledNodes.set(node, true);
-				if (markerValue === 1) node.setAttribute(markerName, "true");
-				if (!alreadyHidden) node.setAttribute(controlAttribute, "true");
-			} catch (e) {
-				console.error("aria-hidden: cannot operate on ", node, e);
-			}
-		});
-	};
-	deep(parentNode);
-	elementsToKeep.clear();
-	lockCount++;
-	return function() {
-		hiddenNodes.forEach(function(node) {
-			var counterValue = counterMap.get(node) - 1;
-			var markerValue = markerCounter.get(node) - 1;
-			counterMap.set(node, counterValue);
-			markerCounter.set(node, markerValue);
-			if (!counterValue) {
-				if (!uncontrolledNodes.has(node)) node.removeAttribute(controlAttribute);
-				uncontrolledNodes.delete(node);
-			}
-			if (!markerValue) node.removeAttribute(markerName);
-		});
-		lockCount--;
-		if (!lockCount) {
-			counterMap = /* @__PURE__ */ new WeakMap();
-			counterMap = /* @__PURE__ */ new WeakMap();
-			uncontrolledNodes = /* @__PURE__ */ new WeakMap();
-			markerMap = {};
-		}
-	};
-};
-/**
-* Marks everything except given node(or nodes) as aria-hidden
-* @param {Element | Element[]} originalTarget - elements to keep on the page
-* @param [parentNode] - top element, defaults to document.body
-* @param {String} [markerName] - a special attribute to mark every node
-* @return {Undo} undo command
-*/
-var hideOthers = function(originalTarget, parentNode, markerName) {
-	if (markerName === void 0) markerName = "data-aria-hidden";
-	var targets = Array.from(Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
-	var activeParentNode = parentNode || getDefaultParent(originalTarget);
-	if (!activeParentNode) return function() {
-		return null;
-	};
-	targets.push.apply(targets, Array.from(activeParentNode.querySelectorAll("[aria-live], script")));
-	return applyAttributeToOthers(targets, activeParentNode, markerName, "aria-hidden");
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/tslib@2.8.1/node_modules/tslib/tslib.es6.mjs
-var __assign = function() {
-	__assign = Object.assign || function __assign(t) {
-		for (var s, i = 1, n = arguments.length; i < n; i++) {
-			s = arguments[i];
-			for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-		}
-		return t;
-	};
-	return __assign.apply(this, arguments);
-};
-function __rest(s, e) {
-	var t = {};
-	for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) t[p] = s[p];
-	if (s != null && typeof Object.getOwnPropertySymbols === "function") {
-		for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i])) t[p[i]] = s[p[i]];
-	}
-	return t;
-}
-function __spreadArray(to, from, pack) {
-	if (pack || arguments.length === 2) {
-		for (var i = 0, l = from.length, ar; i < l; i++) if (ar || !(i in from)) {
-			if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-			ar[i] = from[i];
-		}
-	}
-	return to.concat(ar || Array.prototype.slice.call(from));
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll-bar/dist/es2015/constants.js
-var zeroRightClassName = "right-scroll-bar-position";
-var fullWidthClassName = "width-before-scroll-bar";
-var noScrollbarsClassName = "with-scroll-bars-hidden";
-/**
-* Name of a CSS variable containing the amount of "hidden" scrollbar
-* ! might be undefined ! use will fallback!
-*/
-var removedBarSizeVariable = "--removed-body-scroll-bar-size";
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.1.17_react@19.1.5/node_modules/use-callback-ref/dist/es2015/assignRef.js
-/**
-* Assigns a value for a given ref, no matter of the ref format
-* @param {RefObject} ref - a callback function or ref object
-* @param value - a new value
-*
-* @see https://github.com/theKashey/use-callback-ref#assignref
-* @example
-* const refObject = useRef();
-* const refFn = (ref) => {....}
-*
-* assignRef(refObject, "refValue");
-* assignRef(refFn, "refValue");
-*/
-function assignRef(ref, value) {
-	if (typeof ref === "function") ref(value);
-	else if (ref) ref.current = value;
-	return ref;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.1.17_react@19.1.5/node_modules/use-callback-ref/dist/es2015/useRef.js
-/**
-* creates a MutableRef with ref change callback
-* @param initialValue - initial ref value
-* @param {Function} callback - a callback to run when value changes
-*
-* @example
-* const ref = useCallbackRef(0, (newValue, oldValue) => console.log(oldValue, '->', newValue);
-* ref.current = 1;
-* // prints 0 -> 1
-*
-* @see https://reactjs.org/docs/hooks-reference.html#useref
-* @see https://github.com/theKashey/use-callback-ref#usecallbackref---to-replace-reactuseref
-* @returns {MutableRefObject}
-*/
-function useCallbackRef(initialValue, callback) {
-	var ref = (0, import_react.useState)(function() {
-		return {
-			value: initialValue,
-			callback,
-			facade: {
-				get current() {
-					return ref.value;
-				},
-				set current(value) {
-					var last = ref.value;
-					if (last !== value) {
-						ref.value = value;
-						ref.callback(value, last);
-					}
-				}
-			}
-		};
-	})[0];
-	ref.callback = callback;
-	return ref.facade;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.1.17_react@19.1.5/node_modules/use-callback-ref/dist/es2015/useMergeRef.js
-var useIsomorphicLayoutEffect = typeof window !== "undefined" ? import_react.useLayoutEffect : import_react.useEffect;
-var currentValues = /* @__PURE__ */ new WeakMap();
-/**
-* Merges two or more refs together providing a single interface to set their value
-* @param {RefObject|Ref} refs
-* @returns {MutableRefObject} - a new ref, which translates all changes to {refs}
-*
-* @see {@link mergeRefs} a version without buit-in memoization
-* @see https://github.com/theKashey/use-callback-ref#usemergerefs
-* @example
-* const Component = React.forwardRef((props, ref) => {
-*   const ownRef = useRef();
-*   const domRef = useMergeRefs([ref, ownRef]); // 👈 merge together
-*   return <div ref={domRef}>...</div>
-* }
-*/
-function useMergeRefs(refs, defaultValue) {
-	var callbackRef = useCallbackRef(defaultValue || null, function(newValue) {
-		return refs.forEach(function(ref) {
-			return assignRef(ref, newValue);
-		});
-	});
-	useIsomorphicLayoutEffect(function() {
-		var oldValue = currentValues.get(callbackRef);
-		if (oldValue) {
-			var prevRefs_1 = new Set(oldValue);
-			var nextRefs_1 = new Set(refs);
-			var current_1 = callbackRef.current;
-			prevRefs_1.forEach(function(ref) {
-				if (!nextRefs_1.has(ref)) assignRef(ref, null);
-			});
-			nextRefs_1.forEach(function(ref) {
-				if (!prevRefs_1.has(ref)) assignRef(ref, current_1);
-			});
-		}
-		currentValues.set(callbackRef, refs);
-	}, [refs]);
-	return callbackRef;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-sidecar@1.1.3_@types+react@19.1.17_react@19.1.5/node_modules/use-sidecar/dist/es2015/medium.js
-function ItoI(a) {
-	return a;
-}
-function innerCreateMedium(defaults, middleware) {
-	if (middleware === void 0) middleware = ItoI;
-	var buffer = [];
-	var assigned = false;
-	return {
-		read: function() {
-			if (assigned) throw new Error("Sidecar: could not `read` from an `assigned` medium. `read` could be used only with `useMedium`.");
-			if (buffer.length) return buffer[buffer.length - 1];
-			return defaults;
-		},
-		useMedium: function(data) {
-			var item = middleware(data, assigned);
-			buffer.push(item);
-			return function() {
-				buffer = buffer.filter(function(x) {
-					return x !== item;
-				});
-			};
-		},
-		assignSyncMedium: function(cb) {
-			assigned = true;
-			while (buffer.length) {
-				var cbs = buffer;
-				buffer = [];
-				cbs.forEach(cb);
-			}
-			buffer = {
-				push: function(x) {
-					return cb(x);
-				},
-				filter: function() {
-					return buffer;
-				}
-			};
-		},
-		assignMedium: function(cb) {
-			assigned = true;
-			var pendingQueue = [];
-			if (buffer.length) {
-				var cbs = buffer;
-				buffer = [];
-				cbs.forEach(cb);
-				pendingQueue = buffer;
-			}
-			var executeQueue = function() {
-				var cbs = pendingQueue;
-				pendingQueue = [];
-				cbs.forEach(cb);
-			};
-			var cycle = function() {
-				return Promise.resolve().then(executeQueue);
-			};
-			cycle();
-			buffer = {
-				push: function(x) {
-					pendingQueue.push(x);
-					cycle();
-				},
-				filter: function(filter) {
-					pendingQueue = pendingQueue.filter(filter);
-					return buffer;
-				}
-			};
-		}
-	};
-}
-function createSidecarMedium(options) {
-	if (options === void 0) options = {};
-	var medium = innerCreateMedium(null);
-	medium.options = __assign({
-		async: true,
-		ssr: false
-	}, options);
-	return medium;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-sidecar@1.1.3_@types+react@19.1.17_react@19.1.5/node_modules/use-sidecar/dist/es2015/exports.js
-var SideCar = function(_a) {
-	var sideCar = _a.sideCar, rest = __rest(_a, ["sideCar"]);
-	if (!sideCar) throw new Error("Sidecar: please provide `sideCar` property to import the right car");
-	var Target = sideCar.read();
-	if (!Target) throw new Error("Sidecar medium not found");
-	return import_react.createElement(Target, __assign({}, rest));
-};
-SideCar.isSideCarExport = true;
-function exportSidecar(medium, exported) {
-	medium.useMedium(exported);
-	return SideCar;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/medium.js
-var effectCar = createSidecarMedium();
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/UI.js
-var nothing = function() {};
-/**
-* Removes scrollbar from the page and contain the scroll within the Lock
-*/
-var RemoveScroll = import_react.forwardRef(function(props, parentRef) {
-	var ref = import_react.useRef(null);
-	var _a = import_react.useState({
-		onScrollCapture: nothing,
-		onWheelCapture: nothing,
-		onTouchMoveCapture: nothing
-	}), callbacks = _a[0], setCallbacks = _a[1];
-	var forwardProps = props.forwardProps, children = props.children, className = props.className, removeScrollBar = props.removeScrollBar, enabled = props.enabled, shards = props.shards, sideCar = props.sideCar, noRelative = props.noRelative, noIsolation = props.noIsolation, inert = props.inert, allowPinchZoom = props.allowPinchZoom, _b = props.as, Container = _b === void 0 ? "div" : _b, gapMode = props.gapMode, rest = __rest(props, [
-		"forwardProps",
-		"children",
-		"className",
-		"removeScrollBar",
-		"enabled",
-		"shards",
-		"sideCar",
-		"noRelative",
-		"noIsolation",
-		"inert",
-		"allowPinchZoom",
-		"as",
-		"gapMode"
-	]);
-	var SideCar = sideCar;
-	var containerRef = useMergeRefs([ref, parentRef]);
-	var containerProps = __assign(__assign({}, rest), callbacks);
-	return import_react.createElement(import_react.Fragment, null, enabled && import_react.createElement(SideCar, {
-		sideCar: effectCar,
-		removeScrollBar,
-		shards,
-		noRelative,
-		noIsolation,
-		inert,
-		setCallbacks,
-		allowPinchZoom: !!allowPinchZoom,
-		lockRef: ref,
-		gapMode
-	}), forwardProps ? import_react.cloneElement(import_react.Children.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : import_react.createElement(Container, __assign({}, containerProps, {
-		className,
-		ref: containerRef
-	}), children));
-});
-RemoveScroll.defaultProps = {
-	enabled: true,
-	removeScrollBar: true,
-	inert: false
-};
-RemoveScroll.classNames = {
-	fullWidth: fullWidthClassName,
-	zeroRight: zeroRightClassName
-};
-var getNonce = function() {
-	if (typeof __webpack_nonce__ !== "undefined") return __webpack_nonce__;
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.1.17_react@19.1.5/node_modules/react-style-singleton/dist/es2015/singleton.js
-function makeStyleTag() {
-	if (!document) return null;
-	var tag = document.createElement("style");
-	tag.type = "text/css";
-	var nonce = getNonce();
-	if (nonce) tag.setAttribute("nonce", nonce);
-	return tag;
-}
-function injectStyles(tag, css) {
-	if (tag.styleSheet) tag.styleSheet.cssText = css;
-	else tag.appendChild(document.createTextNode(css));
-}
-function insertStyleTag(tag) {
-	(document.head || document.getElementsByTagName("head")[0]).appendChild(tag);
-}
-var stylesheetSingleton = function() {
-	var counter = 0;
-	var stylesheet = null;
-	return {
-		add: function(style) {
-			if (counter == 0) {
-				if (stylesheet = makeStyleTag()) {
-					injectStyles(stylesheet, style);
-					insertStyleTag(stylesheet);
-				}
-			}
-			counter++;
-		},
-		remove: function() {
-			counter--;
-			if (!counter && stylesheet) {
-				stylesheet.parentNode && stylesheet.parentNode.removeChild(stylesheet);
-				stylesheet = null;
-			}
-		}
-	};
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.1.17_react@19.1.5/node_modules/react-style-singleton/dist/es2015/hook.js
-/**
-* creates a hook to control style singleton
-* @see {@link styleSingleton} for a safer component version
-* @example
-* ```tsx
-* const useStyle = styleHookSingleton();
-* ///
-* useStyle('body { overflow: hidden}');
-*/
-var styleHookSingleton = function() {
-	var sheet = stylesheetSingleton();
-	return function(styles, isDynamic) {
-		import_react.useEffect(function() {
-			sheet.add(styles);
-			return function() {
-				sheet.remove();
-			};
-		}, [styles && isDynamic]);
-	};
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.1.17_react@19.1.5/node_modules/react-style-singleton/dist/es2015/component.js
-/**
-* create a Component to add styles on demand
-* - styles are added when first instance is mounted
-* - styles are removed when the last instance is unmounted
-* - changing styles in runtime does nothing unless dynamic is set. But with multiple components that can lead to the undefined behavior
-*/
-var styleSingleton = function() {
-	var useStyle = styleHookSingleton();
-	var Sheet = function(_a) {
-		var styles = _a.styles, dynamic = _a.dynamic;
-		useStyle(styles, dynamic);
-		return null;
-	};
-	return Sheet;
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll-bar/dist/es2015/utils.js
-var zeroGap = {
-	left: 0,
-	top: 0,
-	right: 0,
-	gap: 0
-};
-var parse = function(x) {
-	return parseInt(x || "", 10) || 0;
-};
-var getOffset = function(gapMode) {
-	var cs = window.getComputedStyle(document.body);
-	var left = cs[gapMode === "padding" ? "paddingLeft" : "marginLeft"];
-	var top = cs[gapMode === "padding" ? "paddingTop" : "marginTop"];
-	var right = cs[gapMode === "padding" ? "paddingRight" : "marginRight"];
-	return [
-		parse(left),
-		parse(top),
-		parse(right)
-	];
-};
-var getGapWidth = function(gapMode) {
-	if (gapMode === void 0) gapMode = "margin";
-	if (typeof window === "undefined") return zeroGap;
-	var offsets = getOffset(gapMode);
-	var documentWidth = document.documentElement.clientWidth;
-	var windowWidth = window.innerWidth;
-	return {
-		left: offsets[0],
-		top: offsets[1],
-		right: offsets[2],
-		gap: Math.max(0, windowWidth - documentWidth + offsets[2] - offsets[0])
-	};
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll-bar/dist/es2015/component.js
-var Style = styleSingleton();
-var lockAttribute = "data-scroll-locked";
-var getStyles = function(_a, allowRelative, gapMode, important) {
-	var left = _a.left, top = _a.top, right = _a.right, gap = _a.gap;
-	if (gapMode === void 0) gapMode = "margin";
-	return "\n  .".concat(noScrollbarsClassName, " {\n   overflow: hidden ").concat(important, ";\n   padding-right: ").concat(gap, "px ").concat(important, ";\n  }\n  body[").concat(lockAttribute, "] {\n    overflow: hidden ").concat(important, ";\n    overscroll-behavior: contain;\n    ").concat([
-		allowRelative && "position: relative ".concat(important, ";"),
-		gapMode === "margin" && "\n    padding-left: ".concat(left, "px;\n    padding-top: ").concat(top, "px;\n    padding-right: ").concat(right, "px;\n    margin-left:0;\n    margin-top:0;\n    margin-right: ").concat(gap, "px ").concat(important, ";\n    "),
-		gapMode === "padding" && "padding-right: ".concat(gap, "px ").concat(important, ";")
-	].filter(Boolean).join(""), "\n  }\n  \n  .").concat(zeroRightClassName, " {\n    right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " {\n    margin-right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(zeroRightClassName, " .").concat(zeroRightClassName, " {\n    right: 0 ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " .").concat(fullWidthClassName, " {\n    margin-right: 0 ").concat(important, ";\n  }\n  \n  body[").concat(lockAttribute, "] {\n    ").concat(removedBarSizeVariable, ": ").concat(gap, "px;\n  }\n");
-};
-var getCurrentUseCounter = function() {
-	var counter = parseInt(document.body.getAttribute("data-scroll-locked") || "0", 10);
-	return isFinite(counter) ? counter : 0;
-};
-var useLockAttribute = function() {
-	import_react.useEffect(function() {
-		document.body.setAttribute(lockAttribute, (getCurrentUseCounter() + 1).toString());
-		return function() {
-			var newCounter = getCurrentUseCounter() - 1;
-			if (newCounter <= 0) document.body.removeAttribute(lockAttribute);
-			else document.body.setAttribute(lockAttribute, newCounter.toString());
-		};
-	}, []);
-};
-/**
-* Removes page scrollbar and blocks page scroll when mounted
-*/
-var RemoveScrollBar = function(_a) {
-	var noRelative = _a.noRelative, noImportant = _a.noImportant, _b = _a.gapMode, gapMode = _b === void 0 ? "margin" : _b;
-	useLockAttribute();
-	var gap = import_react.useMemo(function() {
-		return getGapWidth(gapMode);
-	}, [gapMode]);
-	return import_react.createElement(Style, { styles: getStyles(gap, !noRelative, gapMode, !noImportant ? "!important" : "") });
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/aggresiveCapture.js
-var passiveSupported = false;
-if (typeof window !== "undefined") try {
-	var options = Object.defineProperty({}, "passive", { get: function() {
-		passiveSupported = true;
-		return true;
-	} });
-	window.addEventListener("test", options, options);
-	window.removeEventListener("test", options, options);
-} catch (err) {
-	passiveSupported = false;
-}
-var nonPassive = passiveSupported ? { passive: false } : false;
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/handleScroll.js
-var alwaysContainsScroll = function(node) {
-	return node.tagName === "TEXTAREA";
-};
-var elementCanBeScrolled = function(node, overflow) {
-	if (!(node instanceof Element)) return false;
-	var styles = window.getComputedStyle(node);
-	return styles[overflow] !== "hidden" && !(styles.overflowY === styles.overflowX && !alwaysContainsScroll(node) && styles[overflow] === "visible");
-};
-var elementCouldBeVScrolled = function(node) {
-	return elementCanBeScrolled(node, "overflowY");
-};
-var elementCouldBeHScrolled = function(node) {
-	return elementCanBeScrolled(node, "overflowX");
-};
-var locationCouldBeScrolled = function(axis, node) {
-	var ownerDocument = node.ownerDocument;
-	var current = node;
-	do {
-		if (typeof ShadowRoot !== "undefined" && current instanceof ShadowRoot) current = current.host;
-		if (elementCouldBeScrolled(axis, current)) {
-			var _a = getScrollVariables(axis, current);
-			if (_a[1] > _a[2]) return true;
-		}
-		current = current.parentNode;
-	} while (current && current !== ownerDocument.body);
-	return false;
-};
-var getVScrollVariables = function(_a) {
-	return [
-		_a.scrollTop,
-		_a.scrollHeight,
-		_a.clientHeight
-	];
-};
-var getHScrollVariables = function(_a) {
-	return [
-		_a.scrollLeft,
-		_a.scrollWidth,
-		_a.clientWidth
-	];
-};
-var elementCouldBeScrolled = function(axis, node) {
-	return axis === "v" ? elementCouldBeVScrolled(node) : elementCouldBeHScrolled(node);
-};
-var getScrollVariables = function(axis, node) {
-	return axis === "v" ? getVScrollVariables(node) : getHScrollVariables(node);
-};
-var getDirectionFactor = function(axis, direction) {
-	/**
-	* If the element's direction is rtl (right-to-left), then scrollLeft is 0 when the scrollbar is at its rightmost position,
-	* and then increasingly negative as you scroll towards the end of the content.
-	* @see https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollLeft
-	*/
-	return axis === "h" && direction === "rtl" ? -1 : 1;
-};
-var handleScroll = function(axis, endTarget, event, sourceDelta, noOverscroll) {
-	var directionFactor = getDirectionFactor(axis, window.getComputedStyle(endTarget).direction);
-	var delta = directionFactor * sourceDelta;
-	var target = event.target;
-	var targetInLock = endTarget.contains(target);
-	var shouldCancelScroll = false;
-	var isDeltaPositive = delta > 0;
-	var availableScroll = 0;
-	var availableScrollTop = 0;
-	do {
-		if (!target) break;
-		var _a = getScrollVariables(axis, target), position = _a[0];
-		var elementScroll = _a[1] - _a[2] - directionFactor * position;
-		if (position || elementScroll) {
-			if (elementCouldBeScrolled(axis, target)) {
-				availableScroll += elementScroll;
-				availableScrollTop += position;
-			}
-		}
-		var parent_1 = target.parentNode;
-		target = parent_1 && parent_1.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? parent_1.host : parent_1;
-	} while (!targetInLock && target !== document.body || targetInLock && (endTarget.contains(target) || endTarget === target));
-	if (isDeltaPositive && (noOverscroll && Math.abs(availableScroll) < 1 || !noOverscroll && delta > availableScroll)) shouldCancelScroll = true;
-	else if (!isDeltaPositive && (noOverscroll && Math.abs(availableScrollTop) < 1 || !noOverscroll && -delta > availableScrollTop)) shouldCancelScroll = true;
-	return shouldCancelScroll;
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/SideEffect.js
-var getTouchXY = function(event) {
-	return "changedTouches" in event ? [event.changedTouches[0].clientX, event.changedTouches[0].clientY] : [0, 0];
-};
-var getDeltaXY = function(event) {
-	return [event.deltaX, event.deltaY];
-};
-var extractRef = function(ref) {
-	return ref && "current" in ref ? ref.current : ref;
-};
-var deltaCompare = function(x, y) {
-	return x[0] === y[0] && x[1] === y[1];
-};
-var generateStyle = function(id) {
-	return "\n  .block-interactivity-".concat(id, " {pointer-events: none;}\n  .allow-interactivity-").concat(id, " {pointer-events: all;}\n");
-};
-var idCounter = 0;
-var lockStack = [];
-function RemoveScrollSideCar(props) {
-	var shouldPreventQueue = import_react.useRef([]);
-	var touchStartRef = import_react.useRef([0, 0]);
-	var activeAxis = import_react.useRef();
-	var id = import_react.useState(idCounter++)[0];
-	var Style = import_react.useState(styleSingleton)[0];
-	var lastProps = import_react.useRef(props);
-	import_react.useEffect(function() {
-		lastProps.current = props;
-	}, [props]);
-	import_react.useEffect(function() {
-		if (props.inert) {
-			document.body.classList.add("block-interactivity-".concat(id));
-			var allow_1 = __spreadArray([props.lockRef.current], (props.shards || []).map(extractRef), true).filter(Boolean);
-			allow_1.forEach(function(el) {
-				return el.classList.add("allow-interactivity-".concat(id));
-			});
-			return function() {
-				document.body.classList.remove("block-interactivity-".concat(id));
-				allow_1.forEach(function(el) {
-					return el.classList.remove("allow-interactivity-".concat(id));
-				});
-			};
-		}
-	}, [
-		props.inert,
-		props.lockRef.current,
-		props.shards
-	]);
-	var shouldCancelEvent = import_react.useCallback(function(event, parent) {
-		if ("touches" in event && event.touches.length === 2 || event.type === "wheel" && event.ctrlKey) return !lastProps.current.allowPinchZoom;
-		var touch = getTouchXY(event);
-		var touchStart = touchStartRef.current;
-		var deltaX = "deltaX" in event ? event.deltaX : touchStart[0] - touch[0];
-		var deltaY = "deltaY" in event ? event.deltaY : touchStart[1] - touch[1];
-		var currentAxis;
-		var target = event.target;
-		var moveDirection = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
-		if ("touches" in event && moveDirection === "h" && target.type === "range") return false;
-		var selection = window.getSelection();
-		var anchorNode = selection && selection.anchorNode;
-		if (anchorNode ? anchorNode === target || anchorNode.contains(target) : false) return false;
-		var canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
-		if (!canBeScrolledInMainDirection) return true;
-		if (canBeScrolledInMainDirection) currentAxis = moveDirection;
-		else {
-			currentAxis = moveDirection === "v" ? "h" : "v";
-			canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
-		}
-		if (!canBeScrolledInMainDirection) return false;
-		if (!activeAxis.current && "changedTouches" in event && (deltaX || deltaY)) activeAxis.current = currentAxis;
-		if (!currentAxis) return true;
-		var cancelingAxis = activeAxis.current || currentAxis;
-		return handleScroll(cancelingAxis, parent, event, cancelingAxis === "h" ? deltaX : deltaY, true);
-	}, []);
-	var shouldPrevent = import_react.useCallback(function(_event) {
-		var event = _event;
-		if (!lockStack.length || lockStack[lockStack.length - 1] !== Style) return;
-		var delta = "deltaY" in event ? getDeltaXY(event) : getTouchXY(event);
-		var sourceEvent = shouldPreventQueue.current.filter(function(e) {
-			return e.name === event.type && (e.target === event.target || event.target === e.shadowParent) && deltaCompare(e.delta, delta);
-		})[0];
-		if (sourceEvent && sourceEvent.should) {
-			if (event.cancelable) event.preventDefault();
-			return;
-		}
-		if (!sourceEvent) {
-			var shardNodes = (lastProps.current.shards || []).map(extractRef).filter(Boolean).filter(function(node) {
-				return node.contains(event.target);
-			});
-			if (shardNodes.length > 0 ? shouldCancelEvent(event, shardNodes[0]) : !lastProps.current.noIsolation) {
-				if (event.cancelable) event.preventDefault();
-			}
-		}
-	}, []);
-	var shouldCancel = import_react.useCallback(function(name, delta, target, should) {
-		var event = {
-			name,
-			delta,
-			target,
-			should,
-			shadowParent: getOutermostShadowParent(target)
-		};
-		shouldPreventQueue.current.push(event);
-		setTimeout(function() {
-			shouldPreventQueue.current = shouldPreventQueue.current.filter(function(e) {
-				return e !== event;
-			});
-		}, 1);
-	}, []);
-	var scrollTouchStart = import_react.useCallback(function(event) {
-		touchStartRef.current = getTouchXY(event);
-		activeAxis.current = void 0;
-	}, []);
-	var scrollWheel = import_react.useCallback(function(event) {
-		shouldCancel(event.type, getDeltaXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
-	}, []);
-	var scrollTouchMove = import_react.useCallback(function(event) {
-		shouldCancel(event.type, getTouchXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
-	}, []);
-	import_react.useEffect(function() {
-		lockStack.push(Style);
-		props.setCallbacks({
-			onScrollCapture: scrollWheel,
-			onWheelCapture: scrollWheel,
-			onTouchMoveCapture: scrollTouchMove
-		});
-		document.addEventListener("wheel", shouldPrevent, nonPassive);
-		document.addEventListener("touchmove", shouldPrevent, nonPassive);
-		document.addEventListener("touchstart", scrollTouchStart, nonPassive);
-		return function() {
-			lockStack = lockStack.filter(function(inst) {
-				return inst !== Style;
-			});
-			document.removeEventListener("wheel", shouldPrevent, nonPassive);
-			document.removeEventListener("touchmove", shouldPrevent, nonPassive);
-			document.removeEventListener("touchstart", scrollTouchStart, nonPassive);
-		};
-	}, []);
-	var removeScrollBar = props.removeScrollBar, inert = props.inert;
-	return import_react.createElement(import_react.Fragment, null, inert ? import_react.createElement(Style, { styles: generateStyle(id) }) : null, removeScrollBar ? import_react.createElement(RemoveScrollBar, {
-		noRelative: props.noRelative,
-		gapMode: props.gapMode
-	}) : null);
-}
-function getOutermostShadowParent(node) {
-	var shadowParent = null;
-	while (node !== null) {
-		if (node instanceof ShadowRoot) {
-			shadowParent = node.host;
-			node = node.host;
-		}
-		node = node.parentNode;
-	}
-	return shadowParent;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/sidecar.js
-var sidecar_default = exportSidecar(effectCar, RemoveScrollSideCar);
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/Combination.js
-var ReactRemoveScroll = import_react.forwardRef(function(props, ref) {
-	return import_react.createElement(RemoveScroll, __assign({}, props, {
-		ref,
-		sideCar: sidecar_default
-	}));
-});
-ReactRemoveScroll.classNames = RemoveScroll.classNames;
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-select@2.2.6_@types+react-dom@19.1.11_@types+react@19.1.17__@types+reac_cb58f6075c67cda862b2ccded649f0ec/node_modules/@radix-ui/react-select/dist/index.mjs
 var OPEN_KEYS = [
@@ -49393,11 +50166,11 @@ var Select$1 = (props) => {
 	});
 };
 Select$1.displayName = SELECT_NAME;
-var TRIGGER_NAME$3 = "SelectTrigger";
+var TRIGGER_NAME$2 = "SelectTrigger";
 var SelectTrigger$1 = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeSelect, disabled = false, ...triggerProps } = props;
 	const popperScope = usePopperScope(__scopeSelect);
-	const context = useSelectContext(TRIGGER_NAME$3, __scopeSelect);
+	const context = useSelectContext(TRIGGER_NAME$2, __scopeSelect);
 	const isDisabled = context.disabled || disabled;
 	const composedRefs = useComposedRefs(forwardedRef, context.onTriggerChange);
 	const getItems = useCollection$1(__scopeSelect);
@@ -49420,7 +50193,7 @@ var SelectTrigger$1 = import_react.forwardRef((props, forwardedRef) => {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Anchor, {
 		asChild: true,
 		...popperScope,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.button, {
 			type: "button",
 			role: "combobox",
 			"aria-controls": context.contentId,
@@ -49459,7 +50232,7 @@ var SelectTrigger$1 = import_react.forwardRef((props, forwardedRef) => {
 		})
 	});
 });
-SelectTrigger$1.displayName = TRIGGER_NAME$3;
+SelectTrigger$1.displayName = TRIGGER_NAME$2;
 var VALUE_NAME = "SelectValue";
 var SelectValue$1 = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeSelect, className, style, children, placeholder = "", ...valueProps } = props;
@@ -49470,7 +50243,7 @@ var SelectValue$1 = import_react.forwardRef((props, forwardedRef) => {
 	useLayoutEffect2(() => {
 		onValueNodeHasChildrenChange(hasChildren);
 	}, [onValueNodeHasChildrenChange, hasChildren]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
 		...valueProps,
 		ref: composedRefs,
 		style: { pointerEvents: "none" },
@@ -49481,7 +50254,7 @@ SelectValue$1.displayName = VALUE_NAME;
 var ICON_NAME = "SelectIcon";
 var SelectIcon = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeSelect, children, ...iconProps } = props;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
 		"aria-hidden": true,
 		...iconProps,
 		ref: forwardedRef,
@@ -49489,17 +50262,17 @@ var SelectIcon = import_react.forwardRef((props, forwardedRef) => {
 	});
 });
 SelectIcon.displayName = ICON_NAME;
-var PORTAL_NAME$1 = "SelectPortal";
+var PORTAL_NAME = "SelectPortal";
 var SelectPortal = (props) => {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal$2, {
 		asChild: true,
 		...props
 	});
 };
-SelectPortal.displayName = PORTAL_NAME$1;
-var CONTENT_NAME$2 = "SelectContent";
+SelectPortal.displayName = PORTAL_NAME;
+var CONTENT_NAME$1 = "SelectContent";
 var SelectContent$1 = import_react.forwardRef((props, forwardedRef) => {
-	const context = useSelectContext(CONTENT_NAME$2, props.__scopeSelect);
+	const context = useSelectContext(CONTENT_NAME$1, props.__scopeSelect);
 	const [fragment, setFragment] = import_react.useState();
 	useLayoutEffect2(() => {
 		setFragment(new DocumentFragment());
@@ -49519,14 +50292,14 @@ var SelectContent$1 = import_react.forwardRef((props, forwardedRef) => {
 		ref: forwardedRef
 	});
 });
-SelectContent$1.displayName = CONTENT_NAME$2;
+SelectContent$1.displayName = CONTENT_NAME$1;
 var CONTENT_MARGIN = 10;
-var [SelectContentProvider, useSelectContentContext] = createSelectContext(CONTENT_NAME$2);
+var [SelectContentProvider, useSelectContentContext] = createSelectContext(CONTENT_NAME$1);
 var CONTENT_IMPL_NAME = "SelectContentImpl";
-var Slot$1 = /* @__PURE__ */ createSlot("SelectContent.RemoveScroll");
+var Slot = /* @__PURE__ */ createSlot("SelectContent.RemoveScroll");
 var SelectContentImpl = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeSelect, position = "item-aligned", onCloseAutoFocus, onEscapeKeyDown, onPointerDownOutside, side, sideOffset, align, alignOffset, arrowPadding, collisionBoundary, collisionPadding, sticky, hideWhenDetached, avoidCollisions, ...contentProps } = props;
-	const context = useSelectContext(CONTENT_NAME$2, __scopeSelect);
+	const context = useSelectContext(CONTENT_NAME$1, __scopeSelect);
 	const [content, setContent] = import_react.useState(null);
 	const [viewport, setViewport] = import_react.useState(null);
 	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
@@ -49650,7 +50423,7 @@ var SelectContentImpl = import_react.forwardRef((props, forwardedRef) => {
 		isPositioned,
 		searchRef,
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ReactRemoveScroll, {
-			as: Slot$1,
+			as: Slot,
 			allowPinchZoom: true,
 			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FocusScope, {
 				asChild: true,
@@ -49716,8 +50489,8 @@ SelectContentImpl.displayName = CONTENT_IMPL_NAME;
 var ITEM_ALIGNED_POSITION_NAME = "SelectItemAlignedPosition";
 var SelectItemAlignedPosition = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeSelect, onPlaced, ...popperProps } = props;
-	const context = useSelectContext(CONTENT_NAME$2, __scopeSelect);
-	const contentContext = useSelectContentContext(CONTENT_NAME$2, __scopeSelect);
+	const context = useSelectContext(CONTENT_NAME$1, __scopeSelect);
+	const contentContext = useSelectContentContext(CONTENT_NAME$1, __scopeSelect);
 	const [contentWrapper, setContentWrapper] = import_react.useState(null);
 	const [content, setContent] = import_react.useState(null);
 	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
@@ -49827,7 +50600,7 @@ var SelectItemAlignedPosition = import_react.forwardRef((props, forwardedRef) =>
 				position: "fixed",
 				zIndex: contentZIndex
 			},
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 				...popperProps,
 				ref: composedRefs,
 				style: {
@@ -49844,7 +50617,7 @@ var POPPER_POSITION_NAME = "SelectPopperPosition";
 var SelectPopperPosition = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeSelect, align = "start", collisionPadding = CONTENT_MARGIN, ...popperProps } = props;
 	const popperScope = usePopperScope(__scopeSelect);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Content$2, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Content$1, {
 		...popperScope,
 		...popperProps,
 		ref: forwardedRef,
@@ -49862,7 +50635,7 @@ var SelectPopperPosition = import_react.forwardRef((props, forwardedRef) => {
 	});
 });
 SelectPopperPosition.displayName = POPPER_POSITION_NAME;
-var [SelectViewportProvider, useSelectViewportContext] = createSelectContext(CONTENT_NAME$2, {});
+var [SelectViewportProvider, useSelectViewportContext] = createSelectContext(CONTENT_NAME$1, {});
 var VIEWPORT_NAME = "SelectViewport";
 var SelectViewport = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeSelect, nonce, ...viewportProps } = props;
@@ -49875,7 +50648,7 @@ var SelectViewport = import_react.forwardRef((props, forwardedRef) => {
 		nonce
 	}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.Slot, {
 		scope: __scopeSelect,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 			"data-radix-select-viewport": "",
 			role: "presentation",
 			...viewportProps,
@@ -49922,7 +50695,7 @@ var SelectGroup = import_react.forwardRef((props, forwardedRef) => {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectGroupContextProvider, {
 		scope: __scopeSelect,
 		id: groupId,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 			role: "group",
 			"aria-labelledby": groupId,
 			...groupProps,
@@ -49935,7 +50708,7 @@ var LABEL_NAME = "SelectLabel";
 var SelectLabel = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeSelect, ...labelProps } = props;
 	const groupContext = useSelectGroupContext(LABEL_NAME, __scopeSelect);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 		id: groupContext.id,
 		...labelProps,
 		ref: forwardedRef
@@ -49975,7 +50748,7 @@ var SelectItem$1 = import_react.forwardRef((props, forwardedRef) => {
 			value,
 			disabled,
 			textValue,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 				role: "option",
 				"aria-labelledby": textId,
 				"data-highlighted": isFocused ? "" : void 0,
@@ -50043,7 +50816,7 @@ var SelectItemText = import_react.forwardRef((props, forwardedRef) => {
 		onNativeOptionRemove,
 		nativeOption
 	]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
 		id: itemContext.textId,
 		...itemTextProps,
 		ref: composedRefs
@@ -50053,7 +50826,7 @@ SelectItemText.displayName = ITEM_TEXT_NAME;
 var ITEM_INDICATOR_NAME = "SelectItemIndicator";
 var SelectItemIndicator = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeSelect, ...itemIndicatorProps } = props;
-	return useSelectItemContext(ITEM_INDICATOR_NAME, __scopeSelect).isSelected ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+	return useSelectItemContext(ITEM_INDICATOR_NAME, __scopeSelect).isSelected ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
 		"aria-hidden": true,
 		...itemIndicatorProps,
 		ref: forwardedRef
@@ -50134,7 +50907,7 @@ var SelectScrollButtonImpl = import_react.forwardRef((props, forwardedRef) => {
 	useLayoutEffect2(() => {
 		getItems().find((item) => item.ref.current === document.activeElement)?.ref.current?.scrollIntoView({ block: "nearest" });
 	}, [getItems]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 		"aria-hidden": true,
 		...scrollIndicatorProps,
 		ref: forwardedRef,
@@ -50157,7 +50930,7 @@ var SelectScrollButtonImpl = import_react.forwardRef((props, forwardedRef) => {
 var SEPARATOR_NAME = "SelectSeparator";
 var SelectSeparator = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeSelect, ...separatorProps } = props;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 		"aria-hidden": true,
 		...separatorProps,
 		ref: forwardedRef
@@ -50193,7 +50966,7 @@ var SelectBubbleInput = import_react.forwardRef(({ __scopeSelect, value, ...prop
 			select.dispatchEvent(event);
 		}
 	}, [prevValue, value]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.select, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.select, {
 		...props,
 		style: {
 			...VISUALLY_HIDDEN_STYLES,
@@ -50248,7 +51021,7 @@ var Root2$1 = Select$1;
 var Trigger$1 = SelectTrigger$1;
 var Value = SelectValue$1;
 var Icon = SelectIcon;
-var Portal$1 = SelectPortal;
+var Portal = SelectPortal;
 var Content2 = SelectContent$1;
 var Viewport = SelectViewport;
 var Item$1 = SelectItem$1;
@@ -50283,7 +51056,7 @@ function SelectTrigger({ className, size = "default", children, ...props }) {
 	});
 }
 function SelectContent({ className, children, position = "popper", ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal$1, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Content2, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Content2, {
 		"data-slot": "select-content",
 		className: cn("bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border shadow-md", position === "popper" && "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1", className),
 		position,
@@ -50327,30 +51100,61 @@ function SelectScrollDownButton({ className, ...props }) {
 }
 //#endregion
 //#region src/lib/format.ts
+/**
+* A stored photo/signature reference is the raw uploaded bytes. Render it as a
+* data URL so an `<img>` can display it without a round trip to storage.
+* Returns null for an empty or missing reference.
+*/
+function refToDataUrl(ref, contentType = "image/png") {
+	if (!ref || ref.length === 0) return null;
+	let binary = "";
+	for (let i = 0; i < ref.length; i += 1) binary += String.fromCharCode(ref[i]);
+	return `data:${contentType};base64,${btoa(binary)}`;
+}
+/** Read a browser `File` into the raw bytes the backend stores as a ref. */
+async function fileToRef(file) {
+	return new Uint8Array(await file.arrayBuffer());
+}
 /** Motoko `Time.now()` nanoseconds -> JS Date. Returns null when invalid. */
 function timestampToDate(timestamp) {
 	const date = new Date(Number(timestamp / 1000000n));
 	return Number.isNaN(date.getTime()) ? null : date;
 }
-/** Motoko `DateOnly` (days since epoch, nanoseconds) -> JS Date. */
+/**
+* Motoko `DateOnly` (nanoseconds at UTC midnight) -> JS Date. The returned Date
+* is the UTC instant of that calendar day, so its `getUTC*` accessors are the
+* intended calendar values regardless of the device time zone.
+*/
 function dateOnlyToDate(dateOnly) {
 	const date = new Date(Number(dateOnly / 1000000n));
 	return Number.isNaN(date.getTime()) ? null : date;
 }
-/** Format a backend timestamp for display; falls back to an em dash. */
-function formatTimestamp(timestamp) {
+/**
+* Format a backend timestamp for display in the store's time zone; falls back
+* to an em dash. Pass `timeZone` (an IANA name such as `America/Chicago`) so a
+* schedule time reads the same on every device.
+*/
+function formatTimestamp(timestamp, timeZone) {
 	const date = timestampToDate(timestamp);
 	if (!date) return "—";
 	return date.toLocaleString(void 0, {
 		dateStyle: "medium",
-		timeStyle: "short"
+		timeStyle: "short",
+		timeZone
 	});
 }
-/** Format a backend date-only value for display; falls back to an em dash. */
+/**
+* Format a backend date-only value for display in UTC; falls back to an em
+* dash. A date-only value is a calendar day, so it must not shift with the
+* device time zone.
+*/
 function formatDateOnly(dateOnly) {
 	const date = dateOnlyToDate(dateOnly);
 	if (!date) return "—";
-	return date.toLocaleDateString(void 0, { dateStyle: "medium" });
+	return date.toLocaleDateString(void 0, {
+		dateStyle: "medium",
+		timeZone: "UTC"
+	});
 }
 /** Convert a JS Date to a Motoko `Timestamp` (nanoseconds since epoch). */
 function dateToTimestamp(date) {
@@ -50360,6 +51164,18 @@ function dateToTimestamp(date) {
 function dateToDateOnly(date) {
 	const utcMidnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 	return BigInt(utcMidnight) * 1000000n;
+}
+/**
+* Format a timestamp as a medium date in the store's time zone (e.g. for the
+* opening timeline). Falls back to an em dash when invalid.
+*/
+function formatTimestampMediumDate(timestamp, timeZone) {
+	const date = timestampToDate(timestamp);
+	if (!date) return "—";
+	return date.toLocaleDateString(void 0, {
+		dateStyle: "medium",
+		timeZone
+	});
 }
 /** Human label for a roadie status enum value. */
 function roadieStatusLabel(status) {
@@ -50404,65 +51220,256 @@ var ALL_ROLES = [
 	Role.kiosk,
 	Role.integration
 ];
-function GrantRow({ grant, adminCount }) {
+/** Roles that require an explicit confirmation before they are granted. */
+var CONFIRM_ROLES$1 = [Role.admin, Role.storeManager];
+/** A `YYYY-MM-DD` value for a date input, read in the store's time zone. */
+function timestampToDateInput(timestamp, timeZone) {
+	const date = timestampToDate(timestamp);
+	if (!date) return "";
+	return date.toLocaleDateString("en-CA", { timeZone });
+}
+function sameIds(a, b) {
+	if (a.length !== b.length) return false;
+	const set = new Set(b.map((id) => id.toString()));
+	return a.every((id) => set.has(id));
+}
+function GrantRow({ grant, adminCount, timeZone }) {
 	const { t } = useI18n();
+	const c = useAdminCopy();
+	const { actor } = useActor(createActor);
+	const { data: positions } = usePositions();
 	const updateRole = useUpdateUserRole();
+	const updateStations = useUpdateTrainerStations();
+	const updateAccessEnd = useUpdateAccessEnd();
 	const removeUser = useRemoveUser();
 	const isLastAdmin = grant.role === Role.admin && adminCount <= 1;
+	const [draftRole, setDraftRole] = (0, import_react.useState)(grant.role);
+	const [stationIds, setStationIds] = (0, import_react.useState)(grant.trainerPositionIds.map((id) => id.toString()));
+	const [accessEnd, setAccessEnd] = (0, import_react.useState)(grant.accessEndsAt !== void 0 ? timestampToDateInput(grant.accessEndsAt, timeZone) : "");
+	const [confirm, setConfirm] = (0, import_react.useState)(null);
+	const [error, setError] = (0, import_react.useState)(null);
+	const roleChanged = draftRole !== grant.role;
+	const stationsChanged = draftRole === Role.trainer && !sameIds(stationIds, grant.trainerPositionIds);
+	const demotingLastAdmin = isLastAdmin && draftRole !== Role.admin;
+	const applyRole = () => {
+		if (demotingLastAdmin) {
+			setError(t("admin.access.lastAdmin"));
+			return;
+		}
+		setError(null);
+		updateRole.mutate({
+			principal: grant.principal,
+			role: draftRole
+		}, {
+			onSuccess: () => {
+				if (draftRole === Role.trainer) updateStations.mutate({
+					principal: grant.principal,
+					positionIds: stationIds.map((id) => BigInt(id))
+				});
+			},
+			onError: () => setError(t("common.error"))
+		});
+	};
+	const handleRoleSave = () => {
+		if (demotingLastAdmin) {
+			setError(t("admin.access.lastAdmin"));
+			return;
+		}
+		if (CONFIRM_ROLES$1.includes(draftRole)) setConfirm("role");
+		else applyRole();
+	};
+	const saveStations = () => {
+		setError(null);
+		updateStations.mutate({
+			principal: grant.principal,
+			positionIds: stationIds.map((id) => BigInt(id))
+		}, { onError: () => setError(t("common.error")) });
+	};
+	const saveAccessEnd = async () => {
+		if (!actor) return;
+		setError(null);
+		try {
+			const accessEndsAt = accessEnd ? await actor.accessEndForDay(dateToDateOnly(/* @__PURE__ */ new Date(`${accessEnd}T00:00:00Z`))) : null;
+			updateAccessEnd.mutate({
+				principal: grant.principal,
+				accessEndsAt
+			}, { onError: () => setError(t("common.error")) });
+		} catch {
+			setError(t("common.error"));
+		}
+	};
+	const confirmRemove = () => {
+		removeUser.mutate(grant.principal, {
+			onSuccess: () => setConfirm(null),
+			onError: () => {
+				setConfirm(null);
+				setError(t("common.error"));
+			}
+		});
+	};
+	const busy = updateRole.isPending || updateStations.isPending || updateAccessEnd.isPending || removeUser.isPending;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
 		"data-ocid": "admin.access.item",
-		className: "flex flex-col gap-3 rounded-md border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "min-w-0",
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "font-display text-sm font-semibold uppercase tracking-wide",
-					children: shortPrincipal(grant.principal)
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-					className: "text-xs text-muted-foreground",
+		className: "flex flex-col gap-4 rounded-md border border-border bg-background p-4",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "min-w-0",
 					children: [
-						t("admin.access.approvedAt"),
-						": ",
-						formatTimestamp(grant.approvedAt)
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "font-display text-sm font-semibold uppercase tracking-wide",
+							children: shortPrincipal(grant.principal)
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							className: "text-xs text-muted-foreground",
+							children: [
+								t("admin.access.approvedAt"),
+								": ",
+								formatTimestamp(grant.approvedAt)
+							]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							className: "text-xs text-muted-foreground",
+							children: [
+								t("admin.access.accessEnd"),
+								":",
+								" ",
+								grant.accessEndsAt !== void 0 ? formatTimestamp(grant.accessEndsAt, timeZone) : t("common.none")
+							]
+						})
 					]
-				}),
-				grant.accessEndsAt !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-					className: "text-xs text-muted-foreground",
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex flex-wrap items-center gap-2",
 					children: [
-						t("admin.access.accessEnd"),
-						": ",
-						formatTimestamp(grant.accessEndsAt)
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+							value: draftRole,
+							onValueChange: (value) => {
+								setError(null);
+								setDraftRole(value);
+							},
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+								"data-ocid": "admin.access.role.select",
+								className: "touch-target w-44",
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, {})
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: ALL_ROLES.map((role) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+								value: role,
+								children: roleLabel(role)
+							}, role)) })]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+							type: "button",
+							className: "touch-target",
+							"data-ocid": "admin.access.change_role_button",
+							disabled: busy || !roleChanged && !stationsChanged,
+							onClick: handleRoleSave,
+							children: t("admin.access.action.changeRole")
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+							type: "button",
+							variant: "outline",
+							className: "touch-target text-destructive",
+							"data-ocid": "admin.access.remove_button",
+							disabled: isLastAdmin || busy,
+							title: isLastAdmin ? t("admin.access.lastAdmin") : void 0,
+							onClick: () => setConfirm("remove"),
+							children: t("admin.access.action.remove")
+						})
 					]
+				})]
+			}),
+			draftRole === Role.trainer && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "rounded-md border border-border bg-muted/30 p-3",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrainerStationsPicker, {
+					positions: positions ?? [],
+					selectedIds: stationIds,
+					onChange: setStationIds
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "mt-2 flex justify-end",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						type: "button",
+						variant: "outline",
+						className: "touch-target",
+						"data-ocid": "admin.access.save_stations_button",
+						disabled: busy || !stationsChanged,
+						onClick: saveStations,
+						children: t("admin.access.stations")
+					})
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex flex-col gap-2 rounded-md border border-border bg-muted/30 p-3 sm:flex-row sm:items-end",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex-1 space-y-1.5",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+							htmlFor: `access-end-${grant.principal.toText()}`,
+							children: t("admin.access.accessEnd")
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							id: `access-end-${grant.principal.toText()}`,
+							type: "date",
+							value: accessEnd,
+							onChange: (event) => setAccessEnd(event.target.value),
+							"data-ocid": "admin.access.access_end.input",
+							className: "touch-target"
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "text-xs text-muted-foreground",
+							children: t("approvals.accessEnd.hint")
+						})
+					]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+					type: "button",
+					variant: "outline",
+					className: "touch-target",
+					"data-ocid": "admin.access.save_access_end_button",
+					disabled: busy,
+					onClick: () => void saveAccessEnd(),
+					children: [updateAccessEnd.isPending && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
+						className: "mr-2 h-4 w-4 animate-spin",
+						"aria-hidden": "true"
+					}), c.actionSave]
+				})]
+			}),
+			error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				role: "alert",
+				"data-ocid": "admin.access.error_state",
+				className: "text-sm text-destructive",
+				children: error
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
+				open: confirm !== null,
+				onOpenChange: (open) => {
+					if (!open) setConfirm(null);
+				},
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, {
+					"data-ocid": "admin.access.confirm.dialog",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: confirm === "remove" ? t("admin.access.action.remove") : t("approvals.confirm.title") }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogDescription, { children: confirm === "remove" ? roleLabel(grant.role) : t("approvals.confirm.body", { role: roleLabel(draftRole) }) })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						type: "button",
+						variant: "outline",
+						className: "touch-target",
+						"data-ocid": "admin.access.confirm_cancel_button",
+						onClick: () => setConfirm(null),
+						children: t("common.cancel")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						type: "button",
+						variant: confirm === "remove" ? "destructive" : "default",
+						className: "touch-target",
+						"data-ocid": "admin.access.confirm_button",
+						disabled: busy,
+						onClick: () => {
+							if (confirm === "remove") confirmRemove();
+							else {
+								setConfirm(null);
+								applyRole();
+							}
+						},
+						children: confirm === "remove" ? t("admin.access.action.remove") : t("approvals.confirm.action")
+					})] })]
 				})
-			]
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "flex flex-wrap items-center gap-2",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-				value: grant.role,
-				onValueChange: (value) => updateRole.mutate({
-					principal: grant.principal,
-					role: value
-				}),
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
-					"data-ocid": "admin.access.role.select",
-					className: "touch-target w-44",
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, {})
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: ALL_ROLES.map((role) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-					value: role,
-					children: roleLabel(role)
-				}, role)) })]
-			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-				type: "button",
-				variant: "outline",
-				className: "touch-target text-destructive",
-				"data-ocid": "admin.access.remove_button",
-				disabled: isLastAdmin || removeUser.isPending,
-				title: isLastAdmin ? t("admin.access.lastAdmin") : void 0,
-				onClick: () => removeUser.mutate(grant.principal),
-				children: t("admin.access.action.remove")
-			})]
-		})]
+			})
+		]
 	});
 }
 function AccessPanel() {
@@ -50470,6 +51477,7 @@ function AccessPanel() {
 	const c = useAdminCopy();
 	const grants = useAccessGrants();
 	const adminCount = useAdminCount();
+	const { data: storeInfo } = useStoreInfo();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AdminSection, {
 		title: t("admin.section.access"),
 		description: c.accessDescription,
@@ -50496,20 +51504,11 @@ function AccessPanel() {
 				"data-ocid": "admin.access.list",
 				children: grants.data?.map((grant) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GrantRow, {
 					grant,
-					adminCount: Number(adminCount.data ?? 0n)
+					adminCount: Number(adminCount.data ?? 0n),
+					timeZone: storeInfo?.timeZone
 				}, grant.principal.toText()))
 			})
 		]
-	});
-}
-//#endregion
-//#region src/components/ui/input.tsx
-function Input({ className, type, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-		type,
-		"data-slot": "input",
-		className: cn("file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm", "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]", "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive", className),
-		...props
 	});
 }
 //#endregion
@@ -50533,12 +51532,12 @@ var Switch$1 = import_react.forwardRef((props, forwardedRef) => {
 		scope: __scopeSwitch,
 		checked,
 		disabled,
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.button, {
 			type: "button",
 			role: "switch",
 			"aria-checked": checked,
 			"aria-required": required,
-			"data-state": getState$2(checked),
+			"data-state": getState$1(checked),
 			"data-disabled": disabled ? "" : void 0,
 			disabled,
 			value,
@@ -50569,8 +51568,8 @@ var THUMB_NAME = "SwitchThumb";
 var SwitchThumb = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeSwitch, ...thumbProps } = props;
 	const context = useSwitchContext(THUMB_NAME, __scopeSwitch);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
-		"data-state": getState$2(context.checked),
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
+		"data-state": getState$1(context.checked),
 		"data-disabled": context.disabled ? "" : void 0,
 		...thumbProps,
 		ref: forwardedRef
@@ -50616,15 +51615,15 @@ var SwitchBubbleInput = import_react.forwardRef(({ __scopeSwitch, control, check
 	});
 });
 SwitchBubbleInput.displayName = BUBBLE_INPUT_NAME$1;
-function getState$2(checked) {
+function getState$1(checked) {
 	return checked ? "checked" : "unchecked";
 }
-var Root$2 = Switch$1;
+var Root$1 = Switch$1;
 var Thumb = SwitchThumb;
 //#endregion
 //#region src/components/ui/switch.tsx
 function Switch({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$2, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$1, {
 		"data-slot": "switch",
 		className: cn("peer data-[state=checked]:bg-primary data-[state=unchecked]:bg-input focus-visible:border-ring focus-visible:ring-ring/50 dark:data-[state=unchecked]:bg-input/80 inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full border border-transparent shadow-xs transition-all outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50", className),
 		...props,
@@ -50959,446 +51958,50 @@ function StatusBadge({ tone = "muted", children, className, ocid }) {
 	});
 }
 //#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-presence@1.1.5_@types+react-dom@19.1.11_@types+react@19.1.17__@types+re_21e2bb85425f53f6c7108cfe0018fd7c/node_modules/@radix-ui/react-presence/dist/index.mjs
-function useStateMachine(initialState, machine) {
-	return import_react.useReducer((state, event) => {
-		return machine[state][event] ?? state;
-	}, initialState);
-}
-var Presence = (props) => {
-	const { present, children } = props;
-	const presence = usePresence(present);
-	const child = typeof children === "function" ? children({ present: presence.isPresent }) : import_react.Children.only(children);
-	const ref = useComposedRefs(presence.ref, getElementRef(child));
-	return typeof children === "function" || presence.isPresent ? import_react.cloneElement(child, { ref }) : null;
-};
-Presence.displayName = "Presence";
-function usePresence(present) {
-	const [node, setNode] = import_react.useState();
-	const stylesRef = import_react.useRef(null);
-	const prevPresentRef = import_react.useRef(present);
-	const prevAnimationNameRef = import_react.useRef("none");
-	const [state, send] = useStateMachine(present ? "mounted" : "unmounted", {
-		mounted: {
-			UNMOUNT: "unmounted",
-			ANIMATION_OUT: "unmountSuspended"
+//#region src/components/dashboard/hooks.ts
+/** The roster for one position, used to count on-hand roadies and list cards. */
+function useRosterForPosition(positionId) {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["rosterForPosition", positionId?.toString()],
+		queryFn: async () => {
+			if (!actor || positionId === void 0) return [];
+			return actor.listRosterForPosition(positionId);
 		},
-		unmountSuspended: {
-			MOUNT: "mounted",
-			ANIMATION_END: "unmounted"
+		enabled: !!actor && !isFetching && positionId !== void 0
+	});
+}
+/** Apply a +1/−1 build-to adjustment for a position. */
+function useAdjustBuildTo() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (args) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.adjustBuildTo(args.positionId, args.openingDelta, args.afterOpeningDelta);
 		},
-		unmounted: { MOUNT: "mounted" }
-	});
-	import_react.useEffect(() => {
-		const currentAnimationName = getAnimationName(stylesRef.current);
-		prevAnimationNameRef.current = state === "mounted" ? currentAnimationName : "none";
-	}, [state]);
-	useLayoutEffect2(() => {
-		const styles = stylesRef.current;
-		const wasPresent = prevPresentRef.current;
-		if (wasPresent !== present) {
-			const prevAnimationName = prevAnimationNameRef.current;
-			const currentAnimationName = getAnimationName(styles);
-			if (present) send("MOUNT");
-			else if (currentAnimationName === "none" || styles?.display === "none") send("UNMOUNT");
-			else if (wasPresent && prevAnimationName !== currentAnimationName) send("ANIMATION_OUT");
-			else send("UNMOUNT");
-			prevPresentRef.current = present;
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+			queryClient.invalidateQueries({ queryKey: ["positions"] });
+			queryClient.invalidateQueries({ queryKey: ["changeLog"] });
 		}
-	}, [present, send]);
-	useLayoutEffect2(() => {
-		if (node) {
-			let timeoutId;
-			const ownerWindow = node.ownerDocument.defaultView ?? window;
-			const handleAnimationEnd = (event) => {
-				const isCurrentAnimation = getAnimationName(stylesRef.current).includes(CSS.escape(event.animationName));
-				if (event.target === node && isCurrentAnimation) {
-					send("ANIMATION_END");
-					if (!prevPresentRef.current) {
-						const currentFillMode = node.style.animationFillMode;
-						node.style.animationFillMode = "forwards";
-						timeoutId = ownerWindow.setTimeout(() => {
-							if (node.style.animationFillMode === "forwards") node.style.animationFillMode = currentFillMode;
-						});
-					}
-				}
-			};
-			const handleAnimationStart = (event) => {
-				if (event.target === node) prevAnimationNameRef.current = getAnimationName(stylesRef.current);
-			};
-			node.addEventListener("animationstart", handleAnimationStart);
-			node.addEventListener("animationcancel", handleAnimationEnd);
-			node.addEventListener("animationend", handleAnimationEnd);
-			return () => {
-				ownerWindow.clearTimeout(timeoutId);
-				node.removeEventListener("animationstart", handleAnimationStart);
-				node.removeEventListener("animationcancel", handleAnimationEnd);
-				node.removeEventListener("animationend", handleAnimationEnd);
-			};
-		} else send("ANIMATION_END");
-	}, [node, send]);
-	return {
-		isPresent: ["mounted", "unmountSuspended"].includes(state),
-		ref: import_react.useCallback((node2) => {
-			stylesRef.current = node2 ? getComputedStyle(node2) : null;
-			setNode(node2);
-		}, [])
-	};
+	});
 }
-function getAnimationName(styles) {
-	return styles?.animationName || "none";
-}
-function getElementRef(element) {
-	let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
-	let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-	if (mayWarn) return element.ref;
-	getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
-	mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-	if (mayWarn) return element.props.ref;
-	return element.props.ref || element.ref;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-dialog@1.1.15_@types+react-dom@19.1.11_@types+react@19.1.17__@types+rea_8cda88dee65e27ab93300d895457061b/node_modules/@radix-ui/react-dialog/dist/index.mjs
-var DIALOG_NAME = "Dialog";
-var [createDialogContext, createDialogScope] = createContextScope(DIALOG_NAME);
-var [DialogProvider, useDialogContext] = createDialogContext(DIALOG_NAME);
-var Dialog$1 = (props) => {
-	const { __scopeDialog, children, open: openProp, defaultOpen, onOpenChange, modal = true } = props;
-	const triggerRef = import_react.useRef(null);
-	const contentRef = import_react.useRef(null);
-	const [open, setOpen] = useControllableState({
-		prop: openProp,
-		defaultProp: defaultOpen ?? false,
-		onChange: onOpenChange,
-		caller: DIALOG_NAME
-	});
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogProvider, {
-		scope: __scopeDialog,
-		triggerRef,
-		contentRef,
-		contentId: useId(),
-		titleId: useId(),
-		descriptionId: useId(),
-		open,
-		onOpenChange: setOpen,
-		onOpenToggle: import_react.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
-		modal,
-		children
-	});
-};
-Dialog$1.displayName = DIALOG_NAME;
-var TRIGGER_NAME$2 = "DialogTrigger";
-var DialogTrigger = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeDialog, ...triggerProps } = props;
-	const context = useDialogContext(TRIGGER_NAME$2, __scopeDialog);
-	const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
-		type: "button",
-		"aria-haspopup": "dialog",
-		"aria-expanded": context.open,
-		"aria-controls": context.contentId,
-		"data-state": getState$1(context.open),
-		...triggerProps,
-		ref: composedTriggerRef,
-		onClick: composeEventHandlers(props.onClick, context.onOpenToggle)
-	});
-});
-DialogTrigger.displayName = TRIGGER_NAME$2;
-var PORTAL_NAME = "DialogPortal";
-var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME, { forceMount: void 0 });
-var DialogPortal$1 = (props) => {
-	const { __scopeDialog, forceMount, children, container } = props;
-	const context = useDialogContext(PORTAL_NAME, __scopeDialog);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PortalProvider, {
-		scope: __scopeDialog,
-		forceMount,
-		children: import_react.Children.map(children, (child) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
-			present: forceMount || context.open,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal$2, {
-				asChild: true,
-				container,
-				children: child
-			})
-		}))
-	});
-};
-DialogPortal$1.displayName = PORTAL_NAME;
-var OVERLAY_NAME = "DialogOverlay";
-var DialogOverlay$1 = import_react.forwardRef((props, forwardedRef) => {
-	const portalContext = usePortalContext(OVERLAY_NAME, props.__scopeDialog);
-	const { forceMount = portalContext.forceMount, ...overlayProps } = props;
-	const context = useDialogContext(OVERLAY_NAME, props.__scopeDialog);
-	return context.modal ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
-		present: forceMount || context.open,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogOverlayImpl, {
-			...overlayProps,
-			ref: forwardedRef
-		})
-	}) : null;
-});
-DialogOverlay$1.displayName = OVERLAY_NAME;
-var Slot = /* @__PURE__ */ createSlot("DialogOverlay.RemoveScroll");
-var DialogOverlayImpl = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeDialog, ...overlayProps } = props;
-	const context = useDialogContext(OVERLAY_NAME, __scopeDialog);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ReactRemoveScroll, {
-		as: Slot,
-		allowPinchZoom: true,
-		shards: [context.contentRef],
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-			"data-state": getState$1(context.open),
-			...overlayProps,
-			ref: forwardedRef,
-			style: {
-				pointerEvents: "auto",
-				...overlayProps.style
-			}
-		})
-	});
-});
-var CONTENT_NAME$1 = "DialogContent";
-var DialogContent$1 = import_react.forwardRef((props, forwardedRef) => {
-	const portalContext = usePortalContext(CONTENT_NAME$1, props.__scopeDialog);
-	const { forceMount = portalContext.forceMount, ...contentProps } = props;
-	const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
-		present: forceMount || context.open,
-		children: context.modal ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogContentModal, {
-			...contentProps,
-			ref: forwardedRef
-		}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogContentNonModal, {
-			...contentProps,
-			ref: forwardedRef
-		})
-	});
-});
-DialogContent$1.displayName = CONTENT_NAME$1;
-var DialogContentModal = import_react.forwardRef((props, forwardedRef) => {
-	const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
-	const contentRef = import_react.useRef(null);
-	const composedRefs = useComposedRefs(forwardedRef, context.contentRef, contentRef);
-	import_react.useEffect(() => {
-		const content = contentRef.current;
-		if (content) return hideOthers(content);
-	}, []);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogContentImpl, {
-		...props,
-		ref: composedRefs,
-		trapFocus: context.open,
-		disableOutsidePointerEvents: true,
-		onCloseAutoFocus: composeEventHandlers(props.onCloseAutoFocus, (event) => {
-			event.preventDefault();
-			context.triggerRef.current?.focus();
-		}),
-		onPointerDownOutside: composeEventHandlers(props.onPointerDownOutside, (event) => {
-			const originalEvent = event.detail.originalEvent;
-			const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true;
-			if (originalEvent.button === 2 || ctrlLeftClick) event.preventDefault();
-		}),
-		onFocusOutside: composeEventHandlers(props.onFocusOutside, (event) => event.preventDefault())
-	});
-});
-var DialogContentNonModal = import_react.forwardRef((props, forwardedRef) => {
-	const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
-	const hasInteractedOutsideRef = import_react.useRef(false);
-	const hasPointerDownOutsideRef = import_react.useRef(false);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogContentImpl, {
-		...props,
-		ref: forwardedRef,
-		trapFocus: false,
-		disableOutsidePointerEvents: false,
-		onCloseAutoFocus: (event) => {
-			props.onCloseAutoFocus?.(event);
-			if (!event.defaultPrevented) {
-				if (!hasInteractedOutsideRef.current) context.triggerRef.current?.focus();
-				event.preventDefault();
-			}
-			hasInteractedOutsideRef.current = false;
-			hasPointerDownOutsideRef.current = false;
+/** Rehire an archived roadie back onto the roster. */
+function useRehireRoadie$1() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (args) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.rehireRoadie(args.id, args.reason);
 		},
-		onInteractOutside: (event) => {
-			props.onInteractOutside?.(event);
-			if (!event.defaultPrevented) {
-				hasInteractedOutsideRef.current = true;
-				if (event.detail.originalEvent.type === "pointerdown") hasPointerDownOutsideRef.current = true;
-			}
-			const target = event.target;
-			if (context.triggerRef.current?.contains(target)) event.preventDefault();
-			if (event.detail.originalEvent.type === "focusin" && hasPointerDownOutsideRef.current) event.preventDefault();
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+			queryClient.invalidateQueries({ queryKey: ["roadies"] });
+			queryClient.invalidateQueries({ queryKey: ["rosterForPosition"] });
+			queryClient.invalidateQueries({ queryKey: ["changeLog"] });
 		}
-	});
-});
-var DialogContentImpl = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeDialog, trapFocus, onOpenAutoFocus, onCloseAutoFocus, ...contentProps } = props;
-	const context = useDialogContext(CONTENT_NAME$1, __scopeDialog);
-	const contentRef = import_react.useRef(null);
-	const composedRefs = useComposedRefs(forwardedRef, contentRef);
-	useFocusGuards();
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FocusScope, {
-		asChild: true,
-		loop: true,
-		trapped: trapFocus,
-		onMountAutoFocus: onOpenAutoFocus,
-		onUnmountAutoFocus: onCloseAutoFocus,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DismissableLayer, {
-			role: "dialog",
-			id: context.contentId,
-			"aria-describedby": context.descriptionId,
-			"aria-labelledby": context.titleId,
-			"data-state": getState$1(context.open),
-			...contentProps,
-			ref: composedRefs,
-			onDismiss: () => context.onOpenChange(false)
-		})
-	}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TitleWarning, { titleId: context.titleId }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DescriptionWarning, {
-		contentRef,
-		descriptionId: context.descriptionId
-	})] })] });
-});
-var TITLE_NAME = "DialogTitle";
-var DialogTitle$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeDialog, ...titleProps } = props;
-	const context = useDialogContext(TITLE_NAME, __scopeDialog);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.h2, {
-		id: context.titleId,
-		...titleProps,
-		ref: forwardedRef
-	});
-});
-DialogTitle$1.displayName = TITLE_NAME;
-var DESCRIPTION_NAME = "DialogDescription";
-var DialogDescription$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeDialog, ...descriptionProps } = props;
-	const context = useDialogContext(DESCRIPTION_NAME, __scopeDialog);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.p, {
-		id: context.descriptionId,
-		...descriptionProps,
-		ref: forwardedRef
-	});
-});
-DialogDescription$1.displayName = DESCRIPTION_NAME;
-var CLOSE_NAME = "DialogClose";
-var DialogClose = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeDialog, ...closeProps } = props;
-	const context = useDialogContext(CLOSE_NAME, __scopeDialog);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
-		type: "button",
-		...closeProps,
-		ref: forwardedRef,
-		onClick: composeEventHandlers(props.onClick, () => context.onOpenChange(false))
-	});
-});
-DialogClose.displayName = CLOSE_NAME;
-function getState$1(open) {
-	return open ? "open" : "closed";
-}
-var TITLE_WARNING_NAME = "DialogTitleWarning";
-var [WarningProvider, useWarningContext] = createContext2(TITLE_WARNING_NAME, {
-	contentName: CONTENT_NAME$1,
-	titleName: TITLE_NAME,
-	docsSlug: "dialog"
-});
-var TitleWarning = ({ titleId }) => {
-	const titleWarningContext = useWarningContext(TITLE_WARNING_NAME);
-	const MESSAGE = `\`${titleWarningContext.contentName}\` requires a \`${titleWarningContext.titleName}\` for the component to be accessible for screen reader users.
-
-If you want to hide the \`${titleWarningContext.titleName}\`, you can wrap it with our VisuallyHidden component.
-
-For more information, see https://radix-ui.com/primitives/docs/components/${titleWarningContext.docsSlug}`;
-	import_react.useEffect(() => {
-		if (titleId) {
-			if (!document.getElementById(titleId)) console.error(MESSAGE);
-		}
-	}, [MESSAGE, titleId]);
-	return null;
-};
-var DESCRIPTION_WARNING_NAME = "DialogDescriptionWarning";
-var DescriptionWarning = ({ contentRef, descriptionId }) => {
-	const MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby={undefined}\` for {${useWarningContext(DESCRIPTION_WARNING_NAME).contentName}}.`;
-	import_react.useEffect(() => {
-		const describedById = contentRef.current?.getAttribute("aria-describedby");
-		if (descriptionId && describedById) {
-			if (!document.getElementById(descriptionId)) console.warn(MESSAGE);
-		}
-	}, [
-		MESSAGE,
-		contentRef,
-		descriptionId
-	]);
-	return null;
-};
-var Root$1 = Dialog$1;
-var Portal = DialogPortal$1;
-var Overlay = DialogOverlay$1;
-var Content$1 = DialogContent$1;
-var Title = DialogTitle$1;
-var Description = DialogDescription$1;
-var Close = DialogClose;
-//#endregion
-//#region src/components/ui/dialog.tsx
-function Dialog({ ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$1, {
-		"data-slot": "dialog",
-		...props
-	});
-}
-function DialogPortal({ ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal, {
-		"data-slot": "dialog-portal",
-		...props
-	});
-}
-function DialogOverlay({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Overlay, {
-		"data-slot": "dialog-overlay",
-		className: cn("data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50", className),
-		...props
-	});
-}
-function DialogContent({ className, children, showCloseButton = true, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogPortal, {
-		"data-slot": "dialog-portal",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogOverlay, {}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Content$1, {
-			"data-slot": "dialog-content",
-			className: cn("bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg", className),
-			...props,
-			children: [children, showCloseButton && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Close, {
-				"data-slot": "dialog-close",
-				className: "ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, {}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-					className: "sr-only",
-					children: "Close"
-				})]
-			})]
-		})]
-	});
-}
-function DialogHeader({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-		"data-slot": "dialog-header",
-		className: cn("flex flex-col gap-2 text-center sm:text-left", className),
-		...props
-	});
-}
-function DialogFooter({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-		"data-slot": "dialog-footer",
-		className: cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className),
-		...props
-	});
-}
-function DialogTitle({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Title, {
-		"data-slot": "dialog-title",
-		className: cn("text-lg leading-none font-semibold", className),
-		...props
-	});
-}
-function DialogDescription({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Description, {
-		"data-slot": "dialog-description",
-		className: cn("text-muted-foreground text-sm", className),
-		...props
 	});
 }
 //#endregion
@@ -51409,8 +52012,6 @@ function emptyDraft() {
 		name: "",
 		house: House.foh,
 		code: "",
-		openingBuildTo: "0",
-		afterOpeningBuildTo: "0",
 		needsAlcoholCert: false,
 		minimumAge: "16",
 		shirtsRequired: "0",
@@ -51424,8 +52025,6 @@ function toDraft$1(position) {
 		name: position.name,
 		house: position.house,
 		code: position.code,
-		openingBuildTo: position.openingBuildTo.toString(),
-		afterOpeningBuildTo: position.afterOpeningBuildTo.toString(),
 		needsAlcoholCert: position.needsAlcoholCert,
 		minimumAge: position.minimumAge.toString(),
 		shirtsRequired: position.shirtsRequired.toString(),
@@ -51433,21 +52032,176 @@ function toDraft$1(position) {
 		crewManager: position.crewManager ?? ""
 	};
 }
-function toPosition(draft) {
-	const num = (value) => BigInt(Math.max(0, Number(value) || 0));
+/** Floor a numeric draft field to a non-negative whole number. */
+function toCount(value) {
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed)) return 0n;
+	return BigInt(Math.max(0, Math.floor(parsed)));
+}
+function toPosition(draft, openingBuildTo, afterOpeningBuildTo) {
 	return {
 		id: draft.id,
 		name: draft.name.trim(),
 		house: draft.house,
 		code: draft.code.trim(),
-		openingBuildTo: num(draft.openingBuildTo),
-		afterOpeningBuildTo: num(draft.afterOpeningBuildTo),
+		openingBuildTo,
+		afterOpeningBuildTo,
 		needsAlcoholCert: draft.needsAlcoholCert,
-		minimumAge: num(draft.minimumAge),
-		shirtsRequired: num(draft.shirtsRequired),
-		hatsRequired: num(draft.hatsRequired),
+		minimumAge: toCount(draft.minimumAge),
+		shirtsRequired: toCount(draft.shirtsRequired),
+		hatsRequired: toCount(draft.hatsRequired),
 		crewManager: draft.crewManager.trim() ? draft.crewManager.trim() : void 0
 	};
+}
+/**
+* A build-to target shown as +1/−1 steppers only. Each tap saves a single
+* increment through `adjustBuildTo`, so the target is never typed as an
+* absolute value and every change is logged.
+*/
+function BuildToStepper({ label, value, disabled, onDelta, ocid }) {
+	const { t } = useI18n();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "flex items-center justify-between gap-2",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			className: "text-xs font-medium text-muted-foreground",
+			children: label
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "flex items-center gap-1",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+					type: "button",
+					variant: "outline",
+					size: "icon",
+					"aria-label": t("dashboard.adjust.decrease", { label }),
+					"data-ocid": `${ocid}.minus_button`,
+					className: "touch-target",
+					disabled: disabled || value <= 0,
+					onClick: () => onDelta(-1n),
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Minus, {
+						className: "h-4 w-4",
+						"aria-hidden": "true"
+					})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					className: "w-8 text-center font-display text-base font-bold tabular-nums",
+					children: value
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+					type: "button",
+					variant: "outline",
+					size: "icon",
+					"aria-label": t("dashboard.adjust.increase", { label }),
+					"data-ocid": `${ocid}.plus_button`,
+					className: "touch-target",
+					disabled,
+					onClick: () => onDelta(1n),
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, {
+						className: "h-4 w-4",
+						"aria-hidden": "true"
+					})
+				})
+			]
+		})]
+	});
+}
+function PositionRow$1({ position, onEdit, onDelete }) {
+	const c = useAdminCopy();
+	const adjust = useAdjustBuildTo();
+	const [error, setError] = (0, import_react.useState)(null);
+	const applyDelta = (field, delta) => {
+		setError(null);
+		adjust.mutate({
+			positionId: position.id,
+			openingDelta: field === "opening" ? delta : 0n,
+			afterOpeningDelta: field === "afterOpening" ? delta : 0n
+		}, { onError: (err) => setError(err instanceof Error ? err.message : c.positionsSaveError) });
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+		"data-ocid": "admin.positions.item",
+		className: "flex flex-col gap-3 rounded-md border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "min-w-0",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex flex-wrap items-center gap-2",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-display text-sm font-semibold uppercase tracking-wide",
+							children: position.name
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
+							tone: "muted",
+							children: position.house === House.foh ? c.positionsFoh : c.positionsBoh
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
+							tone: "muted",
+							children: position.code
+						}),
+						position.needsAlcoholCert && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
+							tone: "pending",
+							children: c.positionsAlcohol
+						})
+					]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "mt-1 text-xs text-muted-foreground",
+					children: fill(c.positionsBuildTo, {
+						opening: position.openingBuildTo.toString(),
+						after: position.afterOpeningBuildTo.toString(),
+						age: position.minimumAge.toString()
+					})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "mt-2 max-w-xs space-y-1.5 rounded-md border border-border bg-muted/30 p-2",
+					"data-ocid": "admin.positions.build_to.panel",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BuildToStepper, {
+							label: c.positionsOpeningBuildTo,
+							value: Number(position.openingBuildTo),
+							disabled: adjust.isPending,
+							onDelta: (delta) => applyDelta("opening", delta),
+							ocid: "admin.positions.opening_build_to"
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BuildToStepper, {
+							label: c.positionsAfterOpeningBuildTo,
+							value: Number(position.afterOpeningBuildTo),
+							disabled: adjust.isPending,
+							onDelta: (delta) => applyDelta("afterOpening", delta),
+							ocid: "admin.positions.after_opening_build_to"
+						}),
+						error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "text-xs text-destructive",
+							role: "alert",
+							children: error
+						})
+					]
+				})
+			]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "flex shrink-0 items-center gap-2",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+				type: "button",
+				variant: "outline",
+				className: "touch-target",
+				"data-ocid": "admin.positions.edit_button",
+				onClick: () => onEdit(position),
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, {
+					className: "mr-2 h-4 w-4",
+					"aria-hidden": "true"
+				}), c.actionEdit]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+				type: "button",
+				variant: "outline",
+				className: "touch-target text-destructive",
+				"data-ocid": "admin.positions.delete_button",
+				onClick: () => onDelete(position),
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, {
+					className: "mr-2 h-4 w-4",
+					"aria-hidden": "true"
+				}), c.actionDelete]
+			})]
+		})]
+	});
 }
 function PositionsPanel() {
 	const c = useAdminCopy();
@@ -51468,7 +52222,8 @@ function PositionsPanel() {
 	const onSubmit = (event) => {
 		event.preventDefault();
 		if (!draft || !draft.name.trim()) return;
-		const payload = toPosition(draft);
+		const live = positions.data?.find((position) => position.id === draft.id);
+		const payload = toPosition(draft, live?.openingBuildTo ?? 0n, live?.afterOpeningBuildTo ?? 0n);
 		mutation.mutate(payload, { onSuccess: () => setDraft(null) });
 	};
 	const confirmDelete = () => {
@@ -51505,63 +52260,10 @@ function PositionsPanel() {
 			(positions.data?.length ?? 0) > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
 				className: "space-y-2",
 				"data-ocid": "admin.positions.list",
-				children: positions.data?.map((position) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
-					"data-ocid": "admin.positions.item",
-					className: "flex flex-col gap-3 rounded-md border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "min-w-0",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex flex-wrap items-center gap-2",
-							children: [
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-									className: "font-display text-sm font-semibold uppercase tracking-wide",
-									children: position.name
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
-									tone: "muted",
-									children: position.house === House.foh ? c.positionsFoh : c.positionsBoh
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
-									tone: "muted",
-									children: position.code
-								}),
-								position.needsAlcoholCert && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
-									tone: "pending",
-									children: c.positionsAlcohol
-								})
-							]
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "mt-1 text-xs text-muted-foreground",
-							children: fill(c.positionsBuildTo, {
-								opening: position.openingBuildTo.toString(),
-								after: position.afterOpeningBuildTo.toString(),
-								age: position.minimumAge.toString()
-							})
-						})]
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex shrink-0 items-center gap-2",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-							type: "button",
-							variant: "outline",
-							className: "touch-target",
-							"data-ocid": "admin.positions.edit_button",
-							onClick: () => setDraft(toDraft$1(position)),
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, {
-								className: "mr-2 h-4 w-4",
-								"aria-hidden": "true"
-							}), c.actionEdit]
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-							type: "button",
-							variant: "outline",
-							className: "touch-target text-destructive",
-							"data-ocid": "admin.positions.delete_button",
-							onClick: () => setDeleteTarget(position),
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, {
-								className: "mr-2 h-4 w-4",
-								"aria-hidden": "true"
-							}), c.actionDelete]
-						})]
-					})]
+				children: positions.data?.map((position) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PositionRow$1, {
+					position,
+					onEdit: (target) => setDraft(toDraft$1(target)),
+					onDelete: setDeleteTarget
 				}, position.id.toString()))
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
@@ -51627,36 +52329,11 @@ function PositionsPanel() {
 											id: "pos-age",
 											type: "number",
 											min: 0,
+											step: 1,
 											"data-ocid": "admin.positions.minimum_age.input",
 											className: "touch-target",
 											value: draft.minimumAge,
 											onChange: (event) => set("minimumAge", event.target.value)
-										})
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-										label: c.positionsOpeningBuildTo,
-										htmlFor: "pos-opening",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											id: "pos-opening",
-											type: "number",
-											min: 0,
-											"data-ocid": "admin.positions.opening_build_to.input",
-											className: "touch-target",
-											value: draft.openingBuildTo,
-											onChange: (event) => set("openingBuildTo", event.target.value)
-										})
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-										label: c.positionsAfterOpeningBuildTo,
-										htmlFor: "pos-after",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											id: "pos-after",
-											type: "number",
-											min: 0,
-											"data-ocid": "admin.positions.after_opening_build_to.input",
-											className: "touch-target",
-											value: draft.afterOpeningBuildTo,
-											onChange: (event) => set("afterOpeningBuildTo", event.target.value)
 										})
 									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
@@ -51666,6 +52343,7 @@ function PositionsPanel() {
 											id: "pos-shirts",
 											type: "number",
 											min: 0,
+											step: 1,
 											"data-ocid": "admin.positions.shirts_required.input",
 											className: "touch-target",
 											value: draft.shirtsRequired,
@@ -51679,6 +52357,7 @@ function PositionsPanel() {
 											id: "pos-hats",
 											type: "number",
 											min: 0,
+											step: 1,
 											"data-ocid": "admin.positions.hats_required.input",
 											className: "touch-target",
 											value: draft.hatsRequired,
@@ -51699,6 +52378,10 @@ function PositionsPanel() {
 										})
 									})
 								]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground",
+								children: c.positionsDescription
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 								className: "flex items-center justify-between rounded-md border border-border bg-muted/40 p-3",
@@ -52127,7 +52810,7 @@ function toDraft(info) {
 		leaderTalkName: info.leaderTalkName,
 		trainingGroupSize: info.trainingGroupSize.toString(),
 		leaderTalkSize: info.leaderTalkSize.toString(),
-		logo: info.logo ?? ""
+		logo: info.logo
 	};
 }
 function toStoreInfo(draft, base) {
@@ -52148,7 +52831,7 @@ function toStoreInfo(draft, base) {
 		leaderTalkName: draft.leaderTalkName.trim(),
 		trainingGroupSize: BigInt(Math.max(1, Number(draft.trainingGroupSize) || 1)),
 		leaderTalkSize: BigInt(Math.max(1, Number(draft.leaderTalkSize) || 1)),
-		logo: draft.logo ? draft.logo : void 0
+		logo: draft.logo
 	};
 }
 function StoreInfoPanel() {
@@ -52187,11 +52870,7 @@ function StoreInfoPanel() {
 	};
 	const onLogoChange = (file) => {
 		if (!file) return;
-		const reader = new FileReader();
-		reader.onload = () => {
-			if (typeof reader.result === "string") set("logo", reader.result);
-		};
-		reader.readAsDataURL(file);
+		fileToRef(file).then((ref) => set("logo", ref));
 	};
 	const onSubmit = (event) => {
 		event.preventDefault();
@@ -52211,7 +52890,7 @@ function StoreInfoPanel() {
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 						className: "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted",
 						children: draft.logo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-							src: draft.logo,
+							src: refToDataUrl(draft.logo) ?? void 0,
 							alt: c.storeLogoAlt,
 							className: "h-full w-full object-contain"
 						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ImagePlus, {
@@ -52245,7 +52924,7 @@ function StoreInfoPanel() {
 								variant: "ghost",
 								className: "touch-target w-fit",
 								"data-ocid": "admin.store.logo.remove_button",
-								onClick: () => set("logo", ""),
+								onClick: () => set("logo", void 0),
 								children: c.storeLogoRemove
 							})
 						]
@@ -52598,15 +53277,22 @@ function useEnsureSeeded() {
 * install replays the seed migration, but a store that has no positions yet is
 * repaired here so the dashboard and admin surfaces show the seeded data
 * instead of an empty shell.
+*
+* Only an Admin may seed: the backend rejects the call for every other role, so
+* the hook gates on the caller's grant and never fires for a non-admin even
+* when a page calls it unconditionally.
 */
 function useSeedWhenEmpty(ready, isEmpty) {
 	const { mutate } = useEnsureSeeded();
+	const access = useAccessState();
+	const isAdmin = access.kind === "granted" && access.grant.role === Role.admin;
 	const attempted = (0, import_react.useRef)(false);
 	(0, import_react.useEffect)(() => {
-		if (!ready || !isEmpty || attempted.current) return;
+		if (!isAdmin || !ready || !isEmpty || attempted.current) return;
 		attempted.current = true;
 		mutate();
 	}, [
+		isAdmin,
 		ready,
 		isEmpty,
 		mutate
@@ -52710,6 +53396,170 @@ function ApprovalConfirmDialog({ open, role, pending, onOpenChange, onConfirm })
 		})
 	});
 }
+/**
+* Confirmation step shown before rejecting a pending sign-up. Rejecting is
+* destructive, so the manager must explicitly confirm before it is sent.
+*/
+function RejectConfirmDialog({ open, pending, onOpenChange, onConfirm }) {
+	const { t } = useI18n();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
+		open,
+		onOpenChange,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, {
+			"data-ocid": "approvals.reject.dialog",
+			"aria-describedby": void 0,
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: t("approvals.action.reject") }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+				type: "button",
+				variant: "outline",
+				className: "touch-target",
+				"data-ocid": "approvals.reject.cancel_button",
+				onClick: () => onOpenChange(false),
+				children: t("approvals.cancel")
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+				type: "button",
+				variant: "destructive",
+				className: "touch-target",
+				"data-ocid": "approvals.reject.confirm_button",
+				disabled: pending,
+				onClick: onConfirm,
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, {
+					className: "mr-2 h-4 w-4",
+					"aria-hidden": "true"
+				}), t("common.confirm")]
+			})] })]
+		})
+	});
+}
+//#endregion
+//#region src/components/approvals/ManagerSignaturePad.tsx
+/**
+* A pointer-drawn manager signature on a canvas. Emits the drawn strokes as
+* raw PNG bytes so the approval stores a real signature reference, never the
+* roadie's own signature. Reuses the same drawing technique as the kiosk
+* signature step so a manager can sign on a phone.
+*/
+function ManagerSignaturePad({ value, onChange, error }) {
+	const { t } = useI18n();
+	const canvasRef = (0, import_react.useRef)(null);
+	const drawingRef = (0, import_react.useRef)(false);
+	const [dirty, setDirty] = (0, import_react.useState)(false);
+	const setupCanvas = (0, import_react.useCallback)(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		const ratio = window.devicePixelRatio || 1;
+		const rect = canvas.getBoundingClientRect();
+		canvas.width = Math.max(1, Math.round(rect.width * ratio));
+		canvas.height = Math.max(1, Math.round(rect.height * ratio));
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+		ctx.scale(ratio, ratio);
+		ctx.lineWidth = 2.5;
+		ctx.lineCap = "round";
+		ctx.lineJoin = "round";
+		ctx.strokeStyle = "#14284B";
+	}, []);
+	(0, import_react.useEffect)(() => {
+		setupCanvas();
+	}, [setupCanvas]);
+	const pointFromEvent = (event) => {
+		const canvas = canvasRef.current;
+		if (!canvas) return {
+			x: 0,
+			y: 0
+		};
+		const rect = canvas.getBoundingClientRect();
+		return {
+			x: event.clientX - rect.left,
+			y: event.clientY - rect.top
+		};
+	};
+	const handlePointerDown = (event) => {
+		const canvas = canvasRef.current;
+		const ctx = canvas?.getContext("2d");
+		if (!canvas || !ctx) return;
+		canvas.setPointerCapture(event.pointerId);
+		drawingRef.current = true;
+		const { x, y } = pointFromEvent(event);
+		ctx.beginPath();
+		ctx.moveTo(x, y);
+	};
+	const handlePointerMove = (event) => {
+		if (!drawingRef.current) return;
+		const ctx = canvasRef.current?.getContext("2d");
+		if (!ctx) return;
+		const { x, y } = pointFromEvent(event);
+		ctx.lineTo(x, y);
+		ctx.stroke();
+		if (!dirty) setDirty(true);
+	};
+	const finishStroke = () => {
+		if (!drawingRef.current) return;
+		drawingRef.current = false;
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		canvas.toBlob((blob) => {
+			if (!blob) return;
+			blob.arrayBuffer().then((buffer) => onChange(new Uint8Array(buffer)));
+		}, "image/png");
+	};
+	const clear = () => {
+		const canvas = canvasRef.current;
+		const ctx = canvas?.getContext("2d");
+		if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+		setDirty(false);
+		onChange(null);
+	};
+	const hasSignature = value !== null && value.length > 0;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-2 md:col-span-2",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+				children: t("approvals.signup.signature.label")
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "rounded-lg border border-border bg-card p-3",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("canvas", {
+					ref: canvasRef,
+					"data-ocid": "approvals.signup.signature.canvas_target",
+					"aria-label": t("approvals.signup.signature.label"),
+					className: "h-40 w-full touch-none rounded-md border border-dashed border-input bg-white",
+					onPointerDown: handlePointerDown,
+					onPointerMove: handlePointerMove,
+					onPointerUp: finishStroke,
+					onPointerLeave: finishStroke,
+					onPointerCancel: finishStroke
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "mt-3 flex items-center justify-between gap-3",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+						className: "flex items-center gap-2 text-xs text-muted-foreground",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PenLine, {
+							className: "h-4 w-4",
+							"aria-hidden": "true"
+						}), hasSignature ? t("approvals.signup.signature.label") : t("approvals.signup.signature.required")]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+						type: "button",
+						variant: "outline",
+						"data-ocid": "approvals.signup.signature.clear_button",
+						onClick: clear,
+						disabled: !dirty && !hasSignature,
+						className: "touch-target rounded-full",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eraser, {
+							className: "h-4 w-4",
+							"aria-hidden": "true"
+						}), t("common.cancel")]
+					})]
+				})]
+			}),
+			error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				role: "alert",
+				"data-ocid": "approvals.signup.signature.error_state",
+				className: "text-sm font-medium text-destructive",
+				children: error
+			})
+		]
+	});
+}
 //#endregion
 //#region src/components/approvals/ApprovalRoleSelect.tsx
 /** Roles an admin may grant. No role is pre-selected. */
@@ -52751,50 +53601,46 @@ function ApprovalRoleSelect({ id, value, onChange }) {
 		})]
 	});
 }
-//#endregion
-//#region src/components/approvals/TrainerStationsPicker.tsx
+/** The offset, in milliseconds, of a time zone at a given UTC instant. */
+function timeZoneOffsetMs(utcMs, timeZone) {
+	const parts = new Intl.DateTimeFormat("en-US", {
+		timeZone,
+		hour12: false,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit"
+	}).formatToParts(new Date(utcMs));
+	const get = (type) => Number(parts.find((part) => part.type === type)?.value ?? "0");
+	return Date.UTC(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"), get("second")) - utcMs;
+}
 /**
-* Multi-select of trainer stations. Only rendered when the chosen role is
-* Trainer; the selection is required by the backend for that role.
+* Build the instant for a wall-clock time on a `YYYY-MM-DD` day in a named
+* time zone. Used to store an access end date at 11:59:59 PM in the store's
+* own time zone.
 */
-function TrainerStationsPicker({ positions, selectedIds, onChange }) {
-	const { t } = useI18n();
-	const toggle = (id) => {
-		onChange(selectedIds.includes(id) ? selectedIds.filter((value) => value !== id) : [...selectedIds, id]);
+function zonedWallTimeToDate(dateOnly, hour, minute, second, timeZone) {
+	const [year, month, day] = dateOnly.split("-").map(Number);
+	const guess = Date.UTC(year, month - 1, day, hour, minute, second);
+	const offset = timeZoneOffsetMs(guess, timeZone);
+	return new Date(guess - offset);
+}
+/** The calendar date (year, month, day) of an instant in a named time zone. */
+function calendarInTimeZone(instant, timeZone) {
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		timeZone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit"
+	}).formatToParts(instant);
+	const get = (type) => Number(parts.find((part) => part.type === type)?.value ?? "0");
+	return {
+		year: get("year"),
+		month: get("month"),
+		day: get("day")
 	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("fieldset", {
-		className: "space-y-2 md:col-span-2",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("legend", {
-				className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-				children: t("approvals.stations.label")
-			}),
-			positions.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-sm text-muted-foreground",
-				children: t("admin.positions.empty")
-			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				className: "flex flex-wrap gap-2",
-				children: positions.map((position) => {
-					const id = position.id.toString();
-					const checked = selectedIds.includes(id);
-					return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {
-						className: `touch-target flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${checked ? "border-primary bg-primary/10 text-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/50"}`,
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-							type: "checkbox",
-							className: "h-4 w-4 accent-[var(--primary)]",
-							checked,
-							"data-ocid": "approvals.station.checkbox",
-							onChange: () => toggle(id)
-						}), position.name]
-					}, id);
-				})
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-xs text-muted-foreground",
-				children: t("approvals.stations.hint")
-			})
-		]
-	});
 }
 //#endregion
 //#region src/components/approvals/PendingApprovalCard.tsx
@@ -52806,7 +53652,9 @@ function PendingApprovalCard({ user }) {
 	const { t } = useI18n();
 	const { data: positions } = usePositions();
 	const { data: roadies } = useRoadies();
+	const { data: storeInfo } = useStoreInfo();
 	const approve = useApproveUser();
+	const timeZone = storeInfo?.timeZone || "America/Chicago";
 	const [role, setRole] = (0, import_react.useState)("");
 	const [stationIds, setStationIds] = (0, import_react.useState)([]);
 	const [accessEnd, setAccessEnd] = (0, import_react.useState)("");
@@ -52825,7 +53673,7 @@ function PendingApprovalCard({ user }) {
 			principal: user.principal,
 			role,
 			trainerPositionIds: needsStations ? stationIds.map((id) => BigInt(id)) : [],
-			accessEndsAt: accessEnd ? dateToTimestamp(new Date(accessEnd)) : void 0,
+			accessEndsAt: accessEnd ? dateToTimestamp(zonedWallTimeToDate(accessEnd, 23, 59, 59, timeZone)) : void 0,
 			linkedRoadieId: linkedRoadieId ? BigInt(linkedRoadieId) : void 0
 		}, {
 			onSuccess: () => {
@@ -52994,6 +53842,21 @@ function defaultOrientationId(sessions, house) {
 	const match = sessions.find((event) => event.name.toLowerCase().includes(marker));
 	return match ? match.id.toString() : "";
 }
+/**
+* The applicant's real age in the store's time zone, or null when the date of
+* birth is missing or invalid.
+*/
+function ageInTimeZone(dateOfBirth, timeZone) {
+	const birth = dateOnlyToDate(dateOfBirth);
+	if (!birth) return null;
+	const today = calendarInTimeZone(/* @__PURE__ */ new Date(), timeZone);
+	const birthYear = birth.getUTCFullYear();
+	const birthMonth = birth.getUTCMonth() + 1;
+	const birthDay = birth.getUTCDate();
+	let age = today.year - birthYear;
+	if (today.month < birthMonth || today.month === birthMonth && today.day < birthDay) age -= 1;
+	return age;
+}
 /** A compact list of duplicate matches found against all cards. */
 function DuplicateList({ matches }) {
 	const { t } = useI18n();
@@ -53028,9 +53891,9 @@ function DuplicateList({ matches }) {
 }
 /**
 * One pending kiosk submission under review: duplicate check, position, crew,
-* orientation session, start date, and the manager's signature.
+* orientation session, start date, and the manager's drawn signature.
 */
-function PendingSignupCard({ signup, positions, crews, sessions }) {
+function PendingSignupCard({ signup, positions, crews, sessions, timeZone }) {
 	const { t } = useI18n();
 	const { data: duplicates, isLoading: duplicatesLoading } = useSignupDuplicates(signup.id);
 	const approve = useApproveSignup();
@@ -53040,20 +53903,25 @@ function PendingSignupCard({ signup, positions, crews, sessions }) {
 	const [crewId, setCrewId] = (0, import_react.useState)("");
 	const [orientationId, setOrientationId] = (0, import_react.useState)("");
 	const [startDate, setStartDate] = (0, import_react.useState)("");
-	const [signature, setSignature] = (0, import_react.useState)("");
+	const [signature, setSignature] = (0, import_react.useState)(null);
 	const [error, setError] = (0, import_react.useState)(null);
+	const [rejectOpen, setRejectOpen] = (0, import_react.useState)(false);
 	const mainPosition = positions.find((position) => position.id.toString() === mainPositionId);
+	const secondPosition = positions.find((position) => position.id.toString() === secondPositionId);
 	const suggestedOrientation = defaultOrientationId(sessions, mainPosition?.house);
-	const isMinor = (0, import_react.useMemo)(() => {
-		const dob = dateOnlyToDate(signup.contactSet.dateOfBirth);
-		if (!dob) return false;
-		const now = /* @__PURE__ */ new Date();
-		let age = now.getUTCFullYear() - dob.getUTCFullYear();
-		const monthDiff = now.getUTCMonth() - dob.getUTCMonth();
-		if (monthDiff < 0 || monthDiff === 0 && now.getUTCDate() < dob.getUTCDate()) age -= 1;
-		return age < 18;
-	}, [signup.contactSet.dateOfBirth]);
-	const ageBlocked = isMinor && !!mainPosition && mainPosition.minimumAge > 18n;
+	const age = (0, import_react.useMemo)(() => ageInTimeZone(signup.contactSet.dateOfBirth, timeZone), [signup.contactSet.dateOfBirth, timeZone]);
+	const isMinor = age !== null && age < 18;
+	const ageBlocked = (0, import_react.useMemo)(() => {
+		if (age === null) return false;
+		const realAge = BigInt(age);
+		const mainTooYoung = !!mainPosition && realAge < mainPosition.minimumAge;
+		const secondTooYoung = !!secondPosition && realAge < secondPosition.minimumAge;
+		return mainTooYoung || secondTooYoung;
+	}, [
+		age,
+		mainPosition,
+		secondPosition
+	]);
 	const submit = () => {
 		if (!mainPositionId) {
 			setError(t("approvals.signup.main.required"));
@@ -53063,22 +53931,23 @@ function PendingSignupCard({ signup, positions, crews, sessions }) {
 			setError(t("approvals.signup.minor.blocked"));
 			return;
 		}
-		if (!signature.trim()) {
+		if (!signature || signature.length === 0) {
 			setError(t("approvals.signup.signature.required"));
 			return;
 		}
 		setError(null);
+		const chosenOrientation = orientationId || suggestedOrientation;
 		const decision = {
 			mainPositionId: BigInt(mainPositionId),
 			secondPositionId: secondPositionId ? BigInt(secondPositionId) : void 0,
 			crewId: crewId ? BigInt(crewId) : void 0,
-			orientationEventId: orientationId ? BigInt(orientationId) : void 0,
+			orientationEventId: chosenOrientation ? BigInt(chosenOrientation) : void 0,
 			startDate: startDate ? dateToDateOnly(/* @__PURE__ */ new Date(`${startDate}T00:00:00Z`)) : void 0
 		};
 		approve.mutate({
 			id: signup.id,
 			decision,
-			signature: signature.trim()
+			signature
 		}, {
 			onSuccess: () => {
 				setMainPositionId("");
@@ -53086,9 +53955,18 @@ function PendingSignupCard({ signup, positions, crews, sessions }) {
 				setCrewId("");
 				setOrientationId("");
 				setStartDate("");
-				setSignature("");
+				setSignature(null);
 			},
 			onError: () => setError(t("approvals.signup.approve.error"))
+		});
+	};
+	const confirmReject = () => {
+		reject.mutate(signup.id, {
+			onSuccess: () => setRejectOpen(false),
+			onError: () => {
+				setRejectOpen(false);
+				setError(t("approvals.signup.approve.error"));
+			}
 		});
 	};
 	const name = signup.profile.preferredName || signup.profile.name;
@@ -53110,7 +53988,7 @@ function PendingSignupCard({ signup, positions, crews, sessions }) {
 							t("approvals.signup.submittedAt"),
 							":",
 							" ",
-							formatTimestamp(signup.submittedAt)
+							formatTimestamp(signup.submittedAt, timeZone)
 						]
 					})]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -53236,7 +54114,7 @@ function PendingSignupCard({ signup, positions, crews, sessions }) {
 									children: [
 										session.name,
 										" · ",
-										formatTimestamp(session.start)
+										formatTimestamp(session.start, timeZone)
 									]
 								}, session.id.toString())) })]
 							}),
@@ -53259,22 +54137,15 @@ function PendingSignupCard({ signup, positions, crews, sessions }) {
 							"data-ocid": "approvals.signup.start.input",
 							className: "touch-target"
 						})]
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "space-y-1.5",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
-							htmlFor: `signature-${key}`,
-							children: t("approvals.signup.signature.label")
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							id: `signature-${key}`,
-							value: signature,
-							onChange: (event) => setSignature(event.target.value),
-							placeholder: t("approvals.signup.signature.placeholder"),
-							"data-ocid": "approvals.signup.signature.input",
-							className: "touch-target"
-						})]
 					})
 				]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "mt-4",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ManagerSignaturePad, {
+					value: signature,
+					onChange: setSignature
+				})
 			}),
 			ageBlocked && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				role: "alert",
@@ -53296,7 +54167,7 @@ function PendingSignupCard({ signup, positions, crews, sessions }) {
 					className: "touch-target",
 					"data-ocid": "approvals.signup.reject_button",
 					disabled: reject.isPending || approve.isPending,
-					onClick: () => reject.mutate(signup.id),
+					onClick: () => setRejectOpen(true),
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, {
 						className: "mr-2 h-4 w-4",
 						"aria-hidden": "true"
@@ -53312,12 +54183,18 @@ function PendingSignupCard({ signup, positions, crews, sessions }) {
 						"aria-hidden": "true"
 					}), t("approvals.signup.action.approve")]
 				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RejectConfirmDialog, {
+				open: rejectOpen,
+				pending: reject.isPending,
+				onOpenChange: setRejectOpen,
+				onConfirm: confirmReject
 			})
 		]
 	});
 }
 /** The pending kiosk submissions queue with its loading, error, and empty states. */
-function PendingSignupList({ signups, positions, crews, sessions, isLoading, isError, onRetry }) {
+function PendingSignupList({ signups, positions, crews, sessions, timeZone, isLoading, isError, onRetry }) {
 	const { t } = useI18n();
 	if (isLoading) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("approvals.signup.loading") });
 	if (isError) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
@@ -53332,7 +54209,8 @@ function PendingSignupList({ signups, positions, crews, sessions, isLoading, isE
 			signup,
 			positions,
 			crews,
-			sessions
+			sessions,
+			timeZone
 		}, signup.id.toString()))
 	});
 }
@@ -53341,10 +54219,15 @@ function PendingSignupList({ signups, positions, crews, sessions, isLoading, isE
 * optional trainer stations, access end date, and linked roadie card. Store
 * Managers review pending kiosk submissions, run the duplicate check, assign
 * position, crew, orientation and start date, then sign to create the card.
+* The pending sign-in (access) section is visible only to admins.
 */
 function ApprovalsPage() {
 	const { t } = useI18n();
-	const { data: pending, isLoading, isError, refetch } = usePendingUsers();
+	const access = useAccessState();
+	const isAdmin = canAdmin(access.kind === "granted" ? access.grant.role : void 0);
+	const { data: storeInfo } = useStoreInfo();
+	const timeZone = storeInfo?.timeZone || "America/Chicago";
+	const { data: pending, isLoading, isError, refetch } = usePendingUsers(isAdmin);
 	const { data: signups, isLoading: signupsLoading, isError: signupsError, refetch: refetchSignups } = usePendingSignups();
 	const { data: positions } = usePositions();
 	const { data: crews } = useCrews();
@@ -53369,12 +54252,13 @@ function ApprovalsPage() {
 					positions: positions ?? [],
 					crews: crews ?? [],
 					sessions,
+					timeZone,
 					isLoading: signupsLoading,
 					isError: signupsError,
 					onRetry: () => void refetchSignups()
 				})]
 			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+			isAdmin && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 				className: "space-y-4",
 				"data-ocid": "approvals.users.section",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
@@ -53715,6 +54599,8 @@ function CountdownUnit({ value, label }) {
 */
 function OpeningTimeline({ events, openingDate }) {
 	const { t } = useDashboardCopy();
+	const { data: storeInfo } = useStoreInfo();
+	const timeZone = storeInfo?.timeZone;
 	const now = useNow();
 	const ordered = (0, import_react.useMemo)(() => [...events].sort((a, b) => Number(a.start - b.start)).filter((event) => {
 		return timestampToDate(event.start) !== null;
@@ -53749,7 +54635,10 @@ function OpeningTimeline({ events, openingDate }) {
 						children: t("dashboard.countdown.label")
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "font-display text-lg font-bold uppercase tracking-wide text-foreground",
-						children: openingDate ? openingDate.toLocaleDateString(void 0, { dateStyle: "long" }) : t("dashboard.countdown.noDate")
+						children: openingDate ? openingDate.toLocaleDateString(void 0, {
+							dateStyle: "long",
+							timeZone: "UTC"
+						}) : t("dashboard.countdown.noDate")
 					})] })]
 				}), countdown ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 					className: "flex items-center gap-2",
@@ -53776,7 +54665,6 @@ function OpeningTimeline({ events, openingDate }) {
 				className: "relative space-y-1 border-l border-border pl-5",
 				"data-ocid": "dashboard.timeline.list",
 				children: ordered.map((event, index) => {
-					const date = timestampToDate(event.start);
 					const isCurrent = index === currentIndex;
 					const isPast = index < currentIndex;
 					return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
@@ -53806,7 +54694,7 @@ function OpeningTimeline({ events, openingDate }) {
 									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CalendarClock, {
 										className: "h-3.5 w-3.5",
 										"aria-hidden": "true"
-									}), date ? date.toLocaleDateString(void 0, { dateStyle: "medium" }) : "—"]
+									}), formatTimestampMediumDate(event.start, timeZone)]
 								})]
 							})]
 						})]
@@ -53817,53 +54705,6 @@ function OpeningTimeline({ events, openingDate }) {
 				children: t("dashboard.timeline.empty")
 			})]
 		})
-	});
-}
-//#endregion
-//#region src/components/dashboard/hooks.ts
-/** The roster for one position, used to count on-hand roadies and list cards. */
-function useRosterForPosition(positionId) {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["rosterForPosition", positionId?.toString()],
-		queryFn: async () => {
-			if (!actor || positionId === void 0) return [];
-			return actor.listRosterForPosition(positionId);
-		},
-		enabled: !!actor && !isFetching && positionId !== void 0
-	});
-}
-/** Apply a +1/−1 build-to adjustment for a position. */
-function useAdjustBuildTo() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (args) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.adjustBuildTo(args.positionId, args.openingDelta, args.afterOpeningDelta);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-			queryClient.invalidateQueries({ queryKey: ["positions"] });
-			queryClient.invalidateQueries({ queryKey: ["changeLog"] });
-		}
-	});
-}
-/** Rehire an archived roadie back onto the roster. */
-function useRehireRoadie$1() {
-	const { actor } = useActor(createActor);
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (args) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.rehireRoadie(args.id, args.reason);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-			queryClient.invalidateQueries({ queryKey: ["roadies"] });
-			queryClient.invalidateQueries({ queryKey: ["rosterForPosition"] });
-			queryClient.invalidateQueries({ queryKey: ["changeLog"] });
-		}
 	});
 }
 //#endregion
@@ -87374,15 +88215,42 @@ async function exportWorkbookToBlob(data, variant) {
 	const buffer = await buildExportWorkbook(data, variant).xlsx.writeBuffer();
 	return new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 }
-/** Build the workbook and trigger a browser download. */
+/** Whether the current device is an iPhone or iPad (incl. iPadOS desktop UA). */
+function isIosDevice() {
+	if (typeof navigator === "undefined") return false;
+	const ua = navigator.userAgent;
+	const iOS = /iPad|iPhone|iPod/.test(ua);
+	const iPadOs = ua.includes("Macintosh") && navigator.maxTouchPoints > 1;
+	return iOS || iPadOs;
+}
+/**
+* Build the workbook and trigger a browser download. On iPhone and iPad the
+* object URL is revoked after a delay rather than immediately, because Safari
+* may not have started the download when the click returns; when the Web Share
+* API can share files it is preferred so the user picks where the file goes.
+*/
 async function downloadExport(data, variant, filename) {
 	const blob = await exportWorkbookToBlob(data, variant);
+	if (isIosDevice()) {
+		const file = new File([blob], filename, { type: blob.type });
+		if (typeof navigator !== "undefined" && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) try {
+			await navigator.share({
+				files: [file],
+				title: filename
+			});
+			return;
+		} catch {}
+	}
 	const url = URL.createObjectURL(blob);
 	const anchor = document.createElement("a");
 	anchor.href = url;
 	anchor.download = filename;
+	anchor.rel = "noopener";
+	document.body.appendChild(anchor);
 	anchor.click();
-	URL.revokeObjectURL(url);
+	anchor.remove();
+	if (isIosDevice()) window.setTimeout(() => URL.revokeObjectURL(url), 6e4);
+	else URL.revokeObjectURL(url);
 }
 //#endregion
 //#region src/pages/Export.tsx
@@ -87392,22 +88260,24 @@ function useCanDownloadFull() {
 	const access = useAccessState();
 	return access.kind === "granted" && FULL_EXPORT_ROLES.includes(access.grant.role);
 }
-function ExportCard({ title, hint, data, isLoading, isError, onRetry, variant, filename, ocid, locked, lockedHint }) {
+function ExportCard({ title, hint, data, isLoading, isError, onRetry, onDownload, variant, filename, ocid, locked, lockedHint }) {
 	const { t } = useI18n();
 	const [isDownloading, setIsDownloading] = (0, import_react.useState)(false);
 	const [downloadError, setDownloadError] = (0, import_react.useState)(false);
 	async function handleDownload() {
-		if (!data) return;
 		setIsDownloading(true);
 		setDownloadError(false);
 		try {
-			await downloadExport(data, variant, filename);
+			const payload = onDownload ? await onDownload() : data;
+			if (!payload) return;
+			await downloadExport(payload, variant, filename);
 		} catch {
 			setDownloadError(true);
 		} finally {
 			setIsDownloading(false);
 		}
 	}
+	const canDownload = !!data || !!onDownload;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		"data-ocid": ocid,
 		className: "flex flex-col rounded-lg border border-border bg-card p-5 shadow-subtle",
@@ -87446,50 +88316,47 @@ function ExportCard({ title, hint, data, isLoading, isError, onRetry, variant, f
 				className: "mt-4",
 				ocid: `${ocid}.error_state`
 			}),
-			data && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
-					className: "mt-4 grid grid-cols-3 gap-3",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
-							className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-							children: t("export.grandTotal")
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
-							className: "font-display text-2xl font-bold",
-							children: data.grandTotal.toString()
-						})] }),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
-							className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-							children: t("export.fohTotal")
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
-							className: "font-display text-2xl font-bold",
-							children: data.fohTotal.toString()
-						})] }),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
-							className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-							children: t("export.bohTotal")
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
-							className: "font-display text-2xl font-bold",
-							children: data.bohTotal.toString()
-						})] })
-					]
-				}),
-				downloadError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					"data-ocid": `${ocid}.download_error`,
-					className: "mt-3 text-sm text-destructive",
-					children: t("export.error")
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-					type: "button",
-					className: "touch-target mt-4 w-full sm:w-auto",
-					"data-ocid": `${ocid}.download_button`,
-					disabled: isDownloading,
-					onClick: () => void handleDownload(),
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, {
-						className: "mr-2 h-4 w-4",
-						"aria-hidden": "true"
-					}), isDownloading ? t("common.loading") : t("export.action.download")]
-				})
-			] })
+			data && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
+				className: "mt-4 grid grid-cols-3 gap-3",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
+						className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+						children: t("export.grandTotal")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
+						className: "font-display text-2xl font-bold",
+						children: data.grandTotal.toString()
+					})] }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
+						className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+						children: t("export.fohTotal")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
+						className: "font-display text-2xl font-bold",
+						children: data.fohTotal.toString()
+					})] }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
+						className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+						children: t("export.bohTotal")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
+						className: "font-display text-2xl font-bold",
+						children: data.bohTotal.toString()
+					})] })
+				]
+			}),
+			canDownload && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [downloadError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				"data-ocid": `${ocid}.download_error`,
+				className: "mt-3 text-sm text-destructive",
+				children: t("export.error")
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+				type: "button",
+				className: "touch-target mt-4 w-full sm:w-auto",
+				"data-ocid": `${ocid}.download_button`,
+				disabled: isDownloading,
+				onClick: () => void handleDownload(),
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, {
+					className: "mr-2 h-4 w-4",
+					"aria-hidden": "true"
+				}), isDownloading ? t("common.loading") : t("export.action.download")]
+			})] })
 		] })]
 	});
 }
@@ -87499,7 +88366,7 @@ function ExportPage() {
 	const shareable = useShareableExport();
 	const full = useFullExport();
 	const hasAnyData = !!shareable.data || !!full.data;
-	const settled = !shareable.isLoading && !full.isLoading;
+	const settled = !shareable.isLoading && !full.isPending;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-6",
 		"data-ocid": "export.page",
@@ -87528,9 +88395,10 @@ function ExportPage() {
 					title: t("export.full"),
 					hint: t("export.full.hint"),
 					data: full.data,
-					isLoading: full.isLoading,
+					isLoading: full.isPending,
 					isError: full.isError,
-					onRetry: () => void full.refetch(),
+					onRetry: () => void full.reset(),
+					onDownload: () => full.mutateAsync(),
 					variant: "full",
 					filename: "roadie-full-export.xlsx",
 					ocid: "export.full.section",
@@ -87593,6 +88461,9 @@ var kioskCopy = {
 		"field.positionPlaceholder": "e.g. Cashier, Cook, Server",
 		"field.shirtSize": "Shirt size",
 		"field.hatSize": "Hat size",
+		"hat.oneSize": "One size",
+		"hat.sm": "S/M",
+		"hat.lxl": "L/XL",
 		"field.shiftsWanted": "Shifts wanted per week",
 		"field.shiftsWantedHint": "How many shifts would you like each week?",
 		"field.weekdayLunch": "Available for weekday lunch shifts?",
@@ -87663,9 +88534,15 @@ var kioskCopy = {
 		"error.positionRequired": "Enter the position you're applying for.",
 		"error.emailInvalid": "Enter a valid email address.",
 		"error.phoneRequired": "Enter your phone number.",
+		"error.phoneInvalid": "Enter a valid phone number.",
 		"error.dobRequired": "Enter your date of birth.",
+		"error.dobInvalid": "Enter a valid date of birth.",
+		"error.dobPast": "Date of birth must be in the past.",
+		"error.dobAge": "You must be between 14 and 100 years old.",
+		"error.shiftsRange": "Enter a number of shifts between 0 and 7.",
 		"error.emergencyRequired": "Enter an emergency contact name.",
 		"error.emergencyPhoneRequired": "Enter an emergency contact phone.",
+		"error.emergencyPhoneInvalid": "Enter a valid emergency contact phone.",
 		"error.availabilityRequired": "Select at least one shift.",
 		"error.signatureRequired": "Draw your signature to continue.",
 		"error.submit": "We couldn't submit your application. Please try again."
@@ -87715,6 +88592,9 @@ var kioskCopy = {
 		"field.positionPlaceholder": "p. ej. Cajero, Cocinero, Mesero",
 		"field.shirtSize": "Talla de camiseta",
 		"field.hatSize": "Talla de gorra",
+		"hat.oneSize": "Talla única",
+		"hat.sm": "S/M",
+		"hat.lxl": "L/XL",
 		"field.shiftsWanted": "Turnos por semana",
 		"field.shiftsWantedHint": "¿Cuántos turnos quieres cada semana?",
 		"field.weekdayLunch": "¿Disponible para turnos de almuerzo?",
@@ -87785,9 +88665,15 @@ var kioskCopy = {
 		"error.positionRequired": "Ingresa el puesto al que aplicas.",
 		"error.emailInvalid": "Ingresa un correo válido.",
 		"error.phoneRequired": "Ingresa tu número de teléfono.",
+		"error.phoneInvalid": "Ingresa un número de teléfono válido.",
 		"error.dobRequired": "Ingresa tu fecha de nacimiento.",
+		"error.dobInvalid": "Ingresa una fecha de nacimiento válida.",
+		"error.dobPast": "La fecha de nacimiento debe ser en el pasado.",
+		"error.dobAge": "Debes tener entre 14 y 100 años.",
+		"error.shiftsRange": "Ingresa un número de turnos entre 0 y 7.",
 		"error.emergencyRequired": "Ingresa un nombre de contacto de emergencia.",
 		"error.emergencyPhoneRequired": "Ingresa un teléfono de contacto de emergencia.",
+		"error.emergencyPhoneInvalid": "Ingresa un teléfono de contacto de emergencia válido.",
 		"error.availabilityRequired": "Selecciona al menos un turno.",
 		"error.signatureRequired": "Dibuja tu firma para continuar.",
 		"error.submit": "No pudimos enviar tu solicitud. Inténtalo de nuevo."
@@ -87974,7 +88860,7 @@ function KioskContactStep({ value, onChange, errors }) {
 						"data-ocid": "kiosk.email.input",
 						type: "email",
 						inputMode: "email",
-						autoComplete: "email",
+						autoComplete: "off",
 						value: value.email,
 						"aria-invalid": !!errors.email,
 						onChange: (e) => set("email", e.target.value),
@@ -87991,7 +88877,7 @@ function KioskContactStep({ value, onChange, errors }) {
 						"data-ocid": "kiosk.phone.input",
 						type: "tel",
 						inputMode: "tel",
-						autoComplete: "tel",
+						autoComplete: "off",
 						value: value.phone,
 						"aria-invalid": !!errors.phone,
 						onChange: (e) => set("phone", e.target.value),
@@ -88008,6 +88894,7 @@ function KioskContactStep({ value, onChange, errors }) {
 						id: "kiosk-dob",
 						"data-ocid": "kiosk.date_of_birth.input",
 						type: "date",
+						autoComplete: "off",
 						value: value.dateOfBirth,
 						"aria-invalid": !!errors.dateOfBirth,
 						onChange: (e) => set("dateOfBirth", e.target.value),
@@ -88023,6 +88910,7 @@ function KioskContactStep({ value, onChange, errors }) {
 						id: "kiosk-emergency-name",
 						"data-ocid": "kiosk.emergency_contact_name.input",
 						value: value.emergencyContactName,
+						autoComplete: "off",
 						"aria-invalid": !!errors.emergencyContactName,
 						onChange: (e) => set("emergencyContactName", e.target.value),
 						className: "touch-target"
@@ -88038,6 +88926,7 @@ function KioskContactStep({ value, onChange, errors }) {
 						"data-ocid": "kiosk.emergency_contact_phone.input",
 						type: "tel",
 						inputMode: "tel",
+						autoComplete: "off",
 						value: value.emergencyContactPhone,
 						"aria-invalid": !!errors.emergencyContactPhone,
 						onChange: (e) => set("emergencyContactPhone", e.target.value),
@@ -88083,10 +88972,20 @@ var SHIRT_SIZES = [
 	"2XL",
 	"3XL"
 ];
+/** Hat sizes carry a copy key so the option label is translated. */
 var HAT_SIZES = [
-	"One size",
-	"S/M",
-	"L/XL"
+	{
+		value: "One size",
+		key: "hat.oneSize"
+	},
+	{
+		value: "S/M",
+		key: "hat.sm"
+	},
+	{
+		value: "L/XL",
+		key: "hat.lxl"
+	}
 ];
 /** Details step: identity, personality and role preferences. */
 function KioskDetailsStep({ value, onChange, errors }) {
@@ -88123,7 +89022,7 @@ function KioskDetailsStep({ value, onChange, errors }) {
 							id: "kiosk-name",
 							"data-ocid": "kiosk.name.input",
 							value: value.name,
-							autoComplete: "name",
+							autoComplete: "off",
 							"aria-invalid": !!errors.name,
 							onChange: (e) => set("name", e.target.value),
 							className: "touch-target"
@@ -88137,6 +89036,7 @@ function KioskDetailsStep({ value, onChange, errors }) {
 							id: "kiosk-preferred",
 							"data-ocid": "kiosk.preferred_name.input",
 							value: value.preferredName,
+							autoComplete: "off",
 							onChange: (e) => set("preferredName", e.target.value),
 							className: "touch-target"
 						})
@@ -88148,6 +89048,7 @@ function KioskDetailsStep({ value, onChange, errors }) {
 							id: "kiosk-hometown",
 							"data-ocid": "kiosk.hometown.input",
 							value: value.hometown,
+							autoComplete: "off",
 							onChange: (e) => set("hometown", e.target.value),
 							className: "touch-target"
 						})
@@ -88162,6 +89063,7 @@ function KioskDetailsStep({ value, onChange, errors }) {
 							"data-ocid": "kiosk.position.input",
 							value: value.positionAppliedFor,
 							placeholder: t("field.positionPlaceholder"),
+							autoComplete: "off",
 							"aria-invalid": !!errors.positionAppliedFor,
 							onChange: (e) => set("positionAppliedFor", e.target.value),
 							className: "touch-target"
@@ -88196,9 +89098,9 @@ function KioskDetailsStep({ value, onChange, errors }) {
 								className: "touch-target w-full",
 								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("field.selectPlaceholder") })
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: HAT_SIZES.map((size) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-								value: size,
-								children: size
-							}, size)) })]
+								value: size.value,
+								children: t(size.key)
+							}, size.value)) })]
 						})
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskField, {
@@ -88211,8 +89113,10 @@ function KioskDetailsStep({ value, onChange, errors }) {
 							type: "number",
 							inputMode: "numeric",
 							min: 0,
-							max: 14,
+							max: 7,
+							autoComplete: "off",
 							value: value.shiftsWantedPerWeek,
+							"aria-invalid": !!errors.shiftsWantedPerWeek,
 							onChange: (e) => set("shiftsWantedPerWeek", e.target.value),
 							className: "touch-target"
 						})
@@ -88254,6 +89158,7 @@ function KioskDetailsStep({ value, onChange, errors }) {
 							"data-ocid": "kiosk.hobbies.textarea",
 							value: value.hobbies,
 							rows: 2,
+							autoComplete: "off",
 							onChange: (e) => set("hobbies", e.target.value)
 						})
 					}),
@@ -88265,6 +89170,7 @@ function KioskDetailsStep({ value, onChange, errors }) {
 							"data-ocid": "kiosk.favorite_movie.textarea",
 							value: value.favoriteMovie,
 							rows: 2,
+							autoComplete: "off",
 							onChange: (e) => set("favoriteMovie", e.target.value)
 						})
 					}),
@@ -88276,6 +89182,7 @@ function KioskDetailsStep({ value, onChange, errors }) {
 							"data-ocid": "kiosk.favorite_snack.textarea",
 							value: value.favoriteSnack,
 							rows: 2,
+							autoComplete: "off",
 							onChange: (e) => set("favoriteSnack", e.target.value)
 						})
 					}),
@@ -88287,6 +89194,7 @@ function KioskDetailsStep({ value, onChange, errors }) {
 							"data-ocid": "kiosk.fun_fact.textarea",
 							value: value.funFact,
 							rows: 2,
+							autoComplete: "off",
 							onChange: (e) => set("funFact", e.target.value)
 						})
 					})
@@ -88300,6 +89208,7 @@ function KioskDetailsStep({ value, onChange, errors }) {
 					"data-ocid": "kiosk.goal_here.textarea",
 					value: value.goalHere,
 					rows: 3,
+					autoComplete: "off",
 					onChange: (e) => set("goalHere", e.target.value)
 				})
 			})
@@ -88899,6 +89808,10 @@ function KioskReviewStep({ details, contact, availability, hasPhoto, hasSignatur
 /**
 * Signature step: a pointer-drawn signature on a canvas.
 * Emits a PNG `File` once the user has drawn something.
+*
+* The canvas is sized once on mount. A resize or rotation must never clear a
+* drawn signature, so the setup effect has no resize listener and the drawing
+* surface keeps every stroke the user makes.
 */
 function KioskSignatureStep({ onSigned, onClear, hasSignature, error }) {
 	const t = useKioskCopy();
@@ -88922,14 +89835,7 @@ function KioskSignatureStep({ onSigned, onClear, hasSignature, error }) {
 	}, []);
 	(0, import_react.useEffect)(() => {
 		setupCanvas();
-		const onResize = () => {
-			setupCanvas();
-			setDirty(false);
-			onClear();
-		};
-		window.addEventListener("resize", onResize);
-		return () => window.removeEventListener("resize", onResize);
-	}, [setupCanvas, onClear]);
+	}, [setupCanvas]);
 	const pointFromEvent = (event) => {
 		const canvas = canvasRef.current;
 		if (!canvas) return {
@@ -89174,6 +90080,25 @@ var STEP_KEYS = [
 	"step.review"
 ];
 var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** A basic phone format: at least 7 digits, optional +, spaces, dashes, parens. */
+var PHONE_RE = /^\+?[\d\s().-]{7,}$/;
+var MIN_AGE = 14;
+var MAX_AGE = 100;
+var MAX_SHIFTS = 7;
+/** The success screen clears itself after this long. */
+var SUCCESS_RESET_MS = 1e4;
+/** Any step with no input for this long resets the whole kiosk. */
+var IDLE_RESET_MS = 9e4;
+/** Whole years between a date of birth and today, in UTC. */
+function ageInYears(dateOfBirth) {
+	const dob = /* @__PURE__ */ new Date(`${dateOfBirth}T00:00:00Z`);
+	if (Number.isNaN(dob.getTime())) return null;
+	const now = /* @__PURE__ */ new Date();
+	let age = now.getUTCFullYear() - dob.getUTCFullYear();
+	const monthDiff = now.getUTCMonth() - dob.getUTCMonth();
+	if (monthDiff < 0 || monthDiff === 0 && now.getUTCDate() < dob.getUTCDate()) age -= 1;
+	return age;
+}
 /** Build the backend `RoadieProfile` from the collected details. */
 function toProfile(details) {
 	const shifts = Number.parseInt(details.shiftsWantedPerWeek, 10);
@@ -89194,7 +90119,7 @@ function toProfile(details) {
 	};
 }
 /** Build the backend `ContactSet` from the collected contact + availability. */
-function toContactSet(contact, availability, signature) {
+function toContactSet(contact, availability, signatureRef) {
 	const slots = [];
 	for (const key of availability) {
 		const [day, shift] = key.split("-");
@@ -89210,19 +90135,15 @@ function toContactSet(contact, availability, signature) {
 		emergencyContactName: contact.emergencyContactName.trim(),
 		emergencyContactPhone: contact.emergencyContactPhone.trim(),
 		availability: slots,
-		availabilitySignature: signature ? signature.name : void 0,
-		availabilitySignedAt: signature ? BigInt(Date.now()) * 1000000n : void 0,
+		availabilitySignature: signatureRef ?? void 0,
+		availabilitySignedAt: signatureRef ? BigInt(Date.now()) * 1000000n : void 0,
 		availabilityResignPending: false
 	};
-}
-/** Upload a browser `File` to object storage and return its reference. */
-async function uploadFile(file) {
-	const bytes = new Uint8Array(await file.arrayBuffer());
-	return ExternalBlob.fromBytes(bytes, file.type, file.name).getDirectURL();
 }
 /** The kiosk self-service sign-up flow. */
 function KioskPage() {
 	const t = useKioskCopy();
+	const { setLocale } = useI18n();
 	const { actor } = useActor(createActor);
 	const [phase, setPhase] = (0, import_react.useState)("welcome");
 	const [step, setStep] = (0, import_react.useState)(0);
@@ -89241,19 +90162,59 @@ function KioskPage() {
 		setAvailability(/* @__PURE__ */ new Set());
 		setSignature(null);
 		setErrors({});
-	}, []);
+		setLocale("en");
+	}, [setLocale]);
 	const submit = useMutation({
 		mutationFn: async () => {
 			if (!actor) throw new Error("Backend is not ready");
-			const photoRef = photo ? await uploadFile(photo) : null;
-			const signatureRef = signature ? await uploadFile(signature) : null;
-			return actor.submitSignup(toProfile(details), photoRef, signatureRef, toContactSet(contact, availability, signature));
+			const photoRef = photo ? await fileToRef(photo) : null;
+			const signatureRef = signature ? await fileToRef(signature) : null;
+			return actor.submitSignup(toProfile(details), photoRef, signatureRef, toContactSet(contact, availability, signatureRef));
 		},
 		onSuccess: () => {
 			resetAll();
 			setPhase("success");
 		}
 	});
+	const { reset: resetSubmit } = submit;
+	const idleTimer = (0, import_react.useRef)(null);
+	const clearIdleTimer = (0, import_react.useCallback)(() => {
+		if (idleTimer.current !== null) {
+			clearTimeout(idleTimer.current);
+			idleTimer.current = null;
+		}
+	}, []);
+	(0, import_react.useEffect)(() => {
+		if (phase === "success") {
+			const timer = setTimeout(resetAll, SUCCESS_RESET_MS);
+			return () => clearTimeout(timer);
+		}
+		if (phase !== "form") return;
+		const arm = () => {
+			clearIdleTimer();
+			idleTimer.current = setTimeout(() => {
+				resetSubmit();
+				resetAll();
+			}, IDLE_RESET_MS);
+		};
+		arm();
+		const events = [
+			"pointerdown",
+			"keydown",
+			"input",
+			"touchstart"
+		];
+		for (const event of events) window.addEventListener(event, arm);
+		return () => {
+			clearIdleTimer();
+			for (const event of events) window.removeEventListener(event, arm);
+		};
+	}, [
+		phase,
+		resetAll,
+		resetSubmit,
+		clearIdleTimer
+	]);
 	const toggleSlot = (day, shift) => {
 		setAvailability((current) => {
 			const next = new Set(current);
@@ -89268,13 +90229,26 @@ function KioskPage() {
 		if (index === 1) {
 			if (!details.name.trim()) next.name = t("error.nameRequired");
 			if (!details.positionAppliedFor.trim()) next.positionAppliedFor = t("error.positionRequired");
+			if (details.shiftsWantedPerWeek.trim() !== "") {
+				const shifts = Number.parseInt(details.shiftsWantedPerWeek, 10);
+				if (Number.isNaN(shifts) || shifts < 0 || shifts > MAX_SHIFTS) next.shiftsWantedPerWeek = t("error.shiftsRange");
+			}
 		}
 		if (index === 2) {
 			if (!EMAIL_RE.test(contact.email.trim())) next.email = t("error.emailInvalid");
 			if (!contact.phone.trim()) next.phone = t("error.phoneRequired");
+			else if (!PHONE_RE.test(contact.phone.trim())) next.phone = t("error.phoneInvalid");
 			if (!contact.dateOfBirth) next.dateOfBirth = t("error.dobRequired");
+			else {
+				const dob = /* @__PURE__ */ new Date(`${contact.dateOfBirth}T00:00:00Z`);
+				const age = ageInYears(contact.dateOfBirth);
+				if (Number.isNaN(dob.getTime()) || age === null) next.dateOfBirth = t("error.dobInvalid");
+				else if (dob.getTime() >= Date.now()) next.dateOfBirth = t("error.dobPast");
+				else if (age < MIN_AGE || age > MAX_AGE) next.dateOfBirth = t("error.dobAge");
+			}
 			if (!contact.emergencyContactName.trim()) next.emergencyContactName = t("error.emergencyRequired");
 			if (!contact.emergencyContactPhone.trim()) next.emergencyContactPhone = t("error.emergencyPhoneRequired");
+			else if (!PHONE_RE.test(contact.emergencyContactPhone.trim())) next.emergencyContactPhone = t("error.emergencyPhoneInvalid");
 		}
 		if (index === 3 && availability.size === 0) next.availability = t("error.availabilityRequired");
 		if (index === 4 && !signature) next.signature = t("error.signatureRequired");
@@ -89289,6 +90263,7 @@ function KioskPage() {
 		setErrors({});
 		setStep((current) => Math.max(current - 1, 0));
 	};
+	const clearSignature = (0, import_react.useCallback)(() => setSignature(null), []);
 	if (phase === "welcome") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		"data-ocid": "kiosk.page",
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskWelcome, { onStart: () => setPhase("form") })
@@ -89333,7 +90308,7 @@ function KioskPage() {
 					step === 4 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskSignatureStep, {
 						hasSignature: !!signature,
 						onSigned: setSignature,
-						onClear: () => setSignature(null),
+						onClear: clearSignature,
 						error: errors.signature
 					}),
 					step === 5 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskReviewStep, {
@@ -89395,14 +90370,25 @@ function statusTone$1(status) {
 	if (status === RoadieStatus.needsMoreTime) return "pending";
 	return "hired";
 }
-/** Month and day only, e.g. "Mar 14". */
-function formatBirthday(dateOnly) {
-	if (dateOnly === void 0) return null;
-	const date = dateOnlyToDate(dateOnly);
-	if (!date) return null;
+/**
+* Format the non-sensitive "MM-DD" birthday as a date-only value in UTC, e.g.
+* "Mar 14". The value is a calendar month and day with no year, so it is
+* anchored to a fixed UTC date and formatted in UTC to keep the same calendar
+* day on every device. Returns null for a missing or malformed value.
+*/
+function formatBirthdayMonthDay(monthDay) {
+	if (!monthDay) return null;
+	const match = /^(\d{2})-(\d{2})$/.exec(monthDay);
+	if (!match) return null;
+	const month = Number(match[1]);
+	const day = Number(match[2]);
+	if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+	const date = new Date(Date.UTC(2e3, month - 1, day));
+	if (Number.isNaN(date.getTime())) return null;
 	return date.toLocaleDateString(void 0, {
 		month: "short",
-		day: "numeric"
+		day: "numeric",
+		timeZone: "UTC"
 	});
 }
 function BackField({ label, value }) {
@@ -89420,13 +90406,16 @@ function BackField({ label, value }) {
 /**
 * The roadie card. Front shows the photo, name, position, crew, position code,
 * logo and the opening-team line. Back shows the personal details, status
-* badges and the Minor badge when the roadie is under 18.
+* badges and the Minor badge when the roadie is under 18. The birthday and the
+* Minor badge come from the roadie's non-sensitive `birthdayMonthDay` and
+* `isMinor` fields, never from the contact set.
 */
-function FlipCard({ roadie, position, secondPosition, crossTrainedPosition, crew, isMinor }) {
+function FlipCard({ roadie, position, secondPosition, crossTrainedPosition, crew }) {
 	const { t } = useI18n();
 	const [flipped, setFlipped] = (0, import_react.useState)(false);
 	const name = roadie.profile.preferredName || roadie.profile.name;
-	const birthday = formatBirthday(roadie.contactSet?.dateOfBirth);
+	const birthday = formatBirthdayMonthDay(roadie.birthdayMonthDay);
+	const isMinor = roadie.isMinor;
 	const none = t("roadie.field.none");
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-3",
@@ -89450,7 +90439,7 @@ function FlipCard({ roadie, position, secondPosition, crossTrainedPosition, crew
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 								className: "flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-4 border-primary bg-muted",
 								children: roadie.photo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-									src: roadie.photo,
+									src: refToDataUrl(roadie.photo) ?? void 0,
 									alt: name,
 									className: "h-full w-full object-cover"
 								}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Image, {
@@ -89509,6 +90498,7 @@ function FlipCard({ roadie, position, secondPosition, crossTrainedPosition, crew
 								children: roadieStatusLabel(roadie.status)
 							}), isMinor && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
 								tone: "pending",
+								ocid: "roadie.minor_badge",
 								children: t("roadie.minor")
 							})]
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
@@ -89755,34 +90745,6 @@ function useUpdateContactSet() {
 		}
 	});
 }
-/** Re-sign a roadie's availability (Admin/Store Manager only). */
-function useResignAvailability() {
-	const { actor } = useActor(createActor);
-	const invalidate = useInvalidateRoadie();
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (args) => {
-			if (!actor) throw new Error("Backend is not ready");
-			return actor.resignAvailability(args.id, args.signature);
-		},
-		onSuccess: (_data, args) => {
-			invalidate(args.id);
-			queryClient.invalidateQueries({ queryKey: ["contactSet", args.id.toString()] });
-		}
-	});
-}
-/** Whether a roadie is a minor as of now. */
-function useIsMinor(id) {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["isMinor", id?.toString()],
-		queryFn: async () => {
-			if (!actor || id === void 0) return false;
-			return actor.isMinor(id);
-		},
-		enabled: !!actor && !isFetching && id !== void 0
-	});
-}
 /** Read the editable paperwork and orientation checklists. */
 function useChecklists() {
 	const { actor, isFetching } = useActor(createActor);
@@ -89863,7 +90825,7 @@ var CheckboxTrigger = import_react.forwardRef(({ __scopeCheckbox, onKeyDown, onC
 			return () => form.removeEventListener("reset", reset);
 		}
 	}, [control, setChecked]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.button, {
 		type: "button",
 		role: "checkbox",
 		"aria-checked": isIndeterminate(checked) ? "mixed" : checked,
@@ -89913,7 +90875,7 @@ var CheckboxIndicator = import_react.forwardRef((props, forwardedRef) => {
 	const context = useCheckboxContext(INDICATOR_NAME, __scopeCheckbox);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
 		present: forceMount || isIndeterminate(context.checked) || context.checked === true,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
 			"data-state": getState(context.checked),
 			"data-disabled": context.disabled ? "" : void 0,
 			...indicatorProps,
@@ -89951,7 +90913,7 @@ var CheckboxBubbleInput = import_react.forwardRef(({ __scopeCheckbox, ...props }
 		hasConsumerStoppedPropagationRef
 	]);
 	const defaultCheckedRef = import_react.useRef(isIndeterminate(checked) ? false : checked);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.input, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.input, {
 		type: "checkbox",
 		"aria-hidden": true,
 		defaultChecked: defaultChecked ?? defaultCheckedRef.current,
@@ -90022,23 +90984,45 @@ function Section({ title, children, ocid }) {
 		}), children]
 	});
 }
-/** Contact-set editor: phone, email, emergency contact and date of birth. */
+/**
+* Contact-set editor: phone, email and emergency contact. On save it merges
+* only the fields the manager actually edited into the latest contact set, so
+* a signature drawn elsewhere (for example a re-sign) is never overwritten.
+*/
 function ContactEditor({ id, contactSet }) {
 	const { t } = useI18n();
 	const update = useUpdateContactSet();
-	const [draft, setDraft] = (0, import_react.useState)(contactSet);
-	const set = (key, value) => setDraft((current) => ({
-		...current,
-		[key]: value
-	}));
+	const [draft, setDraft] = (0, import_react.useState)({
+		phone: contactSet.phone,
+		email: contactSet.email,
+		emergencyContactName: contactSet.emergencyContactName,
+		emergencyContactPhone: contactSet.emergencyContactPhone
+	});
+	const [edited, setEdited] = (0, import_react.useState)(/* @__PURE__ */ new Set());
+	const set = (key, value) => {
+		setDraft((current) => ({
+			...current,
+			[key]: value
+		}));
+		setEdited((current) => {
+			if (current.has(key)) return current;
+			const next = new Set(current);
+			next.add(key);
+			return next;
+		});
+	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
 		className: "space-y-4",
 		onSubmit: (event) => {
 			event.preventDefault();
+			const merged = { ...contactSet };
+			for (const key of edited) merged[key] = draft[key];
 			update.mutate({
 				id,
-				contactSet: draft
-			});
+				contactSet: merged
+			}, { onSuccess: () => {
+				setEdited(/* @__PURE__ */ new Set());
+			} });
 		},
 		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 			className: "grid grid-cols-1 gap-4 sm:grid-cols-2",
@@ -90122,11 +91106,142 @@ function ContactEditor({ id, contactSet }) {
 		})]
 	});
 }
-/** Availability grid with signature state and the re-sign-pending flag. */
+/**
+* A pointer-drawn signature canvas. Emits the drawn PNG bytes once the manager
+* lifts the pointer, so the signature is stored as real bytes rather than a
+* placeholder. Mirrors the kiosk signature canvas so drawing feels identical.
+*/
+function SignaturePad({ onSigned, onClear, hasSignature }) {
+	const { t } = useI18n();
+	const canvasRef = (0, import_react.useRef)(null);
+	const drawingRef = (0, import_react.useRef)(false);
+	const [dirty, setDirty] = (0, import_react.useState)(false);
+	const setupCanvas = (0, import_react.useCallback)(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		const ratio = window.devicePixelRatio || 1;
+		const rect = canvas.getBoundingClientRect();
+		canvas.width = Math.max(1, Math.round(rect.width * ratio));
+		canvas.height = Math.max(1, Math.round(rect.height * ratio));
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+		ctx.scale(ratio, ratio);
+		ctx.lineWidth = 2.5;
+		ctx.lineCap = "round";
+		ctx.lineJoin = "round";
+		ctx.strokeStyle = "#14284B";
+	}, []);
+	(0, import_react.useEffect)(() => {
+		setupCanvas();
+	}, [setupCanvas]);
+	const pointFromEvent = (event) => {
+		const canvas = canvasRef.current;
+		if (!canvas) return {
+			x: 0,
+			y: 0
+		};
+		const rect = canvas.getBoundingClientRect();
+		return {
+			x: event.clientX - rect.left,
+			y: event.clientY - rect.top
+		};
+	};
+	const handlePointerDown = (event) => {
+		const canvas = canvasRef.current;
+		const ctx = canvas?.getContext("2d");
+		if (!canvas || !ctx) return;
+		canvas.setPointerCapture(event.pointerId);
+		drawingRef.current = true;
+		const { x, y } = pointFromEvent(event);
+		ctx.beginPath();
+		ctx.moveTo(x, y);
+	};
+	const handlePointerMove = (event) => {
+		if (!drawingRef.current) return;
+		const ctx = canvasRef.current?.getContext("2d");
+		if (!ctx) return;
+		const { x, y } = pointFromEvent(event);
+		ctx.lineTo(x, y);
+		ctx.stroke();
+		if (!dirty) setDirty(true);
+	};
+	const finishStroke = () => {
+		if (!drawingRef.current) return;
+		drawingRef.current = false;
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		canvas.toBlob((blob) => {
+			if (!blob) return;
+			blob.arrayBuffer().then((buffer) => {
+				onSigned(new Uint8Array(buffer));
+			});
+		}, "image/png");
+	};
+	const clear = () => {
+		const canvas = canvasRef.current;
+		const ctx = canvas?.getContext("2d");
+		if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+		setDirty(false);
+		onClear();
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-3",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("canvas", {
+			ref: canvasRef,
+			"data-ocid": "roadie.availability.canvas_target",
+			"aria-label": t("roadie.field.availabilitySignature"),
+			className: "h-40 w-full touch-none rounded-md border border-dashed border-input bg-white",
+			onPointerDown: handlePointerDown,
+			onPointerMove: handlePointerMove,
+			onPointerUp: finishStroke,
+			onPointerLeave: finishStroke,
+			onPointerCancel: finishStroke
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "flex items-center justify-between gap-3",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+				className: "flex items-center gap-2 text-xs text-muted-foreground",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PenLine, {
+					className: "h-4 w-4",
+					"aria-hidden": "true"
+				}), hasSignature ? t("roadie.signed") : t("roadie.unsigned")]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+				type: "button",
+				variant: "outline",
+				className: "touch-target",
+				"data-ocid": "roadie.availability.clear_button",
+				onClick: clear,
+				disabled: !dirty && !hasSignature,
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eraser, {
+					className: "mr-2 h-4 w-4",
+					"aria-hidden": "true"
+				}), t("common.cancel")]
+			})]
+		})]
+	});
+}
+/**
+* Availability grid with the manager re-sign flow. The manager draws on the
+* canvas and the drawn bytes are stored in the contact set's manager signature
+* field, alongside the signed-at timestamp.
+*/
 function AvailabilityPanel({ id, contactSet }) {
 	const { t } = useI18n();
-	const resign = useResignAvailability();
+	const update = useUpdateContactSet();
+	const [drawn, setDrawn] = (0, import_react.useState)(null);
 	const selected = new Set(contactSet.availability.map((slot) => `${slot.day}:${slot.shift}`));
+	const saveSignature = () => {
+		if (!drawn) return;
+		update.mutate({
+			id,
+			contactSet: {
+				...contactSet,
+				managerSignature: drawn,
+				managerSignedAt: BigInt(Date.now()) * 1000000n
+			}
+		}, { onSuccess: () => {
+			setDrawn(null);
+		} });
+	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-4",
 		children: [
@@ -90144,15 +91259,15 @@ function AvailabilityPanel({ id, contactSet }) {
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 						className: "text-sm text-muted-foreground",
-						children: contactSet.availabilitySignature ? `${t("roadie.field.availabilitySignature")}: ${contactSet.availabilitySignature}` : t("roadie.unsigned")
+						children: contactSet.managerSignature ? `${t("roadie.field.availabilitySignature")}: ${refToDataUrl(contactSet.managerSignature) ?? ""}` : t("roadie.unsigned")
 					}),
-					contactSet.availabilitySignedAt !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+					contactSet.managerSignedAt !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 						className: "text-sm text-muted-foreground",
 						children: [
 							t("roadie.field.availabilitySignedAt"),
 							":",
 							" ",
-							formatTimestamp(contactSet.availabilitySignedAt)
+							formatTimestamp(contactSet.managerSignedAt)
 						]
 					})
 				]
@@ -90193,33 +91308,43 @@ function AvailabilityPanel({ id, contactSet }) {
 				})
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-center gap-3",
+				className: "space-y-3 rounded-md border border-border bg-background p-3",
 				children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-						type: "button",
-						variant: "outline",
-						className: "touch-target",
-						disabled: resign.isPending,
-						"data-ocid": "roadie.availability.resign_button",
-						onClick: () => resign.mutate({
-							id,
-							signature: `resign-${Date.now().toString(36)}`
-						}),
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PenLine, {
-							className: "mr-2 h-4 w-4",
-							"aria-hidden": "true"
-						}), t("roadie.field.availabilitySignature")]
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "font-display text-[11px] font-semibold uppercase tracking-widest text-muted-foreground",
+						children: t("roadie.field.availabilitySignature")
 					}),
-					resign.isSuccess && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("output", {
-						"data-ocid": "roadie.availability.success_state",
-						className: "text-sm text-accent",
-						children: t("roadie.signed")
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SignaturePad, {
+						hasSignature: drawn !== null,
+						onSigned: setDrawn,
+						onClear: () => setDrawn(null)
 					}),
-					resign.isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						role: "alert",
-						"data-ocid": "roadie.availability.error_state",
-						className: "text-sm text-destructive",
-						children: t("roadie.edit.error")
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "flex flex-wrap items-center gap-3",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+								type: "button",
+								className: "touch-target",
+								disabled: !drawn || update.isPending,
+								"data-ocid": "roadie.availability.resign_button",
+								onClick: saveSignature,
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PenLine, {
+									className: "mr-2 h-4 w-4",
+									"aria-hidden": "true"
+								}), t("roadie.field.availabilitySignature")]
+							}),
+							update.isSuccess && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("output", {
+								"data-ocid": "roadie.availability.success_state",
+								className: "text-sm text-accent",
+								children: t("roadie.signed")
+							}),
+							update.isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								role: "alert",
+								"data-ocid": "roadie.availability.error_state",
+								className: "text-sm text-destructive",
+								children: t("roadie.edit.error")
+							})
+						]
 					})
 				]
 			})
@@ -90736,10 +91861,10 @@ function RehireDialog({ roadie, open, onOpenChange }) {
 	});
 }
 /**
-* The roadie card action bar. Edit and change-position are available to
-* managers; archive and rehire are Store Manager/Admin only.
+* The roadie card action bar. Edit and change-position are shown only to roles
+* that may use them; archive and rehire are Store Manager/Admin only.
 */
-function RoadieActions({ roadie, positions, crews, canArchive }) {
+function RoadieActions({ roadie, positions, crews, canEdit, canArchive }) {
 	const { t } = useI18n();
 	const [editOpen, setEditOpen] = (0, import_react.useState)(false);
 	const [positionOpen, setPositionOpen] = (0, import_react.useState)(false);
@@ -90750,7 +91875,7 @@ function RoadieActions({ roadie, positions, crews, canArchive }) {
 		className: "flex flex-wrap items-center gap-2",
 		"data-ocid": "roadie.actions.panel",
 		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+			canEdit && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
 				type: "button",
 				variant: "outline",
 				className: "touch-target",
@@ -90761,7 +91886,7 @@ function RoadieActions({ roadie, positions, crews, canArchive }) {
 					"aria-hidden": "true"
 				}), t("roadie.action.edit")]
 			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+			canEdit && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
 				type: "button",
 				variant: "outline",
 				className: "touch-target",
@@ -90793,12 +91918,12 @@ function RoadieActions({ roadie, positions, crews, canArchive }) {
 					"aria-hidden": "true"
 				}), t("roadie.action.rehire")]
 			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(EditDetailsDialog, {
+			canEdit && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EditDetailsDialog, {
 				roadie,
 				open: editOpen,
 				onOpenChange: setEditOpen
 			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChangePositionDialog, {
+			canEdit && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChangePositionDialog, {
 				roadie,
 				positions,
 				crews,
@@ -90875,7 +92000,7 @@ var RovingFocusGroupImpl = import_react.forwardRef((props, forwardedRef) => {
 		onItemShiftTab: import_react.useCallback(() => setIsTabbingBackOut(true), []),
 		onFocusableItemAdd: import_react.useCallback(() => setFocusableItemsCount((prevCount) => prevCount + 1), []),
 		onFocusableItemRemove: import_react.useCallback(() => setFocusableItemsCount((prevCount) => prevCount - 1), []),
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 			tabIndex: isTabbingBackOut || focusableItemsCount === 0 ? -1 : 0,
 			"data-orientation": orientation,
 			...groupProps,
@@ -90931,7 +92056,7 @@ var RovingFocusGroupItem = import_react.forwardRef((props, forwardedRef) => {
 		id,
 		focusable,
 		active,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
 			tabIndex: isCurrentTabStop ? 0 : -1,
 			"data-orientation": context.orientation,
 			...itemProps,
@@ -91025,7 +92150,7 @@ var Tabs$1 = import_react.forwardRef((props, forwardedRef) => {
 		orientation,
 		dir: direction,
 		activationMode,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 			dir: direction,
 			"data-orientation": orientation,
 			...tabsProps,
@@ -91045,7 +92170,7 @@ var TabsList$1 = import_react.forwardRef((props, forwardedRef) => {
 		orientation: context.orientation,
 		dir: context.dir,
 		loop,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 			role: "tablist",
 			"aria-orientation": context.orientation,
 			...listProps,
@@ -91067,7 +92192,7 @@ var TabsTrigger$1 = import_react.forwardRef((props, forwardedRef) => {
 		...rovingFocusGroupScope,
 		focusable: !disabled,
 		active: isSelected,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.button, {
 			type: "button",
 			role: "tab",
 			"aria-selected": isSelected,
@@ -91107,7 +92232,7 @@ var TabsContent$1 = import_react.forwardRef((props, forwardedRef) => {
 	}, []);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
 		present: forceMount || isSelected,
-		children: ({ present }) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		children: ({ present }) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
 			"data-state": isSelected ? "active" : "inactive",
 			"data-orientation": context.orientation,
 			role: "tabpanel",
@@ -91170,20 +92295,64 @@ function TabsContent({ className, ...props }) {
 //#region src/pages/RoadieCard.tsx
 /** Roles allowed to see the manager-only tab. */
 var MANAGER_ROLES = [Role.admin, Role.storeManager];
-function RoadieCardPage() {
+/**
+* Parse a route param into a roadie id. Only a non-empty run of digits is a
+* valid id; anything else (a slug, a negative number, an empty segment) is
+* rejected before `BigInt` so a malformed URL cannot throw during render.
+*/
+function parseRoadieId(raw) {
+	if (!raw || !/^\d+$/.test(raw)) return void 0;
+	try {
+		return BigInt(raw);
+	} catch {
+		return;
+	}
+}
+/**
+* Catches render errors in the roadie card subtree (for example a malformed
+* route param) and shows a recoverable message instead of a blank screen.
+*/
+var RoadieCardErrorBoundary = class extends import_react.Component {
+	state = { hasError: false };
+	static getDerivedStateFromError() {
+		return { hasError: true };
+	}
+	render() {
+		if (this.state.hasError) return this.props.fallback;
+		return this.props.children;
+	}
+};
+function RoadieCardContent() {
 	const { t } = useI18n();
 	const { roadieId } = useParams({ from: "/roster/$roadieId" });
-	const id = roadieId ? BigInt(roadieId) : void 0;
+	const id = parseRoadieId(roadieId);
 	const { data: roadie, isLoading, isError, refetch } = useRoadie(id);
 	const { data: positions } = usePositions();
 	const { data: crews } = useCrews();
-	const { data: isMinor } = useIsMinor(id);
 	const access = useAccessState();
 	const role = access.kind === "granted" ? access.grant.role : void 0;
 	const isManager = role !== void 0 && MANAGER_ROLES.includes(role);
+	const mayEdit = canEditRoadie(role);
 	const mayArchive = canArchive(role);
 	const positionList = positions ?? [];
 	const positionById = (positionId) => positionId === void 0 ? void 0 : positionList.find((position) => position.id === positionId);
+	if (id === void 0) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-6",
+		"data-ocid": "roadie.page",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+			asChild: true,
+			variant: "ghost",
+			className: "touch-target -ml-2",
+			"data-ocid": "roadie.back_button",
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
+				to: "/roster",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowLeft, {
+					className: "mr-2 h-4 w-4",
+					"aria-hidden": "true"
+				}), t("roadie.back")]
+			})
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: t("roadie.notFound") })]
+	});
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-6",
 		"data-ocid": "roadie.page",
@@ -91221,6 +92390,7 @@ function RoadieCardPage() {
 					roadie,
 					positions: positionList,
 					crews: crews ?? [],
+					canEdit: mayEdit,
 					canArchive: mayArchive
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Tabs, {
@@ -91249,8 +92419,7 @@ function RoadieCardPage() {
 								position: positionById(roadie.mainPositionId),
 								secondPosition: positionById(roadie.secondPositionId),
 								crossTrainedPosition: positionById(roadie.crossTrainedPositionId),
-								crew: roadie.crewId === void 0 ? void 0 : crews?.find((crew) => crew.id === roadie.crewId),
-								isMinor: isMinor ?? false
+								crew: roadie.crewId === void 0 ? void 0 : crews?.find((crew) => crew.id === roadie.crewId)
 							})
 						}),
 						isManager && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TabsContent, {
@@ -91262,6 +92431,20 @@ function RoadieCardPage() {
 				})
 			] })
 		]
+	});
+}
+function RoadieCardPage() {
+	const { t } = useI18n();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadieCardErrorBoundary, {
+		fallback: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			className: "space-y-6",
+			"data-ocid": "roadie.page",
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
+				title: t("roadie.error"),
+				message: t("roadie.notFound")
+			})
+		}),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadieCardContent, {})
 	});
 }
 //#endregion
@@ -91285,7 +92468,7 @@ function RoadieRow({ roadie, positionName, positionCode, crewName }) {
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 					className: "flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-primary bg-muted",
 					children: roadie.photo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-						src: roadie.photo,
+						src: refToDataUrl(roadie.photo) ?? void 0,
 						alt: name,
 						className: "h-full w-full object-cover"
 					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Image, {
@@ -91471,12 +92654,133 @@ function TodayPage() {
 //#endregion
 //#region src/App.tsx
 /**
+* The staff PIN that unlocks the kiosk's sign-out control. The kiosk is a
+* shared device, so signing out is deliberately behind a PIN the roadie does
+* not know; this is a client-side gate on a shared kiosk, not a secret.
+*/
+var KIOSK_STAFF_PIN = "9750";
+/**
+* A discreet, PIN-protected staff sign-out for the kiosk shell. The kiosk
+* renders without the app header, so this is the only way to end the session
+* on a shared device.
+*/
+function KioskSignOut() {
+	const { t } = useI18n();
+	const signOut = useSignOut();
+	const [open, setOpen] = (0, import_react.useState)(false);
+	const [pin, setPin] = (0, import_react.useState)("");
+	const [error, setError] = (0, import_react.useState)(false);
+	const submit = () => {
+		if (pin.trim() !== KIOSK_STAFF_PIN) {
+			setError(true);
+			return;
+		}
+		setError(false);
+		setPin("");
+		setOpen(false);
+		signOut();
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "flex justify-end",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+			type: "button",
+			variant: "ghost",
+			size: "sm",
+			"data-ocid": "kiosk.sign_out.open_button",
+			className: "touch-target text-muted-foreground hover:text-foreground",
+			onClick: () => {
+				setPin("");
+				setError(false);
+				setOpen(true);
+			},
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Lock, {
+				className: "mr-2 h-4 w-4",
+				"aria-hidden": "true"
+			}), t("kiosk.signOut.open")]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
+			open,
+			onOpenChange: setOpen,
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, {
+				"data-ocid": "kiosk.sign_out.dialog",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: t("kiosk.signOut.title") }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogDescription, { children: t("kiosk.signOut.body") })] }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-1.5",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+								htmlFor: "kiosk-staff-pin",
+								children: t("kiosk.signOut.pinLabel")
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								id: "kiosk-staff-pin",
+								type: "password",
+								inputMode: "numeric",
+								autoComplete: "off",
+								value: pin,
+								"aria-invalid": error,
+								placeholder: t("kiosk.signOut.pinPlaceholder"),
+								"data-ocid": "kiosk.sign_out.pin_input",
+								className: "touch-target",
+								onChange: (event) => {
+									setError(false);
+									setPin(event.target.value);
+								},
+								onKeyDown: (event) => {
+									if (event.key === "Enter") submit();
+								}
+							}),
+							error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								role: "alert",
+								"data-ocid": "kiosk.sign_out.error_state",
+								className: "text-sm text-destructive",
+								children: t("kiosk.signOut.error")
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						type: "button",
+						variant: "outline",
+						className: "touch-target",
+						"data-ocid": "kiosk.sign_out.cancel_button",
+						onClick: () => setOpen(false),
+						children: t("kiosk.signOut.cancel")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						type: "button",
+						className: "touch-target",
+						"data-ocid": "kiosk.sign_out.confirm_button",
+						onClick: submit,
+						children: t("kiosk.signOut.confirm")
+					})] })
+				]
+			})
+		})]
+	});
+}
+/**
+* Block a page a role cannot use. The guard renders the app chrome (so the
+* header and navigation stay usable) with a clear message instead of the page,
+* so a role that reaches a guarded route by URL never triggers its reads.
+*/
+function RouteGuard({ allowed, children }) {
+	const { t } = useI18n();
+	if (allowed) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children });
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		"data-ocid": "guard.blocked_state",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, {
+			title: t("guard.title"),
+			message: t("guard.body"),
+			ocid: "guard.blocked_state"
+		})
+	});
+}
+/**
 * Root shell: gates on an approved access grant, then renders the app chrome.
 *
 * A Kiosk login has no read access to the roster, dashboard or store config —
 * every one of those reads traps on the backend. As soon as its grant is known
 * it is sent straight to the sign-up welcome screen, and the app chrome is not
-* rendered on the way so no trapping read ever fires.
+* rendered on the way so no trapping read ever fires. The kiosk surface itself
+* also renders without the app header and navigation.
 */
 function RootShell() {
 	const { t } = useI18n();
@@ -91484,6 +92788,7 @@ function RootShell() {
 	const navigate = useNavigate();
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const redirecting = access.kind === "granted" && access.grant.role === Role.kiosk && pathname !== "/kiosk";
+	const onKioskRoute = pathname === "/kiosk";
 	(0, import_react.useEffect)(() => {
 		if (redirecting) navigate({
 			to: "/kiosk",
@@ -91494,9 +92799,41 @@ function RootShell() {
 		"data-ocid": "kiosk.redirect_state",
 		className: "flex min-h-dvh items-center justify-center bg-background px-6",
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("common.loading") })
+	}) : onKioskRoute ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("main", {
+		className: "min-h-dvh bg-background px-4 py-6 md:px-6 md:py-8",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskSignOut, {}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Outlet, {})]
 	}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Layout, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Outlet, {}) }) });
 }
 var rootRoute = createRootRoute({ component: RootShell });
+/** The caller's role, or undefined while the grant is unknown. */
+function useRole() {
+	const access = useAccessState();
+	return access.kind === "granted" ? access.grant.role : void 0;
+}
+/** The Admin page, blocked for roles that cannot use it. */
+function GuardedAdmin() {
+	const role = useRole();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RouteGuard, {
+		allowed: canAdmin(role),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AdminPage, {})
+	});
+}
+/** The approvals queue, blocked for roles that cannot use it. */
+function GuardedApprovals() {
+	const role = useRole();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RouteGuard, {
+		allowed: canApprove(role),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ApprovalsPage, {})
+	});
+}
+/** The export surface, blocked for roles that cannot use it. */
+function GuardedExport() {
+	const role = useRole();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RouteGuard, {
+		allowed: canExport(role),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ExportPage, {})
+	});
+}
 var indexRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/",
@@ -91525,12 +92862,12 @@ var roadieRoute = createRoute({
 var approvalsRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/approvals",
-	component: ApprovalsPage
+	component: GuardedApprovals
 });
 var adminRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin",
-	component: AdminPage
+	component: GuardedAdmin
 });
 var kioskRoute = createRoute({
 	getParentRoute: () => rootRoute,
@@ -91540,7 +92877,7 @@ var kioskRoute = createRoute({
 var exportRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/export",
-	component: ExportPage
+	component: GuardedExport
 });
 var router = createRouter({ routeTree: rootRoute.addChildren([
 	indexRoute,

@@ -10,7 +10,7 @@ export const ARCHIVE_ROLES: Role[] = [Role.storeManager, Role.admin];
 export const ADMIN_ROLES: Role[] = [Role.admin];
 
 /** Roles allowed to see the approvals queue. */
-export const APPROVAL_ROLES: Role[] = [Role.admin];
+export const APPROVAL_ROLES: Role[] = [Role.admin, Role.storeManager];
 
 /** Roles allowed to see the kiosk sign-up surface. */
 export const KIOSK_ROLES: Role[] = [Role.kiosk, Role.admin, Role.storeManager];
@@ -22,6 +22,9 @@ export const EXPORT_ROLES: Role[] = [
   Role.trainingManager,
   Role.leadership,
 ];
+
+/** Roles allowed to edit a roadie's details or change their position. */
+export const EDIT_ROADIE_ROLES: Role[] = [Role.admin, Role.storeManager];
 
 /** The full navigation model; each item declares which roles may see it. */
 export const NAV_ITEMS: NavItem[] = [
@@ -65,4 +68,24 @@ export function canSeeNavItem(item: NavItem, role: Role | undefined): boolean {
 /** Whether the given role may archive or rehire. */
 export function canArchive(role: Role | undefined): boolean {
   return !!role && ARCHIVE_ROLES.includes(role);
+}
+
+/** Whether the given role may open the Admin surface. */
+export function canAdmin(role: Role | undefined): boolean {
+  return !!role && ADMIN_ROLES.includes(role);
+}
+
+/** Whether the given role may open the approvals queue. */
+export function canApprove(role: Role | undefined): boolean {
+  return !!role && APPROVAL_ROLES.includes(role);
+}
+
+/** Whether the given role may open the export surface. */
+export function canExport(role: Role | undefined): boolean {
+  return !!role && EXPORT_ROLES.includes(role);
+}
+
+/** Whether the given role may edit a roadie's details or position. */
+export function canEditRoadie(role: Role | undefined): boolean {
+  return !!role && EDIT_ROADIE_ROLES.includes(role);
 }

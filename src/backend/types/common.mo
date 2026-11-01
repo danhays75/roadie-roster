@@ -1,3 +1,5 @@
+import Storage "mo:caffeineai-object-storage/Storage";
+
 module {
   /// Nanoseconds since the Unix epoch, signed (matches `Time.now()`).
   public type Timestamp = Int;
@@ -94,11 +96,15 @@ module {
   /// A hat size label.
   public type HatSize = Text;
 
-  /// A signature captured on a device, stored as an uploaded image reference.
-  public type SignatureRef = Text;
+  /// A signature captured on a device, stored as a real platform file-storage
+  /// reference (the uploaded blob's hash). Fetchable only by Admin and Store
+  /// Manager.
+  public type SignatureRef = Storage.ExternalBlob;
 
-  /// A photo captured on a device, stored as an uploaded image reference.
-  public type PhotoRef = Text;
+  /// A photo captured on a device, stored as a real platform file-storage
+  /// reference (the uploaded blob's hash). Fetchable only by signed-in users
+  /// with a read-capable role.
+  public type PhotoRef = Storage.ExternalBlob;
 
   /// A generic error returned to callers.
   public type ApiError = {

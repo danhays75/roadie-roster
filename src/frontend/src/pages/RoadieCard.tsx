@@ -5,31 +5,65 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { FlipCard } from "@/components/roadie/FlipCard";
 import { ManagerTab } from "@/components/roadie/ManagerTab";
 import { RoadieActions } from "@/components/roadie/RoadieActions";
-import { useIsMinor } from "@/components/roadie/useRoadieActions";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { canArchive, useAccessState } from "@/hooks/useAccess";
+import { canArchive, canEditRoadie, useAccessState } from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
 import { useCrews, usePositions, useRoadie } from "@/hooks/useQueries";
 import { roadieStatusLabel } from "@/lib/format";
 import { Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { Component, type ReactNode } from "react";
 
 /** Roles allowed to see the manager-only tab. */
 const MANAGER_ROLES: Role[] = [Role.admin, Role.storeManager];
 
-export default function RoadieCardPage() {
+/**
+ * Parse a route param into a roadie id. Only a non-empty run of digits is a
+ * valid id; anything else (a slug, a negative number, an empty segment) is
+ * rejected before `BigInt` so a malformed URL cannot throw during render.
+ */
+function parseRoadieId(raw: string | undefined): bigint | undefined {
+  if (!raw || !/^\d+$/.test(raw)) return undefined;
+  try {
+    return BigInt(raw);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Catches render errors in the roadie card subtree (for example a malformed
+ * route param) and shows a recoverable message instead of a blank screen.
+ */
+class RoadieCardErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+function RoadieCardContent() {
   const { t } = useI18n();
   const { roadieId } = useParams({ from: "/roster/$roadieId" });
-  const id = roadieId ? BigInt(roadieId) : undefined;
+  const id = parseRoadieId(roadieId);
   const { data: roadie, isLoading, isError, refetch } = useRoadie(id);
   const { data: positions } = usePositions();
   const { data: crews } = useCrews();
-  const { data: isMinor } = useIsMinor(id);
   const access = useAccessState();
   const role = access.kind === "granted" ? access.grant.role : undefined;
 
   const isManager = role !== undefined && MANAGER_ROLES.includes(role);
+  const mayEdit = canEditRoadie(role);
   const mayArchive = canArchive(role);
 
   const positionList = positions ?? [];
@@ -37,6 +71,25 @@ export default function RoadieCardPage() {
     positionId === undefined
       ? undefined
       : positionList.find((position) => position.id === positionId);
+
+  if (id === undefined) {
+    return (
+      <div className="space-y-6" data-ocid="roadie.page">
+        <Button
+          asChild
+          variant="ghost"
+          className="touch-target -ml-2"
+          data-ocid="roadie.back_button"
+        >
+          <Link to="/roster">
+            <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
+            {t("roadie.back")}
+          </Link>
+        </Button>
+        <EmptyState title={t("roadie.notFound")} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" data-ocid="roadie.page">
@@ -80,6 +133,7 @@ export default function RoadieCardPage() {
             roadie={roadie}
             positions={positionList}
             crews={crews ?? []}
+            canEdit={mayEdit}
             canArchive={mayArchive}
           />
 
@@ -116,7 +170,6 @@ export default function RoadieCardPage() {
                     ? undefined
                     : crews?.find((crew) => crew.id === roadie.crewId)
                 }
-                isMinor={isMinor ?? false}
               />
             </TabsContent>
 
@@ -129,5 +182,23 @@ export default function RoadieCardPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function RoadieCardPage() {
+  const { t } = useI18n();
+  return (
+    <RoadieCardErrorBoundary
+      fallback={
+        <div className="space-y-6" data-ocid="roadie.page">
+          <ErrorState
+            title={t("roadie.error")}
+            message={t("roadie.notFound")}
+          />
+        </div>
+      }
+    >
+      <RoadieCardContent />
+    </RoadieCardErrorBoundary>
   );
 }

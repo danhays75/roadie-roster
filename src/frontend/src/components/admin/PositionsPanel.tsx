@@ -3,6 +3,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { AdminSection, FormField } from "@/components/admin/FormField";
 import { fill } from "@/components/admin/copy";
 import { useAdminCopy } from "@/components/admin/useAdminCopy";
+import { useAdjustBuildTo } from "@/components/dashboard/hooks";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,13 +22,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useI18n } from "@/hooks/useI18n";
 import {
   useCreatePosition,
   useDeletePosition,
   usePositions,
   useUpdatePosition,
 } from "@/hooks/useQueries";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Minus, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 interface PositionDraft {
@@ -35,8 +37,6 @@ interface PositionDraft {
   name: string;
   house: House;
   code: string;
-  openingBuildTo: string;
-  afterOpeningBuildTo: string;
   needsAlcoholCert: boolean;
   minimumAge: string;
   shirtsRequired: string;
@@ -50,8 +50,6 @@ function emptyDraft(): PositionDraft {
     name: "",
     house: House.foh,
     code: "",
-    openingBuildTo: "0",
-    afterOpeningBuildTo: "0",
     needsAlcoholCert: false,
     minimumAge: "16",
     shirtsRequired: "0",
@@ -66,8 +64,6 @@ function toDraft(position: Position): PositionDraft {
     name: position.name,
     house: position.house,
     code: position.code,
-    openingBuildTo: position.openingBuildTo.toString(),
-    afterOpeningBuildTo: position.afterOpeningBuildTo.toString(),
     needsAlcoholCert: position.needsAlcoholCert,
     minimumAge: position.minimumAge.toString(),
     shirtsRequired: position.shirtsRequired.toString(),
@@ -76,23 +72,192 @@ function toDraft(position: Position): PositionDraft {
   };
 }
 
-function toPosition(draft: PositionDraft): Position {
-  const num = (value: string) => BigInt(Math.max(0, Number(value) || 0));
+/** Floor a numeric draft field to a non-negative whole number. */
+function toCount(value: string): bigint {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0n;
+  return BigInt(Math.max(0, Math.floor(parsed)));
+}
+
+function toPosition(
+  draft: PositionDraft,
+  openingBuildTo: bigint,
+  afterOpeningBuildTo: bigint,
+): Position {
   return {
     id: draft.id,
     name: draft.name.trim(),
     house: draft.house,
     code: draft.code.trim(),
-    openingBuildTo: num(draft.openingBuildTo),
-    afterOpeningBuildTo: num(draft.afterOpeningBuildTo),
+    openingBuildTo,
+    afterOpeningBuildTo,
     needsAlcoholCert: draft.needsAlcoholCert,
-    minimumAge: num(draft.minimumAge),
-    shirtsRequired: num(draft.shirtsRequired),
-    hatsRequired: num(draft.hatsRequired),
+    minimumAge: toCount(draft.minimumAge),
+    shirtsRequired: toCount(draft.shirtsRequired),
+    hatsRequired: toCount(draft.hatsRequired),
     crewManager: draft.crewManager.trim()
       ? draft.crewManager.trim()
       : undefined,
   };
+}
+
+/**
+ * A build-to target shown as +1/−1 steppers only. Each tap saves a single
+ * increment through `adjustBuildTo`, so the target is never typed as an
+ * absolute value and every change is logged.
+ */
+function BuildToStepper({
+  label,
+  value,
+  disabled,
+  onDelta,
+  ocid,
+}: {
+  label: string;
+  value: number;
+  disabled: boolean;
+  onDelta: (delta: bigint) => void;
+  ocid: string;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label={t("dashboard.adjust.decrease", { label })}
+          data-ocid={`${ocid}.minus_button`}
+          className="touch-target"
+          disabled={disabled || value <= 0}
+          onClick={() => onDelta(-1n)}
+        >
+          <Minus className="h-4 w-4" aria-hidden="true" />
+        </Button>
+        <span className="w-8 text-center font-display text-base font-bold tabular-nums">
+          {value}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label={t("dashboard.adjust.increase", { label })}
+          data-ocid={`${ocid}.plus_button`}
+          className="touch-target"
+          disabled={disabled}
+          onClick={() => onDelta(1n)}
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PositionRow({
+  position,
+  onEdit,
+  onDelete,
+}: {
+  position: Position;
+  onEdit: (position: Position) => void;
+  onDelete: (position: Position) => void;
+}) {
+  const c = useAdminCopy();
+  const adjust = useAdjustBuildTo();
+  const [error, setError] = useState<string | null>(null);
+
+  const applyDelta = (field: "opening" | "afterOpening", delta: bigint) => {
+    setError(null);
+    adjust.mutate(
+      {
+        positionId: position.id,
+        openingDelta: field === "opening" ? delta : 0n,
+        afterOpeningDelta: field === "afterOpening" ? delta : 0n,
+      },
+      {
+        onError: (err) =>
+          setError(err instanceof Error ? err.message : c.positionsSaveError),
+      },
+    );
+  };
+
+  return (
+    <li
+      data-ocid="admin.positions.item"
+      className="flex flex-col gap-3 rounded-md border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-display text-sm font-semibold uppercase tracking-wide">
+            {position.name}
+          </span>
+          <StatusBadge tone="muted">
+            {position.house === House.foh ? c.positionsFoh : c.positionsBoh}
+          </StatusBadge>
+          <StatusBadge tone="muted">{position.code}</StatusBadge>
+          {position.needsAlcoholCert && (
+            <StatusBadge tone="pending">{c.positionsAlcohol}</StatusBadge>
+          )}
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {fill(c.positionsBuildTo, {
+            opening: position.openingBuildTo.toString(),
+            after: position.afterOpeningBuildTo.toString(),
+            age: position.minimumAge.toString(),
+          })}
+        </p>
+        <div
+          className="mt-2 max-w-xs space-y-1.5 rounded-md border border-border bg-muted/30 p-2"
+          data-ocid="admin.positions.build_to.panel"
+        >
+          <BuildToStepper
+            label={c.positionsOpeningBuildTo}
+            value={Number(position.openingBuildTo)}
+            disabled={adjust.isPending}
+            onDelta={(delta) => applyDelta("opening", delta)}
+            ocid="admin.positions.opening_build_to"
+          />
+          <BuildToStepper
+            label={c.positionsAfterOpeningBuildTo}
+            value={Number(position.afterOpeningBuildTo)}
+            disabled={adjust.isPending}
+            onDelta={(delta) => applyDelta("afterOpening", delta)}
+            ocid="admin.positions.after_opening_build_to"
+          />
+          {error && (
+            <p className="text-xs text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="touch-target"
+          data-ocid="admin.positions.edit_button"
+          onClick={() => onEdit(position)}
+        >
+          <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+          {c.actionEdit}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="touch-target text-destructive"
+          data-ocid="admin.positions.delete_button"
+          onClick={() => onDelete(position)}
+        >
+          <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+          {c.actionDelete}
+        </Button>
+      </div>
+    </li>
+  );
 }
 
 export function PositionsPanel() {
@@ -117,7 +282,14 @@ export function PositionsPanel() {
   const onSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!draft || !draft.name.trim()) return;
-    const payload = toPosition(draft);
+    // Build-to targets are owned by the +1/−1 steppers, so an edit preserves
+    // the live targets and a new position starts at zero.
+    const live = positions.data?.find((position) => position.id === draft.id);
+    const payload = toPosition(
+      draft,
+      live?.openingBuildTo ?? 0n,
+      live?.afterOpeningBuildTo ?? 0n,
+    );
     mutation.mutate(payload, { onSuccess: () => setDraft(null) });
   };
 
@@ -158,59 +330,12 @@ export function PositionsPanel() {
       {(positions.data?.length ?? 0) > 0 && (
         <ul className="space-y-2" data-ocid="admin.positions.list">
           {positions.data?.map((position) => (
-            <li
+            <PositionRow
               key={position.id.toString()}
-              data-ocid="admin.positions.item"
-              className="flex flex-col gap-3 rounded-md border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-display text-sm font-semibold uppercase tracking-wide">
-                    {position.name}
-                  </span>
-                  <StatusBadge tone="muted">
-                    {position.house === House.foh
-                      ? c.positionsFoh
-                      : c.positionsBoh}
-                  </StatusBadge>
-                  <StatusBadge tone="muted">{position.code}</StatusBadge>
-                  {position.needsAlcoholCert && (
-                    <StatusBadge tone="pending">
-                      {c.positionsAlcohol}
-                    </StatusBadge>
-                  )}
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {fill(c.positionsBuildTo, {
-                    opening: position.openingBuildTo.toString(),
-                    after: position.afterOpeningBuildTo.toString(),
-                    age: position.minimumAge.toString(),
-                  })}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="touch-target"
-                  data-ocid="admin.positions.edit_button"
-                  onClick={() => setDraft(toDraft(position))}
-                >
-                  <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
-                  {c.actionEdit}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="touch-target text-destructive"
-                  data-ocid="admin.positions.delete_button"
-                  onClick={() => setDeleteTarget(position)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
-                  {c.actionDelete}
-                </Button>
-              </div>
-            </li>
+              position={position}
+              onEdit={(target) => setDraft(toDraft(target))}
+              onDelete={setDeleteTarget}
+            />
           ))}
         </ul>
       )}
@@ -276,42 +401,11 @@ export function PositionsPanel() {
                     id="pos-age"
                     type="number"
                     min={0}
+                    step={1}
                     data-ocid="admin.positions.minimum_age.input"
                     className="touch-target"
                     value={draft.minimumAge}
                     onChange={(event) => set("minimumAge", event.target.value)}
-                  />
-                </FormField>
-                <FormField
-                  label={c.positionsOpeningBuildTo}
-                  htmlFor="pos-opening"
-                >
-                  <Input
-                    id="pos-opening"
-                    type="number"
-                    min={0}
-                    data-ocid="admin.positions.opening_build_to.input"
-                    className="touch-target"
-                    value={draft.openingBuildTo}
-                    onChange={(event) =>
-                      set("openingBuildTo", event.target.value)
-                    }
-                  />
-                </FormField>
-                <FormField
-                  label={c.positionsAfterOpeningBuildTo}
-                  htmlFor="pos-after"
-                >
-                  <Input
-                    id="pos-after"
-                    type="number"
-                    min={0}
-                    data-ocid="admin.positions.after_opening_build_to.input"
-                    className="touch-target"
-                    value={draft.afterOpeningBuildTo}
-                    onChange={(event) =>
-                      set("afterOpeningBuildTo", event.target.value)
-                    }
                   />
                 </FormField>
                 <FormField
@@ -322,6 +416,7 @@ export function PositionsPanel() {
                     id="pos-shirts"
                     type="number"
                     min={0}
+                    step={1}
                     data-ocid="admin.positions.shirts_required.input"
                     className="touch-target"
                     value={draft.shirtsRequired}
@@ -335,6 +430,7 @@ export function PositionsPanel() {
                     id="pos-hats"
                     type="number"
                     min={0}
+                    step={1}
                     data-ocid="admin.positions.hats_required.input"
                     className="touch-target"
                     value={draft.hatsRequired}
@@ -358,6 +454,10 @@ export function PositionsPanel() {
                   />
                 </FormField>
               </div>
+
+              <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                {c.positionsDescription}
+              </p>
 
               <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 p-3">
                 <label

@@ -13,6 +13,12 @@ function sampleData(): ExportData {
     fohTotal: 1n,
     bohTotal: 1n,
     grandTotal: 2n,
+    fohNeed: 3n,
+    bohNeed: 1n,
+    grandNeed: 4n,
+    fohTotalPar: 4n,
+    bohTotalPar: 2n,
+    grandTotalPar: 6n,
     groups: [
       [
         "Cashier",
@@ -21,6 +27,7 @@ function sampleData(): ExportData {
             name: "Ada Lovelace",
             phone: "+1-555-0100",
             availability: [Shift.am],
+            availabilityByDay: [],
             onboardingComplete: true,
             policiesComplete: false,
             alcoholCert: false,
@@ -37,6 +44,7 @@ function sampleData(): ExportData {
             name: "Grace Hopper",
             phone: "+1-555-0200",
             availability: [Shift.pm],
+            availabilityByDay: [],
             onboardingComplete: false,
             policiesComplete: true,
             alcoholCert: true,

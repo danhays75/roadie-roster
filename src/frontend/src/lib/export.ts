@@ -152,17 +152,59 @@ export async function exportWorkbookToBlob(
   });
 }
 
-/** Build the workbook and trigger a browser download. */
+/** Whether the current device is an iPhone or iPad (incl. iPadOS desktop UA). */
+function isIosDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  const iOS = /iPad|iPhone|iPod/.test(ua);
+  // iPadOS 13+ reports as Macintosh but exposes touch points.
+  const iPadOs = ua.includes("Macintosh") && navigator.maxTouchPoints > 1;
+  return iOS || iPadOs;
+}
+
+/**
+ * Build the workbook and trigger a browser download. On iPhone and iPad the
+ * object URL is revoked after a delay rather than immediately, because Safari
+ * may not have started the download when the click returns; when the Web Share
+ * API can share files it is preferred so the user picks where the file goes.
+ */
 export async function downloadExport(
   data: ExportData,
   variant: ExportVariant,
   filename: string,
 ): Promise<void> {
   const blob = await exportWorkbookToBlob(data, variant);
+
+  if (isIosDevice()) {
+    const file = new File([blob], filename, { type: blob.type });
+    const canShare =
+      typeof navigator !== "undefined" &&
+      typeof navigator.canShare === "function" &&
+      navigator.canShare({ files: [file] });
+    if (canShare) {
+      try {
+        await navigator.share({ files: [file], title: filename });
+        return;
+      } catch {
+        // The user dismissed the share sheet or sharing failed; fall through to
+        // the anchor download so the export is still delivered.
+      }
+    }
+  }
+
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = filename;
+  anchor.rel = "noopener";
+  document.body.appendChild(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+
+  if (isIosDevice()) {
+    // Give Safari time to start the download before the URL is revoked.
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } else {
+    URL.revokeObjectURL(url);
+  }
 }

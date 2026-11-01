@@ -7,7 +7,7 @@ import { StoreLogo } from "@/components/StoreLogo";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/hooks/useI18n";
 import { useCrews, usePositions, useRoadies } from "@/hooks/useQueries";
-import { roadieStatusLabel } from "@/lib/format";
+import { refToDataUrl, roadieStatusLabel } from "@/lib/format";
 import { Link } from "@tanstack/react-router";
 import { ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -44,7 +44,7 @@ function RoadieRow({
         <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-primary bg-muted">
           {roadie.photo ? (
             <img
-              src={roadie.photo}
+              src={refToDataUrl(roadie.photo) ?? undefined}
               alt={name}
               className="h-full w-full object-cover"
             />

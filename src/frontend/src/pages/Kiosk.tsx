@@ -28,12 +28,12 @@ import { KioskSuccess } from "@/components/kiosk/KioskSuccess";
 import { KioskWelcome } from "@/components/kiosk/KioskWelcome";
 import { useKioskCopy } from "@/components/kiosk/copy";
 import { Button } from "@/components/ui/button";
-import { dateToDateOnly } from "@/lib/format";
+import { useI18n } from "@/hooks/useI18n";
+import { dateToDateOnly, fileToRef } from "@/lib/format";
 import { useActor } from "@caffeineai/core-infrastructure";
-import { ExternalBlob } from "@caffeineai/object-storage";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Send } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Phase = "welcome" | "form" | "success";
 
@@ -47,6 +47,32 @@ const STEP_KEYS = [
 ] as const;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** A basic phone format: at least 7 digits, optional +, spaces, dashes, parens. */
+const PHONE_RE = /^\+?[\d\s().-]{7,}$/;
+const MIN_AGE = 14;
+const MAX_AGE = 100;
+const MAX_SHIFTS = 7;
+
+/** The success screen clears itself after this long. */
+const SUCCESS_RESET_MS = 10_000;
+/** Any step with no input for this long resets the whole kiosk. */
+const IDLE_RESET_MS = 90_000;
+
+/** Whole years between a date of birth and today, in UTC. */
+function ageInYears(dateOfBirth: string): number | null {
+  const dob = new Date(`${dateOfBirth}T00:00:00Z`);
+  if (Number.isNaN(dob.getTime())) return null;
+  const now = new Date();
+  let age = now.getUTCFullYear() - dob.getUTCFullYear();
+  const monthDiff = now.getUTCMonth() - dob.getUTCMonth();
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && now.getUTCDate() < dob.getUTCDate())
+  ) {
+    age -= 1;
+  }
+  return age;
+}
 
 /** Build the backend `RoadieProfile` from the collected details. */
 function toProfile(details: KioskDetails): RoadieProfile {
@@ -73,7 +99,7 @@ function toProfile(details: KioskDetails): RoadieProfile {
 function toContactSet(
   contact: KioskContact,
   availability: Set<string>,
-  signature: File | null,
+  signatureRef: Uint8Array | null,
 ): ContactSet {
   const slots: AvailabilitySlot[] = [];
   for (const key of availability) {
@@ -87,24 +113,18 @@ function toContactSet(
     emergencyContactName: contact.emergencyContactName.trim(),
     emergencyContactPhone: contact.emergencyContactPhone.trim(),
     availability: slots,
-    availabilitySignature: signature ? signature.name : undefined,
-    availabilitySignedAt: signature
+    availabilitySignature: signatureRef ?? undefined,
+    availabilitySignedAt: signatureRef
       ? BigInt(Date.now()) * 1_000_000n
       : undefined,
     availabilityResignPending: false,
   };
 }
 
-/** Upload a browser `File` to object storage and return its reference. */
-async function uploadFile(file: File): Promise<string> {
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const blob = ExternalBlob.fromBytes(bytes, file.type, file.name);
-  return blob.getDirectURL();
-}
-
 /** The kiosk self-service sign-up flow. */
 export default function KioskPage() {
   const t = useKioskCopy();
+  const { setLocale } = useI18n();
   const { actor } = useActor(createActor);
 
   const [phase, setPhase] = useState<Phase>("welcome");
@@ -125,18 +145,19 @@ export default function KioskPage() {
     setAvailability(new Set());
     setSignature(null);
     setErrors({});
-  }, []);
+    setLocale("en");
+  }, [setLocale]);
 
   const submit = useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error("Backend is not ready");
-      const photoRef = photo ? await uploadFile(photo) : null;
-      const signatureRef = signature ? await uploadFile(signature) : null;
+      const photoRef = photo ? await fileToRef(photo) : null;
+      const signatureRef = signature ? await fileToRef(signature) : null;
       return actor.submitSignup(
         toProfile(details),
         photoRef,
         signatureRef,
-        toContactSet(contact, availability, signature),
+        toContactSet(contact, availability, signatureRef),
       );
     },
     onSuccess: () => {
@@ -144,6 +165,46 @@ export default function KioskPage() {
       setPhase("success");
     },
   });
+
+  const { reset: resetSubmit } = submit;
+
+  // Auto-reset: the success screen clears after 10 seconds, and any step with
+  // no input for 90 seconds returns the kiosk to the welcome screen.
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearIdleTimer = useCallback(() => {
+    if (idleTimer.current !== null) {
+      clearTimeout(idleTimer.current);
+      idleTimer.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (phase === "success") {
+      const timer = setTimeout(resetAll, SUCCESS_RESET_MS);
+      return () => clearTimeout(timer);
+    }
+    if (phase !== "form") return;
+
+    const arm = () => {
+      clearIdleTimer();
+      idleTimer.current = setTimeout(() => {
+        resetSubmit();
+        resetAll();
+      }, IDLE_RESET_MS);
+    };
+    arm();
+    const events: Array<keyof WindowEventMap> = [
+      "pointerdown",
+      "keydown",
+      "input",
+      "touchstart",
+    ];
+    for (const event of events) window.addEventListener(event, arm);
+    return () => {
+      clearIdleTimer();
+      for (const event of events) window.removeEventListener(event, arm);
+    };
+  }, [phase, resetAll, resetSubmit, clearIdleTimer]);
 
   const toggleSlot = (day: Weekday, shift: Shift) => {
     setAvailability((current) => {
@@ -161,16 +222,38 @@ export default function KioskPage() {
       if (!details.name.trim()) next.name = t("error.nameRequired");
       if (!details.positionAppliedFor.trim())
         next.positionAppliedFor = t("error.positionRequired");
+      if (details.shiftsWantedPerWeek.trim() !== "") {
+        const shifts = Number.parseInt(details.shiftsWantedPerWeek, 10);
+        if (Number.isNaN(shifts) || shifts < 0 || shifts > MAX_SHIFTS) {
+          next.shiftsWantedPerWeek = t("error.shiftsRange");
+        }
+      }
     }
     if (index === 2) {
       if (!EMAIL_RE.test(contact.email.trim()))
         next.email = t("error.emailInvalid");
       if (!contact.phone.trim()) next.phone = t("error.phoneRequired");
-      if (!contact.dateOfBirth) next.dateOfBirth = t("error.dobRequired");
+      else if (!PHONE_RE.test(contact.phone.trim()))
+        next.phone = t("error.phoneInvalid");
+      if (!contact.dateOfBirth) {
+        next.dateOfBirth = t("error.dobRequired");
+      } else {
+        const dob = new Date(`${contact.dateOfBirth}T00:00:00Z`);
+        const age = ageInYears(contact.dateOfBirth);
+        if (Number.isNaN(dob.getTime()) || age === null) {
+          next.dateOfBirth = t("error.dobInvalid");
+        } else if (dob.getTime() >= Date.now()) {
+          next.dateOfBirth = t("error.dobPast");
+        } else if (age < MIN_AGE || age > MAX_AGE) {
+          next.dateOfBirth = t("error.dobAge");
+        }
+      }
       if (!contact.emergencyContactName.trim())
         next.emergencyContactName = t("error.emergencyRequired");
       if (!contact.emergencyContactPhone.trim())
         next.emergencyContactPhone = t("error.emergencyPhoneRequired");
+      else if (!PHONE_RE.test(contact.emergencyContactPhone.trim()))
+        next.emergencyContactPhone = t("error.emergencyPhoneInvalid");
     }
     if (index === 3 && availability.size === 0) {
       next.availability = t("error.availabilityRequired");
@@ -191,6 +274,8 @@ export default function KioskPage() {
     setErrors({});
     setStep((current) => Math.max(current - 1, 0));
   };
+
+  const clearSignature = useCallback(() => setSignature(null), []);
 
   if (phase === "welcome") {
     return (
@@ -251,7 +336,7 @@ export default function KioskPage() {
           <KioskSignatureStep
             hasSignature={!!signature}
             onSigned={setSignature}
-            onClear={() => setSignature(null)}
+            onClear={clearSignature}
             error={errors.signature}
           />
         )}

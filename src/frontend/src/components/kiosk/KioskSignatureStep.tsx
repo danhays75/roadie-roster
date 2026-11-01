@@ -6,6 +6,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 /**
  * Signature step: a pointer-drawn signature on a canvas.
  * Emits a PNG `File` once the user has drawn something.
+ *
+ * The canvas is sized once on mount. A resize or rotation must never clear a
+ * drawn signature, so the setup effect has no resize listener and the drawing
+ * surface keeps every stroke the user makes.
  */
 export function KioskSignatureStep({
   onSigned,
@@ -39,16 +43,11 @@ export function KioskSignatureStep({
     ctx.strokeStyle = "#14284B";
   }, []);
 
+  // Size the canvas once on mount. No resize listener: resizing or rotating
+  // the device must preserve the strokes already drawn.
   useEffect(() => {
     setupCanvas();
-    const onResize = () => {
-      setupCanvas();
-      setDirty(false);
-      onClear();
-    };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [setupCanvas, onClear]);
+  }, [setupCanvas]);
 
   const pointFromEvent = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;

@@ -5,7 +5,6 @@ import { SHIFTS, WEEKDAYS } from "@/components/roadie/constants";
 import {
   useChecklists,
   useContactSet,
-  useResignAvailability,
   useRoadieChangeLog,
   useUpdateContactSet,
 } from "@/components/roadie/useRoadieActions";
@@ -14,10 +13,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/hooks/useI18n";
-import { formatDateOnly, formatTimestamp } from "@/lib/format";
+import { formatDateOnly, formatTimestamp, refToDataUrl } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { PenLine } from "lucide-react";
-import { useState } from "react";
+import { Eraser, PenLine } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -52,7 +51,18 @@ function Section({
   );
 }
 
-/** Contact-set editor: phone, email, emergency contact and date of birth. */
+/** The editable contact fields the editor owns. */
+type ContactField =
+  | "phone"
+  | "email"
+  | "emergencyContactName"
+  | "emergencyContactPhone";
+
+/**
+ * Contact-set editor: phone, email and emergency contact. On save it merges
+ * only the fields the manager actually edited into the latest contact set, so
+ * a signature drawn elsewhere (for example a re-sign) is never overwritten.
+ */
 function ContactEditor({
   id,
   contactSet,
@@ -62,17 +72,43 @@ function ContactEditor({
 }) {
   const { t } = useI18n();
   const update = useUpdateContactSet();
-  const [draft, setDraft] = useState<ContactSet>(contactSet);
+  const [draft, setDraft] = useState<Record<ContactField, string>>({
+    phone: contactSet.phone,
+    email: contactSet.email,
+    emergencyContactName: contactSet.emergencyContactName,
+    emergencyContactPhone: contactSet.emergencyContactPhone,
+  });
+  const [edited, setEdited] = useState<Set<ContactField>>(new Set());
 
-  const set = <K extends keyof ContactSet>(key: K, value: ContactSet[K]) =>
+  const set = (key: ContactField, value: string) => {
     setDraft((current) => ({ ...current, [key]: value }));
+    setEdited((current) => {
+      if (current.has(key)) return current;
+      const next = new Set(current);
+      next.add(key);
+      return next;
+    });
+  };
 
   return (
     <form
       className="space-y-4"
       onSubmit={(event) => {
         event.preventDefault();
-        update.mutate({ id, contactSet: draft });
+        // Merge only the edited fields into the latest contact set so a
+        // re-sign (managerSignature) or any other field is preserved.
+        const merged: ContactSet = { ...contactSet };
+        for (const key of edited) {
+          merged[key] = draft[key];
+        }
+        update.mutate(
+          { id, contactSet: merged },
+          {
+            onSuccess: () => {
+              setEdited(new Set());
+            },
+          },
+        );
       }}
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -158,7 +194,137 @@ function ContactEditor({
   );
 }
 
-/** Availability grid with signature state and the re-sign-pending flag. */
+/**
+ * A pointer-drawn signature canvas. Emits the drawn PNG bytes once the manager
+ * lifts the pointer, so the signature is stored as real bytes rather than a
+ * placeholder. Mirrors the kiosk signature canvas so drawing feels identical.
+ */
+function SignaturePad({
+  onSigned,
+  onClear,
+  hasSignature,
+}: {
+  onSigned: (bytes: Uint8Array) => void;
+  onClear: () => void;
+  hasSignature: boolean;
+}) {
+  const { t } = useI18n();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawingRef = useRef(false);
+  const [dirty, setDirty] = useState(false);
+
+  const setupCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ratio = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(rect.width * ratio));
+    canvas.height = Math.max(1, Math.round(rect.height * ratio));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#14284B";
+  }, []);
+
+  // Set the canvas up once on mount. Deliberately no resize listener: a drawn
+  // multi-stroke signature must survive a window resize or device rotation.
+  useEffect(() => {
+    setupCanvas();
+  }, [setupCanvas]);
+
+  const pointFromEvent = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    canvas.setPointerCapture(event.pointerId);
+    drawingRef.current = true;
+    const { x, y } = pointFromEvent(event);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!drawingRef.current) return;
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx) return;
+    const { x, y } = pointFromEvent(event);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    if (!dirty) setDirty(true);
+  };
+
+  const finishStroke = () => {
+    if (!drawingRef.current) return;
+    drawingRef.current = false;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      void blob.arrayBuffer().then((buffer) => {
+        onSigned(new Uint8Array(buffer));
+      });
+    }, "image/png");
+  };
+
+  const clear = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (canvas && ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    setDirty(false);
+    onClear();
+  };
+
+  return (
+    <div className="space-y-3">
+      <canvas
+        ref={canvasRef}
+        data-ocid="roadie.availability.canvas_target"
+        aria-label={t("roadie.field.availabilitySignature")}
+        className="h-40 w-full touch-none rounded-md border border-dashed border-input bg-white"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={finishStroke}
+        onPointerLeave={finishStroke}
+        onPointerCancel={finishStroke}
+      />
+      <div className="flex items-center justify-between gap-3">
+        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+          <PenLine className="h-4 w-4" aria-hidden="true" />
+          {hasSignature ? t("roadie.signed") : t("roadie.unsigned")}
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="touch-target"
+          data-ocid="roadie.availability.clear_button"
+          onClick={clear}
+          disabled={!dirty && !hasSignature}
+        >
+          <Eraser className="mr-2 h-4 w-4" aria-hidden="true" />
+          {t("common.cancel")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Availability grid with the manager re-sign flow. The manager draws on the
+ * canvas and the drawn bytes are stored in the contact set's manager signature
+ * field, alongside the signed-at timestamp.
+ */
 function AvailabilityPanel({
   id,
   contactSet,
@@ -167,10 +333,30 @@ function AvailabilityPanel({
   contactSet: ContactSet;
 }) {
   const { t } = useI18n();
-  const resign = useResignAvailability();
+  const update = useUpdateContactSet();
+  const [drawn, setDrawn] = useState<Uint8Array | null>(null);
   const selected = new Set(
     contactSet.availability.map((slot) => `${slot.day}:${slot.shift}`),
   );
+
+  const saveSignature = () => {
+    if (!drawn) return;
+    update.mutate(
+      {
+        id,
+        contactSet: {
+          ...contactSet,
+          managerSignature: drawn,
+          managerSignedAt: BigInt(Date.now()) * 1_000_000n,
+        },
+      },
+      {
+        onSuccess: () => {
+          setDrawn(null);
+        },
+      },
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -185,14 +371,14 @@ function AvailabilityPanel({
           </StatusBadge>
         )}
         <span className="text-sm text-muted-foreground">
-          {contactSet.availabilitySignature
-            ? `${t("roadie.field.availabilitySignature")}: ${contactSet.availabilitySignature}`
+          {contactSet.managerSignature
+            ? `${t("roadie.field.availabilitySignature")}: ${refToDataUrl(contactSet.managerSignature) ?? ""}`
             : t("roadie.unsigned")}
         </span>
-        {contactSet.availabilitySignedAt !== undefined && (
+        {contactSet.managerSignedAt !== undefined && (
           <span className="text-sm text-muted-foreground">
             {t("roadie.field.availabilitySignedAt")}:{" "}
-            {formatTimestamp(contactSet.availabilitySignedAt)}
+            {formatTimestamp(contactSet.managerSignedAt)}
           </span>
         )}
       </div>
@@ -253,40 +439,44 @@ function AvailabilityPanel({
         </table>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          className="touch-target"
-          disabled={resign.isPending}
-          data-ocid="roadie.availability.resign_button"
-          onClick={() =>
-            resign.mutate({
-              id,
-              signature: `resign-${Date.now().toString(36)}`,
-            })
-          }
-        >
-          <PenLine className="mr-2 h-4 w-4" aria-hidden="true" />
+      <div className="space-y-3 rounded-md border border-border bg-background p-3">
+        <p className="font-display text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
           {t("roadie.field.availabilitySignature")}
-        </Button>
-        {resign.isSuccess && (
-          <output
-            data-ocid="roadie.availability.success_state"
-            className="text-sm text-accent"
+        </p>
+        <SignaturePad
+          hasSignature={drawn !== null}
+          onSigned={setDrawn}
+          onClear={() => setDrawn(null)}
+        />
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            className="touch-target"
+            disabled={!drawn || update.isPending}
+            data-ocid="roadie.availability.resign_button"
+            onClick={saveSignature}
           >
-            {t("roadie.signed")}
-          </output>
-        )}
-        {resign.isError && (
-          <span
-            role="alert"
-            data-ocid="roadie.availability.error_state"
-            className="text-sm text-destructive"
-          >
-            {t("roadie.edit.error")}
-          </span>
-        )}
+            <PenLine className="mr-2 h-4 w-4" aria-hidden="true" />
+            {t("roadie.field.availabilitySignature")}
+          </Button>
+          {update.isSuccess && (
+            <output
+              data-ocid="roadie.availability.success_state"
+              className="text-sm text-accent"
+            >
+              {t("roadie.signed")}
+            </output>
+          )}
+          {update.isError && (
+            <span
+              role="alert"
+              data-ocid="roadie.availability.error_state"
+              className="text-sm text-destructive"
+            >
+              {t("roadie.edit.error")}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

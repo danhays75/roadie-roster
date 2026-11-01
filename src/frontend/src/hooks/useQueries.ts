@@ -34,10 +34,18 @@ export function useMyAccess() {
       return actor.getMyAccess();
     },
     enabled: !!actor && !isFetching,
+    // Poll so a pending caller's approval appears without a manual reload.
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: false,
   });
 }
 
-export function usePendingUsers() {
+/**
+ * The pending sign-in queue. Only admins may read it, so callers pass
+ * `enabled` (typically `canApprove(role)`) to avoid a trapping read for every
+ * other role.
+ */
+export function usePendingUsers(enabled = true) {
   const { actor, isFetching } = useActor(createActor);
   return useQuery({
     queryKey: ["pendingUsers"],
@@ -45,7 +53,7 @@ export function usePendingUsers() {
       if (!actor) return [];
       return actor.listPendingUsers();
     },
-    enabled: !!actor && !isFetching,
+    enabled: enabled && !!actor && !isFetching,
   });
 }
 
@@ -564,14 +572,18 @@ export function useShareableExport() {
   });
 }
 
+/**
+ * The Full export, including contact details. This is a mutation rather than a
+ * query so the expensive build runs only when an Admin or Store Manager taps
+ * Download, never on page load. The caller invokes `mutateAsync()` from the
+ * download handler and passes the returned data to the workbook builder.
+ */
 export function useFullExport() {
-  const { actor, isFetching } = useActor(createActor);
-  return useQuery({
-    queryKey: ["export", "full"],
-    queryFn: async () => {
-      if (!actor) return null;
+  const { actor } = useActor(createActor);
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Backend is not ready");
       return actor.buildFullExport();
     },
-    enabled: !!actor && !isFetching,
   });
 }

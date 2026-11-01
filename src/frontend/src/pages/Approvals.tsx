@@ -1,6 +1,7 @@
 import {
   type ApprovalDecision,
   type Crew,
+  type DateOnly,
   type DuplicateMatch,
   EventKind,
   type House,
@@ -12,7 +13,13 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { StatusBadge } from "@/components/StatusBadge";
+import { RejectConfirmDialog } from "@/components/approvals/ApprovalConfirmDialog";
+import { ManagerSignaturePad } from "@/components/approvals/ManagerSignaturePad";
 import { PendingApprovalList } from "@/components/approvals/PendingApprovalList";
+import {
+  DEFAULT_TIME_ZONE,
+  calendarInTimeZone,
+} from "@/components/approvals/timeZone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { canAdmin, useAccessState } from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
 import {
   useApproveSignup,
@@ -33,6 +41,7 @@ import {
   useRejectSignup,
   useSchedule,
   useSignupDuplicates,
+  useStoreInfo,
 } from "@/hooks/useQueries";
 import {
   dateOnlyToDate,
@@ -63,6 +72,27 @@ function defaultOrientationId(
     event.name.toLowerCase().includes(marker),
   );
   return match ? match.id.toString() : "";
+}
+
+/**
+ * The applicant's real age in the store's time zone, or null when the date of
+ * birth is missing or invalid.
+ */
+function ageInTimeZone(dateOfBirth: DateOnly, timeZone: string): number | null {
+  const birth = dateOnlyToDate(dateOfBirth);
+  if (!birth) return null;
+  const today = calendarInTimeZone(new Date(), timeZone);
+  const birthYear = birth.getUTCFullYear();
+  const birthMonth = birth.getUTCMonth() + 1;
+  const birthDay = birth.getUTCDate();
+  let age = today.year - birthYear;
+  if (
+    today.month < birthMonth ||
+    (today.month === birthMonth && today.day < birthDay)
+  ) {
+    age -= 1;
+  }
+  return age;
 }
 
 /** A compact list of duplicate matches found against all cards. */
@@ -109,18 +139,20 @@ function DuplicateList({ matches }: { matches: DuplicateMatch[] }) {
 
 /**
  * One pending kiosk submission under review: duplicate check, position, crew,
- * orientation session, start date, and the manager's signature.
+ * orientation session, start date, and the manager's drawn signature.
  */
 function PendingSignupCard({
   signup,
   positions,
   crews,
   sessions,
+  timeZone,
 }: {
   signup: SignupSubmission;
   positions: Position[];
   crews: Crew[];
   sessions: ScheduleEvent[];
+  timeZone: string;
 }) {
   const { t } = useI18n();
   const { data: duplicates, isLoading: duplicatesLoading } =
@@ -133,33 +165,36 @@ function PendingSignupCard({
   const [crewId, setCrewId] = useState("");
   const [orientationId, setOrientationId] = useState("");
   const [startDate, setStartDate] = useState("");
-  const [signature, setSignature] = useState("");
+  const [signature, setSignature] = useState<Uint8Array | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [rejectOpen, setRejectOpen] = useState(false);
 
   const mainPosition = positions.find(
     (position) => position.id.toString() === mainPositionId,
+  );
+  const secondPosition = positions.find(
+    (position) => position.id.toString() === secondPositionId,
   );
   const suggestedOrientation = defaultOrientationId(
     sessions,
     mainPosition?.house,
   );
 
-  const isMinor = useMemo(() => {
-    const dob = dateOnlyToDate(signup.contactSet.dateOfBirth);
-    if (!dob) return false;
-    const now = new Date();
-    let age = now.getUTCFullYear() - dob.getUTCFullYear();
-    const monthDiff = now.getUTCMonth() - dob.getUTCMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && now.getUTCDate() < dob.getUTCDate())
-    ) {
-      age -= 1;
-    }
-    return age < 18;
-  }, [signup.contactSet.dateOfBirth]);
+  const age = useMemo(
+    () => ageInTimeZone(signup.contactSet.dateOfBirth, timeZone),
+    [signup.contactSet.dateOfBirth, timeZone],
+  );
 
-  const ageBlocked = isMinor && !!mainPosition && mainPosition.minimumAge > 18n;
+  const isMinor = age !== null && age < 18;
+
+  const ageBlocked = useMemo(() => {
+    if (age === null) return false;
+    const realAge = BigInt(age);
+    const mainTooYoung = !!mainPosition && realAge < mainPosition.minimumAge;
+    const secondTooYoung =
+      !!secondPosition && realAge < secondPosition.minimumAge;
+    return mainTooYoung || secondTooYoung;
+  }, [age, mainPosition, secondPosition]);
 
   const submit = () => {
     if (!mainPositionId) {
@@ -170,22 +205,29 @@ function PendingSignupCard({
       setError(t("approvals.signup.minor.blocked"));
       return;
     }
-    if (!signature.trim()) {
+    if (!signature || signature.length === 0) {
       setError(t("approvals.signup.signature.required"));
       return;
     }
     setError(null);
+    const chosenOrientation = orientationId || suggestedOrientation;
     const decision: ApprovalDecision = {
       mainPositionId: BigInt(mainPositionId),
       secondPositionId: secondPositionId ? BigInt(secondPositionId) : undefined,
       crewId: crewId ? BigInt(crewId) : undefined,
-      orientationEventId: orientationId ? BigInt(orientationId) : undefined,
+      orientationEventId: chosenOrientation
+        ? BigInt(chosenOrientation)
+        : undefined,
       startDate: startDate
         ? dateToDateOnly(new Date(`${startDate}T00:00:00Z`))
         : undefined,
     };
     approve.mutate(
-      { id: signup.id, decision, signature: signature.trim() },
+      {
+        id: signup.id,
+        decision,
+        signature,
+      },
       {
         onSuccess: () => {
           setMainPositionId("");
@@ -193,11 +235,21 @@ function PendingSignupCard({
           setCrewId("");
           setOrientationId("");
           setStartDate("");
-          setSignature("");
+          setSignature(null);
         },
         onError: () => setError(t("approvals.signup.approve.error")),
       },
     );
+  };
+
+  const confirmReject = () => {
+    reject.mutate(signup.id, {
+      onSuccess: () => setRejectOpen(false),
+      onError: () => {
+        setRejectOpen(false);
+        setError(t("approvals.signup.approve.error"));
+      },
+    });
   };
 
   const name = signup.profile.preferredName || signup.profile.name;
@@ -215,7 +267,7 @@ function PendingSignupCard({
           </p>
           <p className="text-xs text-muted-foreground">
             {t("approvals.signup.submittedAt")}:{" "}
-            {formatTimestamp(signup.submittedAt)}
+            {formatTimestamp(signup.submittedAt, timeZone)}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -367,7 +419,7 @@ function PendingSignupCard({
                   key={session.id.toString()}
                   value={session.id.toString()}
                 >
-                  {session.name} · {formatTimestamp(session.start)}
+                  {session.name} · {formatTimestamp(session.start, timeZone)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -390,20 +442,10 @@ function PendingSignupCard({
             className="touch-target"
           />
         </div>
+      </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor={`signature-${key}`}>
-            {t("approvals.signup.signature.label")}
-          </Label>
-          <Input
-            id={`signature-${key}`}
-            value={signature}
-            onChange={(event) => setSignature(event.target.value)}
-            placeholder={t("approvals.signup.signature.placeholder")}
-            data-ocid="approvals.signup.signature.input"
-            className="touch-target"
-          />
-        </div>
+      <div className="mt-4">
+        <ManagerSignaturePad value={signature} onChange={setSignature} />
       </div>
 
       {ageBlocked && (
@@ -433,7 +475,7 @@ function PendingSignupCard({
           className="touch-target"
           data-ocid="approvals.signup.reject_button"
           disabled={reject.isPending || approve.isPending}
-          onClick={() => reject.mutate(signup.id)}
+          onClick={() => setRejectOpen(true)}
         >
           <X className="mr-2 h-4 w-4" aria-hidden="true" />
           {t("approvals.action.reject")}
@@ -449,6 +491,13 @@ function PendingSignupCard({
           {t("approvals.signup.action.approve")}
         </Button>
       </div>
+
+      <RejectConfirmDialog
+        open={rejectOpen}
+        pending={reject.isPending}
+        onOpenChange={setRejectOpen}
+        onConfirm={confirmReject}
+      />
     </li>
   );
 }
@@ -459,6 +508,7 @@ function PendingSignupList({
   positions,
   crews,
   sessions,
+  timeZone,
   isLoading,
   isError,
   onRetry,
@@ -467,6 +517,7 @@ function PendingSignupList({
   positions: Position[];
   crews: Crew[];
   sessions: ScheduleEvent[];
+  timeZone: string;
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
@@ -496,6 +547,7 @@ function PendingSignupList({
           positions={positions}
           crews={crews}
           sessions={sessions}
+          timeZone={timeZone}
         />
       ))}
     </ul>
@@ -507,10 +559,23 @@ function PendingSignupList({
  * optional trainer stations, access end date, and linked roadie card. Store
  * Managers review pending kiosk submissions, run the duplicate check, assign
  * position, crew, orientation and start date, then sign to create the card.
+ * The pending sign-in (access) section is visible only to admins.
  */
 export default function ApprovalsPage() {
   const { t } = useI18n();
-  const { data: pending, isLoading, isError, refetch } = usePendingUsers();
+  const access = useAccessState();
+  const role = access.kind === "granted" ? access.grant.role : undefined;
+  const isAdmin = canAdmin(role);
+
+  const { data: storeInfo } = useStoreInfo();
+  const timeZone = storeInfo?.timeZone || DEFAULT_TIME_ZONE;
+
+  const {
+    data: pending,
+    isLoading,
+    isError,
+    refetch,
+  } = usePendingUsers(isAdmin);
   const {
     data: signups,
     isLoading: signupsLoading,
@@ -542,23 +607,26 @@ export default function ApprovalsPage() {
           positions={positions ?? []}
           crews={crews ?? []}
           sessions={sessions}
+          timeZone={timeZone}
           isLoading={signupsLoading}
           isError={signupsError}
           onRetry={() => void refetchSignups()}
         />
       </section>
 
-      <section className="space-y-4" data-ocid="approvals.users.section">
-        <h2 className="font-display text-lg font-semibold uppercase tracking-wide">
-          {t("approvals.users.section")}
-        </h2>
-        <PendingApprovalList
-          pending={pending}
-          isLoading={isLoading}
-          isError={isError}
-          onRetry={() => void refetch()}
-        />
-      </section>
+      {isAdmin && (
+        <section className="space-y-4" data-ocid="approvals.users.section">
+          <h2 className="font-display text-lg font-semibold uppercase tracking-wide">
+            {t("approvals.users.section")}
+          </h2>
+          <PendingApprovalList
+            pending={pending}
+            isLoading={isLoading}
+            isError={isError}
+            onRetry={() => void refetch()}
+          />
+        </section>
+      )}
     </div>
   );
 }

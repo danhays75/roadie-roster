@@ -22,6 +22,7 @@ const ROADIE: Roadie = {
   mainPositionId: 0n,
   hiredAt: 0n,
   profile: { name: "Ada Lovelace" },
+  isMinor: false,
 };
 
 /**

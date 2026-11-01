@@ -79,6 +79,8 @@ export interface Checklists {
   'orientationUniform' : Array<ChecklistItem>,
 }
 export interface ContactSet {
+  'managerSignedAt' : [] | [Timestamp],
+  'managerSignedBy' : [] | [Principal],
   'availabilitySignedAt' : [] | [Timestamp],
   'dateOfBirth' : DateOnly,
   'email' : Email,
@@ -88,6 +90,7 @@ export interface ContactSet {
   'emergencyContactPhone' : Phone,
   'emergencyContactName' : string,
   'phone' : Phone,
+  'managerSignature' : [] | [SignatureRef],
 }
 export interface Crew { 'id' : CrewId, 'name' : string }
 export type CrewId = bigint;
@@ -123,19 +126,30 @@ export type EventKind = { 'other' : null } |
   { 'trainingDay' : null } |
   { 'orientation' : null };
 export interface ExportData {
+  'fohNeed' : bigint,
   'fohTotal' : bigint,
   'groups' : Array<[string, Array<ExportRow>]>,
   'bohTotal' : bigint,
   'overview' : Array<OverviewRow>,
+  'bohNeed' : bigint,
   'grandTotal' : bigint,
+  'grandTotalPar' : bigint,
+  'bohTotalPar' : bigint,
+  'fohTotalPar' : bigint,
+  'grandNeed' : bigint,
 }
 export interface ExportRow {
   'dateHired' : [] | [DateOnly],
+  'dateOfBirth' : [] | [DateOnly],
+  'availabilityByDay' : Array<[Weekday, Array<Shift>]>,
   'name' : string,
   'onboardingComplete' : boolean,
+  'email' : [] | [Email],
   'availability' : Array<Shift>,
   'foodHandlers' : boolean,
   'shirtSize' : [] | [string],
+  'emergencyContactPhone' : [] | [Phone],
+  'emergencyContactName' : [] | [string],
   'policiesComplete' : boolean,
   'phone' : [] | [Phone],
   'alcoholCert' : boolean,
@@ -178,7 +192,7 @@ export interface PendingUser {
 }
 export type PersonName = string;
 export type Phone = string;
-export type PhotoRef = string;
+export type PhotoRef = Uint8Array;
 export interface Position {
   'id' : PositionId,
   'openingBuildTo' : bigint,
@@ -206,13 +220,14 @@ export interface Roadie {
   'id' : RoadieId,
   'status' : RoadieStatus,
   'orientationEventId' : [] | [EventId],
-  'signature' : [] | [SignatureRef],
   'mainPositionId' : PositionId,
   'crossTrainedPositionId' : [] | [PositionId],
   'corporateEmployeeId' : [] | [string],
   'contactSet' : [] | [ContactSet],
   'crewId' : [] | [CrewId],
   'signedBy' : [] | [Principal],
+  'birthdayMonthDay' : [] | [string],
+  'isMinor' : boolean,
   'archivedReason' : [] | [ArchiveReason],
   'photo' : [] | [PhotoRef],
   'hiredAt' : Timestamp,
@@ -272,7 +287,7 @@ export type Shift = { 'am' : null } |
 export type ShirtSize = string;
 export type SignOffOutcome = { 'certified' : null } |
   { 'needsMoreTime' : string };
-export type SignatureRef = string;
+export type SignatureRef = Uint8Array;
 export type SignupId = bigint;
 export type SignupStatus = { 'pending' : null } |
   { 'approved' : RoadieId } |
@@ -379,6 +394,13 @@ export interface _SERVICE {
   '_initialize_access_control' : ActorMethod<[], undefined>,
   '_internet_identity_sign_in_finish' : ActorMethod<[], Result__1>,
   '_internet_identity_sign_in_start' : ActorMethod<[], Uint8Array>,
+  /**
+   * / Build the access end timestamp for a chosen calendar day: 11:59:59 PM
+   * / America/Chicago on that day. `day` is a UTC-midnight date-only timestamp.
+   * / Any signed-in caller may call this so the approval and access panels can
+   * / set an end date without reimplementing the store-time-zone rule.
+   */
+  'accessEndForDay' : ActorMethod<[DateOnly], Timestamp>,
   /**
    * / Acknowledge an alert (Admin/Store Manager only).
    */
@@ -603,7 +625,7 @@ export interface _SERVICE {
    */
   'rehireRoadie' : ActorMethod<[RoadieId, [] | [string]], undefined>,
   /**
-   * / Reject a submission (Admin/Store Manager only).
+   * / Reject a pending submission (Admin/Store Manager only).
    */
   'rejectSignup' : ActorMethod<[SignupId], undefined>,
   /**
@@ -633,7 +655,7 @@ export interface _SERVICE {
     undefined
   >,
   /**
-   * / Submit a new sign-up from the kiosk.
+   * / Submit a new sign-up from the kiosk (Kiosk, Store Manager or Admin only).
    */
   'submitSignup' : ActorMethod<
     [RoadieProfile, [] | [PhotoRef], [] | [SignatureRef], ContactSet],

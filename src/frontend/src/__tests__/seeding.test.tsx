@@ -1,6 +1,6 @@
 import { renderPageWithActor } from "@/__tests__/router-test-utils";
-import type { Position, backendInterface } from "@/backend";
-import { House } from "@/backend";
+import type { AccessGrant, Position, backendInterface } from "@/backend";
+import { House, Role } from "@/backend";
 import AdminPage from "@/pages/Admin";
 import DashboardPage from "@/pages/Dashboard";
 import { screen, waitFor } from "@testing-library/react";
@@ -36,6 +36,15 @@ const STORE = {
   leaderTalkSize: 10n,
 };
 
+/** An Admin grant: only an Admin may seed, so the seeding hook needs one. */
+const ADMIN_GRANT: AccessGrant = {
+  principal: { toText: () => "aaaaa-aa" } as never,
+  role: Role.admin,
+  approvedAt: 0n,
+  approvedBy: { toText: () => "aaaaa-aa" } as never,
+  trainerPositionIds: [],
+};
+
 /** The actor methods the dashboard tree reads, with an empty store. */
 function emptyDashboardActor() {
   return {
@@ -48,7 +57,9 @@ function emptyDashboardActor() {
     })),
     listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),
     getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => STORE),
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => null),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(
+      async () => ADMIN_GRANT,
+    ),
     listRosterForPosition: vi.fn<backendInterface["listRosterForPosition"]>(
       async () => [],
     ),
@@ -81,6 +92,9 @@ function emptyAdminActor() {
       async () => [],
     ),
     adminCount: vi.fn<backendInterface["adminCount"]>(async () => 1n),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(
+      async () => ADMIN_GRANT,
+    ),
     ensureSeeded: vi.fn<backendInterface["ensureSeeded"]>(async () => true),
   };
 }

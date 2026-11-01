@@ -1,4 +1,6 @@
 import { createActor } from "@/backend";
+import { SignOutButton } from "@/components/InternetIdentity";
+import { LoadingState } from "@/components/States";
 import { StoreLogo } from "@/components/StoreLogo";
 import { Button } from "@/components/ui/button";
 import { useAccessState } from "@/hooks/useAccess";
@@ -55,6 +57,19 @@ export function ApprovalGate({ children }: { children?: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  // While the access read is still in flight, show a neutral loading state so
+  // the waiting screen never flashes before the grant is known.
+  if (access.kind === "loading") {
+    return (
+      <div
+        data-ocid="gate.loading_state"
+        className="flex min-h-dvh items-center justify-center bg-background px-6"
+      >
+        <LoadingState label={t("common.loading")} />
+      </div>
+    );
+  }
+
   if (access.kind === "error") {
     return (
       <section
@@ -69,14 +84,21 @@ export function ApprovalGate({ children }: { children?: React.ReactNode }) {
           {t("gate.error.title")}
         </h1>
         <p className="text-sm text-muted-foreground">{t("gate.error.body")}</p>
-        <Button
-          type="button"
-          className="touch-target"
-          data-ocid="gate.retry_button"
-          onClick={() => window.location.reload()}
-        >
-          {t("gate.retry")}
-        </Button>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button
+            type="button"
+            className="touch-target"
+            data-ocid="gate.retry_button"
+            onClick={() => window.location.reload()}
+          >
+            {t("gate.retry")}
+          </Button>
+          <SignOutButton
+            label={t("gate.signOut")}
+            ocid="gate.sign_out_button"
+            className="touch-target rounded-md border border-input bg-card px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-muted"
+          />
+        </div>
       </section>
     );
   }
@@ -96,6 +118,11 @@ export function ApprovalGate({ children }: { children?: React.ReactNode }) {
       </h1>
       <p className="text-sm text-muted-foreground">{t("gate.pending.body")}</p>
       <p className="text-xs text-muted-foreground">{t("gate.pending.hint")}</p>
+      <SignOutButton
+        label={t("gate.signOut")}
+        ocid="gate.sign_out_button"
+        className="touch-target rounded-md border border-input bg-card px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-muted"
+      />
     </section>
   );
 }

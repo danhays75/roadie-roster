@@ -1,4 +1,4 @@
-import type { StoreInfo } from "@/backend";
+import type { PhotoRef, StoreInfo } from "@/backend";
 import { AdminSection, FormField } from "@/components/admin/FormField";
 import { fill } from "@/components/admin/copy";
 import {
@@ -10,7 +10,12 @@ import { useAdminCopy } from "@/components/admin/useAdminCopy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStoreInfo, useUpdateStoreInfo } from "@/hooks/useQueries";
-import { dateOnlyToDate, dateToDateOnly } from "@/lib/format";
+import {
+  dateOnlyToDate,
+  dateToDateOnly,
+  fileToRef,
+  refToDataUrl,
+} from "@/lib/format";
 import { ImagePlus, Loader2, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -30,7 +35,7 @@ interface StoreDraft {
   leaderTalkName: string;
   trainingGroupSize: string;
   leaderTalkSize: string;
-  logo: string;
+  logo: PhotoRef | undefined;
 }
 
 function toDraft(info: StoreInfo): StoreDraft {
@@ -50,7 +55,7 @@ function toDraft(info: StoreInfo): StoreDraft {
     leaderTalkName: info.leaderTalkName,
     trainingGroupSize: info.trainingGroupSize.toString(),
     leaderTalkSize: info.leaderTalkSize.toString(),
-    logo: info.logo ?? "",
+    logo: info.logo,
   };
 }
 
@@ -76,7 +81,7 @@ function toStoreInfo(draft: StoreDraft, base: StoreInfo): StoreInfo {
       Math.max(1, Number(draft.trainingGroupSize) || 1),
     ),
     leaderTalkSize: BigInt(Math.max(1, Number(draft.leaderTalkSize) || 1)),
-    logo: draft.logo ? draft.logo : undefined,
+    logo: draft.logo,
   };
 }
 
@@ -119,11 +124,7 @@ export function StoreInfoPanel() {
 
   const onLogoChange = (file: File | undefined) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") set("logo", reader.result);
-    };
-    reader.readAsDataURL(file);
+    void fileToRef(file).then((ref) => set("logo", ref));
   };
 
   const onSubmit = (event: React.FormEvent) => {
@@ -143,7 +144,7 @@ export function StoreInfoPanel() {
           <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted">
             {draft.logo ? (
               <img
-                src={draft.logo}
+                src={refToDataUrl(draft.logo) ?? undefined}
                 alt={c.storeLogoAlt}
                 className="h-full w-full object-contain"
               />
@@ -179,7 +180,7 @@ export function StoreInfoPanel() {
                 variant="ghost"
                 className="touch-target w-fit"
                 data-ocid="admin.store.logo.remove_button"
-                onClick={() => set("logo", "")}
+                onClick={() => set("logo", undefined)}
               >
                 {c.storeLogoRemove}
               </Button>

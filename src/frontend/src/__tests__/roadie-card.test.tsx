@@ -10,6 +10,7 @@ const roadie: Roadie = {
   status: RoadieStatus.hired,
   mainPositionId: 0n,
   hiredAt: 0n,
+  isMinor: false,
   profile: { name: "Ada Lovelace", preferredName: "Ada" },
   contactSet: {
     phone: "+1-555-0100",

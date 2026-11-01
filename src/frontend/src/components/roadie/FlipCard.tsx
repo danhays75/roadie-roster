@@ -4,7 +4,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { StoreLogo } from "@/components/StoreLogo";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/hooks/useI18n";
-import { dateOnlyToDate, roadieStatusLabel } from "@/lib/format";
+import { refToDataUrl, roadieStatusLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ImageIcon, RotateCcw } from "lucide-react";
 import { useState } from "react";
@@ -15,14 +15,25 @@ function statusTone(status: RoadieStatus) {
   return "hired" as const;
 }
 
-/** Month and day only, e.g. "Mar 14". */
-function formatBirthday(dateOnly: bigint | undefined): string | null {
-  if (dateOnly === undefined) return null;
-  const date = dateOnlyToDate(dateOnly);
-  if (!date) return null;
+/**
+ * Format the non-sensitive "MM-DD" birthday as a date-only value in UTC, e.g.
+ * "Mar 14". The value is a calendar month and day with no year, so it is
+ * anchored to a fixed UTC date and formatted in UTC to keep the same calendar
+ * day on every device. Returns null for a missing or malformed value.
+ */
+function formatBirthdayMonthDay(monthDay: string | undefined): string | null {
+  if (!monthDay) return null;
+  const match = /^(\d{2})-(\d{2})$/.exec(monthDay);
+  if (!match) return null;
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const date = new Date(Date.UTC(2000, month - 1, day));
+  if (Number.isNaN(date.getTime())) return null;
   return date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
+    timeZone: "UTC",
   });
 }
 
@@ -40,7 +51,9 @@ function BackField({ label, value }: { label: string; value: string }) {
 /**
  * The roadie card. Front shows the photo, name, position, crew, position code,
  * logo and the opening-team line. Back shows the personal details, status
- * badges and the Minor badge when the roadie is under 18.
+ * badges and the Minor badge when the roadie is under 18. The birthday and the
+ * Minor badge come from the roadie's non-sensitive `birthdayMonthDay` and
+ * `isMinor` fields, never from the contact set.
  */
 export function FlipCard({
   roadie,
@@ -48,19 +61,18 @@ export function FlipCard({
   secondPosition,
   crossTrainedPosition,
   crew,
-  isMinor,
 }: {
   roadie: Roadie;
   position: Position | undefined;
   secondPosition: Position | undefined;
   crossTrainedPosition: Position | undefined;
   crew: Crew | undefined;
-  isMinor: boolean;
 }) {
   const { t } = useI18n();
   const [flipped, setFlipped] = useState(false);
   const name = roadie.profile.preferredName || roadie.profile.name;
-  const birthday = formatBirthday(roadie.contactSet?.dateOfBirth);
+  const birthday = formatBirthdayMonthDay(roadie.birthdayMonthDay);
+  const isMinor = roadie.isMinor;
   const none = t("roadie.field.none");
 
   return (
@@ -96,7 +108,7 @@ export function FlipCard({
               <div className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-4 border-primary bg-muted">
                 {roadie.photo ? (
                   <img
-                    src={roadie.photo}
+                    src={refToDataUrl(roadie.photo) ?? undefined}
                     alt={name}
                     className="h-full w-full object-cover"
                   />
@@ -162,7 +174,9 @@ export function FlipCard({
                   {roadieStatusLabel(roadie.status)}
                 </StatusBadge>
                 {isMinor && (
-                  <StatusBadge tone="pending">{t("roadie.minor")}</StatusBadge>
+                  <StatusBadge tone="pending" ocid="roadie.minor_badge">
+                    {t("roadie.minor")}
+                  </StatusBadge>
                 )}
               </div>
 

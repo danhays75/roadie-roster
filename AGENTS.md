@@ -10,23 +10,36 @@
 
 ## Accepted Requirements
 
-[Filled after each deployed build — what the user asked for and the build delivered]
+- Photos and signatures upload to real storage and are role-gated (Admin/Store Manager for signatures)
+- submitSignup requires Kiosk, Store Manager or Admin and caps text field lengths
+- The roadie's drawn signature is kept in the contact set; the manager's approval signature is stored separately and drawn on-device
+- Multi-stroke signatures survive resize and rotation
+- Real age in store time blocks under-minimum-age positions; isMinor and birthdayMonthDay are exposed without date of birth
+- Sign out in the header, waiting/error gates and a PIN-protected kiosk spot
+- Kiosk auto-reset after 10 seconds and on 90 seconds idle; kiosk renders without app header/nav; no listPendingUsers for non-admins
+- Store Manager sees approvals; only admins see pending users; suggested orientation is saved; reject asks for confirmation
+- Date-only displays use UTC; schedule times use store time zone
+- Access end dates build 11:59:59 PM America/Chicago; admins can change end dates and trainer stations after approval
+- On-hand counts each roadie once under their main position only
+- updateRoadieStatus cannot archive; archive requires a reason and rehire requires a non-blank reason
+- Trainer with no stations sees no roadies; Integration sees only the Shareable export
+- Last admin cannot be demoted, overwritten or end-dated; approveUser only for pending principals
+- Full export runs only on Download tap and includes the whole contact set; totals rows show Total Par and Need
+- Contact editor merges only edited fields; build-to uses steppers only
+- Route guards block pages a role cannot use and hide Edit/Change Position
+- Waiting screen polls getMyAccess; bootstrapAdmin only when no admin exists; ensureSeeded only for Admin
+- RoadieCard validates the id before BigInt and has an error boundary
+- Service worker caches only the app shell and hashed assets, skips non-OK responses, and versions the cache per build
+- PWA has 192 and 512 icons (one non-transparent maskable), apple-touch-icon and iOS meta tags
 
 ## Verified Commands
 
 - **typecheck**: `pnpm typecheck`
-- **fix**: `mops check --fix`
-- **build**: `mops build`
+- **fix**: `pnpm fix`
+- **build**: `pnpm build`
 
 ## Learnings
 
-- getMyAccess must return only persisted app grants; a synthesized grant makes the frontend render the authenticated shell while every domain read traps IC0503 'caller is not registered'.
-- The platform first-admin bridge belongs in bootstrapAdmin (which persists a real grant), not in the getMyAccess read.
-- The approval gate must call bootstrapAdmin for every signed-in caller; it is idempotent and only persists while no app Admin exists.
-- Motoko has no triple-quoted strings; every double quote inside a getApiDoc Markdown literal must be escaped as \".
-- Backend enforces role rules in lib/auth.mo (requireReadable/requireManager/requireAdmin); Kiosk reads trap there, so one guard covers every read path.
-- On-hand is never stored: it is derived from roadie status and position, so approve/archive/rehire/changePosition are the only paths that move it.
-- A trainer with an empty approved-station list is unrestricted; restricting to zero stations hid the record and made contact-set redaction unobservable.
 - Contact-set redaction must return an empty array rather than undefined for non-manager roles so the redaction is observable and consistent.
 - A Kiosk-role login must be redirected to /kiosk in the root shell (KioskRedirect inside ApprovalGate children); every dashboard/roster/store read traps for it.
 - ApprovalGate must wait for useActor's actor before calling bootstrapAdmin, or the call is lost while the backend initializes.
@@ -42,3 +55,13 @@
 - The PocketIC backend lane is the only place a real canister method is exercised; frontend tests mock the actor, so a stubbed backend passes them identically.
 - The local preflight tester signs in as the owner identity only; it cannot perform a Kiosk-role sign-in, so the Kiosk redirect outcome stays unverified in a browser run even though the frontend and backend tests cover it.
 - The local preflight tester does not create a roadie record, so roster cards, on-hand counts, open spots and the Shareable/Full export comparison are only covered by the mocked frontend tests and the PocketIC lane, not by a browser run.
+- PhotoRef and SignatureRef are Storage.ExternalBlob (Uint8Array bytes), not Text; convert with refToDataUrl()/fileToRef() in src/frontend/src/lib/format.ts.
+- All signatures live in ContactSet (availabilitySignature plus managerSignature/managerSignedAt/managerSignedBy); Roadie.signature was removed. Roadie carries non-sensitive isMinor and birthdayMonthDay.
+- Age helpers live in src/backend/lib/age.mo (ageInYears, meetsMinimumAge, isMinor, birthdayMonthDay) and use America/Chicago store time; stored-field changes go through src/backend/migrations/00000002_000000.mo.
+- On-hand counts each roadie once under their main position only; second position is cross-trained and does not count.
+- useFullExport is a mutation: use isPending/mutateAsync/reset, not isLoading/refetch.
+- Signature canvases are set up once on mount with no resize listener (kiosk, ManagerSignaturePad, ManagerTab re-sign).
+- src/frontend/src/lib/copy.ts is owned solely by the frontend foundation task; page tasks must not edit it.
+- getContactSet returns Array<ContactSet>; read element 0, empty array means none.
+- The platform injects the favicon/app icon at deploy; app code must not add favicon files or /__meta/ assets.
+- The kiosk signature canvas is not exposed as an accessible element, so browser-driven testing cannot draw a signature; verify signature capture manually.

@@ -12,17 +12,18 @@ mixin (
   signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
   roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
   positions : Map.Map<Common.PositionId, Store.Position>,
+  storeInfo : { var value : Store.StoreInfo },
   changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
   counters : SignupLib.Counters,
 ) {
-  /// Submit a new sign-up from the kiosk.
-  public shared func submitSignup(
+  /// Submit a new sign-up from the kiosk (Kiosk, Store Manager or Admin only).
+  public shared ({ caller }) func submitSignup(
     profile : Roadie.RoadieProfile,
     photo : ?Common.PhotoRef,
     signature : ?Common.SignatureRef,
     contactSet : Roadie.ContactSet,
   ) : async Common.SignupId {
-    SignupLib.submitSignup(signups, counters, profile, photo, signature, contactSet);
+    SignupLib.submitSignup(accessGrants, signups, counters, caller, profile, photo, signature, contactSet);
   };
 
   /// List pending sign-up submissions (Admin/Store Manager only).
@@ -46,10 +47,10 @@ mixin (
     decision : Signup.ApprovalDecision,
     signature : Common.SignatureRef,
   ) : async Common.RoadieId {
-    SignupLib.approveSignup(accessGrants, signups, roadies, positions, changeLog, counters, caller, id, decision, signature);
+    SignupLib.approveSignup(accessGrants, signups, roadies, positions, storeInfo, changeLog, counters, caller, id, decision, signature);
   };
 
-  /// Reject a submission (Admin/Store Manager only).
+  /// Reject a pending submission (Admin/Store Manager only).
   public shared ({ caller }) func rejectSignup(id : Common.SignupId) : async () {
     SignupLib.rejectSignup(accessGrants, signups, changeLog, counters, caller, id);
   };

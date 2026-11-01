@@ -101,7 +101,7 @@ type SignupStatus =
    rejected;
  };
 type SignupId = nat;
-type SignatureRef = text;
+type SignatureRef = blob;
 type SignOffOutcome = 
  variant {
    certified;
@@ -172,18 +172,19 @@ type Roadie =
  record {
    archivedAt: opt Timestamp;
    archivedReason: opt ArchiveReason;
+   birthdayMonthDay: opt text;
    contactSet: opt ContactSet;
    corporateEmployeeId: opt text;
    crewId: opt CrewId;
    crossTrainedPositionId: opt PositionId;
    hiredAt: Timestamp;
    id: RoadieId;
+   isMinor: bool;
    mainPositionId: PositionId;
    orientationEventId: opt EventId;
    photo: opt PhotoRef;
    profile: RoadieProfile;
    secondPositionId: opt PositionId;
-   signature: opt SignatureRef;
    signedBy: opt principal;
    startDate: opt DateOnly;
    status: RoadieStatus;
@@ -220,7 +221,7 @@ type Position =
    openingBuildTo: nat;
    shirtsRequired: nat;
  };
-type PhotoRef = text;
+type PhotoRef = blob;
 type Phone = text;
 type PersonName = text;
 type PendingUser = 
@@ -270,7 +271,15 @@ type ExportRow =
  record {
    alcoholCert: bool;
    availability: vec Shift;
+   availabilityByDay: vec record {
+                            Weekday;
+                            vec Shift;
+                          };
    dateHired: opt DateOnly;
+   dateOfBirth: opt DateOnly;
+   email: opt Email;
+   emergencyContactName: opt text;
+   emergencyContactPhone: opt Phone;
    foodHandlers: bool;
    name: text;
    onboardingComplete: bool;
@@ -281,9 +290,15 @@ type ExportRow =
  };
 type ExportData = 
  record {
+   bohNeed: nat;
    bohTotal: nat;
+   bohTotalPar: nat;
+   fohNeed: nat;
    fohTotal: nat;
+   fohTotalPar: nat;
+   grandNeed: nat;
    grandTotal: nat;
+   grandTotalPar: nat;
    groups: vec record {
                  text;
                  vec ExportRow;
@@ -348,6 +363,9 @@ type ContactSet =
    email: Email;
    emergencyContactName: text;
    emergencyContactPhone: Phone;
+   managerSignature: opt SignatureRef;
+   managerSignedAt: opt Timestamp;
+   managerSignedBy: opt principal;
    phone: Phone;
  };
 type Checklists = 
@@ -453,6 +471,11 @@ service : {
   _initialize_access_control: () -> ();
   _internet_identity_sign_in_finish: () -> (Result__1);
   _internet_identity_sign_in_start: () -> (blob);
+  /// Build the access end timestamp for a chosen calendar day: 11:59:59 PM
+  /// America/Chicago on that day. `day` is a UTC-midnight date-only timestamp.
+  /// Any signed-in caller may call this so the approval and access panels can
+  /// set an end date without reimplementing the store-time-zone rule.
+  accessEndForDay: (day: DateOnly) -> (Timestamp) query;
   /// Acknowledge an alert (Admin/Store Manager only).
   acknowledgeAlert: (id: AlertId) -> ();
   /// Add a trainer note (Trainer/Admin/Store Manager only).
@@ -573,7 +596,7 @@ service : {
   recordFinalSignOff: (signOff: FinalSignOff) -> ();
   /// Rehire an archived roadie (Admin/Store Manager only).
   rehireRoadie: (id: RoadieId, reason: opt text) -> ();
-  /// Reject a submission (Admin/Store Manager only).
+  /// Reject a pending submission (Admin/Store Manager only).
   rejectSignup: (id: SignupId) -> ();
   /// Remove a user's access (Admin only).
   removeUser: ("principal": principal) -> ();
@@ -588,7 +611,7 @@ service : {
   schema: () -> (text) query;
   /// Record per-roadie attendance for a leader talk (Admin/Store Manager only).
   setLeaderTalkAttendance: (id: LeaderTalkId, attendees: vec RoadieId) -> ();
-  /// Submit a new sign-up from the kiosk.
+  /// Submit a new sign-up from the kiosk (Kiosk, Store Manager or Admin only).
   submitSignup: (profile: RoadieProfile, photo: opt PhotoRef, signature:
    opt SignatureRef, contactSet: ContactSet) -> (SignupId);
   /// Update a user's access end date (Admin only).

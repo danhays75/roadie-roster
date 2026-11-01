@@ -1,7 +1,8 @@
 import type { EventKind, ScheduleEvent } from "@/backend";
 import { EventKind as EventKindEnum } from "@/backend";
 import { Card, CardContent } from "@/components/ui/card";
-import { timestampToDate } from "@/lib/format";
+import { useStoreInfo } from "@/hooks/useQueries";
+import { formatTimestampMediumDate, timestampToDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CalendarClock, Flag } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -64,6 +65,10 @@ export function OpeningTimeline({
   openingDate: Date | null;
 }) {
   const { t } = useDashboardCopy();
+  const { data: storeInfo } = useStoreInfo();
+  // Schedule times are wall-clock times in the store's zone, so they must be
+  // formatted with that zone rather than the device's.
+  const timeZone = storeInfo?.timeZone;
   const now = useNow();
 
   const ordered = useMemo(
@@ -108,6 +113,7 @@ export function OpeningTimeline({
                 {openingDate
                   ? openingDate.toLocaleDateString(undefined, {
                       dateStyle: "long",
+                      timeZone: "UTC",
                     })
                   : t("dashboard.countdown.noDate")}
               </p>
@@ -145,7 +151,6 @@ export function OpeningTimeline({
             data-ocid="dashboard.timeline.list"
           >
             {ordered.map((event, index) => {
-              const date = timestampToDate(event.start);
               const isCurrent = index === currentIndex;
               const isPast = index < currentIndex;
               return (
@@ -195,11 +200,7 @@ export function OpeningTimeline({
                           className="h-3.5 w-3.5"
                           aria-hidden="true"
                         />
-                        {date
-                          ? date.toLocaleDateString(undefined, {
-                              dateStyle: "medium",
-                            })
-                          : "—"}
+                        {formatTimestampMediumDate(event.start, timeZone)}
                       </span>
                     </div>
                   </div>

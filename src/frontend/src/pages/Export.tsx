@@ -27,6 +27,7 @@ function ExportCard({
   isLoading,
   isError,
   onRetry,
+  onDownload,
   variant,
   filename,
   ocid,
@@ -39,6 +40,7 @@ function ExportCard({
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
+  onDownload?: () => Promise<ExportData>;
   variant: ExportVariant;
   filename: string;
   ocid: string;
@@ -50,17 +52,20 @@ function ExportCard({
   const [downloadError, setDownloadError] = useState(false);
 
   async function handleDownload() {
-    if (!data) return;
     setIsDownloading(true);
     setDownloadError(false);
     try {
-      await downloadExport(data, variant, filename);
+      const payload = onDownload ? await onDownload() : data;
+      if (!payload) return;
+      await downloadExport(payload, variant, filename);
     } catch {
       setDownloadError(true);
     } finally {
       setIsDownloading(false);
     }
   }
+
+  const canDownload = !!data || !!onDownload;
 
   return (
     <section
@@ -109,34 +114,36 @@ function ExportCard({
           )}
 
           {data && (
-            <>
-              <dl className="mt-4 grid grid-cols-3 gap-3">
-                <div>
-                  <dt className="font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    {t("export.grandTotal")}
-                  </dt>
-                  <dd className="font-display text-2xl font-bold">
-                    {data.grandTotal.toString()}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    {t("export.fohTotal")}
-                  </dt>
-                  <dd className="font-display text-2xl font-bold">
-                    {data.fohTotal.toString()}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    {t("export.bohTotal")}
-                  </dt>
-                  <dd className="font-display text-2xl font-bold">
-                    {data.bohTotal.toString()}
-                  </dd>
-                </div>
-              </dl>
+            <dl className="mt-4 grid grid-cols-3 gap-3">
+              <div>
+                <dt className="font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  {t("export.grandTotal")}
+                </dt>
+                <dd className="font-display text-2xl font-bold">
+                  {data.grandTotal.toString()}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  {t("export.fohTotal")}
+                </dt>
+                <dd className="font-display text-2xl font-bold">
+                  {data.fohTotal.toString()}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  {t("export.bohTotal")}
+                </dt>
+                <dd className="font-display text-2xl font-bold">
+                  {data.bohTotal.toString()}
+                </dd>
+              </div>
+            </dl>
+          )}
 
+          {canDownload && (
+            <>
               {downloadError && (
                 <p
                   data-ocid={`${ocid}.download_error`}
@@ -173,7 +180,7 @@ export default function ExportPage() {
   const full = useFullExport();
 
   const hasAnyData = !!shareable.data || !!full.data;
-  const settled = !shareable.isLoading && !full.isLoading;
+  const settled = !shareable.isLoading && !full.isPending;
 
   return (
     <div className="space-y-6" data-ocid="export.page">
@@ -199,9 +206,10 @@ export default function ExportPage() {
           title={t("export.full")}
           hint={t("export.full.hint")}
           data={full.data}
-          isLoading={full.isLoading}
+          isLoading={full.isPending}
           isError={full.isError}
-          onRetry={() => void full.refetch()}
+          onRetry={() => void full.reset()}
+          onDownload={() => full.mutateAsync()}
           variant="full"
           filename="roadie-full-export.xlsx"
           ocid="export.full.section"

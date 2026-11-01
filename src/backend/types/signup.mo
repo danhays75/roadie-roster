@@ -2,7 +2,9 @@ import Common "common";
 import Roadie "roadie";
 
 module {
-  /// A kiosk sign-up submission awaiting manager approval.
+  /// A kiosk sign-up submission awaiting manager approval. The photo and the
+  /// roadie's drawn signature are real platform file-storage references; the
+  /// signature also lives in the contact set.
   public type SignupSubmission = {
     id : Common.SignupId;
     submittedAt : Common.Timestamp;

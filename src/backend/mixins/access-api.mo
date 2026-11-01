@@ -79,4 +79,12 @@ mixin (
   public query ({ caller }) func adminCount() : async Nat {
     AccessLib.adminCount(accessGrants, caller);
   };
+
+  /// Build the access end timestamp for a chosen calendar day: 11:59:59 PM
+  /// America/Chicago on that day. `day` is a UTC-midnight date-only timestamp.
+  /// Any signed-in caller may call this so the approval and access panels can
+  /// set an end date without reimplementing the store-time-zone rule.
+  public query func accessEndForDay(day : Common.DateOnly) : async Common.Timestamp {
+    AccessLib.endOfDayChicago(day);
+  };
 };

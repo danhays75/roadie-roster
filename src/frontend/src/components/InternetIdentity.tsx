@@ -4,7 +4,22 @@ import {
   QueryClientProvider,
   useQueryClient,
 } from "@tanstack/react-query";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
+
+/**
+ * Sign out of Internet Identity: cancel every in-flight query, clear the React
+ * Query cache, then clear the identity. Cancelling before clearing stops a
+ * late response from repopulating the cache for the next principal.
+ */
+export function useSignOut(): () => void {
+  const { clear } = useInternetIdentity();
+  const queryClient = useQueryClient();
+  return useCallback(() => {
+    void queryClient.cancelQueries();
+    queryClient.clear();
+    clear();
+  }, [clear, queryClient]);
+}
 
 export function SignInButton({ className }: { className?: string }) {
   const { identity, login, clear, isInitializing, isLoggingIn, isLoginError } =
@@ -125,5 +140,32 @@ export function AuthenticatedApp({
     >
       {children}
     </RequireSignIn>
+  );
+}
+
+/**
+ * A sign-out control that cancels in-flight queries, clears the React Query
+ * cache, then clears Internet Identity. Used in the app header, the waiting and
+ * error gates, and the kiosk's PIN-protected staff sign-out.
+ */
+export function SignOutButton({
+  label,
+  className,
+  ocid = "auth.sign_out_button",
+}: {
+  label: string;
+  className?: string;
+  ocid?: string;
+}) {
+  const signOut = useSignOut();
+  return (
+    <button
+      type="button"
+      data-ocid={ocid}
+      className={className}
+      onClick={signOut}
+    >
+      {label}
+    </button>
   );
 }

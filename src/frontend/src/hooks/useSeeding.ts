@@ -1,4 +1,5 @@
-import { createActor } from "@/backend";
+import { Role, createActor } from "@/backend";
+import { useAccessState } from "@/hooks/useAccess";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
@@ -37,14 +38,20 @@ export function useEnsureSeeded() {
  * install replays the seed migration, but a store that has no positions yet is
  * repaired here so the dashboard and admin surfaces show the seeded data
  * instead of an empty shell.
+ *
+ * Only an Admin may seed: the backend rejects the call for every other role, so
+ * the hook gates on the caller's grant and never fires for a non-admin even
+ * when a page calls it unconditionally.
  */
 export function useSeedWhenEmpty(ready: boolean, isEmpty: boolean) {
   const { mutate } = useEnsureSeeded();
+  const access = useAccessState();
+  const isAdmin = access.kind === "granted" && access.grant.role === Role.admin;
   const attempted = useRef(false);
 
   useEffect(() => {
-    if (!ready || !isEmpty || attempted.current) return;
+    if (!isAdmin || !ready || !isEmpty || attempted.current) return;
     attempted.current = true;
     mutate();
-  }, [ready, isEmpty, mutate]);
+  }, [isAdmin, ready, isEmpty, mutate]);
 }

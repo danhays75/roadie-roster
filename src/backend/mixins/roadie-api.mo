@@ -92,7 +92,7 @@ mixin (
 
   /// List change-log entries visible to the caller.
   public query ({ caller }) func listChangeLog() : async [Roadie.ChangeLogEntry] {
-    RoadieLib.listChangeLog(accessGrants, changeLog, caller);
+    RoadieLib.listChangeLog(accessGrants, roadies, changeLog, caller);
   };
 
   /// Compute whether a roadie is a minor as of now.

@@ -54,7 +54,7 @@ export function KioskContactStep({
             data-ocid="kiosk.email.input"
             type="email"
             inputMode="email"
-            autoComplete="email"
+            autoComplete="off"
             value={value.email}
             aria-invalid={!!errors.email}
             onChange={(e) => set("email", e.target.value)}
@@ -73,7 +73,7 @@ export function KioskContactStep({
             data-ocid="kiosk.phone.input"
             type="tel"
             inputMode="tel"
-            autoComplete="tel"
+            autoComplete="off"
             value={value.phone}
             aria-invalid={!!errors.phone}
             onChange={(e) => set("phone", e.target.value)}
@@ -92,6 +92,7 @@ export function KioskContactStep({
             id="kiosk-dob"
             data-ocid="kiosk.date_of_birth.input"
             type="date"
+            autoComplete="off"
             value={value.dateOfBirth}
             aria-invalid={!!errors.dateOfBirth}
             onChange={(e) => set("dateOfBirth", e.target.value)}
@@ -109,6 +110,7 @@ export function KioskContactStep({
             id="kiosk-emergency-name"
             data-ocid="kiosk.emergency_contact_name.input"
             value={value.emergencyContactName}
+            autoComplete="off"
             aria-invalid={!!errors.emergencyContactName}
             onChange={(e) => set("emergencyContactName", e.target.value)}
             className="touch-target"
@@ -126,6 +128,7 @@ export function KioskContactStep({
             data-ocid="kiosk.emergency_contact_phone.input"
             type="tel"
             inputMode="tel"
+            autoComplete="off"
             value={value.emergencyContactPhone}
             aria-invalid={!!errors.emergencyContactPhone}
             onChange={(e) => set("emergencyContactPhone", e.target.value)}

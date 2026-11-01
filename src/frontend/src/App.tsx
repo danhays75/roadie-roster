@@ -1,9 +1,25 @@
 import { Role } from "@/backend";
 import { ApprovalGate } from "@/components/ApprovalGate";
-import { AuthenticatedApp } from "@/components/InternetIdentity";
+import { AuthenticatedApp, useSignOut } from "@/components/InternetIdentity";
 import { Layout } from "@/components/Layout";
-import { LoadingState } from "@/components/States";
-import { useAccessState } from "@/hooks/useAccess";
+import { EmptyState, LoadingState } from "@/components/States";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  canAdmin,
+  canApprove,
+  canExport,
+  useAccessState,
+} from "@/hooks/useAccess";
 import { I18nContext, translate, useI18n } from "@/hooks/useI18n";
 import type { Locale } from "@/lib/copy";
 import AdminPage from "@/pages/Admin";
@@ -23,7 +39,146 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
+import { Lock } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+
+/**
+ * The staff PIN that unlocks the kiosk's sign-out control. The kiosk is a
+ * shared device, so signing out is deliberately behind a PIN the roadie does
+ * not know; this is a client-side gate on a shared kiosk, not a secret.
+ */
+const KIOSK_STAFF_PIN = "9750";
+
+/**
+ * A discreet, PIN-protected staff sign-out for the kiosk shell. The kiosk
+ * renders without the app header, so this is the only way to end the session
+ * on a shared device.
+ */
+function KioskSignOut() {
+  const { t } = useI18n();
+  const signOut = useSignOut();
+  const [open, setOpen] = useState(false);
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState(false);
+
+  const submit = () => {
+    if (pin.trim() !== KIOSK_STAFF_PIN) {
+      setError(true);
+      return;
+    }
+    setError(false);
+    setPin("");
+    setOpen(false);
+    signOut();
+  };
+
+  return (
+    <div className="flex justify-end">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        data-ocid="kiosk.sign_out.open_button"
+        className="touch-target text-muted-foreground hover:text-foreground"
+        onClick={() => {
+          setPin("");
+          setError(false);
+          setOpen(true);
+        }}
+      >
+        <Lock className="mr-2 h-4 w-4" aria-hidden="true" />
+        {t("kiosk.signOut.open")}
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent data-ocid="kiosk.sign_out.dialog">
+          <DialogHeader>
+            <DialogTitle>{t("kiosk.signOut.title")}</DialogTitle>
+            <DialogDescription>{t("kiosk.signOut.body")}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="kiosk-staff-pin">
+              {t("kiosk.signOut.pinLabel")}
+            </Label>
+            <Input
+              id="kiosk-staff-pin"
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              value={pin}
+              aria-invalid={error}
+              placeholder={t("kiosk.signOut.pinPlaceholder")}
+              data-ocid="kiosk.sign_out.pin_input"
+              className="touch-target"
+              onChange={(event) => {
+                setError(false);
+                setPin(event.target.value);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") submit();
+              }}
+            />
+            {error && (
+              <p
+                role="alert"
+                data-ocid="kiosk.sign_out.error_state"
+                className="text-sm text-destructive"
+              >
+                {t("kiosk.signOut.error")}
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="touch-target"
+              data-ocid="kiosk.sign_out.cancel_button"
+              onClick={() => setOpen(false)}
+            >
+              {t("kiosk.signOut.cancel")}
+            </Button>
+            <Button
+              type="button"
+              className="touch-target"
+              data-ocid="kiosk.sign_out.confirm_button"
+              onClick={submit}
+            >
+              {t("kiosk.signOut.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/**
+ * Block a page a role cannot use. The guard renders the app chrome (so the
+ * header and navigation stay usable) with a clear message instead of the page,
+ * so a role that reaches a guarded route by URL never triggers its reads.
+ */
+function RouteGuard({
+  allowed,
+  children,
+}: {
+  allowed: boolean;
+  children: React.ReactNode;
+}) {
+  const { t } = useI18n();
+  if (allowed) return <>{children}</>;
+  return (
+    <div data-ocid="guard.blocked_state">
+      <EmptyState
+        title={t("guard.title")}
+        message={t("guard.body")}
+        ocid="guard.blocked_state"
+      />
+    </div>
+  );
+}
 
 /**
  * Root shell: gates on an approved access grant, then renders the app chrome.
@@ -31,7 +186,8 @@ import { useEffect, useMemo, useState } from "react";
  * A Kiosk login has no read access to the roster, dashboard or store config —
  * every one of those reads traps on the backend. As soon as its grant is known
  * it is sent straight to the sign-up welcome screen, and the app chrome is not
- * rendered on the way so no trapping read ever fires.
+ * rendered on the way so no trapping read ever fires. The kiosk surface itself
+ * also renders without the app header and navigation.
  */
 function RootShell() {
   const { t } = useI18n();
@@ -40,6 +196,7 @@ function RootShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isKiosk = access.kind === "granted" && access.grant.role === Role.kiosk;
   const redirecting = isKiosk && pathname !== "/kiosk";
+  const onKioskRoute = pathname === "/kiosk";
 
   useEffect(() => {
     if (redirecting) {
@@ -56,6 +213,13 @@ function RootShell() {
         >
           <LoadingState label={t("common.loading")} />
         </div>
+      ) : onKioskRoute ? (
+        // The kiosk is a shared device: no app header or navigation, but a
+        // PIN-protected staff sign-out so the session can be ended.
+        <main className="min-h-dvh bg-background px-4 py-6 md:px-6 md:py-8">
+          <KioskSignOut />
+          <Outlet />
+        </main>
       ) : (
         <Layout>
           <Outlet />
@@ -66,6 +230,42 @@ function RootShell() {
 }
 
 const rootRoute = createRootRoute({ component: RootShell });
+
+/** The caller's role, or undefined while the grant is unknown. */
+function useRole(): Role | undefined {
+  const access = useAccessState();
+  return access.kind === "granted" ? access.grant.role : undefined;
+}
+
+/** The Admin page, blocked for roles that cannot use it. */
+function GuardedAdmin() {
+  const role = useRole();
+  return (
+    <RouteGuard allowed={canAdmin(role)}>
+      <AdminPage />
+    </RouteGuard>
+  );
+}
+
+/** The approvals queue, blocked for roles that cannot use it. */
+function GuardedApprovals() {
+  const role = useRole();
+  return (
+    <RouteGuard allowed={canApprove(role)}>
+      <ApprovalsPage />
+    </RouteGuard>
+  );
+}
+
+/** The export surface, blocked for roles that cannot use it. */
+function GuardedExport() {
+  const role = useRole();
+  return (
+    <RouteGuard allowed={canExport(role)}>
+      <ExportPage />
+    </RouteGuard>
+  );
+}
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -100,13 +300,13 @@ const roadieRoute = createRoute({
 const approvalsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/approvals",
-  component: ApprovalsPage,
+  component: GuardedApprovals,
 });
 
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin",
-  component: AdminPage,
+  component: GuardedAdmin,
 });
 
 const kioskRoute = createRoute({
@@ -118,7 +318,7 @@ const kioskRoute = createRoute({
 const exportRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/export",
-  component: ExportPage,
+  component: GuardedExport,
 });
 
 const routeTree = rootRoute.addChildren([

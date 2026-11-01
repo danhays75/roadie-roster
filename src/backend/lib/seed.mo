@@ -23,8 +23,8 @@ module {
   };
 
   /// Re-seed the store when it has no positions. Returns true when a seed was
-  /// applied, false when the store already had positions. Any read-capable
-  /// caller may trigger it; it is idempotent and never overwrites data.
+  /// applied, false when the store already had positions. Only an Admin may
+  /// trigger it; it is idempotent and never overwrites data.
   public func ensureSeeded(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     storeInfo : { var value : Store.StoreInfo },
@@ -35,9 +35,9 @@ module {
     counters : Counters,
     caller : Principal,
   ) : Bool {
-    // Any read-capable role may trigger the re-seed; Kiosk and unregistered
-    // callers are rejected by the shared guard.
-    ignore Auth.requireReadable(accessGrants, caller);
+    // Only an Admin may trigger the re-seed; every other role, Kiosk and
+    // unregistered callers are rejected by the shared guard.
+    Auth.requireAdmin(accessGrants, caller);
     if (not needsSeed(positions)) {
       return false;
     };

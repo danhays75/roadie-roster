@@ -36,6 +36,12 @@ const EMPTY_EXPORT: ExportData = {
   fohTotal: 0n,
   bohTotal: 0n,
   grandTotal: 0n,
+  fohNeed: 0n,
+  bohNeed: 0n,
+  grandNeed: 0n,
+  fohTotalPar: 0n,
+  bohTotalPar: 0n,
+  grandTotalPar: 0n,
   groups: [],
 };
 

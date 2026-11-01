@@ -22,7 +22,9 @@ module {
     #other : Text;
   };
 
-  /// The contact set — visible only to Admin and Store Manager.
+  /// The contact set — visible only to Admin and Store Manager. Every signature
+  /// lives here so non-managers never receive one: the roadie's drawn
+  /// availability signature and the manager's separate approval signature.
   public type ContactSet = {
     phone : Common.Phone;
     email : Common.Email;
@@ -33,6 +35,9 @@ module {
     availabilitySignature : ?Common.SignatureRef;
     availabilitySignedAt : ?Common.Timestamp;
     availabilityResignPending : Bool;
+    managerSignature : ?Common.SignatureRef;
+    managerSignedAt : ?Common.Timestamp;
+    managerSignedBy : ?Principal;
   };
 
   /// One availability cell: a weekday and shift the roadie can work.
@@ -58,12 +63,13 @@ module {
     weekdayLunch : ?Bool;
   };
 
-  /// A roadie card.
+  /// A roadie card. `isMinor` and `birthdayMonthDay` are non-sensitive derived
+  /// values so the card back can show the birthday and a Minor badge without
+  /// exposing the date of birth (which stays in the contact set).
   public type Roadie = {
     id : Common.RoadieId;
     profile : RoadieProfile;
     photo : ?Common.PhotoRef;
-    signature : ?Common.SignatureRef;
     mainPositionId : Common.PositionId;
     secondPositionId : ?Common.PositionId;
     crossTrainedPositionId : ?Common.PositionId;
@@ -73,6 +79,8 @@ module {
     status : RoadieStatus;
     corporateEmployeeId : ?Text;
     contactSet : ?ContactSet;
+    isMinor : Bool;
+    birthdayMonthDay : ?Text;
     archivedReason : ?ArchiveReason;
     archivedAt : ?Common.Timestamp;
     hiredAt : Common.Timestamp;

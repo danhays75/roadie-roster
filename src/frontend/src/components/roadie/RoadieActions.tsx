@@ -542,18 +542,20 @@ function RehireDialog({
 }
 
 /**
- * The roadie card action bar. Edit and change-position are available to
- * managers; archive and rehire are Store Manager/Admin only.
+ * The roadie card action bar. Edit and change-position are shown only to roles
+ * that may use them; archive and rehire are Store Manager/Admin only.
  */
 export function RoadieActions({
   roadie,
   positions,
   crews,
+  canEdit,
   canArchive,
 }: {
   roadie: Roadie;
   positions: Position[];
   crews: Crew[];
+  canEdit: boolean;
   canArchive: boolean;
 }) {
   const { t } = useI18n();
@@ -569,27 +571,31 @@ export function RoadieActions({
       className="flex flex-wrap items-center gap-2"
       data-ocid="roadie.actions.panel"
     >
-      <Button
-        type="button"
-        variant="outline"
-        className="touch-target"
-        data-ocid="roadie.edit_button"
-        onClick={() => setEditOpen(true)}
-      >
-        <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
-        {t("roadie.action.edit")}
-      </Button>
+      {canEdit && (
+        <Button
+          type="button"
+          variant="outline"
+          className="touch-target"
+          data-ocid="roadie.edit_button"
+          onClick={() => setEditOpen(true)}
+        >
+          <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+          {t("roadie.action.edit")}
+        </Button>
+      )}
 
-      <Button
-        type="button"
-        variant="outline"
-        className="touch-target"
-        data-ocid="roadie.change_position_button"
-        onClick={() => setPositionOpen(true)}
-      >
-        <Shuffle className="mr-2 h-4 w-4" aria-hidden="true" />
-        {t("roadie.action.changePosition")}
-      </Button>
+      {canEdit && (
+        <Button
+          type="button"
+          variant="outline"
+          className="touch-target"
+          data-ocid="roadie.change_position_button"
+          onClick={() => setPositionOpen(true)}
+        >
+          <Shuffle className="mr-2 h-4 w-4" aria-hidden="true" />
+          {t("roadie.action.changePosition")}
+        </Button>
+      )}
 
       {canArchive && !archived && (
         <Button
@@ -616,18 +622,22 @@ export function RoadieActions({
         </Button>
       )}
 
-      <EditDetailsDialog
-        roadie={roadie}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-      />
-      <ChangePositionDialog
-        roadie={roadie}
-        positions={positions}
-        crews={crews}
-        open={positionOpen}
-        onOpenChange={setPositionOpen}
-      />
+      {canEdit && (
+        <EditDetailsDialog
+          roadie={roadie}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
+      )}
+      {canEdit && (
+        <ChangePositionDialog
+          roadie={roadie}
+          positions={positions}
+          crews={crews}
+          open={positionOpen}
+          onOpenChange={setPositionOpen}
+        />
+      )}
       <ArchiveDialog
         roadie={roadie}
         open={archiveOpen}

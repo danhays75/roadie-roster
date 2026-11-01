@@ -90,6 +90,8 @@ export interface Checklists {
     orientationUniform: Array<ChecklistItem>;
 }
 export interface ContactSet {
+    managerSignedAt?: Timestamp;
+    managerSignedBy?: Principal;
     availabilitySignedAt?: Timestamp;
     dateOfBirth: DateOnly;
     email: Email;
@@ -99,6 +101,7 @@ export interface ContactSet {
     emergencyContactPhone: Phone;
     emergencyContactName: string;
     phone: Phone;
+    managerSignature?: SignatureRef;
 }
 export interface Crew {
     id: CrewId;
@@ -159,19 +162,30 @@ export type Error_ = {
 };
 export type EventId = bigint;
 export interface ExportData {
+    fohNeed: bigint;
     fohTotal: bigint;
     groups: Array<[string, Array<ExportRow>]>;
     bohTotal: bigint;
     overview: Array<OverviewRow>;
+    bohNeed: bigint;
     grandTotal: bigint;
+    grandTotalPar: bigint;
+    bohTotalPar: bigint;
+    fohTotalPar: bigint;
+    grandNeed: bigint;
 }
 export interface ExportRow {
     dateHired?: DateOnly;
+    dateOfBirth?: DateOnly;
+    availabilityByDay: Array<[Weekday, Array<Shift>]>;
     name: string;
     onboardingComplete: boolean;
+    email?: Email;
     availability: Array<Shift>;
     foodHandlers: boolean;
     shirtSize?: string;
+    emergencyContactPhone?: Phone;
+    emergencyContactName?: string;
     policiesComplete: boolean;
     phone?: Phone;
     alcoholCert: boolean;
@@ -212,7 +226,7 @@ export interface PendingUser {
 }
 export type PersonName = string;
 export type Phone = string;
-export type PhotoRef = string;
+export type PhotoRef = Uint8Array;
 export interface Position {
     id: PositionId;
     openingBuildTo: bigint;
@@ -248,13 +262,14 @@ export interface Roadie {
     id: RoadieId;
     status: RoadieStatus;
     orientationEventId?: EventId;
-    signature?: SignatureRef;
     mainPositionId: PositionId;
     crossTrainedPositionId?: PositionId;
     corporateEmployeeId?: string;
     contactSet?: ContactSet;
     crewId?: CrewId;
     signedBy?: Principal;
+    birthdayMonthDay?: string;
+    isMinor: boolean;
     archivedReason?: ArchiveReason;
     photo?: PhotoRef;
     hiredAt: Timestamp;
@@ -301,7 +316,7 @@ export type SignOffOutcome = {
     __kind__: "needsMoreTime";
     needsMoreTime: string;
 };
-export type SignatureRef = string;
+export type SignatureRef = Uint8Array;
 export type SignupId = bigint;
 export type SignupStatus = {
     __kind__: "pending";
@@ -442,6 +457,13 @@ export enum Weekday {
     wed = "wed"
 }
 export interface backendInterface {
+    /**
+     * / Build the access end timestamp for a chosen calendar day: 11:59:59 PM
+     * / America/Chicago on that day. `day` is a UTC-midnight date-only timestamp.
+     * / Any signed-in caller may call this so the approval and access panels can
+     * / set an end date without reimplementing the store-time-zone rule.
+     */
+    accessEndForDay(day: DateOnly): Promise<Timestamp>;
     /**
      * / Acknowledge an alert (Admin/Store Manager only).
      */
@@ -654,7 +676,7 @@ export interface backendInterface {
      */
     rehireRoadie(id: RoadieId, reason: string | null): Promise<void>;
     /**
-     * / Reject a submission (Admin/Store Manager only).
+     * / Reject a pending submission (Admin/Store Manager only).
      */
     rejectSignup(id: SignupId): Promise<void>;
     /**
@@ -681,7 +703,7 @@ export interface backendInterface {
      */
     setLeaderTalkAttendance(id: LeaderTalkId, attendees: Array<RoadieId>): Promise<void>;
     /**
-     * / Submit a new sign-up from the kiosk.
+     * / Submit a new sign-up from the kiosk (Kiosk, Store Manager or Admin only).
      */
     submitSignup(profile: RoadieProfile, photo: PhotoRef | null, signature: SignatureRef | null, contactSet: ContactSet): Promise<SignupId>;
     /**
