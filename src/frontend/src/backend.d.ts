@@ -1,0 +1,743 @@
+import type { Principal } from "@icp-sdk/core/principal";
+export interface Some<T> {
+    __kind__: "Some";
+    value: T;
+}
+export interface None {
+    __kind__: "None";
+}
+export type Option<T> = Some<T> | None;
+export interface AccessGrant {
+    principal: Principal;
+    linkedRoadieId?: RoadieId;
+    approvedAt: Timestamp;
+    approvedBy: Principal;
+    role: Role;
+    trainerPositionIds: Array<PositionId>;
+    accessEndsAt?: Timestamp;
+}
+export interface Alert {
+    id: AlertId;
+    createdAt: Timestamp;
+    acknowledged: boolean;
+    message: string;
+}
+export type AlertId = bigint;
+export interface ApprovalDecision {
+    orientationEventId?: EventId;
+    mainPositionId: PositionId;
+    crewId?: CrewId;
+    secondPositionId?: PositionId;
+    startDate?: DateOnly;
+}
+export interface ApprovalRequest {
+    principal: Principal;
+    linkedRoadieId?: RoadieId;
+    role: Role;
+    trainerPositionIds: Array<PositionId>;
+    accessEndsAt?: Timestamp;
+}
+export type ArchiveReason = {
+    __kind__: "noShow";
+    noShow: null;
+} | {
+    __kind__: "quitDuringTraining";
+    quitDuringTraining: null;
+} | {
+    __kind__: "other";
+    other: string;
+} | {
+    __kind__: "letGo";
+    letGo: null;
+} | {
+    __kind__: "tookAnotherJob";
+    tookAnotherJob: null;
+};
+export interface AttendanceRecord {
+    eventId?: EventId;
+    roadieId: RoadieId;
+    recordedAt: Timestamp;
+    recordedBy: Principal;
+    shift?: Shift;
+    state: AttendanceState;
+}
+export interface AvailabilitySlot {
+    day: Weekday;
+    shift: Shift;
+}
+export interface Cell {
+    value: Value;
+    name: string;
+}
+export interface ChangeLogEntry {
+    at: Timestamp;
+    by: Principal;
+    id: ChangeLogId;
+    action: string;
+    detail: string;
+    touchesContactSet: boolean;
+    subjectRoadieId?: RoadieId;
+}
+export type ChangeLogId = bigint;
+export interface ChecklistItem {
+    id: bigint;
+    requiresAlcoholCert: boolean;
+    text: string;
+    minorOnly: boolean;
+}
+export interface Checklists {
+    paperwork: Array<ChecklistItem>;
+    orientationUniform: Array<ChecklistItem>;
+}
+export interface ContactSet {
+    availabilitySignedAt?: Timestamp;
+    dateOfBirth: DateOnly;
+    email: Email;
+    availabilitySignature?: SignatureRef;
+    availability: Array<AvailabilitySlot>;
+    availabilityResignPending: boolean;
+    emergencyContactPhone: Phone;
+    emergencyContactName: string;
+    phone: Phone;
+}
+export interface Crew {
+    id: CrewId;
+    name: string;
+}
+export type CrewId = bigint;
+export type DateOnly = bigint;
+export type DateTime = bigint;
+export interface DuplicateMatch {
+    matchedOn: string;
+    roadieId: RoadieId;
+    archived: boolean;
+}
+export type Email = string;
+export type Error_ = {
+    __kind__: "FrontendOriginsNotConfigured";
+    FrontendOriginsNotConfigured: null;
+} | {
+    __kind__: "MixedSsoSources";
+    MixedSsoSources: {
+        otherKeys: Array<string>;
+        ssoKeys: Array<string>;
+    };
+} | {
+    __kind__: "Stale";
+    Stale: {
+        ageNs: bigint;
+    };
+} | {
+    __kind__: "MalformedCandid";
+    MalformedCandid: null;
+} | {
+    __kind__: "AmbiguousAttribute";
+    AmbiguousAttribute: {
+        field: string;
+        sources: Array<string>;
+    };
+} | {
+    __kind__: "NoAttributes";
+    NoAttributes: null;
+} | {
+    __kind__: "UnknownNonce";
+    UnknownNonce: null;
+} | {
+    __kind__: "UntrustedSsoSource";
+    UntrustedSsoSource: {
+        domain: string;
+    };
+} | {
+    __kind__: "MissingField";
+    MissingField: string;
+} | {
+    __kind__: "FrontendOriginMismatch";
+    FrontendOriginMismatch: {
+        got: string;
+        expected: Array<string>;
+    };
+};
+export type EventId = bigint;
+export interface ExportData {
+    fohTotal: bigint;
+    groups: Array<[string, Array<ExportRow>]>;
+    bohTotal: bigint;
+    overview: Array<OverviewRow>;
+    grandTotal: bigint;
+}
+export interface ExportRow {
+    dateHired?: DateOnly;
+    name: string;
+    onboardingComplete: boolean;
+    availability: Array<Shift>;
+    foodHandlers: boolean;
+    shirtSize?: string;
+    policiesComplete: boolean;
+    phone?: Phone;
+    alcoholCert: boolean;
+    weekdayLunch?: boolean;
+}
+export interface FinalSignOff {
+    roadieId: RoadieId;
+    signedAt: Timestamp;
+    signedBy: Principal;
+    outcome: SignOffOutcome;
+    futureTrainer: boolean;
+}
+export type HatSize = string;
+export interface LeaderTalk {
+    id: LeaderTalkId;
+    day: DateOnly;
+    name: string;
+    attendees: Array<RoadieId>;
+}
+export type LeaderTalkId = bigint;
+export interface OrientationCheckoff {
+    hatsCount: bigint;
+    roadieId: RoadieId;
+    paperworkItems: Array<string>;
+    updatedAt: Timestamp;
+    uniformItems: Array<string>;
+    shirtsCount: bigint;
+}
+export interface OverviewRow {
+    hired: bigint;
+    need: bigint;
+    positionName: string;
+    totalPar: bigint;
+}
+export interface PendingUser {
+    principal: Principal;
+    requestedAt: Timestamp;
+}
+export type PersonName = string;
+export type Phone = string;
+export type PhotoRef = string;
+export interface Position {
+    id: PositionId;
+    openingBuildTo: bigint;
+    crewManager?: string;
+    house: House;
+    afterOpeningBuildTo: bigint;
+    minimumAge: bigint;
+    code: string;
+    name: string;
+    shirtsRequired: bigint;
+    needsAlcoholCert: boolean;
+    hatsRequired: bigint;
+}
+export type PositionId = bigint;
+export interface Result {
+    hasMore: boolean;
+    rows: Array<Array<Cell>>;
+}
+export type Result__1 = {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: Error_;
+};
+export interface RetentionSettings {
+    notesDays: bigint;
+    archivedContactSetDays: bigint;
+    archivedPhotoDays: bigint;
+    changeLogDays: bigint;
+}
+export interface Roadie {
+    id: RoadieId;
+    status: RoadieStatus;
+    orientationEventId?: EventId;
+    signature?: SignatureRef;
+    mainPositionId: PositionId;
+    crossTrainedPositionId?: PositionId;
+    corporateEmployeeId?: string;
+    contactSet?: ContactSet;
+    crewId?: CrewId;
+    signedBy?: Principal;
+    archivedReason?: ArchiveReason;
+    photo?: PhotoRef;
+    hiredAt: Timestamp;
+    secondPositionId?: PositionId;
+    profile: RoadieProfile;
+    startDate?: DateOnly;
+    archivedAt?: Timestamp;
+}
+export type RoadieId = bigint;
+export interface RoadieProfile {
+    favoriteSnack?: string;
+    positionAppliedFor?: string;
+    goalHere?: string;
+    name: PersonName;
+    hometown?: string;
+    preferredName?: string;
+    shirtSize?: ShirtSize;
+    hatSize?: HatSize;
+    shiftsWantedPerWeek?: bigint;
+    favoriteMovie?: string;
+    funFact?: string;
+    hobbies?: string;
+    weekdayLunch?: boolean;
+}
+export interface RosterSummary {
+    positionName: string;
+    buildTo: bigint;
+    positionId: PositionId;
+    onHand: bigint;
+    openSpots: bigint;
+}
+export interface ScheduleEvent {
+    id: EventId;
+    end?: DateTime;
+    kind: EventKind;
+    name: string;
+    start: DateTime;
+}
+export type ShirtSize = string;
+export type SignOffOutcome = {
+    __kind__: "certified";
+    certified: null;
+} | {
+    __kind__: "needsMoreTime";
+    needsMoreTime: string;
+};
+export type SignatureRef = string;
+export type SignupId = bigint;
+export type SignupStatus = {
+    __kind__: "pending";
+    pending: null;
+} | {
+    __kind__: "approved";
+    approved: RoadieId;
+} | {
+    __kind__: "rejected";
+    rejected: null;
+};
+export interface SignupSubmission {
+    id: SignupId;
+    status: SignupStatus;
+    signature?: SignatureRef;
+    contactSet: ContactSet;
+    submittedAt: Timestamp;
+    photo?: PhotoRef;
+    profile: RoadieProfile;
+}
+export interface StoreInfo {
+    amShiftEnd: TimeOfDay;
+    pmShiftStart: TimeOfDay;
+    storeNumber: string;
+    leaderTalkName: string;
+    appName: string;
+    leaderTalkSize: bigint;
+    logo?: PhotoRef;
+    amShiftStart: TimeOfDay;
+    openingDate: DateOnly;
+    pmShiftEnd: TimeOfDay;
+    trainingGroupSize: bigint;
+    address: string;
+    locationName: string;
+    timeZone: TimeZone;
+    storePhone: Phone;
+}
+export type TimeOfDay = bigint;
+export type TimeZone = string;
+export type Timestamp = bigint;
+export interface TrainerNote {
+    id: bigint;
+    day: DateOnly;
+    didWell: string;
+    roadieId: RoadieId;
+    createdAt: Timestamp;
+    author: Principal;
+    shift: Shift;
+    workOn: string;
+}
+export interface TrainingGroup {
+    id: TrainingGroupId;
+    day: DateOnly;
+    trainerPrincipal?: Principal;
+    memberRoadieIds: Array<RoadieId>;
+    positionId: PositionId;
+    shift: Shift;
+}
+export type TrainingGroupId = bigint;
+export interface TrainingGroupView {
+    offThisShift: Array<RoadieId>;
+    unassigned: Array<RoadieId>;
+    group: TrainingGroup;
+}
+export type Value = {
+    __kind__: "int";
+    int: bigint;
+} | {
+    __kind__: "nat";
+    nat: bigint;
+} | {
+    __kind__: "float";
+    float: number;
+} | {
+    __kind__: "bool";
+    bool: boolean;
+} | {
+    __kind__: "null";
+    null: null;
+} | {
+    __kind__: "text";
+    text: string;
+};
+export enum AttendanceState {
+    present = "present",
+    late = "late",
+    absent = "absent"
+}
+export enum EventKind {
+    other = "other",
+    signOff = "signOff",
+    deadline = "deadline",
+    friendsAndFamily = "friendsAndFamily",
+    openingDay = "openingDay",
+    trainingDay = "trainingDay",
+    orientation = "orientation"
+}
+export enum House {
+    boh = "boh",
+    foh = "foh"
+}
+export enum RoadieStatus {
+    active = "active",
+    hired = "hired",
+    inTraining = "inTraining",
+    paperworkDone = "paperworkDone",
+    oriented = "oriented",
+    certified = "certified",
+    needsMoreTime = "needsMoreTime",
+    archived = "archived"
+}
+export enum Role {
+    integration = "integration",
+    admin = "admin",
+    trainingManager = "trainingManager",
+    trainer = "trainer",
+    leadership = "leadership",
+    visitingManager = "visitingManager",
+    storeManager = "storeManager",
+    kiosk = "kiosk"
+}
+export enum Shift {
+    am = "am",
+    pm = "pm"
+}
+export enum UserRole {
+    admin = "admin",
+    user = "user",
+    guest = "guest"
+}
+export enum Weekday {
+    fri = "fri",
+    mon = "mon",
+    sat = "sat",
+    sun = "sun",
+    thu = "thu",
+    tue = "tue",
+    wed = "wed"
+}
+export interface backendInterface {
+    /**
+     * / Acknowledge an alert (Admin/Store Manager only).
+     */
+    acknowledgeAlert(id: AlertId): Promise<void>;
+    /**
+     * / Add a trainer note (Trainer/Admin/Store Manager only).
+     */
+    addTrainerNote(note: TrainerNote): Promise<bigint>;
+    /**
+     * / Apply a +1/−1 build-to adjustment (Store Manager/Admin only).
+     */
+    adjustBuildTo(positionId: PositionId, openingDelta: bigint, afterOpeningDelta: bigint): Promise<void>;
+    /**
+     * / Count the current admins.
+     */
+    adminCount(): Promise<bigint>;
+    /**
+     * / Approve a submission (Admin/Store Manager only).
+     */
+    approveSignup(id: SignupId, decision: ApprovalDecision, signature: SignatureRef): Promise<RoadieId>;
+    /**
+     * / Approve a pending user (Admin only).
+     */
+    approveUser(request: ApprovalRequest): Promise<void>;
+    /**
+     * / Archive a roadie (Admin/Store Manager only).
+     */
+    archiveRoadie(id: RoadieId, reason: ArchiveReason): Promise<void>;
+    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    /**
+     * / Bootstrap the first app Admin from the platform's shared authorization
+     * / grant. The first principal to sign in is made an admin by the platform
+     * / mixin; this bridges that grant into the app's access model so the first
+     * / caller can approve users. Returns true when the caller holds an app Admin
+     * / grant after the call.
+     */
+    bootstrapAdmin(): Promise<boolean>;
+    /**
+     * / Build the Full export including contact set (Admin/Store Manager only).
+     */
+    buildFullExport(): Promise<ExportData>;
+    /**
+     * / Build the Shareable export (no contact set).
+     */
+    buildShareableExport(): Promise<ExportData>;
+    /**
+     * / Change a roadie's position or crew (Admin/Store Manager only).
+     */
+    changePosition(id: RoadieId, mainPositionId: PositionId, secondPositionId: PositionId | null, crewId: CrewId | null): Promise<void>;
+    /**
+     * / Create a crew (Admin/Store Manager only).
+     */
+    createCrew(name: string): Promise<CrewId>;
+    /**
+     * / Create a leader talk (Admin/Store Manager only).
+     */
+    createLeaderTalk(talk: LeaderTalk): Promise<LeaderTalkId>;
+    /**
+     * / Create a position (Admin only).
+     */
+    createPosition(position: Position): Promise<PositionId>;
+    /**
+     * / Create a schedule event (Admin only).
+     */
+    createScheduleEvent(event: ScheduleEvent): Promise<EventId>;
+    /**
+     * / Create a training group (Admin/Store Manager only).
+     */
+    createTrainingGroup(group: TrainingGroup): Promise<TrainingGroupId>;
+    /**
+     * / Delete a position (Admin only).
+     */
+    deletePosition(id: PositionId): Promise<void>;
+    /**
+     * / Delete a schedule event (Admin only).
+     */
+    deleteScheduleEvent(id: EventId): Promise<void>;
+    /**
+     * / Re-seed the store when it has no positions yet. Idempotent; returns true
+     * / when a seed was applied, false when the store already had positions.
+     */
+    ensureSeeded(): Promise<boolean>;
+    execute(qJson: string): Promise<Result>;
+    /**
+     * / Find duplicate cards matching a submission (Admin/Store Manager only).
+     */
+    findDuplicates(id: SignupId): Promise<Array<DuplicateMatch>>;
+    /**
+     * / Return the backend API documentation as Markdown.
+     */
+    getApiDoc(): Promise<string>;
+    getCallerUserRole(): Promise<UserRole>;
+    /**
+     * / Read the editable checklists.
+     */
+    getChecklists(): Promise<Checklists>;
+    /**
+     * / Read a roadie's contact set. Admin and Store Manager receive the contact
+     * / set; every other read-capable role receives an empty array.
+     */
+    getContactSet(id: RoadieId): Promise<Array<ContactSet>>;
+    /**
+     * / Dashboard summary tiles and per-position progress.
+     */
+    getDashboard(): Promise<{
+        boh: Array<Position>;
+        foh: Array<Position>;
+        hired: bigint;
+        showedAtOrientation?: bigint;
+        certified?: bigint;
+        stillNeeded: bigint;
+        buildToTotal: bigint;
+    }>;
+    /**
+     * / Read the caller's own access grant. Returns null until an Admin has
+     * / approved the caller, so the frontend keeps showing the waiting screen.
+     */
+    getMyAccess(): Promise<AccessGrant | null>;
+    /**
+     * / Read the orientation check-off for a roadie (Admin/Store Manager only).
+     */
+    getOrientationCheckoff(roadieId: RoadieId): Promise<OrientationCheckoff | null>;
+    /**
+     * / Read retention settings.
+     */
+    getRetentionSettings(): Promise<RetentionSettings>;
+    /**
+     * / Read one roadie card.
+     */
+    getRoadie(id: RoadieId): Promise<Roadie | null>;
+    /**
+     * / Per-position roster counts: on-hand roadies and open spots.
+     */
+    getRosterSummary(): Promise<Array<RosterSummary>>;
+    /**
+     * / Read one submission (Admin/Store Manager only).
+     */
+    getSignup(id: SignupId): Promise<SignupSubmission | null>;
+    /**
+     * / Read the store configuration.
+     */
+    getStoreInfo(): Promise<StoreInfo>;
+    /**
+     * / Read a training group with its unassigned and off-shift lists.
+     */
+    getTrainingGroup(id: TrainingGroupId): Promise<TrainingGroupView | null>;
+    isCallerAdmin(): Promise<boolean>;
+    /**
+     * / Compute whether a roadie is a minor as of now.
+     */
+    isMinor(id: RoadieId): Promise<boolean>;
+    /**
+     * / List all access grants (Admin only).
+     */
+    listAccessGrants(): Promise<Array<AccessGrant>>;
+    /**
+     * / List alerts (Admin/Store Manager only).
+     */
+    listAlerts(): Promise<Array<Alert>>;
+    /**
+     * / List attendance records for an event (Admin/Store Manager only).
+     */
+    listAttendanceForEvent(eventId: EventId): Promise<Array<AttendanceRecord>>;
+    /**
+     * / List change-log entries visible to the caller.
+     */
+    listChangeLog(): Promise<Array<ChangeLogEntry>>;
+    /**
+     * / List crews.
+     */
+    listCrews(): Promise<Array<Crew>>;
+    /**
+     * / List pending sign-up submissions (Admin/Store Manager only).
+     */
+    listPendingSignups(): Promise<Array<SignupSubmission>>;
+    /**
+     * / List pending access requests (Admin only).
+     */
+    listPendingUsers(): Promise<Array<PendingUser>>;
+    /**
+     * / List all positions.
+     */
+    listPositions(): Promise<Array<Position>>;
+    /**
+     * / List roadie cards visible to the caller.
+     */
+    listRoadies(): Promise<Array<Roadie>>;
+    /**
+     * / List the roster for one position.
+     */
+    listRosterForPosition(positionId: PositionId): Promise<Array<Roadie>>;
+    /**
+     * / List the opening schedule.
+     */
+    listSchedule(): Promise<Array<ScheduleEvent>>;
+    /**
+     * / List trainer notes for a roadie.
+     */
+    listTrainerNotes(roadieId: RoadieId): Promise<Array<TrainerNote>>;
+    /**
+     * / Record attendance for a roadie (Admin/Store Manager only).
+     */
+    recordAttendance(record: AttendanceRecord): Promise<void>;
+    /**
+     * / Record a final sign-off for a roadie (Admin/Store Manager only).
+     */
+    recordFinalSignOff(signOff: FinalSignOff): Promise<void>;
+    /**
+     * / Rehire an archived roadie (Admin/Store Manager only).
+     */
+    rehireRoadie(id: RoadieId, reason: string | null): Promise<void>;
+    /**
+     * / Reject a submission (Admin/Store Manager only).
+     */
+    rejectSignup(id: SignupId): Promise<void>;
+    /**
+     * / Remove a user's access (Admin only).
+     */
+    removeUser(principal: Principal): Promise<void>;
+    /**
+     * / Register the caller for approval. Any signed-in caller may call this once;
+     * / it is idempotent and returns true when the caller is already registered or
+     * / already pending. The first caller approved by an Admin becomes an Admin.
+     */
+    requestAccess(): Promise<boolean>;
+    /**
+     * / Re-sign a roadie's availability (Admin/Store Manager only).
+     */
+    resignAvailability(id: RoadieId, signature: SignatureRef): Promise<void>;
+    /**
+     * / Save the current store configuration as a template (Admin only).
+     */
+    saveStoreTemplate(name: string): Promise<void>;
+    schema(): Promise<string>;
+    /**
+     * / Record per-roadie attendance for a leader talk (Admin/Store Manager only).
+     */
+    setLeaderTalkAttendance(id: LeaderTalkId, attendees: Array<RoadieId>): Promise<void>;
+    /**
+     * / Submit a new sign-up from the kiosk.
+     */
+    submitSignup(profile: RoadieProfile, photo: PhotoRef | null, signature: SignatureRef | null, contactSet: ContactSet): Promise<SignupId>;
+    /**
+     * / Update a user's access end date (Admin only).
+     */
+    updateAccessEnd(principal: Principal, accessEndsAt: Timestamp | null): Promise<void>;
+    /**
+     * / Update the editable checklists (Admin only).
+     */
+    updateChecklists(value: Checklists): Promise<void>;
+    /**
+     * / Update a roadie's contact set (Admin/Store Manager only).
+     */
+    updateContactSet(id: RoadieId, contactSet: ContactSet): Promise<void>;
+    /**
+     * / Update the orientation check-off for a roadie (Admin/Store Manager only).
+     */
+    updateOrientationCheckoff(checkoff: OrientationCheckoff): Promise<void>;
+    /**
+     * / Update a position (Admin only).
+     */
+    updatePosition(position: Position): Promise<void>;
+    /**
+     * / Update retention settings (Admin only).
+     */
+    updateRetentionSettings(settings: RetentionSettings): Promise<void>;
+    /**
+     * / Edit a roadie's non-contact details (Admin/Store Manager only).
+     */
+    updateRoadieDetails(id: RoadieId, profile: RoadieProfile): Promise<void>;
+    /**
+     * / Update a roadie's status (Admin/Store Manager only).
+     */
+    updateRoadieStatus(id: RoadieId, status: RoadieStatus): Promise<void>;
+    /**
+     * / Update a schedule event (Admin only).
+     */
+    updateScheduleEvent(event: ScheduleEvent): Promise<void>;
+    /**
+     * / Update the store configuration (Admin only).
+     */
+    updateStoreInfo(info: StoreInfo): Promise<void>;
+    /**
+     * / Edit a trainer note within its 24-hour lock window (author only).
+     */
+    updateTrainerNote(note: TrainerNote): Promise<void>;
+    /**
+     * / Update a user's trainer stations (Admin only).
+     */
+    updateTrainerStations(principal: Principal, positionIds: Array<PositionId>): Promise<void>;
+    /**
+     * / Update a training group's membership (Admin/Store Manager only).
+     */
+    updateTrainingGroup(group: TrainingGroup): Promise<void>;
+    /**
+     * / Change an existing user's role (Admin only).
+     */
+    updateUserRole(principal: Principal, role: Role): Promise<void>;
+}

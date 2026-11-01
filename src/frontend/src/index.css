@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+   Fonts — Oswald (display, uppercase) + Inter (body).
+   Not bundled in the skill font set; served from the Google Fonts CDN.
+--------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Oswald";
+  font-style: normal;
+  font-weight: 200 700;
+  font-display: swap;
+  src: url("https://fonts.gstatic.com/s/oswald/v53/TK3iWkUHHAIjg752GT8G.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiA.woff2")
+    format("woff2");
+}
+
+@layer base {
+  :root {
+    --font-display: "Oswald", "Arial Narrow", sans-serif;
+    --font-body: "Inter", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    --radius: 0.5rem;
+
+    /* Warm white page, navy ink */
+    --background: 0.961 0.0058 92.0;
+    --foreground: 0.2802 0.0712 258.5;
+    --card: 1.0 0 0;
+    --card-foreground: 0.2802 0.0712 258.5;
+    --popover: 1.0 0 0;
+    --popover-foreground: 0.2802 0.0712 258.5;
+
+    /* Red #B22234 — primary buttons + accents */
+    --primary: 0.4726 0.1832 25.3;
+    --primary-foreground: 1.0 0 0;
+
+    /* Navy #14284B — header + secondary surfaces */
+    --secondary: 0.2802 0.0712 258.5;
+    --secondary-foreground: 0.961 0.0058 92.0;
+    --muted: 0.93 0.006 92.0;
+    --muted-foreground: 0.52 0.04 258.0;
+
+    /* Blue #2B5DA8 — hired / done states */
+    --accent: 0.465 0.1305 258.0;
+    --accent-foreground: 1.0 0 0;
+
+    --destructive: 0.4726 0.1832 25.3;
+    --destructive-foreground: 1.0 0 0;
+
+    /* Success = hired blue per brief */
+    --success: 0.465 0.1305 258.0;
+    --success-foreground: 1.0 0 0;
+    --warning: 0.74 0.15 75.0;
+    --warning-foreground: 0.2802 0.0712 258.5;
+
+    --border: 0.885 0.01 92.0;
+    --input: 0.885 0.01 92.0;
+    --ring: 0.4726 0.1832 25.3;
+
+    --chart-1: 0.4726 0.1832 25.3;
+    --chart-2: 0.465 0.1305 258.0;
+    --chart-3: 0.2802 0.0712 258.5;
+    --chart-4: 0.74 0.15 75.0;
+    --chart-5: 0.65 0.09 200.0;
+
+    --sidebar: 0.2802 0.0712 258.5;
+    --sidebar-foreground: 0.961 0.0058 92.0;
+    --sidebar-primary: 0.4726 0.1832 25.3;
+    --sidebar-primary-foreground: 1.0 0 0;
+    --sidebar-accent: 0.36 0.075 258.5;
+    --sidebar-accent-foreground: 0.961 0.0058 92.0;
+    --sidebar-border: 0.38 0.06 258.5;
+    --sidebar-ring: 0.4726 0.1832 25.3;
+
+    /* Extra design tokens */
+    --gradient-primary: linear-gradient(
+      135deg,
+      oklch(0.4726 0.1832 25.3),
+      oklch(0.4 0.165 22.0)
+    );
+    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    --background: 0.21 0.04 258.5;
+    --foreground: 0.961 0.0058 92.0;
+    --card: 0.26 0.045 258.5;
+    --card-foreground: 0.961 0.0058 92.0;
+    --popover: 0.26 0.045 258.5;
+    --popover-foreground: 0.961 0.0058 92.0;
+
+    --primary: 0.58 0.19 25.3;
+    --primary-foreground: 1.0 0 0;
+
+    --secondary: 0.32 0.06 258.5;
+    --secondary-foreground: 0.961 0.0058 92.0;
+    --muted: 0.32 0.05 258.5;
+    --muted-foreground: 0.75 0.03 258.0;
+
+    --accent: 0.58 0.14 258.0;
+    --accent-foreground: 1.0 0 0;
+
+    --destructive: 0.58 0.19 25.3;
+    --destructive-foreground: 1.0 0 0;
+
+    --success: 0.58 0.14 258.0;
+    --success-foreground: 1.0 0 0;
+    --warning: 0.78 0.15 75.0;
+    --warning-foreground: 0.21 0.04 258.5;
+
+    --border: 0.36 0.05 258.5;
+    --input: 0.36 0.05 258.5;
+    --ring: 0.58 0.19 25.3;
+
+    --chart-1: 0.58 0.19 25.3;
+    --chart-2: 0.58 0.14 258.0;
+    --chart-3: 0.75 0.03 258.0;
+    --chart-4: 0.78 0.15 75.0;
+    --chart-5: 0.7 0.09 200.0;
+
+    --sidebar: 0.26 0.045 258.5;
+    --sidebar-foreground: 0.961 0.0058 92.0;
+    --sidebar-primary: 0.58 0.19 25.3;
+    --sidebar-primary-foreground: 1.0 0 0;
+    --sidebar-accent: 0.36 0.06 258.5;
+    --sidebar-accent-foreground: 0.961 0.0058 92.0;
+    --sidebar-border: 0.36 0.05 258.5;
+    --sidebar-ring: 0.58 0.19 25.3;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display uppercase tracking-tight;
+  }
+}
+
+@layer utilities {
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  .bg-gradient-primary {
+    background-image: var(--gradient-primary);
+  }
+  /* Thin red-and-white stripe under the header */
+  .stripe-flag {
+    height: 4px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      oklch(0.4726 0.1832 25.3) 0 16px,
+      oklch(1 0 0) 16px 32px
+    );
+  }
+  /* Minimum 44px touch target */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

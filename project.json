@@ -1,0 +1,18 @@
+{
+  "overview": "Roadie Roster is a store staffing app for managing roadie positions, rosters, sign-ups and exports.",
+  "features": [
+    "Kiosk self-service sign-up with a welcome screen",
+    "Dashboard showing seeded positions, build-to totals, schedule, store info, checklists and retention settings",
+    "Roster with roadie cards, on-hand counts and open spots",
+    "Shareable and Full exports that differ only in contact details",
+    "Contact details visible only to Admin and Store Manager"
+  ],
+  "category": "staffing-management",
+  "tags": [
+    "staffing",
+    "roster",
+    "retail",
+    "management"
+  ],
+  "last_updated": "2026-11-01T18:12:30.930Z"
+}

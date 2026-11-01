@@ -1,0 +1,564 @@
+import {
+  type ApprovalDecision,
+  type Crew,
+  type DuplicateMatch,
+  EventKind,
+  type House,
+  House as HouseValue,
+  type Position,
+  type ScheduleEvent,
+  type SignupSubmission,
+} from "@/backend";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState, ErrorState, LoadingState } from "@/components/States";
+import { StatusBadge } from "@/components/StatusBadge";
+import { PendingApprovalList } from "@/components/approvals/PendingApprovalList";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useI18n } from "@/hooks/useI18n";
+import {
+  useApproveSignup,
+  useCrews,
+  usePendingSignups,
+  usePendingUsers,
+  usePositions,
+  useRejectSignup,
+  useSchedule,
+  useSignupDuplicates,
+} from "@/hooks/useQueries";
+import {
+  dateOnlyToDate,
+  dateToDateOnly,
+  formatDateOnly,
+  formatTimestamp,
+} from "@/lib/format";
+import { AlertTriangle, Check, UserCheck, X } from "lucide-react";
+import { useMemo, useState } from "react";
+
+/** The orientation sessions that have not yet passed, soonest first. */
+function upcomingOrientations(schedule: ScheduleEvent[]): ScheduleEvent[] {
+  const now = Date.now();
+  return schedule
+    .filter((event) => event.kind === EventKind.orientation)
+    .filter((event) => Number(event.start / 1_000_000n) >= now)
+    .sort((a, b) => Number(a.start - b.start));
+}
+
+/** The default orientation session for a house, matched by event name. */
+function defaultOrientationId(
+  sessions: ScheduleEvent[],
+  house: House | undefined,
+): string {
+  if (!house) return "";
+  const marker = house === HouseValue.foh ? "foh" : "boh";
+  const match = sessions.find((event) =>
+    event.name.toLowerCase().includes(marker),
+  );
+  return match ? match.id.toString() : "";
+}
+
+/** A compact list of duplicate matches found against all cards. */
+function DuplicateList({ matches }: { matches: DuplicateMatch[] }) {
+  const { t } = useI18n();
+  if (matches.length === 0) {
+    return (
+      <p
+        data-ocid="approvals.signup.duplicates.none"
+        className="flex items-center gap-2 text-sm text-muted-foreground"
+      >
+        <Check className="h-4 w-4 text-accent" aria-hidden="true" />
+        {t("approvals.signup.duplicates.none")}
+      </p>
+    );
+  }
+  return (
+    <div
+      data-ocid="approvals.signup.duplicates.list"
+      className="rounded-md border border-destructive/30 bg-destructive/5 p-3"
+    >
+      <p className="flex items-center gap-2 font-display text-xs font-semibold uppercase tracking-widest text-destructive">
+        <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+        {t("approvals.signup.duplicates.title")}
+      </p>
+      <ul className="mt-2 space-y-1 text-sm text-foreground">
+        {matches.map((match) => (
+          <li key={`${match.roadieId}-${match.matchedOn}`}>
+            {t("approvals.signup.duplicates.row", {
+              id: match.roadieId.toString(),
+              field: match.matchedOn,
+            })}
+            {match.archived && (
+              <span className="ml-2 text-xs text-muted-foreground">
+                {t("roster.archived")}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * One pending kiosk submission under review: duplicate check, position, crew,
+ * orientation session, start date, and the manager's signature.
+ */
+function PendingSignupCard({
+  signup,
+  positions,
+  crews,
+  sessions,
+}: {
+  signup: SignupSubmission;
+  positions: Position[];
+  crews: Crew[];
+  sessions: ScheduleEvent[];
+}) {
+  const { t } = useI18n();
+  const { data: duplicates, isLoading: duplicatesLoading } =
+    useSignupDuplicates(signup.id);
+  const approve = useApproveSignup();
+  const reject = useRejectSignup();
+
+  const [mainPositionId, setMainPositionId] = useState("");
+  const [secondPositionId, setSecondPositionId] = useState("");
+  const [crewId, setCrewId] = useState("");
+  const [orientationId, setOrientationId] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [signature, setSignature] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const mainPosition = positions.find(
+    (position) => position.id.toString() === mainPositionId,
+  );
+  const suggestedOrientation = defaultOrientationId(
+    sessions,
+    mainPosition?.house,
+  );
+
+  const isMinor = useMemo(() => {
+    const dob = dateOnlyToDate(signup.contactSet.dateOfBirth);
+    if (!dob) return false;
+    const now = new Date();
+    let age = now.getUTCFullYear() - dob.getUTCFullYear();
+    const monthDiff = now.getUTCMonth() - dob.getUTCMonth();
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && now.getUTCDate() < dob.getUTCDate())
+    ) {
+      age -= 1;
+    }
+    return age < 18;
+  }, [signup.contactSet.dateOfBirth]);
+
+  const ageBlocked = isMinor && !!mainPosition && mainPosition.minimumAge > 18n;
+
+  const submit = () => {
+    if (!mainPositionId) {
+      setError(t("approvals.signup.main.required"));
+      return;
+    }
+    if (ageBlocked) {
+      setError(t("approvals.signup.minor.blocked"));
+      return;
+    }
+    if (!signature.trim()) {
+      setError(t("approvals.signup.signature.required"));
+      return;
+    }
+    setError(null);
+    const decision: ApprovalDecision = {
+      mainPositionId: BigInt(mainPositionId),
+      secondPositionId: secondPositionId ? BigInt(secondPositionId) : undefined,
+      crewId: crewId ? BigInt(crewId) : undefined,
+      orientationEventId: orientationId ? BigInt(orientationId) : undefined,
+      startDate: startDate
+        ? dateToDateOnly(new Date(`${startDate}T00:00:00Z`))
+        : undefined,
+    };
+    approve.mutate(
+      { id: signup.id, decision, signature: signature.trim() },
+      {
+        onSuccess: () => {
+          setMainPositionId("");
+          setSecondPositionId("");
+          setCrewId("");
+          setOrientationId("");
+          setStartDate("");
+          setSignature("");
+        },
+        onError: () => setError(t("approvals.signup.approve.error")),
+      },
+    );
+  };
+
+  const name = signup.profile.preferredName || signup.profile.name;
+  const key = signup.id.toString();
+
+  return (
+    <li
+      data-ocid="approvals.signup.item"
+      className="rounded-lg border border-border bg-card p-4 shadow-subtle"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-display text-sm font-semibold uppercase tracking-wide">
+            {name}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {t("approvals.signup.submittedAt")}:{" "}
+            {formatTimestamp(signup.submittedAt)}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {isMinor && (
+            <StatusBadge tone="pending" ocid="approvals.signup.minor_badge">
+              {t("roadie.minor")}
+            </StatusBadge>
+          )}
+          <StatusBadge tone="muted">
+            {t("approvals.signup.pending")}
+          </StatusBadge>
+        </div>
+      </div>
+
+      <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("roadie.field.phone")}
+          </dt>
+          <dd>{signup.contactSet.phone}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("roadie.field.email")}
+          </dt>
+          <dd className="break-all">{signup.contactSet.email}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("roadie.field.birthday")}
+          </dt>
+          <dd>{formatDateOnly(signup.contactSet.dateOfBirth)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("roadie.field.positionAppliedFor")}
+          </dt>
+          <dd>{signup.profile.positionAppliedFor || t("roadie.field.none")}</dd>
+        </div>
+      </dl>
+
+      <div className="mt-4">
+        {duplicatesLoading ? (
+          <p className="text-sm text-muted-foreground">
+            {t("approvals.signup.duplicates.loading")}
+          </p>
+        ) : (
+          <DuplicateList matches={duplicates ?? []} />
+        )}
+      </div>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor={`main-${key}`}>
+            {t("approvals.signup.main.label")}
+          </Label>
+          <Select value={mainPositionId} onValueChange={setMainPositionId}>
+            <SelectTrigger
+              id={`main-${key}`}
+              data-ocid="approvals.signup.main.select"
+              className="touch-target w-full"
+            >
+              <SelectValue
+                placeholder={t("approvals.signup.main.placeholder")}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {positions.map((position) => (
+                <SelectItem
+                  key={position.id.toString()}
+                  value={position.id.toString()}
+                >
+                  {position.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={`second-${key}`}>
+            {t("approvals.signup.second.label")}
+          </Label>
+          <Select value={secondPositionId} onValueChange={setSecondPositionId}>
+            <SelectTrigger
+              id={`second-${key}`}
+              data-ocid="approvals.signup.second.select"
+              className="touch-target w-full"
+            >
+              <SelectValue placeholder={t("approvals.signup.second.none")} />
+            </SelectTrigger>
+            <SelectContent>
+              {positions
+                .filter((position) => position.id.toString() !== mainPositionId)
+                .map((position) => (
+                  <SelectItem
+                    key={position.id.toString()}
+                    value={position.id.toString()}
+                  >
+                    {position.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={`crew-${key}`}>
+            {t("approvals.signup.crew.label")}
+          </Label>
+          <Select value={crewId} onValueChange={setCrewId}>
+            <SelectTrigger
+              id={`crew-${key}`}
+              data-ocid="approvals.signup.crew.select"
+              className="touch-target w-full"
+            >
+              <SelectValue placeholder={t("approvals.signup.crew.none")} />
+            </SelectTrigger>
+            <SelectContent>
+              {crews.map((crew) => (
+                <SelectItem key={crew.id.toString()} value={crew.id.toString()}>
+                  {crew.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={`orientation-${key}`}>
+            {t("approvals.signup.orientation.label")}
+          </Label>
+          <Select
+            value={orientationId || suggestedOrientation}
+            onValueChange={setOrientationId}
+          >
+            <SelectTrigger
+              id={`orientation-${key}`}
+              data-ocid="approvals.signup.orientation.select"
+              className="touch-target w-full"
+            >
+              <SelectValue
+                placeholder={t("approvals.signup.orientation.placeholder")}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {sessions.map((session) => (
+                <SelectItem
+                  key={session.id.toString()}
+                  value={session.id.toString()}
+                >
+                  {session.name} · {formatTimestamp(session.start)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            {t("approvals.signup.orientation.hint")}
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={`start-${key}`}>
+            {t("approvals.signup.start.label")}
+          </Label>
+          <Input
+            id={`start-${key}`}
+            type="date"
+            value={startDate}
+            onChange={(event) => setStartDate(event.target.value)}
+            data-ocid="approvals.signup.start.input"
+            className="touch-target"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={`signature-${key}`}>
+            {t("approvals.signup.signature.label")}
+          </Label>
+          <Input
+            id={`signature-${key}`}
+            value={signature}
+            onChange={(event) => setSignature(event.target.value)}
+            placeholder={t("approvals.signup.signature.placeholder")}
+            data-ocid="approvals.signup.signature.input"
+            className="touch-target"
+          />
+        </div>
+      </div>
+
+      {ageBlocked && (
+        <p
+          role="alert"
+          data-ocid="approvals.signup.minor.error"
+          className="mt-3 text-sm text-destructive"
+        >
+          {t("approvals.signup.minor.blocked")}
+        </p>
+      )}
+
+      {error && (
+        <p
+          role="alert"
+          data-ocid="approvals.signup.error_state"
+          className="mt-3 text-sm text-destructive"
+        >
+          {error}
+        </p>
+      )}
+
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="touch-target"
+          data-ocid="approvals.signup.reject_button"
+          disabled={reject.isPending || approve.isPending}
+          onClick={() => reject.mutate(signup.id)}
+        >
+          <X className="mr-2 h-4 w-4" aria-hidden="true" />
+          {t("approvals.action.reject")}
+        </Button>
+        <Button
+          type="button"
+          className="touch-target"
+          data-ocid="approvals.signup.approve_button"
+          disabled={approve.isPending || ageBlocked}
+          onClick={submit}
+        >
+          <UserCheck className="mr-2 h-4 w-4" aria-hidden="true" />
+          {t("approvals.signup.action.approve")}
+        </Button>
+      </div>
+    </li>
+  );
+}
+
+/** The pending kiosk submissions queue with its loading, error, and empty states. */
+function PendingSignupList({
+  signups,
+  positions,
+  crews,
+  sessions,
+  isLoading,
+  isError,
+  onRetry,
+}: {
+  signups: SignupSubmission[] | undefined;
+  positions: Position[];
+  crews: Crew[];
+  sessions: ScheduleEvent[];
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+}) {
+  const { t } = useI18n();
+
+  if (isLoading) {
+    return <LoadingState label={t("approvals.signup.loading")} />;
+  }
+
+  if (isError) {
+    return (
+      <ErrorState message={t("approvals.signup.error")} onRetry={onRetry} />
+    );
+  }
+
+  if ((signups?.length ?? 0) === 0) {
+    return <EmptyState title={t("approvals.signup.empty")} />;
+  }
+
+  return (
+    <ul className="space-y-4" data-ocid="approvals.signup.list">
+      {signups?.map((signup) => (
+        <PendingSignupCard
+          key={signup.id.toString()}
+          signup={signup}
+          positions={positions}
+          crews={crews}
+          sessions={sessions}
+        />
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Approve new hires. Admins review each pending sign-in, assign a role and
+ * optional trainer stations, access end date, and linked roadie card. Store
+ * Managers review pending kiosk submissions, run the duplicate check, assign
+ * position, crew, orientation and start date, then sign to create the card.
+ */
+export default function ApprovalsPage() {
+  const { t } = useI18n();
+  const { data: pending, isLoading, isError, refetch } = usePendingUsers();
+  const {
+    data: signups,
+    isLoading: signupsLoading,
+    isError: signupsError,
+    refetch: refetchSignups,
+  } = usePendingSignups();
+  const { data: positions } = usePositions();
+  const { data: crews } = useCrews();
+  const { data: schedule } = useSchedule();
+
+  const sessions = useMemo(
+    () => upcomingOrientations(schedule ?? []),
+    [schedule],
+  );
+
+  return (
+    <div className="space-y-8" data-ocid="approvals.page">
+      <PageHeader
+        title={t("approvals.title")}
+        subtitle={t("approvals.subtitle")}
+      />
+
+      <section className="space-y-4" data-ocid="approvals.signups.section">
+        <h2 className="font-display text-lg font-semibold uppercase tracking-wide">
+          {t("approvals.signup.section")}
+        </h2>
+        <PendingSignupList
+          signups={signups}
+          positions={positions ?? []}
+          crews={crews ?? []}
+          sessions={sessions}
+          isLoading={signupsLoading}
+          isError={signupsError}
+          onRetry={() => void refetchSignups()}
+        />
+      </section>
+
+      <section className="space-y-4" data-ocid="approvals.users.section">
+        <h2 className="font-display text-lg font-semibold uppercase tracking-wide">
+          {t("approvals.users.section")}
+        </h2>
+        <PendingApprovalList
+          pending={pending}
+          isLoading={isLoading}
+          isError={isError}
+          onRetry={() => void refetch()}
+        />
+      </section>
+    </div>
+  );
+}

@@ -1,0 +1,25 @@
+{
+  "name": "Roadie — Restaurant Crew Hiring",
+  "short_name": "Roadie",
+  "description": "Hiring roster and onboarding pipeline for the store crew.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F5F3EE",
+  "theme_color": "#14284B",
+  "icons": [
+    {
+      "src": "/assets/generated/store-logo-transparent.dim_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/generated/store-logo-transparent.dim_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,0 +1,624 @@
+type _ImmutableObjectStorageRefillResult = 
+ record {
+   success: opt bool;
+   topped_up_amount: opt nat;
+ };
+type _ImmutableObjectStorageRefillInformation = record {
+                                                  proposed_top_up_amount:
+                                                   opt nat;};
+type _ImmutableObjectStorageCreateCertificateResult = 
+ record {
+   blob_hash: text;
+   method: text;
+ };
+type Weekday = 
+ variant {
+   fri;
+   mon;
+   sat;
+   sun;
+   thu;
+   tue;
+   wed;
+ };
+type Value = 
+ variant {
+   "bool": bool;
+   float: float64;
+   "int": int;
+   "nat": nat;
+   "null";
+   "text": text;
+ };
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type TrainingGroupView = 
+ record {
+   group: TrainingGroup;
+   offThisShift: vec RoadieId;
+   unassigned: vec RoadieId;
+ };
+type TrainingGroupId = nat;
+type TrainingGroup = 
+ record {
+   day: DateOnly;
+   id: TrainingGroupId;
+   memberRoadieIds: vec RoadieId;
+   positionId: PositionId;
+   shift: Shift;
+   trainerPrincipal: opt principal;
+ };
+type TrainerNote = 
+ record {
+   author: principal;
+   createdAt: Timestamp;
+   day: DateOnly;
+   didWell: text;
+   id: nat;
+   roadieId: RoadieId;
+   shift: Shift;
+   workOn: text;
+ };
+type Timestamp = int;
+type TimeZone = text;
+type TimeOfDay = nat;
+type StoreInfo = 
+ record {
+   address: text;
+   amShiftEnd: TimeOfDay;
+   amShiftStart: TimeOfDay;
+   appName: text;
+   leaderTalkName: text;
+   leaderTalkSize: nat;
+   locationName: text;
+   logo: opt PhotoRef;
+   openingDate: DateOnly;
+   pmShiftEnd: TimeOfDay;
+   pmShiftStart: TimeOfDay;
+   storeNumber: text;
+   storePhone: Phone;
+   timeZone: TimeZone;
+   trainingGroupSize: nat;
+ };
+type SignupSubmission = 
+ record {
+   contactSet: ContactSet;
+   id: SignupId;
+   photo: opt PhotoRef;
+   profile: RoadieProfile;
+   signature: opt SignatureRef;
+   status: SignupStatus;
+   submittedAt: Timestamp;
+ };
+type SignupStatus = 
+ variant {
+   approved: RoadieId;
+   pending;
+   rejected;
+ };
+type SignupId = nat;
+type SignatureRef = text;
+type SignOffOutcome = 
+ variant {
+   certified;
+   needsMoreTime: text;
+ };
+type ShirtSize = text;
+type Shift = 
+ variant {
+   am;
+   pm;
+ };
+type ScheduleEvent = 
+ record {
+   end: opt DateTime;
+   id: EventId;
+   kind: EventKind;
+   name: text;
+   start: DateTime;
+ };
+type RosterSummary = 
+ record {
+   buildTo: nat;
+   onHand: nat;
+   openSpots: nat;
+   positionId: PositionId;
+   positionName: text;
+ };
+type Role = 
+ variant {
+   admin;
+   integration;
+   kiosk;
+   leadership;
+   storeManager;
+   trainer;
+   trainingManager;
+   visitingManager;
+ };
+type RoadieStatus = 
+ variant {
+   active;
+   archived;
+   certified;
+   hired;
+   inTraining;
+   needsMoreTime;
+   oriented;
+   paperworkDone;
+ };
+type RoadieProfile = 
+ record {
+   favoriteMovie: opt text;
+   favoriteSnack: opt text;
+   funFact: opt text;
+   goalHere: opt text;
+   hatSize: opt HatSize;
+   hobbies: opt text;
+   hometown: opt text;
+   name: PersonName;
+   positionAppliedFor: opt text;
+   preferredName: opt text;
+   shiftsWantedPerWeek: opt nat;
+   shirtSize: opt ShirtSize;
+   weekdayLunch: opt bool;
+ };
+type RoadieId = nat;
+type Roadie = 
+ record {
+   archivedAt: opt Timestamp;
+   archivedReason: opt ArchiveReason;
+   contactSet: opt ContactSet;
+   corporateEmployeeId: opt text;
+   crewId: opt CrewId;
+   crossTrainedPositionId: opt PositionId;
+   hiredAt: Timestamp;
+   id: RoadieId;
+   mainPositionId: PositionId;
+   orientationEventId: opt EventId;
+   photo: opt PhotoRef;
+   profile: RoadieProfile;
+   secondPositionId: opt PositionId;
+   signature: opt SignatureRef;
+   signedBy: opt principal;
+   startDate: opt DateOnly;
+   status: RoadieStatus;
+ };
+type RetentionSettings = 
+ record {
+   archivedContactSetDays: nat;
+   archivedPhotoDays: nat;
+   changeLogDays: nat;
+   notesDays: nat;
+ };
+type Result__1 = 
+ variant {
+   err: Error;
+   ok;
+ };
+type Result = 
+ record {
+   hasMore: bool;
+   rows: vec vec Cell;
+ };
+type PositionId = nat;
+type Position = 
+ record {
+   afterOpeningBuildTo: nat;
+   code: text;
+   crewManager: opt text;
+   hatsRequired: nat;
+   house: House;
+   id: PositionId;
+   minimumAge: nat;
+   name: text;
+   needsAlcoholCert: bool;
+   openingBuildTo: nat;
+   shirtsRequired: nat;
+ };
+type PhotoRef = text;
+type Phone = text;
+type PersonName = text;
+type PendingUser = 
+ record {
+   "principal": principal;
+   requestedAt: Timestamp;
+ };
+type OverviewRow = 
+ record {
+   hired: nat;
+   need: nat;
+   positionName: text;
+   totalPar: nat;
+ };
+type OrientationCheckoff = 
+ record {
+   hatsCount: nat;
+   paperworkItems: vec text;
+   roadieId: RoadieId;
+   shirtsCount: nat;
+   uniformItems: vec text;
+   updatedAt: Timestamp;
+ };
+type LeaderTalkId = nat;
+type LeaderTalk = 
+ record {
+   attendees: vec RoadieId;
+   day: DateOnly;
+   id: LeaderTalkId;
+   name: text;
+ };
+type House = 
+ variant {
+   boh;
+   foh;
+ };
+type HatSize = text;
+type FinalSignOff = 
+ record {
+   futureTrainer: bool;
+   outcome: SignOffOutcome;
+   roadieId: RoadieId;
+   signedAt: Timestamp;
+   signedBy: principal;
+ };
+type ExportRow = 
+ record {
+   alcoholCert: bool;
+   availability: vec Shift;
+   dateHired: opt DateOnly;
+   foodHandlers: bool;
+   name: text;
+   onboardingComplete: bool;
+   phone: opt Phone;
+   policiesComplete: bool;
+   shirtSize: opt text;
+   weekdayLunch: opt bool;
+ };
+type ExportData = 
+ record {
+   bohTotal: nat;
+   fohTotal: nat;
+   grandTotal: nat;
+   groups: vec record {
+                 text;
+                 vec ExportRow;
+               };
+   overview: vec OverviewRow;
+ };
+type EventKind = 
+ variant {
+   deadline;
+   friendsAndFamily;
+   openingDay;
+   orientation;
+   other;
+   signOff;
+   trainingDay;
+ };
+type EventId = nat;
+type Error = 
+ variant {
+   AmbiguousAttribute: record {
+                         field: text;
+                         sources: vec text;
+                       };
+   FrontendOriginMismatch: record {
+                             expected: vec text;
+                             got: text;
+                           };
+   FrontendOriginsNotConfigured;
+   MalformedCandid;
+   MissingField: text;
+   MixedSsoSources: record {
+                      otherKeys: vec text;
+                      ssoKeys: vec text;
+                    };
+   NoAttributes;
+   Stale: record {ageNs: nat;};
+   UnknownNonce;
+   UntrustedSsoSource: record {domain: text;};
+ };
+type Email = text;
+type DuplicateMatch = 
+ record {
+   archived: bool;
+   matchedOn: text;
+   roadieId: RoadieId;
+ };
+type DateTime = int;
+type DateOnly = int;
+type CrewId = nat;
+type Crew = 
+ record {
+   id: CrewId;
+   name: text;
+ };
+type ContactSet = 
+ record {
+   availability: vec AvailabilitySlot;
+   availabilityResignPending: bool;
+   availabilitySignature: opt SignatureRef;
+   availabilitySignedAt: opt Timestamp;
+   dateOfBirth: DateOnly;
+   email: Email;
+   emergencyContactName: text;
+   emergencyContactPhone: Phone;
+   phone: Phone;
+ };
+type Checklists = 
+ record {
+   orientationUniform: vec ChecklistItem;
+   paperwork: vec ChecklistItem;
+ };
+type ChecklistItem = 
+ record {
+   id: nat;
+   minorOnly: bool;
+   requiresAlcoholCert: bool;
+   "text": text;
+ };
+type ChangeLogId = nat;
+type ChangeLogEntry = 
+ record {
+   action: text;
+   at: Timestamp;
+   by: principal;
+   detail: text;
+   id: ChangeLogId;
+   subjectRoadieId: opt RoadieId;
+   touchesContactSet: bool;
+ };
+type Cell = 
+ record {
+   name: text;
+   value: Value;
+ };
+type AvailabilitySlot = 
+ record {
+   day: Weekday;
+   shift: Shift;
+ };
+type AttendanceState = 
+ variant {
+   absent;
+   late;
+   present;
+ };
+type AttendanceRecord = 
+ record {
+   eventId: opt EventId;
+   recordedAt: Timestamp;
+   recordedBy: principal;
+   roadieId: RoadieId;
+   shift: opt Shift;
+   state: AttendanceState;
+ };
+type ArchiveReason = 
+ variant {
+   letGo;
+   noShow;
+   other: text;
+   quitDuringTraining;
+   tookAnotherJob;
+ };
+type ApprovalRequest = 
+ record {
+   accessEndsAt: opt Timestamp;
+   linkedRoadieId: opt RoadieId;
+   "principal": principal;
+   role: Role;
+   trainerPositionIds: vec PositionId;
+ };
+type ApprovalDecision = 
+ record {
+   crewId: opt CrewId;
+   mainPositionId: PositionId;
+   orientationEventId: opt EventId;
+   secondPositionId: opt PositionId;
+   startDate: opt DateOnly;
+ };
+type AlertId = nat;
+type Alert = 
+ record {
+   acknowledged: bool;
+   createdAt: Timestamp;
+   id: AlertId;
+   message: text;
+ };
+type AccessGrant = 
+ record {
+   accessEndsAt: opt Timestamp;
+   approvedAt: Timestamp;
+   approvedBy: principal;
+   linkedRoadieId: opt RoadieId;
+   "principal": principal;
+   role: Role;
+   trainerPositionIds: vec PositionId;
+ };
+service : {
+  _immutableObjectStorageBlobsAreLive: (hashes: vec blob) -> (vec bool) query;
+  _immutableObjectStorageBlobsToDelete: () -> (vec blob) query;
+  _immutableObjectStorageConfirmBlobDeletion: (blobs: vec blob) -> ();
+  _immutableObjectStorageCreateCertificate: (blobHash: text) ->
+   (_ImmutableObjectStorageCreateCertificateResult);
+  _immutableObjectStorageRefillCashier: (refillInformation:
+   opt _ImmutableObjectStorageRefillInformation) ->
+   (_ImmutableObjectStorageRefillResult);
+  _immutableObjectStorageUpdateGatewayPrincipals: () -> ();
+  _initialize_access_control: () -> ();
+  _internet_identity_sign_in_finish: () -> (Result__1);
+  _internet_identity_sign_in_start: () -> (blob);
+  /// Acknowledge an alert (Admin/Store Manager only).
+  acknowledgeAlert: (id: AlertId) -> ();
+  /// Add a trainer note (Trainer/Admin/Store Manager only).
+  addTrainerNote: (note: TrainerNote) -> (nat);
+  /// Apply a +1/−1 build-to adjustment (Store Manager/Admin only).
+  adjustBuildTo: (positionId: PositionId, openingDelta: int,
+   afterOpeningDelta: int) -> ();
+  /// Count the current admins.
+  adminCount: () -> (nat) query;
+  /// Approve a submission (Admin/Store Manager only).
+  approveSignup: (id: SignupId, decision: ApprovalDecision, signature:
+   SignatureRef) -> (RoadieId);
+  /// Approve a pending user (Admin only).
+  approveUser: (request: ApprovalRequest) -> ();
+  /// Archive a roadie (Admin/Store Manager only).
+  archiveRoadie: (id: RoadieId, reason: ArchiveReason) -> ();
+  assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  /// Bootstrap the first app Admin from the platform's shared authorization
+  /// grant. The first principal to sign in is made an admin by the platform
+  /// mixin; this bridges that grant into the app's access model so the first
+  /// caller can approve users. Returns true when the caller holds an app Admin
+  /// grant after the call.
+  bootstrapAdmin: () -> (bool);
+  /// Build the Full export including contact set (Admin/Store Manager only).
+  buildFullExport: () -> (ExportData);
+  /// Build the Shareable export (no contact set).
+  buildShareableExport: () -> (ExportData) query;
+  /// Change a roadie's position or crew (Admin/Store Manager only).
+  changePosition: (id: RoadieId, mainPositionId: PositionId,
+   secondPositionId: opt PositionId, crewId: opt CrewId) -> ();
+  /// Create a crew (Admin/Store Manager only).
+  createCrew: (name: text) -> (CrewId);
+  /// Create a leader talk (Admin/Store Manager only).
+  createLeaderTalk: (talk: LeaderTalk) -> (LeaderTalkId);
+  /// Create a position (Admin only).
+  createPosition: (position: Position) -> (PositionId);
+  /// Create a schedule event (Admin only).
+  createScheduleEvent: (event: ScheduleEvent) -> (EventId);
+  /// Create a training group (Admin/Store Manager only).
+  createTrainingGroup: (group: TrainingGroup) -> (TrainingGroupId);
+  /// Delete a position (Admin only).
+  deletePosition: (id: PositionId) -> ();
+  /// Delete a schedule event (Admin only).
+  deleteScheduleEvent: (id: EventId) -> ();
+  /// Re-seed the store when it has no positions yet. Idempotent; returns true
+  /// when a seed was applied, false when the store already had positions.
+  ensureSeeded: () -> (bool);
+  execute: (qJson: text) -> (Result) query;
+  /// Find duplicate cards matching a submission (Admin/Store Manager only).
+  findDuplicates: (id: SignupId) -> (vec DuplicateMatch) query;
+  /// Return the backend API documentation as Markdown.
+  getApiDoc: () -> (text) query;
+  getCallerUserRole: () -> (UserRole) query;
+  /// Read the editable checklists.
+  getChecklists: () -> (Checklists) query;
+  /// Read a roadie's contact set. Admin and Store Manager receive the contact
+  /// set; every other read-capable role receives an empty array.
+  getContactSet: (id: RoadieId) -> (vec ContactSet) query;
+  /// Dashboard summary tiles and per-position progress.
+  getDashboard: () ->
+   (record {
+      boh: vec Position;
+      buildToTotal: nat;
+      certified: opt nat;
+      foh: vec Position;
+      hired: nat;
+      showedAtOrientation: opt nat;
+      stillNeeded: nat;
+    }) query;
+  /// Read the caller's own access grant. Returns null until an Admin has
+  /// approved the caller, so the frontend keeps showing the waiting screen.
+  getMyAccess: () -> (opt AccessGrant) query;
+  /// Read the orientation check-off for a roadie (Admin/Store Manager only).
+  getOrientationCheckoff: (roadieId: RoadieId) ->
+   (opt OrientationCheckoff) query;
+  /// Read retention settings.
+  getRetentionSettings: () -> (RetentionSettings) query;
+  /// Read one roadie card.
+  getRoadie: (id: RoadieId) -> (opt Roadie) query;
+  /// Per-position roster counts: on-hand roadies and open spots.
+  getRosterSummary: () -> (vec RosterSummary) query;
+  /// Read one submission (Admin/Store Manager only).
+  getSignup: (id: SignupId) -> (opt SignupSubmission) query;
+  /// Read the store configuration.
+  getStoreInfo: () -> (StoreInfo) query;
+  /// Read a training group with its unassigned and off-shift lists.
+  getTrainingGroup: (id: TrainingGroupId) -> (opt TrainingGroupView) query;
+  isCallerAdmin: () -> (bool) query;
+  /// Compute whether a roadie is a minor as of now.
+  isMinor: (id: RoadieId) -> (bool) query;
+  /// List all access grants (Admin only).
+  listAccessGrants: () -> (vec AccessGrant) query;
+  /// List alerts (Admin/Store Manager only).
+  listAlerts: () -> (vec Alert) query;
+  /// List attendance records for an event (Admin/Store Manager only).
+  listAttendanceForEvent: (eventId: EventId) -> (vec AttendanceRecord) query;
+  /// List change-log entries visible to the caller.
+  listChangeLog: () -> (vec ChangeLogEntry) query;
+  /// List crews.
+  listCrews: () -> (vec Crew) query;
+  /// List pending sign-up submissions (Admin/Store Manager only).
+  listPendingSignups: () -> (vec SignupSubmission) query;
+  /// List pending access requests (Admin only).
+  listPendingUsers: () -> (vec PendingUser) query;
+  /// List all positions.
+  listPositions: () -> (vec Position) query;
+  /// List roadie cards visible to the caller.
+  listRoadies: () -> (vec Roadie) query;
+  /// List the roster for one position.
+  listRosterForPosition: (positionId: PositionId) -> (vec Roadie) query;
+  /// List the opening schedule.
+  listSchedule: () -> (vec ScheduleEvent) query;
+  /// List trainer notes for a roadie.
+  listTrainerNotes: (roadieId: RoadieId) -> (vec TrainerNote) query;
+  /// Record attendance for a roadie (Admin/Store Manager only).
+  recordAttendance: ("record": AttendanceRecord) -> ();
+  /// Record a final sign-off for a roadie (Admin/Store Manager only).
+  recordFinalSignOff: (signOff: FinalSignOff) -> ();
+  /// Rehire an archived roadie (Admin/Store Manager only).
+  rehireRoadie: (id: RoadieId, reason: opt text) -> ();
+  /// Reject a submission (Admin/Store Manager only).
+  rejectSignup: (id: SignupId) -> ();
+  /// Remove a user's access (Admin only).
+  removeUser: ("principal": principal) -> ();
+  /// Register the caller for approval. Any signed-in caller may call this once;
+  /// it is idempotent and returns true when the caller is already registered or
+  /// already pending. The first caller approved by an Admin becomes an Admin.
+  requestAccess: () -> (bool);
+  /// Re-sign a roadie's availability (Admin/Store Manager only).
+  resignAvailability: (id: RoadieId, signature: SignatureRef) -> ();
+  /// Save the current store configuration as a template (Admin only).
+  saveStoreTemplate: (name: text) -> ();
+  schema: () -> (text) query;
+  /// Record per-roadie attendance for a leader talk (Admin/Store Manager only).
+  setLeaderTalkAttendance: (id: LeaderTalkId, attendees: vec RoadieId) -> ();
+  /// Submit a new sign-up from the kiosk.
+  submitSignup: (profile: RoadieProfile, photo: opt PhotoRef, signature:
+   opt SignatureRef, contactSet: ContactSet) -> (SignupId);
+  /// Update a user's access end date (Admin only).
+  updateAccessEnd: ("principal": principal, accessEndsAt: opt Timestamp) ->
+   ();
+  /// Update the editable checklists (Admin only).
+  updateChecklists: (value: Checklists) -> ();
+  /// Update a roadie's contact set (Admin/Store Manager only).
+  updateContactSet: (id: RoadieId, contactSet: ContactSet) -> ();
+  /// Update the orientation check-off for a roadie (Admin/Store Manager only).
+  updateOrientationCheckoff: (checkoff: OrientationCheckoff) -> ();
+  /// Update a position (Admin only).
+  updatePosition: (position: Position) -> ();
+  /// Update retention settings (Admin only).
+  updateRetentionSettings: (settings: RetentionSettings) -> ();
+  /// Edit a roadie's non-contact details (Admin/Store Manager only).
+  updateRoadieDetails: (id: RoadieId, profile: RoadieProfile) -> ();
+  /// Update a roadie's status (Admin/Store Manager only).
+  updateRoadieStatus: (id: RoadieId, status: RoadieStatus) -> ();
+  /// Update a schedule event (Admin only).
+  updateScheduleEvent: (event: ScheduleEvent) -> ();
+  /// Update the store configuration (Admin only).
+  updateStoreInfo: (info: StoreInfo) -> ();
+  /// Edit a trainer note within its 24-hour lock window (author only).
+  updateTrainerNote: (note: TrainerNote) -> ();
+  /// Update a user's trainer stations (Admin only).
+  updateTrainerStations: ("principal": principal, positionIds:
+   vec PositionId) -> ();
+  /// Update a training group's membership (Admin/Store Manager only).
+  updateTrainingGroup: (group: TrainingGroup) -> ();
+  /// Change an existing user's role (Admin only).
+  updateUserRole: ("principal": principal, role: Role) -> ();
+}
