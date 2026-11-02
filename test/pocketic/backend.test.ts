@@ -33,6 +33,9 @@ function profile(name: string) {
     hobbies: [] as [] | [string],
     favoriteMovie: [] as [] | [string],
     favoriteSnack: [] as [] | [string],
+    favoriteTeam: [] as [] | [string],
+    favoriteDrink: [] as [] | [string],
+    favoriteColor: [] as [] | [string],
     funFact: [] as [] | [string],
     goalHere: [] as [] | [string],
     positionAppliedFor: [] as [] | [string],
@@ -135,6 +138,7 @@ describe("backend access, signup and export contract", () => {
       trainerPositionIds: [],
       accessEndsAt: [],
       linkedRoadieId: [],
+      staffProfile: [],
     });
 
     const signupId = await kiosk.submitSignup(
@@ -150,6 +154,33 @@ describe("backend access, signup and export contract", () => {
     await expect(kiosk.getStoreInfo()).rejects.toThrow();
   });
 
+  it("serves the store logo to a Kiosk caller without store-info access", async () => {
+    // The logo is a public query: a Kiosk login cannot read getStoreInfo, but
+    // it must still be able to read the logo bytes for the welcome screen.
+    const logoBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
+    const info = await admin.getStoreInfo();
+    await admin.updateStoreInfo({ ...info, logo: [logoBytes] });
+
+    // A Kiosk caller reads the logo even though getStoreInfo traps for it.
+    // The public read now returns both logos as a StoreLogos record.
+    await expect(kiosk.getStoreInfo()).rejects.toThrow();
+    const asKiosk = await kiosk.getStoreLogo();
+    expect(asKiosk.logo).toHaveLength(1);
+    expect(Array.from(asKiosk.logo[0]!)).toEqual(Array.from(logoBytes));
+    // No secondary logo has been set, so that field is absent.
+    expect(asKiosk.secondaryLogo).toEqual([]);
+
+    // The public read returns only the logos, never the rest of the store record.
+    const asAdmin = await admin.getStoreLogo();
+    expect(Array.from(asAdmin.logo[0]!)).toEqual(Array.from(logoBytes));
+
+    // Clearing the logo makes the public read report an absent value.
+    await admin.updateStoreInfo({ ...info, logo: [] });
+    const cleared = await kiosk.getStoreLogo();
+    expect(cleared.logo).toEqual([]);
+    expect(cleared.secondaryLogo).toEqual([]);
+  });
+
   it("never returns contact-set fields to a non-manager role", async () => {
     await trainer.requestAccess();
     // Give the trainer a station so it can read the roadie card at all; a
@@ -160,6 +191,7 @@ describe("backend access, signup and export contract", () => {
       trainerPositionIds: [0n],
       accessEndsAt: [],
       linkedRoadieId: [],
+      staffProfile: [],
     });
 
     const signupId = await admin.submitSignup(
@@ -312,6 +344,8 @@ describe("backend access, signup and export contract", () => {
     );
     // A contact-set-touching entry, recorded for managers only.
     await admin.updateContactSet(roadieId, contactSet("+1-555-0006", "changed@example.com", ADULT_DOB));
+    // A non-contact entry about the same roadie, in the trainer's station.
+    await admin.updateRoadieStatus(roadieId, { paperworkDone: null });
 
     const asAdmin = await admin.listChangeLog();
     expect(
@@ -325,7 +359,9 @@ describe("backend access, signup and export contract", () => {
     ).toBe(false);
     // ...but a non-contact entry about a roadie in the trainer's station stays
     // visible.
-    expect(asTrainer.some((entry) => entry.action === "approveSignup")).toBe(true);
+    expect(
+      asTrainer.some((entry) => entry.action === "updateRoadieStatus"),
+    ).toBe(true);
   });
 
   it("moves on hand on changePosition and blocks a minor from a higher-age position", async () => {
@@ -458,6 +494,7 @@ describe("backend access, signup and export contract", () => {
       trainerPositionIds: [],
       accessEndsAt: [],
       linkedRoadieId: [],
+      staffProfile: [],
     });
 
     const signupId = await admin.submitSignup(

@@ -19,6 +19,100 @@ import {
 import { ImagePlus, Loader2, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+/** The longest edge, in pixels, an uploaded store logo is scaled to. */
+const MAX_LOGO_EDGE = 512;
+/** JPEG quality used when re-encoding a non-transparent logo upload. */
+const LOGO_JPEG_QUALITY = 0.85;
+/** How long to wait for a logo to decode before falling back to the original. */
+const LOGO_LOAD_TIMEOUT_MS = 500;
+
+/** Load a `File` into an `HTMLImageElement` for canvas re-encoding. */
+function loadLogoImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    const timer = setTimeout(() => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Timed out reading the logo"));
+    }, LOGO_LOAD_TIMEOUT_MS);
+    image.onload = () => {
+      clearTimeout(timer);
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      clearTimeout(timer);
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read the logo"));
+    };
+    image.src = url;
+  });
+}
+
+/**
+ * Downscale a store logo to at most `MAX_LOGO_EDGE` on its longest edge. PNG
+ * input keeps a PNG output so transparency survives; other raster input is
+ * re-encoded as JPEG. SVG (and any file the browser cannot decode) passes
+ * through unchanged so vector logos stay crisp.
+ */
+async function resizeLogoFile(file: File): Promise<File> {
+  if (file.type === "image/svg+xml") return file;
+  let image: HTMLImageElement;
+  try {
+    image = await loadLogoImage(file);
+  } catch {
+    return file;
+  }
+  const longest = Math.max(image.naturalWidth, image.naturalHeight);
+  const scale = longest > MAX_LOGO_EDGE ? MAX_LOGO_EDGE / longest : 1;
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+  const keepPng = file.type === "image/png";
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+  ctx.drawImage(image, 0, 0, width, height);
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(
+      (result) => resolve(result),
+      keepPng ? "image/png" : "image/jpeg",
+      keepPng ? undefined : LOGO_JPEG_QUALITY,
+    );
+  });
+  if (!blob) return file;
+  const name = file.name.replace(/\.[^.]+$/, "") || "logo";
+  const ext = keepPng ? "png" : "jpg";
+  return new File([blob], `${name}.${ext}`, { type: blob.type });
+}
+
+/**
+ * Detect the MIME type of stored logo bytes from their magic number so the
+ * preview data URL matches the resized output (PNG keeps transparency, other
+ * raster input is JPEG). Defaults to PNG for unrecognized bytes.
+ */
+function logoContentType(ref: PhotoRef): string {
+  if (ref.length >= 8 && ref[0] === 0x89 && ref[1] === 0x50) return "image/png";
+  if (ref.length >= 3 && ref[0] === 0xff && ref[1] === 0xd8)
+    return "image/jpeg";
+  if (
+    ref.length >= 12 &&
+    ref[0] === 0x52 &&
+    ref[1] === 0x49 &&
+    ref[2] === 0x46 &&
+    ref[3] === 0x46 &&
+    ref[8] === 0x57 &&
+    ref[9] === 0x45 &&
+    ref[10] === 0x42 &&
+    ref[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+  return "image/png";
+}
+
 /** Editable draft of the store configuration, with times as `HH:MM` strings. */
 interface StoreDraft {
   appName: string;
@@ -36,6 +130,7 @@ interface StoreDraft {
   trainingGroupSize: string;
   leaderTalkSize: string;
   logo: PhotoRef | undefined;
+  secondaryLogo: PhotoRef | undefined;
 }
 
 function toDraft(info: StoreInfo): StoreDraft {
@@ -56,6 +151,7 @@ function toDraft(info: StoreInfo): StoreDraft {
     trainingGroupSize: info.trainingGroupSize.toString(),
     leaderTalkSize: info.leaderTalkSize.toString(),
     logo: info.logo,
+    secondaryLogo: info.secondaryLogo,
   };
 }
 
@@ -82,6 +178,7 @@ function toStoreInfo(draft: StoreDraft, base: StoreInfo): StoreInfo {
     ),
     leaderTalkSize: BigInt(Math.max(1, Number(draft.leaderTalkSize) || 1)),
     logo: draft.logo,
+    secondaryLogo: draft.secondaryLogo,
   };
 }
 
@@ -92,6 +189,7 @@ export function StoreInfoPanel() {
   const [draft, setDraft] = useState<StoreDraft | null>(null);
   const [saved, setSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const secondaryFileRef = useRef<HTMLInputElement>(null);
 
   // One-time initialization from the loaded record; never overwrite a draft.
   useEffect(() => {
@@ -124,7 +222,16 @@ export function StoreInfoPanel() {
 
   const onLogoChange = (file: File | undefined) => {
     if (!file) return;
-    void fileToRef(file).then((ref) => set("logo", ref));
+    void resizeLogoFile(file)
+      .then(fileToRef)
+      .then((ref) => set("logo", ref));
+  };
+
+  const onSecondaryLogoChange = (file: File | undefined) => {
+    if (!file) return;
+    void resizeLogoFile(file)
+      .then(fileToRef)
+      .then((ref) => set("secondaryLogo", ref));
   };
 
   const onSubmit = (event: React.FormEvent) => {
@@ -144,7 +251,10 @@ export function StoreInfoPanel() {
           <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted">
             {draft.logo ? (
               <img
-                src={refToDataUrl(draft.logo) ?? undefined}
+                src={
+                  refToDataUrl(draft.logo, logoContentType(draft.logo)) ??
+                  undefined
+                }
                 alt={c.storeLogoAlt}
                 className="h-full w-full object-contain"
               />
@@ -183,6 +293,61 @@ export function StoreInfoPanel() {
                 onClick={() => set("logo", undefined)}
               >
                 {c.storeLogoRemove}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted">
+            {draft.secondaryLogo ? (
+              <img
+                src={
+                  refToDataUrl(
+                    draft.secondaryLogo,
+                    logoContentType(draft.secondaryLogo),
+                  ) ?? undefined
+                }
+                alt={c.storeSecondaryLogoAlt}
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <ImagePlus
+                className="h-7 w-7 text-muted-foreground"
+                aria-hidden="true"
+              />
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            <input
+              ref={secondaryFileRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              className="sr-only"
+              data-ocid="admin.store.secondary_logo.input"
+              onChange={(event) =>
+                onSecondaryLogoChange(event.target.files?.[0])
+              }
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="touch-target w-fit"
+              data-ocid="admin.store.secondary_logo.upload_button"
+              onClick={() => secondaryFileRef.current?.click()}
+            >
+              <ImagePlus className="mr-2 h-4 w-4" aria-hidden="true" />
+              {c.storeSecondaryLogoUpload}
+            </Button>
+            {draft.secondaryLogo && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="touch-target w-fit"
+                data-ocid="admin.store.secondary_logo.remove_button"
+                onClick={() => set("secondaryLogo", undefined)}
+              >
+                {c.storeSecondaryLogoRemove}
               </Button>
             )}
           </div>

@@ -18,6 +18,9 @@ export interface KioskDetails {
   hobbies: string;
   favoriteMovie: string;
   favoriteSnack: string;
+  favoriteTeam: string;
+  favoriteDrink: string;
+  favoriteColor: string;
   funFact: string;
   goalHere: string;
   positionAppliedFor: string;
@@ -34,6 +37,9 @@ export const EMPTY_DETAILS: KioskDetails = {
   hobbies: "",
   favoriteMovie: "",
   favoriteSnack: "",
+  favoriteTeam: "",
+  favoriteDrink: "",
+  favoriteColor: "",
   funFact: "",
   goalHere: "",
   positionAppliedFor: "",
@@ -242,25 +248,51 @@ export function KioskDetailsStep({
           />
         </KioskField>
 
-        <KioskField id="kiosk-movie" label={t("field.favoriteMovie")}>
-          <Textarea
-            id="kiosk-movie"
-            data-ocid="kiosk.favorite_movie.textarea"
-            value={value.favoriteMovie}
-            rows={2}
-            autoComplete="off"
-            onChange={(e) => set("favoriteMovie", e.target.value)}
-          />
-        </KioskField>
-
         <KioskField id="kiosk-snack" label={t("field.favoriteSnack")}>
           <Textarea
             id="kiosk-snack"
             data-ocid="kiosk.favorite_snack.textarea"
             value={value.favoriteSnack}
+            placeholder={t("field.favoriteSnackPlaceholder")}
             rows={2}
             autoComplete="off"
             onChange={(e) => set("favoriteSnack", e.target.value)}
+          />
+        </KioskField>
+
+        <KioskField id="kiosk-team" label={t("field.favoriteTeam")}>
+          <Textarea
+            id="kiosk-team"
+            data-ocid="kiosk.favorite_team.textarea"
+            value={value.favoriteTeam}
+            placeholder={t("field.favoriteTeamPlaceholder")}
+            rows={2}
+            autoComplete="off"
+            onChange={(e) => set("favoriteTeam", e.target.value)}
+          />
+        </KioskField>
+
+        <KioskField id="kiosk-drink" label={t("field.favoriteDrink")}>
+          <Textarea
+            id="kiosk-drink"
+            data-ocid="kiosk.favorite_drink.textarea"
+            value={value.favoriteDrink}
+            placeholder={t("field.favoriteDrinkPlaceholder")}
+            rows={2}
+            autoComplete="off"
+            onChange={(e) => set("favoriteDrink", e.target.value)}
+          />
+        </KioskField>
+
+        <KioskField id="kiosk-color" label={t("field.favoriteColor")}>
+          <Textarea
+            id="kiosk-color"
+            data-ocid="kiosk.favorite_color.textarea"
+            value={value.favoriteColor}
+            placeholder={t("field.favoriteColorPlaceholder")}
+            rows={2}
+            autoComplete="off"
+            onChange={(e) => set("favoriteColor", e.target.value)}
           />
         </KioskField>
 

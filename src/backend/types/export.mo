@@ -9,6 +9,10 @@ module {
     shirtSize : ?Text;
     weekdayLunch : ?Bool;
     name : Text;
+    favoriteTeam : ?Text;
+    favoriteSnack : ?Text;
+    favoriteDrink : ?Text;
+    favoriteColor : ?Text;
     phone : ?Common.Phone;
     email : ?Common.Email;
     emergencyContactName : ?Text;

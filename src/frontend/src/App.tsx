@@ -18,6 +18,8 @@ import {
   canAdmin,
   canApprove,
   canExport,
+  canGiftBags,
+  canLeaders,
   useAccessState,
 } from "@/hooks/useAccess";
 import { I18nContext, translate, useI18n } from "@/hooks/useI18n";
@@ -26,7 +28,11 @@ import AdminPage from "@/pages/Admin";
 import ApprovalsPage from "@/pages/Approvals";
 import DashboardPage from "@/pages/Dashboard";
 import ExportPage from "@/pages/Export";
+import GiftBagsPage from "@/pages/GiftBags";
 import KioskPage from "@/pages/Kiosk";
+import LeaderCardPage from "@/pages/LeaderCard";
+import LeadersPage from "@/pages/Leaders";
+import MyProfilePage from "@/pages/MyProfile";
 import RoadieCardPage from "@/pages/RoadieCard";
 import RosterPage from "@/pages/Roster";
 import TodayPage from "@/pages/Today";
@@ -274,6 +280,36 @@ function GuardedExport() {
   );
 }
 
+/** The Gift Bags surface, blocked for roles that cannot use it. */
+function GuardedGiftBags() {
+  const role = useRole();
+  return (
+    <RouteGuard allowed={canGiftBags(role)}>
+      <GiftBagsPage />
+    </RouteGuard>
+  );
+}
+
+/** The Leaders surface, blocked for roles that cannot use it. */
+function GuardedLeaders() {
+  const role = useRole();
+  return (
+    <RouteGuard allowed={canLeaders(role)}>
+      <LeadersPage />
+    </RouteGuard>
+  );
+}
+
+/** A single leader card, blocked for roles that cannot read leaders. */
+function GuardedLeaderCard() {
+  const role = useRole();
+  return (
+    <RouteGuard allowed={canLeaders(role)}>
+      <LeaderCardPage />
+    </RouteGuard>
+  );
+}
+
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
@@ -296,6 +332,12 @@ const rosterRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/roster",
   component: RosterPage,
+});
+
+const myProfileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/my-profile",
+  component: MyProfilePage,
 });
 
 const roadieRoute = createRoute({
@@ -328,16 +370,38 @@ const exportRoute = createRoute({
   component: GuardedExport,
 });
 
+const giftBagsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/gift-bags",
+  component: GuardedGiftBags,
+});
+
+const leadersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/leaders",
+  component: GuardedLeaders,
+});
+
+const leaderCardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/leaders/$leaderId",
+  component: GuardedLeaderCard,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   todayRoute,
   dashboardRoute,
   rosterRoute,
+  myProfileRoute,
   roadieRoute,
   approvalsRoute,
   adminRoute,
   kioskRoute,
   exportRoute,
+  giftBagsRoute,
+  leadersRoute,
+  leaderCardRoute,
 ]);
 
 const router = createRouter({ routeTree });

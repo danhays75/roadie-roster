@@ -30,7 +30,7 @@ import {
   useUpdatePosition,
 } from "@/hooks/useQueries";
 import { Loader2, Minus, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface PositionDraft {
   id: bigint;
@@ -101,10 +101,13 @@ function toPosition(
   };
 }
 
+const BUILD_TO_MAX = 999;
+
 /**
- * A build-to target shown as +1/−1 steppers only. Each tap saves a single
- * increment through `adjustBuildTo`, so the target is never typed as an
- * absolute value and every change is logged.
+ * A build-to target shown as an editable number input flanked by +1/−1
+ * steppers. The steppers save a single-unit delta; typing an absolute value
+ * saves the difference from the current target on blur or Enter. Invalid
+ * entries (non-integer, negative, or above 999) revert to the saved value.
  */
 function BuildToStepper({
   label,
@@ -120,6 +123,29 @@ function BuildToStepper({
   ocid: string;
 }) {
   const { t } = useI18n();
+  const [text, setText] = useState(String(value));
+  const focused = useRef(false);
+
+  // Keep the field in step with the saved value while the user is not editing.
+  useEffect(() => {
+    if (!focused.current) setText(String(value));
+  }, [value]);
+
+  const commit = () => {
+    const parsed = Number(text);
+    const valid =
+      text.trim() !== "" &&
+      Number.isInteger(parsed) &&
+      parsed >= 0 &&
+      parsed <= BUILD_TO_MAX;
+    if (!valid) {
+      setText(String(value));
+      return;
+    }
+    if (parsed === value) return;
+    onDelta(BigInt(parsed - value));
+  };
+
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
@@ -136,9 +162,30 @@ function BuildToStepper({
         >
           <Minus className="h-4 w-4" aria-hidden="true" />
         </Button>
-        <span className="w-8 text-center font-display text-base font-bold tabular-nums">
-          {value}
-        </span>
+        <Input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          aria-label={label}
+          data-ocid={`${ocid}.input`}
+          className="h-9 w-14 touch-target px-1 text-center font-display text-base font-bold tabular-nums"
+          value={text}
+          disabled={disabled}
+          onFocus={() => {
+            focused.current = true;
+          }}
+          onChange={(event) => setText(event.target.value)}
+          onBlur={() => {
+            focused.current = false;
+            commit();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commit();
+            }
+          }}
+        />
         <Button
           type="button"
           variant="outline"

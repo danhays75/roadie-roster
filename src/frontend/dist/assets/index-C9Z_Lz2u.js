@@ -33149,10 +33149,41 @@ var Role$1 = Variant({
 	"storeManager": Null,
 	"kiosk": Null
 });
+var Email = Text;
+var PersonName = Text;
+var Phone = Text;
+var ShirtSize = Text;
+var HatSize = Text;
+var PhotoRef = Vec(Nat8);
+var StaffProfile = Record({
+	"title": Text,
+	"arrivalDate": Opt(DateOnly),
+	"workEmail": Opt(Email),
+	"favoriteSnack": Opt(Text),
+	"departureDate": Opt(DateOnly),
+	"goalHere": Opt(Text),
+	"hometown": Opt(Text),
+	"fullName": PersonName,
+	"favoriteTeam": Opt(Text),
+	"workPhone": Opt(Phone),
+	"favoriteDrink": Opt(Text),
+	"trainerPositionIds": Vec(PositionId),
+	"preferredName": Opt(Text),
+	"shirtSize": Opt(ShirtSize),
+	"homeStoreNumber": Text,
+	"hatSize": Opt(HatSize),
+	"requestedRole": Role$1,
+	"photo": Opt(PhotoRef),
+	"homeStoreCity": Text,
+	"funFact": Opt(Text),
+	"hobbies": Opt(Text),
+	"favoriteColor": Opt(Text)
+});
 var ApprovalRequest = Record({
 	"principal": Principal,
 	"linkedRoadieId": Opt(RoadieId),
 	"role": Role$1,
+	"staffProfile": Opt(StaffProfile),
 	"trainerPositionIds": Vec(PositionId),
 	"accessEndsAt": Opt(Timestamp)
 });
@@ -33177,23 +33208,25 @@ var Weekday$1 = Variant({
 	"tue": Null,
 	"wed": Null
 });
-var Email = Text;
-var Phone = Text;
 var ExportRow = Record({
 	"dateHired": Opt(DateOnly),
+	"favoriteSnack": Opt(Text),
 	"dateOfBirth": Opt(DateOnly),
 	"availabilityByDay": Vec(Tuple(Weekday$1, Vec(Shift$1))),
 	"name": Text,
 	"onboardingComplete": Bool,
+	"favoriteTeam": Opt(Text),
 	"email": Opt(Email),
 	"availability": Vec(Shift$1),
 	"foodHandlers": Bool,
+	"favoriteDrink": Opt(Text),
 	"shirtSize": Opt(Text),
 	"emergencyContactPhone": Opt(Phone),
 	"emergencyContactName": Opt(Text),
 	"policiesComplete": Bool,
 	"phone": Opt(Phone),
 	"alcoholCert": Bool,
+	"favoriteColor": Opt(Text),
 	"weekdayLunch": Opt(Bool)
 });
 var OverviewRow = Record({
@@ -33265,6 +33298,40 @@ var TrainingGroup = Record({
 	"positionId": PositionId,
 	"shift": Shift$1
 });
+var TemplateScheduleEvent = Record({
+	"kind": EventKind$1,
+	"name": Text,
+	"endOffsetDays": Opt(Int),
+	"startOffsetDays": Int
+});
+var TemplatePosition = Record({
+	"openingBuildTo": Nat,
+	"house": House$1,
+	"afterOpeningBuildTo": Nat,
+	"minimumAge": Nat,
+	"code": Text,
+	"name": Text,
+	"needsAlcoholCert": Bool
+});
+var ChecklistItem = Record({
+	"id": Nat,
+	"requiresAlcoholCert": Bool,
+	"text": Text,
+	"minorOnly": Bool
+});
+var Checklists = Record({
+	"paperwork": Vec(ChecklistItem),
+	"orientationUniform": Vec(ChecklistItem)
+});
+var StoreTemplateFile = Record({
+	"leaderTalkName": Text,
+	"leaderTalkSize": Nat,
+	"version": Nat,
+	"trainingGroupSize": Nat,
+	"schedule": Vec(TemplateScheduleEvent),
+	"positions": Vec(TemplatePosition),
+	"checklists": Checklists
+});
 var Result = Record({
 	"hasMore": Bool,
 	"rows": Vec(Vec(Record({
@@ -33284,16 +33351,6 @@ var DuplicateMatch = Record({
 	"roadieId": RoadieId,
 	"archived": Bool
 });
-var ChecklistItem = Record({
-	"id": Nat,
-	"requiresAlcoholCert": Bool,
-	"text": Text,
-	"minorOnly": Bool
-});
-var Checklists = Record({
-	"paperwork": Vec(ChecklistItem),
-	"orientationUniform": Vec(ChecklistItem)
-});
 var AvailabilitySlot = Record({
 	"day": Weekday$1,
 	"shift": Shift$1
@@ -33312,12 +33369,54 @@ var ContactSet = Record({
 	"phone": Phone,
 	"managerSignature": Opt(SignatureRef)
 });
+var GiftBagFilter = Variant({
+	"all": Null,
+	"boh": Null,
+	"foh": Null,
+	"roadies": Null,
+	"leaders": Null,
+	"position": PositionId
+});
+var GiftBagAnswerCount = Record({
+	"count": Nat,
+	"answer": Text
+});
+var GiftBagCategory$1 = Variant({
+	"color": Null,
+	"candySnack": Null,
+	"shirtSize": Null,
+	"hatSize": Null,
+	"sportsTeam": Null,
+	"drink": Null
+});
+var GiftBagGroup = Record({
+	"noAnswer": Nat,
+	"answers": Vec(GiftBagAnswerCount),
+	"category": GiftBagCategory$1
+});
+var GiftBagLabel = Record({
+	"roadieId": RoadieId,
+	"house": House$1,
+	"name": Text,
+	"color": Opt(Text),
+	"positionName": Text,
+	"candySnack": Opt(Text),
+	"shirtSize": Opt(Text),
+	"hatSize": Opt(Text),
+	"sportsTeam": Opt(Text),
+	"drink": Opt(Text)
+});
+var GiftBagsData = Record({
+	"groups": Vec(GiftBagGroup),
+	"labels": Vec(GiftBagLabel)
+});
 var AccessGrant = Record({
 	"principal": Principal,
 	"linkedRoadieId": Opt(RoadieId),
 	"approvedAt": Timestamp,
 	"approvedBy": Principal,
 	"role": Role$1,
+	"staffProfile": Opt(StaffProfile),
 	"trainerPositionIds": Vec(PositionId),
 	"accessEndsAt": Opt(Timestamp)
 });
@@ -33329,7 +33428,6 @@ var OrientationCheckoff = Record({
 	"uniformItems": Vec(Text),
 	"shirtsCount": Nat
 });
-var PhotoRef = Vec(Nat8);
 var RetentionSettings = Record({
 	"notesDays": Nat,
 	"archivedContactSetDays": Nat,
@@ -33346,15 +33444,14 @@ var RoadieStatus$1 = Variant({
 	"needsMoreTime": Null,
 	"archived": Null
 });
-var PersonName = Text;
-var ShirtSize = Text;
-var HatSize = Text;
 var RoadieProfile = Record({
 	"favoriteSnack": Opt(Text),
 	"positionAppliedFor": Opt(Text),
 	"goalHere": Opt(Text),
 	"name": PersonName,
 	"hometown": Opt(Text),
+	"favoriteTeam": Opt(Text),
+	"favoriteDrink": Opt(Text),
 	"preferredName": Opt(Text),
 	"shirtSize": Opt(ShirtSize),
 	"hatSize": Opt(HatSize),
@@ -33362,6 +33459,7 @@ var RoadieProfile = Record({
 	"favoriteMovie": Opt(Text),
 	"funFact": Opt(Text),
 	"hobbies": Opt(Text),
+	"favoriteColor": Opt(Text),
 	"weekdayLunch": Opt(Bool)
 });
 var Roadie = Record({
@@ -33370,6 +33468,7 @@ var Roadie = Record({
 	"orientationEventId": Opt(EventId),
 	"mainPositionId": PositionId,
 	"crossTrainedPositionId": Opt(PositionId),
+	"hireDate": Opt(Timestamp),
 	"corporateEmployeeId": Opt(Text),
 	"contactSet": Opt(ContactSet),
 	"crewId": Opt(CrewId),
@@ -33419,9 +33518,14 @@ var StoreInfo = Record({
 	"pmShiftEnd": TimeOfDay,
 	"trainingGroupSize": Nat,
 	"address": Text,
+	"secondaryLogo": Opt(PhotoRef),
 	"locationName": Text,
 	"timeZone": TimeZone,
 	"storePhone": Phone
+});
+var StoreLogos = Record({
+	"logo": Opt(PhotoRef),
+	"secondaryLogo": Opt(PhotoRef)
 });
 var TrainingGroupView = Record({
 	"offThisShift": Vec(RoadieId),
@@ -33460,9 +33564,29 @@ var Crew = Record({
 	"id": CrewId,
 	"name": Text
 });
+var LeaderSummary = Record({
+	"title": Text,
+	"principal": Principal,
+	"arrivalDate": Opt(DateOnly),
+	"departureDate": Opt(DateOnly),
+	"role": Role$1,
+	"staffProfile": Opt(StaffProfile),
+	"trainerPositionIds": Vec(PositionId)
+});
 var PendingUser = Record({
 	"principal": Principal,
+	"staffProfile": Opt(StaffProfile),
 	"requestedAt": Timestamp
+});
+var TemplateLoadResult = Variant({
+	"ok": Record({
+		"leaderTalkName": Text,
+		"scheduleCount": Nat,
+		"orientationUniformCount": Nat,
+		"positionCount": Nat,
+		"paperworkCount": Nat
+	}),
+	"err": Text
 });
 var FinalSignOff = Record({
 	"roadieId": RoadieId,
@@ -33518,6 +33642,7 @@ Service({
 	"createTrainingGroup": Func([TrainingGroup], [TrainingGroupId], []),
 	"deletePosition": Func([PositionId], [], []),
 	"deleteScheduleEvent": Func([EventId], [], []),
+	"downloadStoreTemplate": Func([], [StoreTemplateFile], ["query"]),
 	"ensureSeeded": Func([], [Bool], []),
 	"execute": Func([Text], [Result], ["query"]),
 	"findDuplicates": Func([SignupId], [Vec(DuplicateMatch)], ["query"]),
@@ -33534,6 +33659,7 @@ Service({
 		"stillNeeded": Nat,
 		"buildToTotal": Nat
 	})], ["query"]),
+	"getGiftBags": Func([GiftBagFilter], [GiftBagsData], ["query"]),
 	"getMyAccess": Func([], [Opt(AccessGrant)], ["query"]),
 	"getOrientationCheckoff": Func([RoadieId], [Opt(OrientationCheckoff)], ["query"]),
 	"getPhoto": Func([RoadieId], [Opt(PhotoRef)], ["query"]),
@@ -33543,6 +33669,7 @@ Service({
 	"getSignup": Func([SignupId], [Opt(SignupSubmission)], ["query"]),
 	"getSignupPhoto": Func([SignupId], [Opt(PhotoRef)], ["query"]),
 	"getStoreInfo": Func([], [StoreInfo], ["query"]),
+	"getStoreLogo": Func([], [StoreLogos], ["query"]),
 	"getTrainingGroup": Func([TrainingGroupId], [Opt(TrainingGroupView)], ["query"]),
 	"hasKioskPin": Func([], [Bool], ["query"]),
 	"isCallerAdmin": Func([], [Bool], ["query"]),
@@ -33552,6 +33679,7 @@ Service({
 	"listAttendanceForEvent": Func([EventId], [Vec(AttendanceRecord)], ["query"]),
 	"listChangeLog": Func([], [Vec(ChangeLogEntry)], ["query"]),
 	"listCrews": Func([], [Vec(Crew)], ["query"]),
+	"listLeaders": Func([], [Vec(LeaderSummary)], ["query"]),
 	"listPendingSignups": Func([], [Vec(SignupSubmission)], ["query"]),
 	"listPendingUsers": Func([], [Vec(PendingUser)], ["query"]),
 	"listPositions": Func([], [Vec(Position)], ["query"]),
@@ -33559,6 +33687,7 @@ Service({
 	"listRosterForPosition": Func([PositionId], [Vec(Roadie)], ["query"]),
 	"listSchedule": Func([], [Vec(ScheduleEvent)], ["query"]),
 	"listTrainerNotes": Func([RoadieId], [Vec(TrainerNote)], ["query"]),
+	"loadStoreTemplate": Func([StoreTemplateFile], [TemplateLoadResult], []),
 	"recordAttendance": Func([AttendanceRecord], [], []),
 	"recordFinalSignOff": Func([FinalSignOff], [], []),
 	"rehireRoadie": Func([RoadieId, Opt(Text)], [], []),
@@ -33576,9 +33705,11 @@ Service({
 		Opt(SignatureRef),
 		ContactSet
 	], [SignupId], []),
+	"submitStaffProfile": Func([StaffProfile], [], []),
 	"updateAccessEnd": Func([Principal, Opt(Timestamp)], [], []),
 	"updateChecklists": Func([Checklists], [], []),
 	"updateContactSet": Func([RoadieId, ContactSet], [], []),
+	"updateMyStaffProfile": Func([StaffProfile], [], []),
 	"updateOrientationCheckoff": Func([OrientationCheckoff], [], []),
 	"updatePosition": Func([Position], [], []),
 	"updateRetentionSettings": Func([RetentionSettings], [], []),
@@ -33666,10 +33797,41 @@ var idlFactory = ({ IDL }) => {
 		"storeManager": IDL.Null,
 		"kiosk": IDL.Null
 	});
+	const Email = IDL.Text;
+	const PersonName = IDL.Text;
+	const Phone = IDL.Text;
+	const ShirtSize = IDL.Text;
+	const HatSize = IDL.Text;
+	const PhotoRef = IDL.Vec(IDL.Nat8);
+	const StaffProfile = IDL.Record({
+		"title": IDL.Text,
+		"arrivalDate": IDL.Opt(DateOnly),
+		"workEmail": IDL.Opt(Email),
+		"favoriteSnack": IDL.Opt(IDL.Text),
+		"departureDate": IDL.Opt(DateOnly),
+		"goalHere": IDL.Opt(IDL.Text),
+		"hometown": IDL.Opt(IDL.Text),
+		"fullName": PersonName,
+		"favoriteTeam": IDL.Opt(IDL.Text),
+		"workPhone": IDL.Opt(Phone),
+		"favoriteDrink": IDL.Opt(IDL.Text),
+		"trainerPositionIds": IDL.Vec(PositionId),
+		"preferredName": IDL.Opt(IDL.Text),
+		"shirtSize": IDL.Opt(ShirtSize),
+		"homeStoreNumber": IDL.Text,
+		"hatSize": IDL.Opt(HatSize),
+		"requestedRole": Role,
+		"photo": IDL.Opt(PhotoRef),
+		"homeStoreCity": IDL.Text,
+		"funFact": IDL.Opt(IDL.Text),
+		"hobbies": IDL.Opt(IDL.Text),
+		"favoriteColor": IDL.Opt(IDL.Text)
+	});
 	const ApprovalRequest = IDL.Record({
 		"principal": IDL.Principal,
 		"linkedRoadieId": IDL.Opt(RoadieId),
 		"role": Role,
+		"staffProfile": IDL.Opt(StaffProfile),
 		"trainerPositionIds": IDL.Vec(PositionId),
 		"accessEndsAt": IDL.Opt(Timestamp)
 	});
@@ -33694,23 +33856,25 @@ var idlFactory = ({ IDL }) => {
 		"tue": IDL.Null,
 		"wed": IDL.Null
 	});
-	const Email = IDL.Text;
-	const Phone = IDL.Text;
 	const ExportRow = IDL.Record({
 		"dateHired": IDL.Opt(DateOnly),
+		"favoriteSnack": IDL.Opt(IDL.Text),
 		"dateOfBirth": IDL.Opt(DateOnly),
 		"availabilityByDay": IDL.Vec(IDL.Tuple(Weekday, IDL.Vec(Shift))),
 		"name": IDL.Text,
 		"onboardingComplete": IDL.Bool,
+		"favoriteTeam": IDL.Opt(IDL.Text),
 		"email": IDL.Opt(Email),
 		"availability": IDL.Vec(Shift),
 		"foodHandlers": IDL.Bool,
+		"favoriteDrink": IDL.Opt(IDL.Text),
 		"shirtSize": IDL.Opt(IDL.Text),
 		"emergencyContactPhone": IDL.Opt(Phone),
 		"emergencyContactName": IDL.Opt(IDL.Text),
 		"policiesComplete": IDL.Bool,
 		"phone": IDL.Opt(Phone),
 		"alcoholCert": IDL.Bool,
+		"favoriteColor": IDL.Opt(IDL.Text),
 		"weekdayLunch": IDL.Opt(IDL.Bool)
 	});
 	const OverviewRow = IDL.Record({
@@ -33782,6 +33946,40 @@ var idlFactory = ({ IDL }) => {
 		"positionId": PositionId,
 		"shift": Shift
 	});
+	const TemplateScheduleEvent = IDL.Record({
+		"kind": EventKind,
+		"name": IDL.Text,
+		"endOffsetDays": IDL.Opt(IDL.Int),
+		"startOffsetDays": IDL.Int
+	});
+	const TemplatePosition = IDL.Record({
+		"openingBuildTo": IDL.Nat,
+		"house": House,
+		"afterOpeningBuildTo": IDL.Nat,
+		"minimumAge": IDL.Nat,
+		"code": IDL.Text,
+		"name": IDL.Text,
+		"needsAlcoholCert": IDL.Bool
+	});
+	const ChecklistItem = IDL.Record({
+		"id": IDL.Nat,
+		"requiresAlcoholCert": IDL.Bool,
+		"text": IDL.Text,
+		"minorOnly": IDL.Bool
+	});
+	const Checklists = IDL.Record({
+		"paperwork": IDL.Vec(ChecklistItem),
+		"orientationUniform": IDL.Vec(ChecklistItem)
+	});
+	const StoreTemplateFile = IDL.Record({
+		"leaderTalkName": IDL.Text,
+		"leaderTalkSize": IDL.Nat,
+		"version": IDL.Nat,
+		"trainingGroupSize": IDL.Nat,
+		"schedule": IDL.Vec(TemplateScheduleEvent),
+		"positions": IDL.Vec(TemplatePosition),
+		"checklists": Checklists
+	});
 	const Value = IDL.Variant({
 		"int": IDL.Int,
 		"nat": IDL.Nat,
@@ -33803,16 +34001,6 @@ var idlFactory = ({ IDL }) => {
 		"roadieId": RoadieId,
 		"archived": IDL.Bool
 	});
-	const ChecklistItem = IDL.Record({
-		"id": IDL.Nat,
-		"requiresAlcoholCert": IDL.Bool,
-		"text": IDL.Text,
-		"minorOnly": IDL.Bool
-	});
-	const Checklists = IDL.Record({
-		"paperwork": IDL.Vec(ChecklistItem),
-		"orientationUniform": IDL.Vec(ChecklistItem)
-	});
 	const AvailabilitySlot = IDL.Record({
 		"day": Weekday,
 		"shift": Shift
@@ -33831,12 +34019,54 @@ var idlFactory = ({ IDL }) => {
 		"phone": Phone,
 		"managerSignature": IDL.Opt(SignatureRef)
 	});
+	const GiftBagFilter = IDL.Variant({
+		"all": IDL.Null,
+		"boh": IDL.Null,
+		"foh": IDL.Null,
+		"roadies": IDL.Null,
+		"leaders": IDL.Null,
+		"position": PositionId
+	});
+	const GiftBagAnswerCount = IDL.Record({
+		"count": IDL.Nat,
+		"answer": IDL.Text
+	});
+	const GiftBagCategory = IDL.Variant({
+		"color": IDL.Null,
+		"candySnack": IDL.Null,
+		"shirtSize": IDL.Null,
+		"hatSize": IDL.Null,
+		"sportsTeam": IDL.Null,
+		"drink": IDL.Null
+	});
+	const GiftBagGroup = IDL.Record({
+		"noAnswer": IDL.Nat,
+		"answers": IDL.Vec(GiftBagAnswerCount),
+		"category": GiftBagCategory
+	});
+	const GiftBagLabel = IDL.Record({
+		"roadieId": RoadieId,
+		"house": House,
+		"name": IDL.Text,
+		"color": IDL.Opt(IDL.Text),
+		"positionName": IDL.Text,
+		"candySnack": IDL.Opt(IDL.Text),
+		"shirtSize": IDL.Opt(IDL.Text),
+		"hatSize": IDL.Opt(IDL.Text),
+		"sportsTeam": IDL.Opt(IDL.Text),
+		"drink": IDL.Opt(IDL.Text)
+	});
+	const GiftBagsData = IDL.Record({
+		"groups": IDL.Vec(GiftBagGroup),
+		"labels": IDL.Vec(GiftBagLabel)
+	});
 	const AccessGrant = IDL.Record({
 		"principal": IDL.Principal,
 		"linkedRoadieId": IDL.Opt(RoadieId),
 		"approvedAt": Timestamp,
 		"approvedBy": IDL.Principal,
 		"role": Role,
+		"staffProfile": IDL.Opt(StaffProfile),
 		"trainerPositionIds": IDL.Vec(PositionId),
 		"accessEndsAt": IDL.Opt(Timestamp)
 	});
@@ -33848,7 +34078,6 @@ var idlFactory = ({ IDL }) => {
 		"uniformItems": IDL.Vec(IDL.Text),
 		"shirtsCount": IDL.Nat
 	});
-	const PhotoRef = IDL.Vec(IDL.Nat8);
 	const RetentionSettings = IDL.Record({
 		"notesDays": IDL.Nat,
 		"archivedContactSetDays": IDL.Nat,
@@ -33865,15 +34094,14 @@ var idlFactory = ({ IDL }) => {
 		"needsMoreTime": IDL.Null,
 		"archived": IDL.Null
 	});
-	const PersonName = IDL.Text;
-	const ShirtSize = IDL.Text;
-	const HatSize = IDL.Text;
 	const RoadieProfile = IDL.Record({
 		"favoriteSnack": IDL.Opt(IDL.Text),
 		"positionAppliedFor": IDL.Opt(IDL.Text),
 		"goalHere": IDL.Opt(IDL.Text),
 		"name": PersonName,
 		"hometown": IDL.Opt(IDL.Text),
+		"favoriteTeam": IDL.Opt(IDL.Text),
+		"favoriteDrink": IDL.Opt(IDL.Text),
 		"preferredName": IDL.Opt(IDL.Text),
 		"shirtSize": IDL.Opt(ShirtSize),
 		"hatSize": IDL.Opt(HatSize),
@@ -33881,6 +34109,7 @@ var idlFactory = ({ IDL }) => {
 		"favoriteMovie": IDL.Opt(IDL.Text),
 		"funFact": IDL.Opt(IDL.Text),
 		"hobbies": IDL.Opt(IDL.Text),
+		"favoriteColor": IDL.Opt(IDL.Text),
 		"weekdayLunch": IDL.Opt(IDL.Bool)
 	});
 	const Roadie = IDL.Record({
@@ -33889,6 +34118,7 @@ var idlFactory = ({ IDL }) => {
 		"orientationEventId": IDL.Opt(EventId),
 		"mainPositionId": PositionId,
 		"crossTrainedPositionId": IDL.Opt(PositionId),
+		"hireDate": IDL.Opt(Timestamp),
 		"corporateEmployeeId": IDL.Opt(IDL.Text),
 		"contactSet": IDL.Opt(ContactSet),
 		"crewId": IDL.Opt(CrewId),
@@ -33939,9 +34169,14 @@ var idlFactory = ({ IDL }) => {
 		"pmShiftEnd": TimeOfDay,
 		"trainingGroupSize": IDL.Nat,
 		"address": IDL.Text,
+		"secondaryLogo": IDL.Opt(PhotoRef),
 		"locationName": IDL.Text,
 		"timeZone": TimeZone,
 		"storePhone": Phone
+	});
+	const StoreLogos = IDL.Record({
+		"logo": IDL.Opt(PhotoRef),
+		"secondaryLogo": IDL.Opt(PhotoRef)
 	});
 	const TrainingGroupView = IDL.Record({
 		"offThisShift": IDL.Vec(RoadieId),
@@ -33981,9 +34216,30 @@ var idlFactory = ({ IDL }) => {
 		"id": CrewId,
 		"name": IDL.Text
 	});
+	const LeaderSummary = IDL.Record({
+		"title": IDL.Text,
+		"principal": IDL.Principal,
+		"arrivalDate": IDL.Opt(DateOnly),
+		"departureDate": IDL.Opt(DateOnly),
+		"role": Role,
+		"staffProfile": IDL.Opt(StaffProfile),
+		"trainerPositionIds": IDL.Vec(PositionId)
+	});
 	const PendingUser = IDL.Record({
 		"principal": IDL.Principal,
+		"staffProfile": IDL.Opt(StaffProfile),
 		"requestedAt": Timestamp
+	});
+	const TemplatePreview = IDL.Record({
+		"leaderTalkName": IDL.Text,
+		"scheduleCount": IDL.Nat,
+		"orientationUniformCount": IDL.Nat,
+		"positionCount": IDL.Nat,
+		"paperworkCount": IDL.Nat
+	});
+	const TemplateLoadResult = IDL.Variant({
+		"ok": TemplatePreview,
+		"err": IDL.Text
 	});
 	const SignOffOutcome = IDL.Variant({
 		"certified": IDL.Null,
@@ -34040,6 +34296,7 @@ var idlFactory = ({ IDL }) => {
 		"createTrainingGroup": IDL.Func([TrainingGroup], [TrainingGroupId], []),
 		"deletePosition": IDL.Func([PositionId], [], []),
 		"deleteScheduleEvent": IDL.Func([EventId], [], []),
+		"downloadStoreTemplate": IDL.Func([], [StoreTemplateFile], ["query"]),
 		"ensureSeeded": IDL.Func([], [IDL.Bool], []),
 		"execute": IDL.Func([IDL.Text], [Result], ["query"]),
 		"findDuplicates": IDL.Func([SignupId], [IDL.Vec(DuplicateMatch)], ["query"]),
@@ -34056,6 +34313,7 @@ var idlFactory = ({ IDL }) => {
 			"stillNeeded": IDL.Nat,
 			"buildToTotal": IDL.Nat
 		})], ["query"]),
+		"getGiftBags": IDL.Func([GiftBagFilter], [GiftBagsData], ["query"]),
 		"getMyAccess": IDL.Func([], [IDL.Opt(AccessGrant)], ["query"]),
 		"getOrientationCheckoff": IDL.Func([RoadieId], [IDL.Opt(OrientationCheckoff)], ["query"]),
 		"getPhoto": IDL.Func([RoadieId], [IDL.Opt(PhotoRef)], ["query"]),
@@ -34065,6 +34323,7 @@ var idlFactory = ({ IDL }) => {
 		"getSignup": IDL.Func([SignupId], [IDL.Opt(SignupSubmission)], ["query"]),
 		"getSignupPhoto": IDL.Func([SignupId], [IDL.Opt(PhotoRef)], ["query"]),
 		"getStoreInfo": IDL.Func([], [StoreInfo], ["query"]),
+		"getStoreLogo": IDL.Func([], [StoreLogos], ["query"]),
 		"getTrainingGroup": IDL.Func([TrainingGroupId], [IDL.Opt(TrainingGroupView)], ["query"]),
 		"hasKioskPin": IDL.Func([], [IDL.Bool], ["query"]),
 		"isCallerAdmin": IDL.Func([], [IDL.Bool], ["query"]),
@@ -34074,6 +34333,7 @@ var idlFactory = ({ IDL }) => {
 		"listAttendanceForEvent": IDL.Func([EventId], [IDL.Vec(AttendanceRecord)], ["query"]),
 		"listChangeLog": IDL.Func([], [IDL.Vec(ChangeLogEntry)], ["query"]),
 		"listCrews": IDL.Func([], [IDL.Vec(Crew)], ["query"]),
+		"listLeaders": IDL.Func([], [IDL.Vec(LeaderSummary)], ["query"]),
 		"listPendingSignups": IDL.Func([], [IDL.Vec(SignupSubmission)], ["query"]),
 		"listPendingUsers": IDL.Func([], [IDL.Vec(PendingUser)], ["query"]),
 		"listPositions": IDL.Func([], [IDL.Vec(Position)], ["query"]),
@@ -34081,6 +34341,7 @@ var idlFactory = ({ IDL }) => {
 		"listRosterForPosition": IDL.Func([PositionId], [IDL.Vec(Roadie)], ["query"]),
 		"listSchedule": IDL.Func([], [IDL.Vec(ScheduleEvent)], ["query"]),
 		"listTrainerNotes": IDL.Func([RoadieId], [IDL.Vec(TrainerNote)], ["query"]),
+		"loadStoreTemplate": IDL.Func([StoreTemplateFile], [TemplateLoadResult], []),
 		"recordAttendance": IDL.Func([AttendanceRecord], [], []),
 		"recordFinalSignOff": IDL.Func([FinalSignOff], [], []),
 		"rehireRoadie": IDL.Func([RoadieId, IDL.Opt(IDL.Text)], [], []),
@@ -34098,9 +34359,11 @@ var idlFactory = ({ IDL }) => {
 			IDL.Opt(SignatureRef),
 			ContactSet
 		], [SignupId], []),
+		"submitStaffProfile": IDL.Func([StaffProfile], [], []),
 		"updateAccessEnd": IDL.Func([IDL.Principal, IDL.Opt(Timestamp)], [], []),
 		"updateChecklists": IDL.Func([Checklists], [], []),
 		"updateContactSet": IDL.Func([RoadieId, ContactSet], [], []),
+		"updateMyStaffProfile": IDL.Func([StaffProfile], [], []),
 		"updateOrientationCheckoff": IDL.Func([OrientationCheckoff], [], []),
 		"updatePosition": IDL.Func([Position], [], []),
 		"updateRetentionSettings": IDL.Func([RetentionSettings], [], []),
@@ -34134,6 +34397,15 @@ var EventKind = /* @__PURE__ */ function(EventKind) {
 	EventKind["trainingDay"] = "trainingDay";
 	EventKind["orientation"] = "orientation";
 	return EventKind;
+}({});
+var GiftBagCategory = /* @__PURE__ */ function(GiftBagCategory) {
+	GiftBagCategory["color"] = "color";
+	GiftBagCategory["candySnack"] = "candySnack";
+	GiftBagCategory["shirtSize"] = "shirtSize";
+	GiftBagCategory["hatSize"] = "hatSize";
+	GiftBagCategory["sportsTeam"] = "sportsTeam";
+	GiftBagCategory["drink"] = "drink";
+	return GiftBagCategory;
 }({});
 var House = /* @__PURE__ */ function(House) {
 	House["boh"] = "boh";
@@ -34342,21 +34614,21 @@ var Backend = class {
 	}
 	async archiveRoadie(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.archiveRoadie(arg0, to_candid_ArchiveReason_n20(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.archiveRoadie(arg0, to_candid_ArchiveReason_n22(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.archiveRoadie(arg0, to_candid_ArchiveReason_n20(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.archiveRoadie(arg0, to_candid_ArchiveReason_n22(this._uploadFile, this._downloadFile, arg1));
 	}
 	async assignCallerUserRole(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n22(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n24(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n22(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n24(this._uploadFile, this._downloadFile, arg1));
 	}
 	async bootstrapAdmin() {
 		if (this.processError) try {
@@ -34370,37 +34642,37 @@ var Backend = class {
 	async buildFullExport() {
 		if (this.processError) try {
 			const result = await this.actor.buildFullExport();
-			return from_candid_ExportData_n23(this._uploadFile, this._downloadFile, result);
+			return from_candid_ExportData_n25(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.buildFullExport();
-			return from_candid_ExportData_n23(this._uploadFile, this._downloadFile, result);
+			return from_candid_ExportData_n25(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async buildShareableExport() {
 		if (this.processError) try {
 			const result = await this.actor.buildShareableExport();
-			return from_candid_ExportData_n23(this._uploadFile, this._downloadFile, result);
+			return from_candid_ExportData_n25(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.buildShareableExport();
-			return from_candid_ExportData_n23(this._uploadFile, this._downloadFile, result);
+			return from_candid_ExportData_n25(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async changePosition(arg0, arg1, arg2, arg3) {
 		if (this.processError) try {
-			return await this.actor.changePosition(arg0, arg1, to_candid_opt_n39(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n40(this._uploadFile, this._downloadFile, arg3));
+			return await this.actor.changePosition(arg0, arg1, to_candid_opt_n41(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n42(this._uploadFile, this._downloadFile, arg3));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.changePosition(arg0, arg1, to_candid_opt_n39(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n40(this._uploadFile, this._downloadFile, arg3));
+		else return await this.actor.changePosition(arg0, arg1, to_candid_opt_n41(this._uploadFile, this._downloadFile, arg2), to_candid_opt_n42(this._uploadFile, this._downloadFile, arg3));
 	}
 	async checkKioskPin(arg0) {
 		if (this.processError) try {
@@ -34431,30 +34703,30 @@ var Backend = class {
 	}
 	async createPosition(arg0) {
 		if (this.processError) try {
-			return await this.actor.createPosition(to_candid_Position_n41(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.createPosition(to_candid_Position_n43(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.createPosition(to_candid_Position_n41(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.createPosition(to_candid_Position_n43(this._uploadFile, this._downloadFile, arg0));
 	}
 	async createScheduleEvent(arg0) {
 		if (this.processError) try {
-			return await this.actor.createScheduleEvent(to_candid_ScheduleEvent_n44(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.createScheduleEvent(to_candid_ScheduleEvent_n46(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.createScheduleEvent(to_candid_ScheduleEvent_n44(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.createScheduleEvent(to_candid_ScheduleEvent_n46(this._uploadFile, this._downloadFile, arg0));
 	}
 	async createTrainingGroup(arg0) {
 		if (this.processError) try {
-			return await this.actor.createTrainingGroup(to_candid_TrainingGroup_n47(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.createTrainingGroup(to_candid_TrainingGroup_n49(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.createTrainingGroup(to_candid_TrainingGroup_n47(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.createTrainingGroup(to_candid_TrainingGroup_n49(this._uploadFile, this._downloadFile, arg0));
 	}
 	async deletePosition(arg0) {
 		if (this.processError) try {
@@ -34474,6 +34746,19 @@ var Backend = class {
 		}
 		else return await this.actor.deleteScheduleEvent(arg0);
 	}
+	async downloadStoreTemplate() {
+		if (this.processError) try {
+			const result = await this.actor.downloadStoreTemplate();
+			return from_candid_StoreTemplateFile_n51(this._uploadFile, this._downloadFile, result);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else {
+			const result = await this.actor.downloadStoreTemplate();
+			return from_candid_StoreTemplateFile_n51(this._uploadFile, this._downloadFile, result);
+		}
+	}
 	async ensureSeeded() {
 		if (this.processError) try {
 			return await this.actor.ensureSeeded();
@@ -34486,14 +34771,14 @@ var Backend = class {
 	async execute(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.execute(arg0);
-			return from_candid_Result_n49(this._uploadFile, this._downloadFile, result);
+			return from_candid_Result_n62(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.execute(arg0);
-			return from_candid_Result_n49(this._uploadFile, this._downloadFile, result);
+			return from_candid_Result_n62(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async findDuplicates(arg0) {
@@ -34517,14 +34802,14 @@ var Backend = class {
 	async getCallerUserRole() {
 		if (this.processError) try {
 			const result = await this.actor.getCallerUserRole();
-			return from_candid_UserRole_n57(this._uploadFile, this._downloadFile, result);
+			return from_candid_UserRole_n70(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getCallerUserRole();
-			return from_candid_UserRole_n57(this._uploadFile, this._downloadFile, result);
+			return from_candid_UserRole_n70(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getChecklists() {
@@ -34539,66 +34824,79 @@ var Backend = class {
 	async getContactSet(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getContactSet(arg0);
-			return from_candid_vec_n58(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n71(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getContactSet(arg0);
-			return from_candid_vec_n58(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n71(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getDashboard() {
 		if (this.processError) try {
 			const result = await this.actor.getDashboard();
-			return from_candid_record_n67(this._uploadFile, this._downloadFile, result);
+			return from_candid_record_n80(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getDashboard();
-			return from_candid_record_n67(this._uploadFile, this._downloadFile, result);
+			return from_candid_record_n80(this._uploadFile, this._downloadFile, result);
+		}
+	}
+	async getGiftBags(arg0) {
+		if (this.processError) try {
+			const result = await this.actor.getGiftBags(to_candid_GiftBagFilter_n84(this._uploadFile, this._downloadFile, arg0));
+			return from_candid_GiftBagsData_n86(this._uploadFile, this._downloadFile, result);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else {
+			const result = await this.actor.getGiftBags(to_candid_GiftBagFilter_n84(this._uploadFile, this._downloadFile, arg0));
+			return from_candid_GiftBagsData_n86(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getMyAccess() {
 		if (this.processError) try {
 			const result = await this.actor.getMyAccess();
-			return from_candid_opt_n72(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n95(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getMyAccess();
-			return from_candid_opt_n72(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n95(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getOrientationCheckoff(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getOrientationCheckoff(arg0);
-			return from_candid_opt_n77(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n106(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getOrientationCheckoff(arg0);
-			return from_candid_opt_n77(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n106(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getPhoto(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getPhoto(arg0);
-			return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n105(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getPhoto(arg0);
-			return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n105(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getRetentionSettings() {
@@ -34613,14 +34911,14 @@ var Backend = class {
 	async getRoadie(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getRoadie(arg0);
-			return from_candid_opt_n79(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n107(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getRoadie(arg0);
-			return from_candid_opt_n79(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n107(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getRosterSummary() {
@@ -34635,53 +34933,66 @@ var Backend = class {
 	async getSignup(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getSignup(arg0);
-			return from_candid_opt_n94(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n120(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getSignup(arg0);
-			return from_candid_opt_n94(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n120(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getSignupPhoto(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getSignupPhoto(arg0);
-			return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n105(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getSignupPhoto(arg0);
-			return from_candid_opt_n78(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n105(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getStoreInfo() {
 		if (this.processError) try {
 			const result = await this.actor.getStoreInfo();
-			return from_candid_StoreInfo_n99(this._uploadFile, this._downloadFile, result);
+			return from_candid_StoreInfo_n125(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getStoreInfo();
-			return from_candid_StoreInfo_n99(this._uploadFile, this._downloadFile, result);
+			return from_candid_StoreInfo_n125(this._uploadFile, this._downloadFile, result);
+		}
+	}
+	async getStoreLogo() {
+		if (this.processError) try {
+			const result = await this.actor.getStoreLogo();
+			return from_candid_StoreLogos_n127(this._uploadFile, this._downloadFile, result);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else {
+			const result = await this.actor.getStoreLogo();
+			return from_candid_StoreLogos_n127(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getTrainingGroup(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getTrainingGroup(arg0);
-			return from_candid_opt_n101(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n129(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getTrainingGroup(arg0);
-			return from_candid_opt_n101(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n129(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async hasKioskPin() {
@@ -34714,14 +35025,14 @@ var Backend = class {
 	async listAccessGrants() {
 		if (this.processError) try {
 			const result = await this.actor.listAccessGrants();
-			return from_candid_vec_n106(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n134(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listAccessGrants();
-			return from_candid_vec_n106(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n134(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listAlerts() {
@@ -34736,27 +35047,27 @@ var Backend = class {
 	async listAttendanceForEvent(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.listAttendanceForEvent(arg0);
-			return from_candid_vec_n107(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n135(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listAttendanceForEvent(arg0);
-			return from_candid_vec_n107(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n135(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listChangeLog() {
 		if (this.processError) try {
 			const result = await this.actor.listChangeLog();
-			return from_candid_vec_n112(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n140(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listChangeLog();
-			return from_candid_vec_n112(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n140(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listCrews() {
@@ -34768,119 +35079,149 @@ var Backend = class {
 		}
 		else return await this.actor.listCrews();
 	}
+	async listLeaders() {
+		if (this.processError) try {
+			const result = await this.actor.listLeaders();
+			return from_candid_vec_n143(this._uploadFile, this._downloadFile, result);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else {
+			const result = await this.actor.listLeaders();
+			return from_candid_vec_n143(this._uploadFile, this._downloadFile, result);
+		}
+	}
 	async listPendingSignups() {
 		if (this.processError) try {
 			const result = await this.actor.listPendingSignups();
-			return from_candid_vec_n115(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n146(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listPendingSignups();
-			return from_candid_vec_n115(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n146(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listPendingUsers() {
 		if (this.processError) try {
-			return await this.actor.listPendingUsers();
+			const result = await this.actor.listPendingUsers();
+			return from_candid_vec_n147(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.listPendingUsers();
+		else {
+			const result = await this.actor.listPendingUsers();
+			return from_candid_vec_n147(this._uploadFile, this._downloadFile, result);
+		}
 	}
 	async listPositions() {
 		if (this.processError) try {
 			const result = await this.actor.listPositions();
-			return from_candid_vec_n68(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n81(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listPositions();
-			return from_candid_vec_n68(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n81(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listRoadies() {
 		if (this.processError) try {
 			const result = await this.actor.listRoadies();
-			return from_candid_vec_n116(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n150(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listRoadies();
-			return from_candid_vec_n116(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n150(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listRosterForPosition(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.listRosterForPosition(arg0);
-			return from_candid_vec_n116(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n150(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listRosterForPosition(arg0);
-			return from_candid_vec_n116(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n150(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listSchedule() {
 		if (this.processError) try {
 			const result = await this.actor.listSchedule();
-			return from_candid_vec_n117(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n151(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listSchedule();
-			return from_candid_vec_n117(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n151(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listTrainerNotes(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.listTrainerNotes(arg0);
-			return from_candid_vec_n122(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n155(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listTrainerNotes(arg0);
-			return from_candid_vec_n122(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n155(this._uploadFile, this._downloadFile, result);
+		}
+	}
+	async loadStoreTemplate(arg0) {
+		if (this.processError) try {
+			const result = await this.actor.loadStoreTemplate(to_candid_StoreTemplateFile_n158(this._uploadFile, this._downloadFile, arg0));
+			return from_candid_TemplateLoadResult_n166(this._uploadFile, this._downloadFile, result);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else {
+			const result = await this.actor.loadStoreTemplate(to_candid_StoreTemplateFile_n158(this._uploadFile, this._downloadFile, arg0));
+			return from_candid_TemplateLoadResult_n166(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async recordAttendance(arg0) {
 		if (this.processError) try {
-			return await this.actor.recordAttendance(to_candid_AttendanceRecord_n125(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.recordAttendance(to_candid_AttendanceRecord_n168(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.recordAttendance(to_candid_AttendanceRecord_n125(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.recordAttendance(to_candid_AttendanceRecord_n168(this._uploadFile, this._downloadFile, arg0));
 	}
 	async recordFinalSignOff(arg0) {
 		if (this.processError) try {
-			return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n128(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n171(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n128(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n171(this._uploadFile, this._downloadFile, arg0));
 	}
 	async rehireRoadie(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.rehireRoadie(arg0, to_candid_opt_n132(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.rehireRoadie(arg0, to_candid_opt_n175(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.rehireRoadie(arg0, to_candid_opt_n132(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.rehireRoadie(arg0, to_candid_opt_n175(this._uploadFile, this._downloadFile, arg1));
 	}
 	async rejectSignup(arg0) {
 		if (this.processError) try {
@@ -34956,21 +35297,30 @@ var Backend = class {
 	}
 	async submitSignup(arg0, arg1, arg2, arg3) {
 		if (this.processError) try {
-			return await this.actor.submitSignup(to_candid_RoadieProfile_n133(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n135(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n136(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n137(this._uploadFile, this._downloadFile, arg3));
+			return await this.actor.submitSignup(to_candid_RoadieProfile_n176(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n178(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n179(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n180(this._uploadFile, this._downloadFile, arg3));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.submitSignup(to_candid_RoadieProfile_n133(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n135(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n136(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n137(this._uploadFile, this._downloadFile, arg3));
+		else return await this.actor.submitSignup(to_candid_RoadieProfile_n176(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n178(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n179(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n180(this._uploadFile, this._downloadFile, arg3));
+	}
+	async submitStaffProfile(arg0) {
+		if (this.processError) try {
+			return await this.actor.submitStaffProfile(to_candid_StaffProfile_n20(this._uploadFile, this._downloadFile, arg0));
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else return await this.actor.submitStaffProfile(to_candid_StaffProfile_n20(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateAccessEnd(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateAccessEnd(arg0, to_candid_opt_n143(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateAccessEnd(arg0, to_candid_opt_n186(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateAccessEnd(arg0, to_candid_opt_n143(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateAccessEnd(arg0, to_candid_opt_n186(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateChecklists(arg0) {
 		if (this.processError) try {
@@ -34983,12 +35333,21 @@ var Backend = class {
 	}
 	async updateContactSet(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n137(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n180(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n137(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n180(this._uploadFile, this._downloadFile, arg1));
+	}
+	async updateMyStaffProfile(arg0) {
+		if (this.processError) try {
+			return await this.actor.updateMyStaffProfile(to_candid_StaffProfile_n20(this._uploadFile, this._downloadFile, arg0));
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else return await this.actor.updateMyStaffProfile(to_candid_StaffProfile_n20(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateOrientationCheckoff(arg0) {
 		if (this.processError) try {
@@ -35001,12 +35360,12 @@ var Backend = class {
 	}
 	async updatePosition(arg0) {
 		if (this.processError) try {
-			return await this.actor.updatePosition(to_candid_Position_n41(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.updatePosition(to_candid_Position_n43(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updatePosition(to_candid_Position_n41(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.updatePosition(to_candid_Position_n43(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateRetentionSettings(arg0) {
 		if (this.processError) try {
@@ -35019,39 +35378,39 @@ var Backend = class {
 	}
 	async updateRoadieDetails(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n133(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n176(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n133(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n176(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateRoadieStatus(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n144(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n187(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n144(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n187(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateScheduleEvent(arg0) {
 		if (this.processError) try {
-			return await this.actor.updateScheduleEvent(to_candid_ScheduleEvent_n44(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.updateScheduleEvent(to_candid_ScheduleEvent_n46(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateScheduleEvent(to_candid_ScheduleEvent_n44(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.updateScheduleEvent(to_candid_ScheduleEvent_n46(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateStoreInfo(arg0) {
 		if (this.processError) try {
-			return await this.actor.updateStoreInfo(to_candid_StoreInfo_n145(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.updateStoreInfo(to_candid_StoreInfo_n188(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateStoreInfo(to_candid_StoreInfo_n145(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.updateStoreInfo(to_candid_StoreInfo_n188(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateTrainerNote(arg0) {
 		if (this.processError) try {
@@ -35073,12 +35432,12 @@ var Backend = class {
 	}
 	async updateTrainingGroup(arg0) {
 		if (this.processError) try {
-			return await this.actor.updateTrainingGroup(to_candid_TrainingGroup_n47(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.updateTrainingGroup(to_candid_TrainingGroup_n49(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateTrainingGroup(to_candid_TrainingGroup_n47(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.updateTrainingGroup(to_candid_TrainingGroup_n49(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateUserRole(arg0, arg1) {
 		if (this.processError) try {
@@ -35090,178 +35449,300 @@ var Backend = class {
 		else return await this.actor.updateUserRole(arg0, to_candid_Role_n19(this._uploadFile, this._downloadFile, arg1));
 	}
 };
-function from_candid_AccessGrant_n73(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n74(_uploadFile, _downloadFile, value);
+function from_candid_AccessGrant_n96(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n97(_uploadFile, _downloadFile, value);
 }
-function from_candid_ArchiveReason_n88(_uploadFile, _downloadFile, value) {
-	return from_candid_variant_n89(_uploadFile, _downloadFile, value);
+function from_candid_ArchiveReason_n116(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n117(_uploadFile, _downloadFile, value);
 }
-function from_candid_AttendanceRecord_n108(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n109(_uploadFile, _downloadFile, value);
+function from_candid_AttendanceRecord_n136(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n137(_uploadFile, _downloadFile, value);
 }
-function from_candid_AttendanceState_n111(_uploadFile, _downloadFile, value) {
+function from_candid_AttendanceState_n139(_uploadFile, _downloadFile, value) {
 	return "present" in value ? "present" : "late" in value ? "late" : "absent" in value ? "absent" : value;
 }
-function from_candid_AvailabilitySlot_n65(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n66(_uploadFile, _downloadFile, value);
+function from_candid_AvailabilitySlot_n78(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n79(_uploadFile, _downloadFile, value);
 }
-function from_candid_Cell_n53(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n54(_uploadFile, _downloadFile, value);
+function from_candid_Cell_n66(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n67(_uploadFile, _downloadFile, value);
 }
-function from_candid_ChangeLogEntry_n113(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n114(_uploadFile, _downloadFile, value);
+function from_candid_ChangeLogEntry_n141(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n142(_uploadFile, _downloadFile, value);
 }
-function from_candid_ContactSet_n59(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n60(_uploadFile, _downloadFile, value);
+function from_candid_ContactSet_n72(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n73(_uploadFile, _downloadFile, value);
 }
 function from_candid_Error_n10(_uploadFile, _downloadFile, value) {
 	return from_candid_variant_n11(_uploadFile, _downloadFile, value);
 }
-function from_candid_EventKind_n121(_uploadFile, _downloadFile, value) {
+function from_candid_EventKind_n56(_uploadFile, _downloadFile, value) {
 	return "other" in value ? "other" : "signOff" in value ? "signOff" : "deadline" in value ? "deadline" : "friendsAndFamily" in value ? "friendsAndFamily" : "openingDay" in value ? "openingDay" : "trainingDay" in value ? "trainingDay" : "orientation" in value ? "orientation" : value;
 }
-function from_candid_ExportData_n23(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n24(_uploadFile, _downloadFile, value);
+function from_candid_ExportData_n25(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n26(_uploadFile, _downloadFile, value);
 }
-function from_candid_ExportRow_n28(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n29(_uploadFile, _downloadFile, value);
+function from_candid_ExportRow_n30(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n31(_uploadFile, _downloadFile, value);
 }
-function from_candid_House_n71(_uploadFile, _downloadFile, value) {
+function from_candid_GiftBagCategory_n91(_uploadFile, _downloadFile, value) {
+	return "color" in value ? "color" : "candySnack" in value ? "candySnack" : "shirtSize" in value ? "shirtSize" : "hatSize" in value ? "hatSize" : "sportsTeam" in value ? "sportsTeam" : "drink" in value ? "drink" : value;
+}
+function from_candid_GiftBagGroup_n89(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n90(_uploadFile, _downloadFile, value);
+}
+function from_candid_GiftBagLabel_n93(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n94(_uploadFile, _downloadFile, value);
+}
+function from_candid_GiftBagsData_n86(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n87(_uploadFile, _downloadFile, value);
+}
+function from_candid_House_n61(_uploadFile, _downloadFile, value) {
 	return "boh" in value ? "boh" : "foh" in value ? "foh" : value;
 }
-function from_candid_Position_n69(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n70(_uploadFile, _downloadFile, value);
+function from_candid_LeaderSummary_n144(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n145(_uploadFile, _downloadFile, value);
+}
+function from_candid_PendingUser_n148(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n149(_uploadFile, _downloadFile, value);
+}
+function from_candid_Position_n82(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n83(_uploadFile, _downloadFile, value);
 }
 function from_candid_Result__1_n8(_uploadFile, _downloadFile, value) {
 	return from_candid_variant_n9(_uploadFile, _downloadFile, value);
 }
-function from_candid_Result_n49(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n50(_uploadFile, _downloadFile, value);
+function from_candid_Result_n62(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n63(_uploadFile, _downloadFile, value);
 }
-function from_candid_RoadieProfile_n90(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n91(_uploadFile, _downloadFile, value);
-}
-function from_candid_RoadieStatus_n82(_uploadFile, _downloadFile, value) {
-	return "active" in value ? "active" : "hired" in value ? "hired" : "inTraining" in value ? "inTraining" : "paperworkDone" in value ? "paperworkDone" : "oriented" in value ? "oriented" : "certified" in value ? "certified" : "needsMoreTime" in value ? "needsMoreTime" : "archived" in value ? "archived" : value;
-}
-function from_candid_Roadie_n80(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n81(_uploadFile, _downloadFile, value);
-}
-function from_candid_Role_n76(_uploadFile, _downloadFile, value) {
-	return "integration" in value ? "integration" : "admin" in value ? "admin" : "trainingManager" in value ? "trainingManager" : "trainer" in value ? "trainer" : "leadership" in value ? "leadership" : "visitingManager" in value ? "visitingManager" : "storeManager" in value ? "storeManager" : "kiosk" in value ? "kiosk" : value;
-}
-function from_candid_ScheduleEvent_n118(_uploadFile, _downloadFile, value) {
+function from_candid_RoadieProfile_n118(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n119(_uploadFile, _downloadFile, value);
 }
-function from_candid_Shift_n35(_uploadFile, _downloadFile, value) {
+function from_candid_RoadieStatus_n110(_uploadFile, _downloadFile, value) {
+	return "active" in value ? "active" : "hired" in value ? "hired" : "inTraining" in value ? "inTraining" : "paperworkDone" in value ? "paperworkDone" : "oriented" in value ? "oriented" : "certified" in value ? "certified" : "needsMoreTime" in value ? "needsMoreTime" : "archived" in value ? "archived" : value;
+}
+function from_candid_Roadie_n108(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n109(_uploadFile, _downloadFile, value);
+}
+function from_candid_Role_n99(_uploadFile, _downloadFile, value) {
+	return "integration" in value ? "integration" : "admin" in value ? "admin" : "trainingManager" in value ? "trainingManager" : "trainer" in value ? "trainer" : "leadership" in value ? "leadership" : "visitingManager" in value ? "visitingManager" : "storeManager" in value ? "storeManager" : "kiosk" in value ? "kiosk" : value;
+}
+function from_candid_ScheduleEvent_n152(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n153(_uploadFile, _downloadFile, value);
+}
+function from_candid_Shift_n38(_uploadFile, _downloadFile, value) {
 	return "am" in value ? "am" : "pm" in value ? "pm" : value;
 }
-function from_candid_SignupStatus_n97(_uploadFile, _downloadFile, value) {
-	return from_candid_variant_n98(_uploadFile, _downloadFile, value);
+function from_candid_SignupStatus_n123(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n124(_uploadFile, _downloadFile, value);
 }
-function from_candid_SignupSubmission_n95(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n96(_uploadFile, _downloadFile, value);
+function from_candid_SignupSubmission_n121(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n122(_uploadFile, _downloadFile, value);
 }
-function from_candid_StoreInfo_n99(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n100(_uploadFile, _downloadFile, value);
+function from_candid_StaffProfile_n101(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n102(_uploadFile, _downloadFile, value);
 }
-function from_candid_TrainerNote_n123(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n124(_uploadFile, _downloadFile, value);
+function from_candid_StoreInfo_n125(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n126(_uploadFile, _downloadFile, value);
 }
-function from_candid_TrainingGroupView_n102(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n103(_uploadFile, _downloadFile, value);
+function from_candid_StoreLogos_n127(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n128(_uploadFile, _downloadFile, value);
 }
-function from_candid_TrainingGroup_n104(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n105(_uploadFile, _downloadFile, value);
+function from_candid_StoreTemplateFile_n51(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n52(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n57(_uploadFile, _downloadFile, value) {
+function from_candid_TemplateLoadResult_n166(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n167(_uploadFile, _downloadFile, value);
+}
+function from_candid_TemplatePosition_n59(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n60(_uploadFile, _downloadFile, value);
+}
+function from_candid_TemplateScheduleEvent_n54(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n55(_uploadFile, _downloadFile, value);
+}
+function from_candid_TrainerNote_n156(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n157(_uploadFile, _downloadFile, value);
+}
+function from_candid_TrainingGroupView_n130(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n131(_uploadFile, _downloadFile, value);
+}
+function from_candid_TrainingGroup_n132(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n133(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n70(_uploadFile, _downloadFile, value) {
 	return "admin" in value ? "admin" : "user" in value ? "user" : "guest" in value ? "guest" : value;
 }
-function from_candid_Value_n55(_uploadFile, _downloadFile, value) {
-	return from_candid_variant_n56(_uploadFile, _downloadFile, value);
+function from_candid_Value_n68(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n69(_uploadFile, _downloadFile, value);
 }
-function from_candid_Weekday_n33(_uploadFile, _downloadFile, value) {
+function from_candid_Weekday_n36(_uploadFile, _downloadFile, value) {
 	return "fri" in value ? "fri" : "mon" in value ? "mon" : "sat" in value ? "sat" : "sun" in value ? "sun" : "thu" in value ? "thu" : "tue" in value ? "tue" : "wed" in value ? "wed" : value;
 }
 function from_candid__ImmutableObjectStorageRefillResult_n4(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n101(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_TrainingGroupView_n102(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n100(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_StaffProfile_n101(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n110(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_Shift_n35(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n103(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n104(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n105(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n106(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n107(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_Roadie_n108(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n111(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n112(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n113(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_ContactSet_n72(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n114(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n115(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_ArchiveReason_n116(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n120(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_SignupSubmission_n121(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n129(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_TrainingGroupView_n130(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n138(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_Shift_n38(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n154(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n30(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n32(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n36(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n33(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n37(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n39(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n38(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n40(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n57(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n61(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n62(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n63(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
-}
 function from_candid_opt_n7(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n72(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_AccessGrant_n73(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n74(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n75(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n77(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n76(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n78(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n95(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_AccessGrant_n96(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n98(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n79(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_Roadie_n80(_uploadFile, _downloadFile, value[0]);
+function from_candid_record_n102(_uploadFile, _downloadFile, value) {
+	return {
+		title: value.title,
+		arrivalDate: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.arrivalDate)),
+		workEmail: record_opt_to_undefined(from_candid_opt_n39(_uploadFile, _downloadFile, value.workEmail)),
+		favoriteSnack: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteSnack)),
+		departureDate: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.departureDate)),
+		goalHere: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.goalHere)),
+		hometown: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.hometown)),
+		fullName: value.fullName,
+		favoriteTeam: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteTeam)),
+		workPhone: record_opt_to_undefined(from_candid_opt_n40(_uploadFile, _downloadFile, value.workPhone)),
+		favoriteDrink: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteDrink)),
+		trainerPositionIds: value.trainerPositionIds,
+		preferredName: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.preferredName)),
+		shirtSize: record_opt_to_undefined(from_candid_opt_n103(_uploadFile, _downloadFile, value.shirtSize)),
+		homeStoreNumber: value.homeStoreNumber,
+		hatSize: record_opt_to_undefined(from_candid_opt_n104(_uploadFile, _downloadFile, value.hatSize)),
+		requestedRole: from_candid_Role_n99(_uploadFile, _downloadFile, value.requestedRole),
+		photo: record_opt_to_undefined(from_candid_opt_n105(_uploadFile, _downloadFile, value.photo)),
+		homeStoreCity: value.homeStoreCity,
+		funFact: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.funFact)),
+		hobbies: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.hobbies)),
+		favoriteColor: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteColor))
+	};
 }
-function from_candid_opt_n83(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
+function from_candid_record_n109(_uploadFile, _downloadFile, value) {
+	return {
+		id: value.id,
+		status: from_candid_RoadieStatus_n110(_uploadFile, _downloadFile, value.status),
+		orientationEventId: record_opt_to_undefined(from_candid_opt_n111(_uploadFile, _downloadFile, value.orientationEventId)),
+		mainPositionId: value.mainPositionId,
+		crossTrainedPositionId: record_opt_to_undefined(from_candid_opt_n112(_uploadFile, _downloadFile, value.crossTrainedPositionId)),
+		hireDate: record_opt_to_undefined(from_candid_opt_n74(_uploadFile, _downloadFile, value.hireDate)),
+		corporateEmployeeId: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.corporateEmployeeId)),
+		contactSet: record_opt_to_undefined(from_candid_opt_n113(_uploadFile, _downloadFile, value.contactSet)),
+		crewId: record_opt_to_undefined(from_candid_opt_n114(_uploadFile, _downloadFile, value.crewId)),
+		signedBy: record_opt_to_undefined(from_candid_opt_n75(_uploadFile, _downloadFile, value.signedBy)),
+		birthdayMonthDay: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.birthdayMonthDay)),
+		isMinor: value.isMinor,
+		archivedReason: record_opt_to_undefined(from_candid_opt_n115(_uploadFile, _downloadFile, value.archivedReason)),
+		photo: record_opt_to_undefined(from_candid_opt_n105(_uploadFile, _downloadFile, value.photo)),
+		hiredAt: value.hiredAt,
+		secondPositionId: record_opt_to_undefined(from_candid_opt_n112(_uploadFile, _downloadFile, value.secondPositionId)),
+		profile: from_candid_RoadieProfile_n118(_uploadFile, _downloadFile, value.profile),
+		startDate: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.startDate)),
+		archivedAt: record_opt_to_undefined(from_candid_opt_n74(_uploadFile, _downloadFile, value.archivedAt))
+	};
 }
-function from_candid_opt_n84(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
+function from_candid_record_n119(_uploadFile, _downloadFile, value) {
+	return {
+		favoriteSnack: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteSnack)),
+		positionAppliedFor: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.positionAppliedFor)),
+		goalHere: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.goalHere)),
+		name: value.name,
+		hometown: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.hometown)),
+		favoriteTeam: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteTeam)),
+		favoriteDrink: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteDrink)),
+		preferredName: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.preferredName)),
+		shirtSize: record_opt_to_undefined(from_candid_opt_n103(_uploadFile, _downloadFile, value.shirtSize)),
+		hatSize: record_opt_to_undefined(from_candid_opt_n104(_uploadFile, _downloadFile, value.hatSize)),
+		shiftsWantedPerWeek: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.shiftsWantedPerWeek)),
+		favoriteMovie: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteMovie)),
+		funFact: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.funFact)),
+		hobbies: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.hobbies)),
+		favoriteColor: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteColor)),
+		weekdayLunch: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.weekdayLunch))
+	};
 }
-function from_candid_opt_n85(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_ContactSet_n59(_uploadFile, _downloadFile, value[0]);
+function from_candid_record_n122(_uploadFile, _downloadFile, value) {
+	return {
+		id: value.id,
+		status: from_candid_SignupStatus_n123(_uploadFile, _downloadFile, value.status),
+		signature: record_opt_to_undefined(from_candid_opt_n76(_uploadFile, _downloadFile, value.signature)),
+		contactSet: from_candid_ContactSet_n72(_uploadFile, _downloadFile, value.contactSet),
+		submittedAt: value.submittedAt,
+		photo: record_opt_to_undefined(from_candid_opt_n105(_uploadFile, _downloadFile, value.photo)),
+		profile: from_candid_RoadieProfile_n118(_uploadFile, _downloadFile, value.profile)
+	};
 }
-function from_candid_opt_n86(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n87(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_ArchiveReason_n88(_uploadFile, _downloadFile, value[0]);
-}
-function from_candid_opt_n92(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n93(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : value[0];
-}
-function from_candid_opt_n94(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_SignupSubmission_n95(_uploadFile, _downloadFile, value[0]);
-}
-function from_candid_record_n100(_uploadFile, _downloadFile, value) {
+function from_candid_record_n126(_uploadFile, _downloadFile, value) {
 	return {
 		amShiftEnd: value.amShiftEnd,
 		pmShiftStart: value.pmShiftStart,
@@ -35269,45 +35750,52 @@ function from_candid_record_n100(_uploadFile, _downloadFile, value) {
 		leaderTalkName: value.leaderTalkName,
 		appName: value.appName,
 		leaderTalkSize: value.leaderTalkSize,
-		logo: record_opt_to_undefined(from_candid_opt_n78(_uploadFile, _downloadFile, value.logo)),
+		logo: record_opt_to_undefined(from_candid_opt_n105(_uploadFile, _downloadFile, value.logo)),
 		amShiftStart: value.amShiftStart,
 		openingDate: value.openingDate,
 		pmShiftEnd: value.pmShiftEnd,
 		trainingGroupSize: value.trainingGroupSize,
 		address: value.address,
+		secondaryLogo: record_opt_to_undefined(from_candid_opt_n105(_uploadFile, _downloadFile, value.secondaryLogo)),
 		locationName: value.locationName,
 		timeZone: value.timeZone,
 		storePhone: value.storePhone
 	};
 }
-function from_candid_record_n103(_uploadFile, _downloadFile, value) {
+function from_candid_record_n128(_uploadFile, _downloadFile, value) {
+	return {
+		logo: record_opt_to_undefined(from_candid_opt_n105(_uploadFile, _downloadFile, value.logo)),
+		secondaryLogo: record_opt_to_undefined(from_candid_opt_n105(_uploadFile, _downloadFile, value.secondaryLogo))
+	};
+}
+function from_candid_record_n131(_uploadFile, _downloadFile, value) {
 	return {
 		offThisShift: value.offThisShift,
 		unassigned: value.unassigned,
-		group: from_candid_TrainingGroup_n104(_uploadFile, _downloadFile, value.group)
+		group: from_candid_TrainingGroup_n132(_uploadFile, _downloadFile, value.group)
 	};
 }
-function from_candid_record_n105(_uploadFile, _downloadFile, value) {
+function from_candid_record_n133(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		day: value.day,
-		trainerPrincipal: record_opt_to_undefined(from_candid_opt_n62(_uploadFile, _downloadFile, value.trainerPrincipal)),
+		trainerPrincipal: record_opt_to_undefined(from_candid_opt_n75(_uploadFile, _downloadFile, value.trainerPrincipal)),
 		memberRoadieIds: value.memberRoadieIds,
 		positionId: value.positionId,
-		shift: from_candid_Shift_n35(_uploadFile, _downloadFile, value.shift)
+		shift: from_candid_Shift_n38(_uploadFile, _downloadFile, value.shift)
 	};
 }
-function from_candid_record_n109(_uploadFile, _downloadFile, value) {
+function from_candid_record_n137(_uploadFile, _downloadFile, value) {
 	return {
-		eventId: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.eventId)),
+		eventId: record_opt_to_undefined(from_candid_opt_n111(_uploadFile, _downloadFile, value.eventId)),
 		roadieId: value.roadieId,
 		recordedAt: value.recordedAt,
 		recordedBy: value.recordedBy,
-		shift: record_opt_to_undefined(from_candid_opt_n110(_uploadFile, _downloadFile, value.shift)),
-		state: from_candid_AttendanceState_n111(_uploadFile, _downloadFile, value.state)
+		shift: record_opt_to_undefined(from_candid_opt_n138(_uploadFile, _downloadFile, value.shift)),
+		state: from_candid_AttendanceState_n139(_uploadFile, _downloadFile, value.state)
 	};
 }
-function from_candid_record_n114(_uploadFile, _downloadFile, value) {
+function from_candid_record_n142(_uploadFile, _downloadFile, value) {
 	return {
 		at: value.at,
 		by: value.by,
@@ -35315,19 +35803,37 @@ function from_candid_record_n114(_uploadFile, _downloadFile, value) {
 		action: value.action,
 		detail: value.detail,
 		touchesContactSet: value.touchesContactSet,
-		subjectRoadieId: record_opt_to_undefined(from_candid_opt_n75(_uploadFile, _downloadFile, value.subjectRoadieId))
+		subjectRoadieId: record_opt_to_undefined(from_candid_opt_n98(_uploadFile, _downloadFile, value.subjectRoadieId))
 	};
 }
-function from_candid_record_n119(_uploadFile, _downloadFile, value) {
+function from_candid_record_n145(_uploadFile, _downloadFile, value) {
+	return {
+		title: value.title,
+		principal: value.principal,
+		arrivalDate: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.arrivalDate)),
+		departureDate: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.departureDate)),
+		role: from_candid_Role_n99(_uploadFile, _downloadFile, value.role),
+		staffProfile: record_opt_to_undefined(from_candid_opt_n100(_uploadFile, _downloadFile, value.staffProfile)),
+		trainerPositionIds: value.trainerPositionIds
+	};
+}
+function from_candid_record_n149(_uploadFile, _downloadFile, value) {
+	return {
+		principal: value.principal,
+		staffProfile: record_opt_to_undefined(from_candid_opt_n100(_uploadFile, _downloadFile, value.staffProfile)),
+		requestedAt: value.requestedAt
+	};
+}
+function from_candid_record_n153(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
-		end: record_opt_to_undefined(from_candid_opt_n120(_uploadFile, _downloadFile, value.end)),
-		kind: from_candid_EventKind_n121(_uploadFile, _downloadFile, value.kind),
+		end: record_opt_to_undefined(from_candid_opt_n154(_uploadFile, _downloadFile, value.end)),
+		kind: from_candid_EventKind_n56(_uploadFile, _downloadFile, value.kind),
 		name: value.name,
 		start: value.start
 	};
 }
-function from_candid_record_n124(_uploadFile, _downloadFile, value) {
+function from_candid_record_n157(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		day: value.day,
@@ -35335,15 +35841,15 @@ function from_candid_record_n124(_uploadFile, _downloadFile, value) {
 		roadieId: value.roadieId,
 		createdAt: value.createdAt,
 		author: value.author,
-		shift: from_candid_Shift_n35(_uploadFile, _downloadFile, value.shift),
+		shift: from_candid_Shift_n38(_uploadFile, _downloadFile, value.shift),
 		workOn: value.workOn
 	};
 }
-function from_candid_record_n24(_uploadFile, _downloadFile, value) {
+function from_candid_record_n26(_uploadFile, _downloadFile, value) {
 	return {
 		fohNeed: value.fohNeed,
 		fohTotal: value.fohTotal,
-		groups: from_candid_vec_n25(_uploadFile, _downloadFile, value.groups),
+		groups: from_candid_vec_n27(_uploadFile, _downloadFile, value.groups),
 		bohTotal: value.bohTotal,
 		overview: value.overview,
 		bohNeed: value.bohNeed,
@@ -35354,22 +35860,26 @@ function from_candid_record_n24(_uploadFile, _downloadFile, value) {
 		grandNeed: value.grandNeed
 	};
 }
-function from_candid_record_n29(_uploadFile, _downloadFile, value) {
+function from_candid_record_n31(_uploadFile, _downloadFile, value) {
 	return {
-		dateHired: record_opt_to_undefined(from_candid_opt_n30(_uploadFile, _downloadFile, value.dateHired)),
-		dateOfBirth: record_opt_to_undefined(from_candid_opt_n30(_uploadFile, _downloadFile, value.dateOfBirth)),
-		availabilityByDay: from_candid_vec_n31(_uploadFile, _downloadFile, value.availabilityByDay),
+		dateHired: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.dateHired)),
+		favoriteSnack: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteSnack)),
+		dateOfBirth: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.dateOfBirth)),
+		availabilityByDay: from_candid_vec_n34(_uploadFile, _downloadFile, value.availabilityByDay),
 		name: value.name,
 		onboardingComplete: value.onboardingComplete,
-		email: record_opt_to_undefined(from_candid_opt_n36(_uploadFile, _downloadFile, value.email)),
-		availability: from_candid_vec_n34(_uploadFile, _downloadFile, value.availability),
+		favoriteTeam: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteTeam)),
+		email: record_opt_to_undefined(from_candid_opt_n39(_uploadFile, _downloadFile, value.email)),
+		availability: from_candid_vec_n37(_uploadFile, _downloadFile, value.availability),
 		foodHandlers: value.foodHandlers,
-		shirtSize: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.shirtSize)),
-		emergencyContactPhone: record_opt_to_undefined(from_candid_opt_n38(_uploadFile, _downloadFile, value.emergencyContactPhone)),
-		emergencyContactName: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.emergencyContactName)),
+		favoriteDrink: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteDrink)),
+		shirtSize: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.shirtSize)),
+		emergencyContactPhone: record_opt_to_undefined(from_candid_opt_n40(_uploadFile, _downloadFile, value.emergencyContactPhone)),
+		emergencyContactName: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.emergencyContactName)),
 		policiesComplete: value.policiesComplete,
-		phone: record_opt_to_undefined(from_candid_opt_n38(_uploadFile, _downloadFile, value.phone)),
+		phone: record_opt_to_undefined(from_candid_opt_n40(_uploadFile, _downloadFile, value.phone)),
 		alcoholCert: value.alcoholCert,
+		favoriteColor: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteColor)),
 		weekdayLunch: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.weekdayLunch))
 	};
 }
@@ -35379,44 +35889,74 @@ function from_candid_record_n5(_uploadFile, _downloadFile, value) {
 		topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
 	};
 }
-function from_candid_record_n50(_uploadFile, _downloadFile, value) {
+function from_candid_record_n52(_uploadFile, _downloadFile, value) {
 	return {
-		hasMore: value.hasMore,
-		rows: from_candid_vec_n51(_uploadFile, _downloadFile, value.rows)
+		leaderTalkName: value.leaderTalkName,
+		leaderTalkSize: value.leaderTalkSize,
+		version: value.version,
+		trainingGroupSize: value.trainingGroupSize,
+		schedule: from_candid_vec_n53(_uploadFile, _downloadFile, value.schedule),
+		positions: from_candid_vec_n58(_uploadFile, _downloadFile, value.positions),
+		checklists: value.checklists
 	};
 }
-function from_candid_record_n54(_uploadFile, _downloadFile, value) {
+function from_candid_record_n55(_uploadFile, _downloadFile, value) {
 	return {
-		value: from_candid_Value_n55(_uploadFile, _downloadFile, value.value),
-		name: value.name
+		kind: from_candid_EventKind_n56(_uploadFile, _downloadFile, value.kind),
+		name: value.name,
+		endOffsetDays: record_opt_to_undefined(from_candid_opt_n57(_uploadFile, _downloadFile, value.endOffsetDays)),
+		startOffsetDays: value.startOffsetDays
 	};
 }
 function from_candid_record_n60(_uploadFile, _downloadFile, value) {
 	return {
-		managerSignedAt: record_opt_to_undefined(from_candid_opt_n61(_uploadFile, _downloadFile, value.managerSignedAt)),
-		managerSignedBy: record_opt_to_undefined(from_candid_opt_n62(_uploadFile, _downloadFile, value.managerSignedBy)),
-		availabilitySignedAt: record_opt_to_undefined(from_candid_opt_n61(_uploadFile, _downloadFile, value.availabilitySignedAt)),
-		dateOfBirth: value.dateOfBirth,
-		email: value.email,
-		availabilitySignature: record_opt_to_undefined(from_candid_opt_n63(_uploadFile, _downloadFile, value.availabilitySignature)),
-		availability: from_candid_vec_n64(_uploadFile, _downloadFile, value.availability),
-		availabilityResignPending: value.availabilityResignPending,
-		emergencyContactPhone: value.emergencyContactPhone,
-		emergencyContactName: value.emergencyContactName,
-		phone: value.phone,
-		managerSignature: record_opt_to_undefined(from_candid_opt_n63(_uploadFile, _downloadFile, value.managerSignature))
+		openingBuildTo: value.openingBuildTo,
+		house: from_candid_House_n61(_uploadFile, _downloadFile, value.house),
+		afterOpeningBuildTo: value.afterOpeningBuildTo,
+		minimumAge: value.minimumAge,
+		code: value.code,
+		name: value.name,
+		needsAlcoholCert: value.needsAlcoholCert
 	};
 }
-function from_candid_record_n66(_uploadFile, _downloadFile, value) {
+function from_candid_record_n63(_uploadFile, _downloadFile, value) {
 	return {
-		day: from_candid_Weekday_n33(_uploadFile, _downloadFile, value.day),
-		shift: from_candid_Shift_n35(_uploadFile, _downloadFile, value.shift)
+		hasMore: value.hasMore,
+		rows: from_candid_vec_n64(_uploadFile, _downloadFile, value.rows)
 	};
 }
 function from_candid_record_n67(_uploadFile, _downloadFile, value) {
 	return {
-		boh: from_candid_vec_n68(_uploadFile, _downloadFile, value.boh),
-		foh: from_candid_vec_n68(_uploadFile, _downloadFile, value.foh),
+		value: from_candid_Value_n68(_uploadFile, _downloadFile, value.value),
+		name: value.name
+	};
+}
+function from_candid_record_n73(_uploadFile, _downloadFile, value) {
+	return {
+		managerSignedAt: record_opt_to_undefined(from_candid_opt_n74(_uploadFile, _downloadFile, value.managerSignedAt)),
+		managerSignedBy: record_opt_to_undefined(from_candid_opt_n75(_uploadFile, _downloadFile, value.managerSignedBy)),
+		availabilitySignedAt: record_opt_to_undefined(from_candid_opt_n74(_uploadFile, _downloadFile, value.availabilitySignedAt)),
+		dateOfBirth: value.dateOfBirth,
+		email: value.email,
+		availabilitySignature: record_opt_to_undefined(from_candid_opt_n76(_uploadFile, _downloadFile, value.availabilitySignature)),
+		availability: from_candid_vec_n77(_uploadFile, _downloadFile, value.availability),
+		availabilityResignPending: value.availabilityResignPending,
+		emergencyContactPhone: value.emergencyContactPhone,
+		emergencyContactName: value.emergencyContactName,
+		phone: value.phone,
+		managerSignature: record_opt_to_undefined(from_candid_opt_n76(_uploadFile, _downloadFile, value.managerSignature))
+	};
+}
+function from_candid_record_n79(_uploadFile, _downloadFile, value) {
+	return {
+		day: from_candid_Weekday_n36(_uploadFile, _downloadFile, value.day),
+		shift: from_candid_Shift_n38(_uploadFile, _downloadFile, value.shift)
+	};
+}
+function from_candid_record_n80(_uploadFile, _downloadFile, value) {
+	return {
+		boh: from_candid_vec_n81(_uploadFile, _downloadFile, value.boh),
+		foh: from_candid_vec_n81(_uploadFile, _downloadFile, value.foh),
 		hired: value.hired,
 		showedAtOrientation: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.showedAtOrientation)),
 		certified: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.certified)),
@@ -35424,12 +35964,12 @@ function from_candid_record_n67(_uploadFile, _downloadFile, value) {
 		buildToTotal: value.buildToTotal
 	};
 }
-function from_candid_record_n70(_uploadFile, _downloadFile, value) {
+function from_candid_record_n83(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		openingBuildTo: value.openingBuildTo,
-		crewManager: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.crewManager)),
-		house: from_candid_House_n71(_uploadFile, _downloadFile, value.house),
+		crewManager: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.crewManager)),
+		house: from_candid_House_n61(_uploadFile, _downloadFile, value.house),
 		afterOpeningBuildTo: value.afterOpeningBuildTo,
 		minimumAge: value.minimumAge,
 		code: value.code,
@@ -35439,72 +35979,50 @@ function from_candid_record_n70(_uploadFile, _downloadFile, value) {
 		hatsRequired: value.hatsRequired
 	};
 }
-function from_candid_record_n74(_uploadFile, _downloadFile, value) {
+function from_candid_record_n87(_uploadFile, _downloadFile, value) {
+	return {
+		groups: from_candid_vec_n88(_uploadFile, _downloadFile, value.groups),
+		labels: from_candid_vec_n92(_uploadFile, _downloadFile, value.labels)
+	};
+}
+function from_candid_record_n90(_uploadFile, _downloadFile, value) {
+	return {
+		noAnswer: value.noAnswer,
+		answers: value.answers,
+		category: from_candid_GiftBagCategory_n91(_uploadFile, _downloadFile, value.category)
+	};
+}
+function from_candid_record_n94(_uploadFile, _downloadFile, value) {
+	return {
+		roadieId: value.roadieId,
+		house: from_candid_House_n61(_uploadFile, _downloadFile, value.house),
+		name: value.name,
+		color: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.color)),
+		positionName: value.positionName,
+		candySnack: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.candySnack)),
+		shirtSize: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.shirtSize)),
+		hatSize: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.hatSize)),
+		sportsTeam: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.sportsTeam)),
+		drink: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.drink))
+	};
+}
+function from_candid_record_n97(_uploadFile, _downloadFile, value) {
 	return {
 		principal: value.principal,
-		linkedRoadieId: record_opt_to_undefined(from_candid_opt_n75(_uploadFile, _downloadFile, value.linkedRoadieId)),
+		linkedRoadieId: record_opt_to_undefined(from_candid_opt_n98(_uploadFile, _downloadFile, value.linkedRoadieId)),
 		approvedAt: value.approvedAt,
 		approvedBy: value.approvedBy,
-		role: from_candid_Role_n76(_uploadFile, _downloadFile, value.role),
+		role: from_candid_Role_n99(_uploadFile, _downloadFile, value.role),
+		staffProfile: record_opt_to_undefined(from_candid_opt_n100(_uploadFile, _downloadFile, value.staffProfile)),
 		trainerPositionIds: value.trainerPositionIds,
-		accessEndsAt: record_opt_to_undefined(from_candid_opt_n61(_uploadFile, _downloadFile, value.accessEndsAt))
+		accessEndsAt: record_opt_to_undefined(from_candid_opt_n74(_uploadFile, _downloadFile, value.accessEndsAt))
 	};
 }
-function from_candid_record_n81(_uploadFile, _downloadFile, value) {
-	return {
-		id: value.id,
-		status: from_candid_RoadieStatus_n82(_uploadFile, _downloadFile, value.status),
-		orientationEventId: record_opt_to_undefined(from_candid_opt_n83(_uploadFile, _downloadFile, value.orientationEventId)),
-		mainPositionId: value.mainPositionId,
-		crossTrainedPositionId: record_opt_to_undefined(from_candid_opt_n84(_uploadFile, _downloadFile, value.crossTrainedPositionId)),
-		corporateEmployeeId: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.corporateEmployeeId)),
-		contactSet: record_opt_to_undefined(from_candid_opt_n85(_uploadFile, _downloadFile, value.contactSet)),
-		crewId: record_opt_to_undefined(from_candid_opt_n86(_uploadFile, _downloadFile, value.crewId)),
-		signedBy: record_opt_to_undefined(from_candid_opt_n62(_uploadFile, _downloadFile, value.signedBy)),
-		birthdayMonthDay: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.birthdayMonthDay)),
-		isMinor: value.isMinor,
-		archivedReason: record_opt_to_undefined(from_candid_opt_n87(_uploadFile, _downloadFile, value.archivedReason)),
-		photo: record_opt_to_undefined(from_candid_opt_n78(_uploadFile, _downloadFile, value.photo)),
-		hiredAt: value.hiredAt,
-		secondPositionId: record_opt_to_undefined(from_candid_opt_n84(_uploadFile, _downloadFile, value.secondPositionId)),
-		profile: from_candid_RoadieProfile_n90(_uploadFile, _downloadFile, value.profile),
-		startDate: record_opt_to_undefined(from_candid_opt_n30(_uploadFile, _downloadFile, value.startDate)),
-		archivedAt: record_opt_to_undefined(from_candid_opt_n61(_uploadFile, _downloadFile, value.archivedAt))
-	};
+function from_candid_tuple_n28(_uploadFile, _downloadFile, value) {
+	return [value[0], from_candid_vec_n29(_uploadFile, _downloadFile, value[1])];
 }
-function from_candid_record_n91(_uploadFile, _downloadFile, value) {
-	return {
-		favoriteSnack: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.favoriteSnack)),
-		positionAppliedFor: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.positionAppliedFor)),
-		goalHere: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.goalHere)),
-		name: value.name,
-		hometown: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.hometown)),
-		preferredName: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.preferredName)),
-		shirtSize: record_opt_to_undefined(from_candid_opt_n92(_uploadFile, _downloadFile, value.shirtSize)),
-		hatSize: record_opt_to_undefined(from_candid_opt_n93(_uploadFile, _downloadFile, value.hatSize)),
-		shiftsWantedPerWeek: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.shiftsWantedPerWeek)),
-		favoriteMovie: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.favoriteMovie)),
-		funFact: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.funFact)),
-		hobbies: record_opt_to_undefined(from_candid_opt_n37(_uploadFile, _downloadFile, value.hobbies)),
-		weekdayLunch: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.weekdayLunch))
-	};
-}
-function from_candid_record_n96(_uploadFile, _downloadFile, value) {
-	return {
-		id: value.id,
-		status: from_candid_SignupStatus_n97(_uploadFile, _downloadFile, value.status),
-		signature: record_opt_to_undefined(from_candid_opt_n63(_uploadFile, _downloadFile, value.signature)),
-		contactSet: from_candid_ContactSet_n59(_uploadFile, _downloadFile, value.contactSet),
-		submittedAt: value.submittedAt,
-		photo: record_opt_to_undefined(from_candid_opt_n78(_uploadFile, _downloadFile, value.photo)),
-		profile: from_candid_RoadieProfile_n90(_uploadFile, _downloadFile, value.profile)
-	};
-}
-function from_candid_tuple_n26(_uploadFile, _downloadFile, value) {
-	return [value[0], from_candid_vec_n27(_uploadFile, _downloadFile, value[1])];
-}
-function from_candid_tuple_n32(_uploadFile, _downloadFile, value) {
-	return [from_candid_Weekday_n33(_uploadFile, _downloadFile, value[0]), from_candid_vec_n34(_uploadFile, _downloadFile, value[1])];
+function from_candid_tuple_n35(_uploadFile, _downloadFile, value) {
+	return [from_candid_Weekday_n36(_uploadFile, _downloadFile, value[0]), from_candid_vec_n37(_uploadFile, _downloadFile, value[1])];
 }
 function from_candid_variant_n11(_uploadFile, _downloadFile, value) {
 	return "FrontendOriginsNotConfigured" in value ? {
@@ -35539,7 +36057,46 @@ function from_candid_variant_n11(_uploadFile, _downloadFile, value) {
 		FrontendOriginMismatch: value.FrontendOriginMismatch
 	} : value;
 }
-function from_candid_variant_n56(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n117(_uploadFile, _downloadFile, value) {
+	return "noShow" in value ? {
+		__kind__: "noShow",
+		noShow: value.noShow
+	} : "quitDuringTraining" in value ? {
+		__kind__: "quitDuringTraining",
+		quitDuringTraining: value.quitDuringTraining
+	} : "other" in value ? {
+		__kind__: "other",
+		other: value.other
+	} : "letGo" in value ? {
+		__kind__: "letGo",
+		letGo: value.letGo
+	} : "tookAnotherJob" in value ? {
+		__kind__: "tookAnotherJob",
+		tookAnotherJob: value.tookAnotherJob
+	} : value;
+}
+function from_candid_variant_n124(_uploadFile, _downloadFile, value) {
+	return "pending" in value ? {
+		__kind__: "pending",
+		pending: value.pending
+	} : "approved" in value ? {
+		__kind__: "approved",
+		approved: value.approved
+	} : "rejected" in value ? {
+		__kind__: "rejected",
+		rejected: value.rejected
+	} : value;
+}
+function from_candid_variant_n167(_uploadFile, _downloadFile, value) {
+	return "ok" in value ? {
+		__kind__: "ok",
+		ok: value.ok
+	} : "err" in value ? {
+		__kind__: "err",
+		err: value.err
+	} : value;
+}
+function from_candid_variant_n69(_uploadFile, _downloadFile, value) {
 	return "int" in value ? {
 		__kind__: "int",
 		int: value.int
@@ -35560,24 +36117,6 @@ function from_candid_variant_n56(_uploadFile, _downloadFile, value) {
 		text: value.text
 	} : value;
 }
-function from_candid_variant_n89(_uploadFile, _downloadFile, value) {
-	return "noShow" in value ? {
-		__kind__: "noShow",
-		noShow: value.noShow
-	} : "quitDuringTraining" in value ? {
-		__kind__: "quitDuringTraining",
-		quitDuringTraining: value.quitDuringTraining
-	} : "other" in value ? {
-		__kind__: "other",
-		other: value.other
-	} : "letGo" in value ? {
-		__kind__: "letGo",
-		letGo: value.letGo
-	} : "tookAnotherJob" in value ? {
-		__kind__: "tookAnotherJob",
-		tookAnotherJob: value.tookAnotherJob
-	} : value;
-}
 function from_candid_variant_n9(_uploadFile, _downloadFile, value) {
 	return "ok" in value ? {
 		__kind__: "ok",
@@ -35587,65 +36126,71 @@ function from_candid_variant_n9(_uploadFile, _downloadFile, value) {
 		err: from_candid_Error_n10(_uploadFile, _downloadFile, value.err)
 	} : value;
 }
-function from_candid_variant_n98(_uploadFile, _downloadFile, value) {
-	return "pending" in value ? {
-		__kind__: "pending",
-		pending: value.pending
-	} : "approved" in value ? {
-		__kind__: "approved",
-		approved: value.approved
-	} : "rejected" in value ? {
-		__kind__: "rejected",
-		rejected: value.rejected
-	} : value;
+function from_candid_vec_n134(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_AccessGrant_n96(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n106(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_AccessGrant_n73(_uploadFile, _downloadFile, x));
+function from_candid_vec_n135(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_AttendanceRecord_n136(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n107(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_AttendanceRecord_n108(_uploadFile, _downloadFile, x));
+function from_candid_vec_n140(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_ChangeLogEntry_n141(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n112(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_ChangeLogEntry_n113(_uploadFile, _downloadFile, x));
+function from_candid_vec_n143(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_LeaderSummary_n144(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n115(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_SignupSubmission_n95(_uploadFile, _downloadFile, x));
+function from_candid_vec_n146(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_SignupSubmission_n121(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n116(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_Roadie_n80(_uploadFile, _downloadFile, x));
+function from_candid_vec_n147(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_PendingUser_n148(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n117(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_ScheduleEvent_n118(_uploadFile, _downloadFile, x));
+function from_candid_vec_n150(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_Roadie_n108(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n122(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_TrainerNote_n123(_uploadFile, _downloadFile, x));
+function from_candid_vec_n151(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_ScheduleEvent_n152(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n25(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_tuple_n26(_uploadFile, _downloadFile, x));
+function from_candid_vec_n155(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_TrainerNote_n156(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n27(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_ExportRow_n28(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_tuple_n28(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n31(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_tuple_n32(_uploadFile, _downloadFile, x));
+function from_candid_vec_n29(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_ExportRow_n30(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n34(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_Shift_n35(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_tuple_n35(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n51(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_vec_n52(_uploadFile, _downloadFile, x));
+function from_candid_vec_n37(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_Shift_n38(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n52(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_Cell_n53(_uploadFile, _downloadFile, x));
+function from_candid_vec_n53(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_TemplateScheduleEvent_n54(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n58(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_ContactSet_n59(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_TemplatePosition_n59(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n64(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_AvailabilitySlot_n65(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_vec_n65(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n68(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_Position_n69(_uploadFile, _downloadFile, x));
+function from_candid_vec_n65(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_Cell_n66(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n71(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_ContactSet_n72(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n77(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_AvailabilitySlot_n78(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n81(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_Position_n82(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n88(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_GiftBagGroup_n89(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n92(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_GiftBagLabel_n93(_uploadFile, _downloadFile, x));
 }
 function to_candid_ApprovalDecision_n15(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n16(_uploadFile, _downloadFile, value);
@@ -35653,64 +36198,79 @@ function to_candid_ApprovalDecision_n15(_uploadFile, _downloadFile, value) {
 function to_candid_ApprovalRequest_n17(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n18(_uploadFile, _downloadFile, value);
 }
-function to_candid_ArchiveReason_n20(_uploadFile, _downloadFile, value) {
-	return to_candid_variant_n21(_uploadFile, _downloadFile, value);
+function to_candid_ArchiveReason_n22(_uploadFile, _downloadFile, value) {
+	return to_candid_variant_n23(_uploadFile, _downloadFile, value);
 }
-function to_candid_AttendanceRecord_n125(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n126(_uploadFile, _downloadFile, value);
+function to_candid_AttendanceRecord_n168(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n169(_uploadFile, _downloadFile, value);
 }
-function to_candid_AttendanceState_n127(_uploadFile, _downloadFile, value) {
+function to_candid_AttendanceState_n170(_uploadFile, _downloadFile, value) {
 	return value == "present" ? { present: null } : value == "late" ? { late: null } : value == "absent" ? { absent: null } : value;
 }
-function to_candid_AvailabilitySlot_n140(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n141(_uploadFile, _downloadFile, value);
+function to_candid_AvailabilitySlot_n183(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n184(_uploadFile, _downloadFile, value);
 }
-function to_candid_ContactSet_n137(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n138(_uploadFile, _downloadFile, value);
+function to_candid_ContactSet_n180(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n181(_uploadFile, _downloadFile, value);
 }
-function to_candid_EventKind_n46(_uploadFile, _downloadFile, value) {
+function to_candid_EventKind_n48(_uploadFile, _downloadFile, value) {
 	return value == "other" ? { other: null } : value == "signOff" ? { signOff: null } : value == "deadline" ? { deadline: null } : value == "friendsAndFamily" ? { friendsAndFamily: null } : value == "openingDay" ? { openingDay: null } : value == "trainingDay" ? { trainingDay: null } : value == "orientation" ? { orientation: null } : value;
 }
-function to_candid_FinalSignOff_n128(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n129(_uploadFile, _downloadFile, value);
+function to_candid_FinalSignOff_n171(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n172(_uploadFile, _downloadFile, value);
 }
-function to_candid_House_n43(_uploadFile, _downloadFile, value) {
+function to_candid_GiftBagFilter_n84(_uploadFile, _downloadFile, value) {
+	return to_candid_variant_n85(_uploadFile, _downloadFile, value);
+}
+function to_candid_House_n45(_uploadFile, _downloadFile, value) {
 	return value == "boh" ? { boh: null } : value == "foh" ? { foh: null } : value;
 }
-function to_candid_Position_n41(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n42(_uploadFile, _downloadFile, value);
+function to_candid_Position_n43(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n44(_uploadFile, _downloadFile, value);
 }
-function to_candid_RoadieProfile_n133(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n134(_uploadFile, _downloadFile, value);
+function to_candid_RoadieProfile_n176(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n177(_uploadFile, _downloadFile, value);
 }
-function to_candid_RoadieStatus_n144(_uploadFile, _downloadFile, value) {
+function to_candid_RoadieStatus_n187(_uploadFile, _downloadFile, value) {
 	return value == "active" ? { active: null } : value == "hired" ? { hired: null } : value == "inTraining" ? { inTraining: null } : value == "paperworkDone" ? { paperworkDone: null } : value == "oriented" ? { oriented: null } : value == "certified" ? { certified: null } : value == "needsMoreTime" ? { needsMoreTime: null } : value == "archived" ? { archived: null } : value;
 }
 function to_candid_Role_n19(_uploadFile, _downloadFile, value) {
 	return value == "integration" ? { integration: null } : value == "admin" ? { admin: null } : value == "trainingManager" ? { trainingManager: null } : value == "trainer" ? { trainer: null } : value == "leadership" ? { leadership: null } : value == "visitingManager" ? { visitingManager: null } : value == "storeManager" ? { storeManager: null } : value == "kiosk" ? { kiosk: null } : value;
 }
-function to_candid_ScheduleEvent_n44(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n45(_uploadFile, _downloadFile, value);
+function to_candid_ScheduleEvent_n46(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n47(_uploadFile, _downloadFile, value);
 }
 function to_candid_Shift_n14(_uploadFile, _downloadFile, value) {
 	return value == "am" ? { am: null } : value == "pm" ? { pm: null } : value;
 }
-function to_candid_SignOffOutcome_n130(_uploadFile, _downloadFile, value) {
-	return to_candid_variant_n131(_uploadFile, _downloadFile, value);
+function to_candid_SignOffOutcome_n173(_uploadFile, _downloadFile, value) {
+	return to_candid_variant_n174(_uploadFile, _downloadFile, value);
 }
-function to_candid_StoreInfo_n145(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n146(_uploadFile, _downloadFile, value);
+function to_candid_StaffProfile_n20(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n21(_uploadFile, _downloadFile, value);
+}
+function to_candid_StoreInfo_n188(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n189(_uploadFile, _downloadFile, value);
+}
+function to_candid_StoreTemplateFile_n158(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n159(_uploadFile, _downloadFile, value);
+}
+function to_candid_TemplatePosition_n164(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n165(_uploadFile, _downloadFile, value);
+}
+function to_candid_TemplateScheduleEvent_n161(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n162(_uploadFile, _downloadFile, value);
 }
 function to_candid_TrainerNote_n12(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n13(_uploadFile, _downloadFile, value);
 }
-function to_candid_TrainingGroup_n47(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n48(_uploadFile, _downloadFile, value);
+function to_candid_TrainingGroup_n49(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n50(_uploadFile, _downloadFile, value);
 }
-function to_candid_UserRole_n22(_uploadFile, _downloadFile, value) {
+function to_candid_UserRole_n24(_uploadFile, _downloadFile, value) {
 	return value == "admin" ? { admin: null } : value == "user" ? { user: null } : value == "guest" ? { guest: null } : value;
 }
-function to_candid_Weekday_n142(_uploadFile, _downloadFile, value) {
+function to_candid_Weekday_n185(_uploadFile, _downloadFile, value) {
 	return value == "fri" ? { fri: null } : value == "mon" ? { mon: null } : value == "sat" ? { sat: null } : value == "sun" ? { sun: null } : value == "thu" ? { thu: null } : value == "tue" ? { tue: null } : value == "wed" ? { wed: null } : value;
 }
 function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value) {
@@ -35719,42 +36279,23 @@ function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _dow
 function to_candid_opt_n1(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value));
 }
-function to_candid_opt_n132(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n175(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n135(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n178(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n136(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n179(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n143(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n186(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n39(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n41(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n40(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n42(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
-}
-function to_candid_record_n126(_uploadFile, _downloadFile, value) {
-	return {
-		eventId: value.eventId ? candid_some(value.eventId) : candid_none(),
-		roadieId: value.roadieId,
-		recordedAt: value.recordedAt,
-		recordedBy: value.recordedBy,
-		shift: value.shift ? candid_some(to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)) : candid_none(),
-		state: to_candid_AttendanceState_n127(_uploadFile, _downloadFile, value.state)
-	};
-}
-function to_candid_record_n129(_uploadFile, _downloadFile, value) {
-	return {
-		roadieId: value.roadieId,
-		signedAt: value.signedAt,
-		signedBy: value.signedBy,
-		outcome: to_candid_SignOffOutcome_n130(_uploadFile, _downloadFile, value.outcome),
-		futureTrainer: value.futureTrainer
-	};
 }
 function to_candid_record_n13(_uploadFile, _downloadFile, value) {
 	return {
@@ -35768,13 +36309,73 @@ function to_candid_record_n13(_uploadFile, _downloadFile, value) {
 		workOn: value.workOn
 	};
 }
-function to_candid_record_n134(_uploadFile, _downloadFile, value) {
+function to_candid_record_n159(_uploadFile, _downloadFile, value) {
+	return {
+		leaderTalkName: value.leaderTalkName,
+		leaderTalkSize: value.leaderTalkSize,
+		version: value.version,
+		trainingGroupSize: value.trainingGroupSize,
+		schedule: to_candid_vec_n160(_uploadFile, _downloadFile, value.schedule),
+		positions: to_candid_vec_n163(_uploadFile, _downloadFile, value.positions),
+		checklists: value.checklists
+	};
+}
+function to_candid_record_n16(_uploadFile, _downloadFile, value) {
+	return {
+		orientationEventId: value.orientationEventId ? candid_some(value.orientationEventId) : candid_none(),
+		mainPositionId: value.mainPositionId,
+		crewId: value.crewId ? candid_some(value.crewId) : candid_none(),
+		secondPositionId: value.secondPositionId ? candid_some(value.secondPositionId) : candid_none(),
+		startDate: value.startDate ? candid_some(value.startDate) : candid_none()
+	};
+}
+function to_candid_record_n162(_uploadFile, _downloadFile, value) {
+	return {
+		kind: to_candid_EventKind_n48(_uploadFile, _downloadFile, value.kind),
+		name: value.name,
+		endOffsetDays: value.endOffsetDays ? candid_some(value.endOffsetDays) : candid_none(),
+		startOffsetDays: value.startOffsetDays
+	};
+}
+function to_candid_record_n165(_uploadFile, _downloadFile, value) {
+	return {
+		openingBuildTo: value.openingBuildTo,
+		house: to_candid_House_n45(_uploadFile, _downloadFile, value.house),
+		afterOpeningBuildTo: value.afterOpeningBuildTo,
+		minimumAge: value.minimumAge,
+		code: value.code,
+		name: value.name,
+		needsAlcoholCert: value.needsAlcoholCert
+	};
+}
+function to_candid_record_n169(_uploadFile, _downloadFile, value) {
+	return {
+		eventId: value.eventId ? candid_some(value.eventId) : candid_none(),
+		roadieId: value.roadieId,
+		recordedAt: value.recordedAt,
+		recordedBy: value.recordedBy,
+		shift: value.shift ? candid_some(to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)) : candid_none(),
+		state: to_candid_AttendanceState_n170(_uploadFile, _downloadFile, value.state)
+	};
+}
+function to_candid_record_n172(_uploadFile, _downloadFile, value) {
+	return {
+		roadieId: value.roadieId,
+		signedAt: value.signedAt,
+		signedBy: value.signedBy,
+		outcome: to_candid_SignOffOutcome_n173(_uploadFile, _downloadFile, value.outcome),
+		futureTrainer: value.futureTrainer
+	};
+}
+function to_candid_record_n177(_uploadFile, _downloadFile, value) {
 	return {
 		favoriteSnack: value.favoriteSnack ? candid_some(value.favoriteSnack) : candid_none(),
 		positionAppliedFor: value.positionAppliedFor ? candid_some(value.positionAppliedFor) : candid_none(),
 		goalHere: value.goalHere ? candid_some(value.goalHere) : candid_none(),
 		name: value.name,
 		hometown: value.hometown ? candid_some(value.hometown) : candid_none(),
+		favoriteTeam: value.favoriteTeam ? candid_some(value.favoriteTeam) : candid_none(),
+		favoriteDrink: value.favoriteDrink ? candid_some(value.favoriteDrink) : candid_none(),
 		preferredName: value.preferredName ? candid_some(value.preferredName) : candid_none(),
 		shirtSize: value.shirtSize ? candid_some(value.shirtSize) : candid_none(),
 		hatSize: value.hatSize ? candid_some(value.hatSize) : candid_none(),
@@ -35782,10 +36383,21 @@ function to_candid_record_n134(_uploadFile, _downloadFile, value) {
 		favoriteMovie: value.favoriteMovie ? candid_some(value.favoriteMovie) : candid_none(),
 		funFact: value.funFact ? candid_some(value.funFact) : candid_none(),
 		hobbies: value.hobbies ? candid_some(value.hobbies) : candid_none(),
+		favoriteColor: value.favoriteColor ? candid_some(value.favoriteColor) : candid_none(),
 		weekdayLunch: value.weekdayLunch ? candid_some(value.weekdayLunch) : candid_none()
 	};
 }
-function to_candid_record_n138(_uploadFile, _downloadFile, value) {
+function to_candid_record_n18(_uploadFile, _downloadFile, value) {
+	return {
+		principal: value.principal,
+		linkedRoadieId: value.linkedRoadieId ? candid_some(value.linkedRoadieId) : candid_none(),
+		role: to_candid_Role_n19(_uploadFile, _downloadFile, value.role),
+		staffProfile: value.staffProfile ? candid_some(to_candid_StaffProfile_n20(_uploadFile, _downloadFile, value.staffProfile)) : candid_none(),
+		trainerPositionIds: value.trainerPositionIds,
+		accessEndsAt: value.accessEndsAt ? candid_some(value.accessEndsAt) : candid_none()
+	};
+}
+function to_candid_record_n181(_uploadFile, _downloadFile, value) {
 	return {
 		managerSignedAt: value.managerSignedAt ? candid_some(value.managerSignedAt) : candid_none(),
 		managerSignedBy: value.managerSignedBy ? candid_some(value.managerSignedBy) : candid_none(),
@@ -35793,7 +36405,7 @@ function to_candid_record_n138(_uploadFile, _downloadFile, value) {
 		dateOfBirth: value.dateOfBirth,
 		email: value.email,
 		availabilitySignature: value.availabilitySignature ? candid_some(value.availabilitySignature) : candid_none(),
-		availability: to_candid_vec_n139(_uploadFile, _downloadFile, value.availability),
+		availability: to_candid_vec_n182(_uploadFile, _downloadFile, value.availability),
 		availabilityResignPending: value.availabilityResignPending,
 		emergencyContactPhone: value.emergencyContactPhone,
 		emergencyContactName: value.emergencyContactName,
@@ -35801,13 +36413,13 @@ function to_candid_record_n138(_uploadFile, _downloadFile, value) {
 		managerSignature: value.managerSignature ? candid_some(value.managerSignature) : candid_none()
 	};
 }
-function to_candid_record_n141(_uploadFile, _downloadFile, value) {
+function to_candid_record_n184(_uploadFile, _downloadFile, value) {
 	return {
-		day: to_candid_Weekday_n142(_uploadFile, _downloadFile, value.day),
+		day: to_candid_Weekday_n185(_uploadFile, _downloadFile, value.day),
 		shift: to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)
 	};
 }
-function to_candid_record_n146(_uploadFile, _downloadFile, value) {
+function to_candid_record_n189(_uploadFile, _downloadFile, value) {
 	return {
 		amShiftEnd: value.amShiftEnd,
 		pmShiftStart: value.pmShiftStart,
@@ -35821,38 +36433,47 @@ function to_candid_record_n146(_uploadFile, _downloadFile, value) {
 		pmShiftEnd: value.pmShiftEnd,
 		trainingGroupSize: value.trainingGroupSize,
 		address: value.address,
+		secondaryLogo: value.secondaryLogo ? candid_some(value.secondaryLogo) : candid_none(),
 		locationName: value.locationName,
 		timeZone: value.timeZone,
 		storePhone: value.storePhone
 	};
 }
-function to_candid_record_n16(_uploadFile, _downloadFile, value) {
+function to_candid_record_n21(_uploadFile, _downloadFile, value) {
 	return {
-		orientationEventId: value.orientationEventId ? candid_some(value.orientationEventId) : candid_none(),
-		mainPositionId: value.mainPositionId,
-		crewId: value.crewId ? candid_some(value.crewId) : candid_none(),
-		secondPositionId: value.secondPositionId ? candid_some(value.secondPositionId) : candid_none(),
-		startDate: value.startDate ? candid_some(value.startDate) : candid_none()
-	};
-}
-function to_candid_record_n18(_uploadFile, _downloadFile, value) {
-	return {
-		principal: value.principal,
-		linkedRoadieId: value.linkedRoadieId ? candid_some(value.linkedRoadieId) : candid_none(),
-		role: to_candid_Role_n19(_uploadFile, _downloadFile, value.role),
+		title: value.title,
+		arrivalDate: value.arrivalDate ? candid_some(value.arrivalDate) : candid_none(),
+		workEmail: value.workEmail ? candid_some(value.workEmail) : candid_none(),
+		favoriteSnack: value.favoriteSnack ? candid_some(value.favoriteSnack) : candid_none(),
+		departureDate: value.departureDate ? candid_some(value.departureDate) : candid_none(),
+		goalHere: value.goalHere ? candid_some(value.goalHere) : candid_none(),
+		hometown: value.hometown ? candid_some(value.hometown) : candid_none(),
+		fullName: value.fullName,
+		favoriteTeam: value.favoriteTeam ? candid_some(value.favoriteTeam) : candid_none(),
+		workPhone: value.workPhone ? candid_some(value.workPhone) : candid_none(),
+		favoriteDrink: value.favoriteDrink ? candid_some(value.favoriteDrink) : candid_none(),
 		trainerPositionIds: value.trainerPositionIds,
-		accessEndsAt: value.accessEndsAt ? candid_some(value.accessEndsAt) : candid_none()
+		preferredName: value.preferredName ? candid_some(value.preferredName) : candid_none(),
+		shirtSize: value.shirtSize ? candid_some(value.shirtSize) : candid_none(),
+		homeStoreNumber: value.homeStoreNumber,
+		hatSize: value.hatSize ? candid_some(value.hatSize) : candid_none(),
+		requestedRole: to_candid_Role_n19(_uploadFile, _downloadFile, value.requestedRole),
+		photo: value.photo ? candid_some(value.photo) : candid_none(),
+		homeStoreCity: value.homeStoreCity,
+		funFact: value.funFact ? candid_some(value.funFact) : candid_none(),
+		hobbies: value.hobbies ? candid_some(value.hobbies) : candid_none(),
+		favoriteColor: value.favoriteColor ? candid_some(value.favoriteColor) : candid_none()
 	};
 }
 function to_candid_record_n3(_uploadFile, _downloadFile, value) {
 	return { proposed_top_up_amount: value.proposed_top_up_amount ? candid_some(value.proposed_top_up_amount) : candid_none() };
 }
-function to_candid_record_n42(_uploadFile, _downloadFile, value) {
+function to_candid_record_n44(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		openingBuildTo: value.openingBuildTo,
 		crewManager: value.crewManager ? candid_some(value.crewManager) : candid_none(),
-		house: to_candid_House_n43(_uploadFile, _downloadFile, value.house),
+		house: to_candid_House_n45(_uploadFile, _downloadFile, value.house),
 		afterOpeningBuildTo: value.afterOpeningBuildTo,
 		minimumAge: value.minimumAge,
 		code: value.code,
@@ -35862,16 +36483,16 @@ function to_candid_record_n42(_uploadFile, _downloadFile, value) {
 		hatsRequired: value.hatsRequired
 	};
 }
-function to_candid_record_n45(_uploadFile, _downloadFile, value) {
+function to_candid_record_n47(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		end: value.end ? candid_some(value.end) : candid_none(),
-		kind: to_candid_EventKind_n46(_uploadFile, _downloadFile, value.kind),
+		kind: to_candid_EventKind_n48(_uploadFile, _downloadFile, value.kind),
 		name: value.name,
 		start: value.start
 	};
 }
-function to_candid_record_n48(_uploadFile, _downloadFile, value) {
+function to_candid_record_n50(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		day: value.day,
@@ -35881,14 +36502,23 @@ function to_candid_record_n48(_uploadFile, _downloadFile, value) {
 		shift: to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)
 	};
 }
-function to_candid_variant_n131(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n174(_uploadFile, _downloadFile, value) {
 	return value.__kind__ === "certified" ? { certified: value.certified } : value.__kind__ === "needsMoreTime" ? { needsMoreTime: value.needsMoreTime } : value;
 }
-function to_candid_variant_n21(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n23(_uploadFile, _downloadFile, value) {
 	return value.__kind__ === "noShow" ? { noShow: value.noShow } : value.__kind__ === "quitDuringTraining" ? { quitDuringTraining: value.quitDuringTraining } : value.__kind__ === "other" ? { other: value.other } : value.__kind__ === "letGo" ? { letGo: value.letGo } : value.__kind__ === "tookAnotherJob" ? { tookAnotherJob: value.tookAnotherJob } : value;
 }
-function to_candid_vec_n139(_uploadFile, _downloadFile, value) {
-	return value.map((x) => to_candid_AvailabilitySlot_n140(_uploadFile, _downloadFile, x));
+function to_candid_variant_n85(_uploadFile, _downloadFile, value) {
+	return value.__kind__ === "all" ? { all: value.all } : value.__kind__ === "boh" ? { boh: value.boh } : value.__kind__ === "foh" ? { foh: value.foh } : value.__kind__ === "roadies" ? { roadies: value.roadies } : value.__kind__ === "leaders" ? { leaders: value.leaders } : value.__kind__ === "position" ? { position: value.position } : value;
+}
+function to_candid_vec_n160(_uploadFile, _downloadFile, value) {
+	return value.map((x) => to_candid_TemplateScheduleEvent_n161(_uploadFile, _downloadFile, x));
+}
+function to_candid_vec_n163(_uploadFile, _downloadFile, value) {
+	return value.map((x) => to_candid_TemplatePosition_n164(_uploadFile, _downloadFile, x));
+}
+function to_candid_vec_n182(_uploadFile, _downloadFile, value) {
+	return value.map((x) => to_candid_AvailabilitySlot_n183(_uploadFile, _downloadFile, x));
 }
 function createActor(canisterId, _uploadFile, _downloadFile, options = {}) {
 	const agent = options.agent || HttpAgent.createSync({ ...options.agentOptions });
@@ -36003,6 +36633,7 @@ function SignOutButton({ label, className, ocid = "auth.sign_out_button" }) {
 }
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-compose-refs@1.1.2_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-compose-refs/dist/index.mjs
+var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom(), 1);
 function setRef(ref, value) {
 	if (typeof ref === "function") return ref(value);
 	else if (ref !== null && ref !== void 0) ref.current = value;
@@ -36122,6 +36753,59 @@ function getElementRef$2(element) {
 	return element.props.ref || element.ref;
 }
 //#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-primitive@2.1.4_@types+react-dom@19.1.11_@types+react@19.1.17__@types+r_de8c80ca3f5e88f6f5c9b47d921af618/node_modules/@radix-ui/react-primitive/dist/index.mjs
+var Primitive$1 = [
+	"a",
+	"button",
+	"div",
+	"form",
+	"h2",
+	"h3",
+	"img",
+	"input",
+	"label",
+	"li",
+	"nav",
+	"ol",
+	"p",
+	"select",
+	"span",
+	"svg",
+	"ul"
+].reduce((primitive, node) => {
+	const Slot = /* @__PURE__ */ createSlot$1(`Primitive.${node}`);
+	const Node = import_react.forwardRef((props, forwardedRef) => {
+		const { asChild, ...primitiveProps } = props;
+		const Comp = asChild ? Slot : node;
+		if (typeof window !== "undefined") window[Symbol.for("radix-ui")] = true;
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Comp, {
+			...primitiveProps,
+			ref: forwardedRef
+		});
+	});
+	Node.displayName = `Primitive.${node}`;
+	return {
+		...primitive,
+		[node]: Node
+	};
+}, {});
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-label@2.1.8_@types+react-dom@19.1.11_@types+react@19.1.17__@types+react_e586ba67b9b1a3f07b8b4aab729b3189/node_modules/@radix-ui/react-label/dist/index.mjs
+var NAME$2 = "Label";
+var Label$1 = import_react.forwardRef((props, forwardedRef) => {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.label, {
+		...props,
+		ref: forwardedRef,
+		onMouseDown: (event) => {
+			if (event.target.closest("button, input, select, textarea")) return;
+			props.onMouseDown?.(event);
+			if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
+		}
+	});
+});
+Label$1.displayName = NAME$2;
+var Root$4 = Label$1;
+//#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs
 function r(e) {
 	var t, f, n = "";
@@ -36136,59 +36820,6 @@ function clsx() {
 	for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
 	return n;
 }
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/class-variance-authority@0.7.1/node_modules/class-variance-authority/dist/index.mjs
-/**
-* Copyright 2022 Joe Bell. All rights reserved.
-*
-* This file is licensed to you under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with the
-* License. You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-* WARRANTIES OR REPRESENTATIONS OF ANY KIND, either express or implied. See the
-* License for the specific language governing permissions and limitations under
-* the License.
-*/ var falsyToString = (value) => typeof value === "boolean" ? `${value}` : value === 0 ? "0" : value;
-var cx = clsx;
-var cva = (base, config) => (props) => {
-	var _config_compoundVariants;
-	if ((config === null || config === void 0 ? void 0 : config.variants) == null) return cx(base, props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
-	const { variants, defaultVariants } = config;
-	const getVariantClassNames = Object.keys(variants).map((variant) => {
-		const variantProp = props === null || props === void 0 ? void 0 : props[variant];
-		const defaultVariantProp = defaultVariants === null || defaultVariants === void 0 ? void 0 : defaultVariants[variant];
-		if (variantProp === null) return null;
-		const variantKey = falsyToString(variantProp) || falsyToString(defaultVariantProp);
-		return variants[variant][variantKey];
-	});
-	const propsWithoutUndefined = props && Object.entries(props).reduce((acc, param) => {
-		let [key, value] = param;
-		if (value === void 0) return acc;
-		acc[key] = value;
-		return acc;
-	}, {});
-	return cx(base, getVariantClassNames, config === null || config === void 0 ? void 0 : (_config_compoundVariants = config.compoundVariants) === null || _config_compoundVariants === void 0 ? void 0 : _config_compoundVariants.reduce((acc, param) => {
-		let { class: cvClass, className: cvClassName, ...compoundVariantOptions } = param;
-		return Object.entries(compoundVariantOptions).every((param) => {
-			let [key, value] = param;
-			return Array.isArray(value) ? value.includes({
-				...defaultVariants,
-				...propsWithoutUndefined
-			}[key]) : {
-				...defaultVariants,
-				...propsWithoutUndefined
-			}[key] === value;
-		}) ? [
-			...acc,
-			cvClass,
-			cvClassName
-		] : acc;
-	}, []), props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
-};
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/tailwind-merge@2.6.1/node_modules/tailwind-merge/dist/bundle-mjs.mjs
 var CLASS_PART_SEPARATOR = "-";
@@ -38730,6 +39361,1137 @@ function cn(...inputs) {
 	return twMerge(clsx(inputs));
 }
 //#endregion
+//#region src/components/ui/label.tsx
+function Label({ className, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$4, {
+		"data-slot": "label",
+		className: cn("flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50", className),
+		...props
+	});
+}
+//#endregion
+//#region src/components/admin/FormField.tsx
+/** A labelled form row with an optional hint and error message. */
+function FormField({ label, htmlFor, hint, error, className, children }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: cn("flex flex-col gap-1.5", className),
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+				htmlFor,
+				className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+				children: label
+			}),
+			children,
+			hint && !error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-xs text-muted-foreground",
+				children: hint
+			}),
+			error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-xs font-medium text-destructive",
+				role: "alert",
+				children: error
+			})
+		]
+	});
+}
+/** A section wrapper with a heading and optional description. */
+function AdminSection({ title, description, action, children, ocid }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		"data-ocid": ocid,
+		className: "rounded-lg border border-border bg-card p-5 shadow-subtle",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "min-w-0",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+					className: "font-display text-lg font-semibold uppercase tracking-wide text-foreground",
+					children: title
+				}), description && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "mt-1 text-sm text-muted-foreground",
+					children: description
+				})]
+			}), action && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "shrink-0",
+				children: action
+			})]
+		}), children]
+	});
+}
+var dictionaries = {
+	en: {
+		"app.name": "Roadie Roster",
+		"app.tagline": "Restaurant crew hiring roster",
+		"nav.today": "Today",
+		"nav.dashboard": "Dashboard",
+		"nav.roster": "Roster",
+		"nav.myProfile": "My profile",
+		"nav.leaders": "Leaders",
+		"nav.admin": "Admin",
+		"nav.approvals": "Approve new hires",
+		"nav.kiosk": "Kiosk",
+		"nav.export": "Export",
+		"nav.giftBags": "Gift Bags",
+		"nav.signOut": "Sign out",
+		"nav.openMenu": "Open navigation menu",
+		"nav.closeMenu": "Close navigation menu",
+		"auth.title": "Sign in to Roadie",
+		"auth.description": "Sign in with Internet Identity to view the store roster and hiring pipeline.",
+		"auth.loading": "Loading your session…",
+		"gate.pending.title": "Waiting for approval",
+		"gate.pending.body": "Your sign-in was received. An admin needs to approve your account and assign a role before you can continue.",
+		"gate.pending.hint": "Check back shortly — this page updates automatically.",
+		"gate.error.title": "We couldn't load your access",
+		"gate.error.body": "Something went wrong while checking your account.",
+		"gate.retry": "Try again",
+		"gate.signOut": "Sign out",
+		"profile.title": "Tell us who you are",
+		"profile.description": "Add your name and title so the team knows who you are. An admin still needs to approve your access.",
+		"profile.editTitle": "My profile",
+		"profile.editDescription": "Keep your name, title and contact details up to date.",
+		"profile.fullName": "Full name",
+		"profile.fullName.placeholder": "Jordan Rivera",
+		"profile.fullName.required": "Enter your full name.",
+		"profile.preferredName": "Preferred name",
+		"profile.preferredName.placeholder": "Jordan",
+		"profile.title.label": "Title",
+		"profile.title.placeholder": "Store Manager",
+		"profile.title.required": "Enter your title.",
+		"profile.role.label": "Role",
+		"profile.role.placeholder": "Select a role",
+		"profile.role.required": "Choose a role.",
+		"profile.homeStoreNumber": "Home store number",
+		"profile.homeStoreNumber.placeholder": "975",
+		"profile.homeStoreNumber.required": "Enter your home store number.",
+		"profile.homeStoreCity": "Home store city",
+		"profile.homeStoreCity.placeholder": "Lake Charles",
+		"profile.homeStoreCity.required": "Enter your home store city.",
+		"profile.workPhone": "Work phone",
+		"profile.workPhone.placeholder": "(337) 555-0142",
+		"profile.workEmail": "Work email",
+		"profile.workEmail.placeholder": "jordan@example.com",
+		"profile.arrivalDate": "Arrival date",
+		"profile.departureDate": "Departure date",
+		"profile.photo.alt": "Profile photo",
+		"profile.photo.add": "Add photo",
+		"profile.photo.change": "Change photo",
+		"profile.photo.remove": "Remove photo",
+		"profile.photo.hint": "Optional. Your photo is resized before it is saved.",
+		"profile.contactHint": "Work phone and email are visible only to Admin and Store Manager.",
+		"profile.submit": "Save profile",
+		"profile.saving": "Saving…",
+		"profile.saved": "Profile saved.",
+		"profile.error": "We couldn't save your profile.",
+		"profile.continue": "Continue",
+		"profile.role.admin": "Admin",
+		"profile.role.storeManager": "Store Manager",
+		"profile.role.trainingManager": "Training Manager",
+		"profile.role.leadership": "Leadership",
+		"profile.role.visitingManager": "Visiting Manager",
+		"profile.role.trainer": "Trainer",
+		"profile.role.kiosk": "Kiosk",
+		"profile.role.integration": "Integration",
+		"profile.unnamed": "Unnamed user",
+		"profile.showId": "Show ID",
+		"profile.showId.hint": "Reveal the principal behind each user.",
+		"profile.principal": "Principal",
+		"profile.aboutMe": "About me",
+		"profile.aboutMe.hint": "Optional. These answers appear on your card and help the team get to know you.",
+		"profile.hometown": "Hometown",
+		"profile.hobbies": "What do you do on your day off?",
+		"profile.favoriteTeam": "Favorite sports team",
+		"profile.favoriteTeam.placeholder": "e.g. LSU Tigers, Saints",
+		"profile.favoriteSnack": "Favorite candy or snack (brand)",
+		"profile.favoriteSnack.placeholder": "e.g. Snickers, Hot Cheetos",
+		"profile.favoriteDrink": "Favorite drink",
+		"profile.favoriteDrink.placeholder": "Soda, energy drink, or coffee order",
+		"profile.favoriteColor": "Favorite color",
+		"profile.favoriteColor.placeholder": "e.g. Navy blue",
+		"profile.funFact": "Fun fact",
+		"profile.goalHere": "Your goal here",
+		"profile.shirtSize": "Shirt size",
+		"profile.hatSize": "Hat size",
+		"profile.selectPlaceholder": "Select…",
+		"profile.hat.oneSize": "One size",
+		"profile.hat.sm": "S/M",
+		"profile.hat.lxl": "L/XL",
+		"guard.title": "You don't have access to this page",
+		"guard.body": "Your role doesn't include this page. Use the navigation to reach a page you can open.",
+		"guard.back": "Go to dashboard",
+		"dashboard.title": "Dashboard",
+		"dashboard.subtitle": "Hiring progress toward opening day",
+		"dashboard.kpi.hired": "Hired",
+		"dashboard.kpi.buildTo": "Build-to total",
+		"dashboard.kpi.stillNeeded": "Still needed",
+		"dashboard.kpi.showedAtOrientation": "Showed at orientation",
+		"dashboard.kpi.certified": "Certified",
+		"dashboard.section.foh": "Front of house",
+		"dashboard.section.boh": "Back of house",
+		"dashboard.position.hiredOf": "{hired} of {total}",
+		"dashboard.empty": "No positions have been configured yet.",
+		"dashboard.loading": "Loading dashboard…",
+		"dashboard.error": "We couldn't load the dashboard.",
+		"dashboard.kpi.hired.hint": "On hand now",
+		"dashboard.kpi.buildTo.hint": "Opening target",
+		"dashboard.kpi.stillNeeded.hint": "To reach build-to",
+		"dashboard.kpi.orientation.hint": "Awaiting phase",
+		"dashboard.kpi.certified.hint": "Awaiting phase",
+		"dashboard.position.onHandOf": "{onHand} on hand · build to {target}",
+		"dashboard.position.needed": "{count} needed",
+		"dashboard.position.over": "{count} over",
+		"dashboard.position.filled": "Filled",
+		"dashboard.position.progressLabel": "{name}: {onHand} of {target} hired",
+		"dashboard.panel.empty": "No positions in this house yet.",
+		"dashboard.countdown.label": "Countdown to opening",
+		"dashboard.countdown.noDate": "Opening date not set",
+		"dashboard.countdown.days": "Days",
+		"dashboard.countdown.hours": "Hours",
+		"dashboard.countdown.minutes": "Min",
+		"dashboard.timeline.now": "Now",
+		"dashboard.timeline.empty": "No schedule events have been added yet.",
+		"dashboard.adjust.mode": "Adjust build to",
+		"dashboard.adjust.done": "Done adjusting",
+		"dashboard.adjust.hint": "Each tap saves a +1 or −1 change to the build-to target and is logged.",
+		"dashboard.adjust.opening": "Opening build to",
+		"dashboard.adjust.afterOpening": "After-opening build to",
+		"dashboard.adjust.increase": "Increase {label}",
+		"dashboard.adjust.decrease": "Decrease {label}",
+		"dashboard.adjust.saving": "Saving…",
+		"dashboard.adjust.error": "We couldn't save that change.",
+		"dashboard.roster.title": "Position roster",
+		"dashboard.roster.summary": "{onHand} on hand · build to {target}",
+		"dashboard.roster.loading": "Loading roster…",
+		"dashboard.roster.error": "We couldn't load this roster.",
+		"dashboard.roster.empty": "No roadies or open spots for this position.",
+		"dashboard.roster.openSpot": "Open spot",
+		"dashboard.roster.archivedTitle": "No longer a roadie",
+		"dashboard.roster.rehire": "Rehire",
+		"dashboard.roster.rehireError": "We couldn't rehire that roadie.",
+		"roster.title": "Roster",
+		"roster.subtitle": "Every roadie in the pipeline",
+		"roster.search": "Search roadies",
+		"roster.searchPlaceholder": "Search by name or position",
+		"roster.filter.all": "All",
+		"roster.filter.active": "Active",
+		"roster.filter.archived": "Archived",
+		"roster.empty": "No roadies match your search.",
+		"roster.emptyAll": "No roadies have been added yet.",
+		"roster.loading": "Loading roster…",
+		"roster.error": "We couldn't load the roster.",
+		"roster.viewCard": "View card",
+		"roster.archived": "Archived",
+		"roadie.title": "Roadie card",
+		"roadie.back": "Back to roster",
+		"roadie.notFound": "That roadie card could not be found.",
+		"roadie.loading": "Loading roadie card…",
+		"roadie.error": "We couldn't load this roadie card.",
+		"roadie.section.details": "Details",
+		"roadie.section.contact": "Contact",
+		"roadie.section.availability": "Availability",
+		"roadie.field.position": "Position",
+		"roadie.field.secondPosition": "Second position",
+		"roadie.field.crew": "Crew",
+		"roadie.field.hiredAt": "Hired",
+		"roadie.field.startDate": "Start date",
+		"roadie.field.status": "Status",
+		"roadie.field.phone": "Phone",
+		"roadie.field.email": "Email",
+		"roadie.field.emergencyContact": "Emergency contact",
+		"roadie.field.emergencyPhone": "Emergency phone",
+		"roadie.field.shirtSize": "Shirt size",
+		"roadie.field.hatSize": "Hat size",
+		"roadie.field.hometown": "Hometown",
+		"roadie.field.funFact": "Fun fact",
+		"roadie.field.hobbies": "Hobbies",
+		"roadie.field.favoriteSnack": "Favorite snack",
+		"roadie.field.favoriteMovie": "Favorite movie",
+		"roadie.field.favoriteTeam": "Favorite team",
+		"roadie.field.favoriteDrink": "Favorite drink",
+		"roadie.field.favoriteColor": "Favorite color",
+		"roadie.field.dayOff": "Day off",
+		"roadie.field.goalHere": "Goal here",
+		"roadie.field.weekdayLunch": "Available weekday lunch",
+		"roadie.field.none": "Not provided",
+		"roadie.action.archive": "Archive",
+		"roadie.action.rehire": "Rehire",
+		"roadie.action.edit": "Edit details",
+		"roadie.action.changePosition": "Change position or crew",
+		"roadie.action.flip": "Flip card",
+		"roadie.action.flipBack": "Show front",
+		"roadie.action.showBack": "Show back",
+		"roadie.openingTeam": "#975 Opening Team",
+		"roadie.positionCode": "Position code",
+		"roadie.minor": "Minor",
+		"roadie.section.manager": "Manager",
+		"roadie.section.card": "Card",
+		"roadie.card.tlc": "TLC",
+		"roadie.card.badge": "975",
+		"roadie.card.roadieSince": "Roadie since",
+		"roadie.card.tier.roadie": "ROADIE",
+		"roadie.card.tier.gold": "NSO TRAINER",
+		"roadie.card.tier.plat": "MANAGER",
+		"roadie.card.tier.plat.training": "TRAINING MANAGER",
+		"roadie.card.tier.plat.visiting": "VISITING MANAGER",
+		"roadie.card.tier.legend": "MARKET PARTNER",
+		"roadie.card.tier.legend.leadership": "LEADERSHIP",
+		"roadie.card.homeStore": "Home store",
+		"roadie.card.here": "Here",
+		"roadie.card.from": "From",
+		"roadie.card.openingTeam": "Opening team",
+		"roadie.card.birthdayBadge": "Birthday month",
+		"roadie.card.stats": "Roadie stats",
+		"roadie.card.stat.orientation": "Orientation",
+		"roadie.card.stat.training": "Training",
+		"roadie.card.stat.certified": "Certified",
+		"roadie.card.comingSoon": "Coming soon",
+		"roadie.card.goal": "My goal",
+		"roadie.card.openingCrew": "Opening crew",
+		"roadie.card.photoAlt": "Roadie photo",
+		"roadie.section.paperwork": "Paperwork checklist",
+		"roadie.section.changeHistory": "Change history",
+		"roadie.field.preferredName": "Preferred name",
+		"roadie.field.birthday": "Birthday",
+		"roadie.field.orientation": "Orientation session",
+		"roadie.field.crossTrained": "Cross-trained position",
+		"roadie.field.corporateId": "Corporate employee ID",
+		"roadie.field.availabilitySignature": "Availability signature",
+		"roadie.field.availabilitySignedAt": "Availability signed",
+		"roadie.field.availability": "Availability",
+		"roadie.field.weekdayLunchShort": "Weekday lunch",
+		"roadie.field.shiftsWanted": "Shifts wanted per week",
+		"roadie.field.positionAppliedFor": "Position applied for",
+		"roadie.resignPending": "Re-sign pending",
+		"roadie.signed": "Signed",
+		"roadie.unsigned": "Not signed",
+		"roadie.managerOnly": "Visible to Admin and Store Manager only.",
+		"roadie.manager.empty": "No manager details recorded yet.",
+		"roadie.paperwork.empty": "No paperwork items configured.",
+		"roadie.changeHistory.empty": "No changes recorded for this roadie.",
+		"roadie.changeHistory.touchesContact": "Contact set",
+		"roadie.edit.title": "Edit details",
+		"roadie.edit.description": "Update this roadie's profile. Contact details are managed in the Manager tab.",
+		"roadie.edit.save": "Save details",
+		"roadie.edit.saved": "Details saved.",
+		"roadie.edit.error": "We couldn't save those details.",
+		"roadie.changePosition.title": "Change position or crew",
+		"roadie.changePosition.description": "Moving a roadie re-checks paperwork and minimum age for the new position.",
+		"roadie.changePosition.main": "Main position",
+		"roadie.changePosition.second": "Second position",
+		"roadie.changePosition.crew": "Crew",
+		"roadie.changePosition.save": "Move roadie",
+		"roadie.changePosition.saved": "Position updated.",
+		"roadie.changePosition.error": "We couldn't change that position.",
+		"roadie.archive.title": "Move to no longer a roadie",
+		"roadie.archive.description": "Choose a reason. The card is archived and kept in history.",
+		"roadie.archive.reason": "Reason",
+		"roadie.archive.reason.required": "Choose a reason before archiving.",
+		"roadie.archive.other": "Other reason",
+		"roadie.archive.other.required": "Describe the reason.",
+		"roadie.archive.confirm": "Archive roadie",
+		"roadie.archive.saved": "Roadie archived.",
+		"roadie.archive.error": "We couldn't archive that roadie.",
+		"roadie.rehire.title": "Rehire roadie",
+		"roadie.rehire.description": "The roadie returns to Hired and keeps their history.",
+		"roadie.rehire.warn": "This card was archived as {reason}. Rehiring needs a reason and fresh contact details and signatures.",
+		"roadie.rehire.reason": "Reason for rehire",
+		"roadie.rehire.reason.required": "A reason is required for this rehire.",
+		"roadie.rehire.confirm": "Rehire roadie",
+		"roadie.rehire.saved": "Roadie rehired.",
+		"roadie.rehire.error": "We couldn't rehire that roadie.",
+		"roadie.reason.noShow": "No-show",
+		"roadie.reason.quitDuringTraining": "Quit during training",
+		"roadie.reason.tookAnotherJob": "Took another job",
+		"roadie.reason.letGo": "Let go",
+		"roadie.reason.other": "Other",
+		"roadie.status.hired": "Hired",
+		"roadie.status.paperworkDone": "Paperwork done",
+		"roadie.status.archived": "Archived",
+		"roadie.weekday.mon": "Mon",
+		"roadie.weekday.tue": "Tue",
+		"roadie.weekday.wed": "Wed",
+		"roadie.weekday.thu": "Thu",
+		"roadie.weekday.fri": "Fri",
+		"roadie.weekday.sat": "Sat",
+		"roadie.weekday.sun": "Sun",
+		"roadie.shift.am": "AM",
+		"roadie.shift.pm": "PM",
+		"approvals.title": "Approve new hires",
+		"approvals.subtitle": "Pending sign-ins waiting for a role",
+		"approvals.empty": "No one is waiting for approval.",
+		"approvals.loading": "Loading pending users…",
+		"approvals.error": "We couldn't load pending users.",
+		"approvals.requestedAt": "Requested",
+		"approvals.principal": "Principal",
+		"approvals.action.approve": "Approve",
+		"approvals.action.reject": "Reject",
+		"approvals.role.label": "Role",
+		"approvals.role.placeholder": "Select a role",
+		"approvals.role.required": "Choose a role before approving.",
+		"approvals.stations.label": "Trainer stations",
+		"approvals.stations.hint": "Required when the role is Trainer.",
+		"approvals.accessEnd.label": "Access ends",
+		"approvals.accessEnd.hint": "Optional. Access ends at 11:59 PM Central store time on this date.",
+		"approvals.link.label": "Link to existing person",
+		"approvals.link.hint": "Optional. Connect this login to an existing roadie card.",
+		"approvals.link.none": "Do not link",
+		"approvals.confirm.title": "Confirm role",
+		"approvals.confirm.body": "You are about to grant {role} access. This is a high-privilege role.",
+		"approvals.confirm.action": "Confirm and approve",
+		"approvals.cancel": "Cancel",
+		"approvals.success": "Access granted.",
+		"approvals.error.generic": "We couldn't approve that user.",
+		"approvals.signup.section": "Pending sign-ups",
+		"approvals.signup.submittedAt": "Submitted",
+		"approvals.signup.pending": "Pending",
+		"approvals.signup.loading": "Loading pending sign-ups…",
+		"approvals.signup.error": "We couldn't load pending sign-ups.",
+		"approvals.signup.empty": "No sign-ups are waiting for review.",
+		"approvals.signup.duplicates.loading": "Checking for duplicates…",
+		"approvals.signup.duplicates.none": "No duplicate cards found.",
+		"approvals.signup.duplicates.title": "Possible duplicates",
+		"approvals.signup.duplicates.row": "Card #{id} matched on {field}",
+		"approvals.signup.main.label": "Main position",
+		"approvals.signup.main.placeholder": "Select a position",
+		"approvals.signup.main.required": "Choose a main position before approving.",
+		"approvals.signup.second.label": "Second position",
+		"approvals.signup.second.none": "No second position",
+		"approvals.signup.crew.label": "Crew",
+		"approvals.signup.crew.none": "No crew",
+		"approvals.signup.orientation.label": "Orientation session",
+		"approvals.signup.orientation.placeholder": "Select a session",
+		"approvals.signup.orientation.hint": "Past sessions are hidden. Defaults to the session for the position's house.",
+		"approvals.signup.start.label": "Start date",
+		"approvals.signup.signature.label": "Manager signature",
+		"approvals.signup.signature.placeholder": "Type your full name",
+		"approvals.signup.signature.required": "Sign before approving.",
+		"approvals.signup.minor.blocked": "This applicant is a minor and the position requires a higher minimum age.",
+		"approvals.signup.action.approve": "Sign and approve",
+		"approvals.signup.approve.error": "We couldn't approve that sign-up.",
+		"approvals.users.section": "Pending sign-ins",
+		"admin.title": "Admin",
+		"admin.subtitle": "Manage access, roles and store settings",
+		"admin.section.access": "Access grants",
+		"admin.section.store": "Store settings",
+		"admin.section.positions": "Positions",
+		"admin.section.schedule": "Schedule",
+		"admin.section.checklists": "Checklists",
+		"admin.section.template": "Store template",
+		"admin.section.crews": "Crews",
+		"admin.section.changeLog": "Change log",
+		"admin.access.empty": "No access grants yet.",
+		"admin.access.loading": "Loading access grants…",
+		"admin.access.error": "We couldn't load access grants.",
+		"admin.access.role": "Role",
+		"admin.access.stations": "Stations",
+		"admin.access.accessEnd": "Access ends",
+		"admin.access.approvedAt": "Approved",
+		"admin.access.action.changeRole": "Change role",
+		"admin.access.action.remove": "Remove access",
+		"admin.access.lastAdmin": "The last admin cannot be removed.",
+		"admin.access.adminCount": "{count} admins",
+		"admin.store.loading": "Loading store settings…",
+		"admin.store.error": "We couldn't load store settings.",
+		"admin.store.save": "Save settings",
+		"admin.store.saved": "Store settings saved.",
+		"admin.positions.empty": "No positions configured.",
+		"admin.crews.empty": "No crews configured.",
+		"admin.changeLog.empty": "No changes recorded yet.",
+		"admin.changeLog.loading": "Loading change log…",
+		"admin.changeLog.error": "We couldn't load the change log.",
+		"admin.template.download": "Download template",
+		"admin.template.download.hint": "Saves a .json with the schedule, positions, checklists and leader talk. No people data, logos, store number, city or opening date.",
+		"admin.template.download.error": "We couldn't build the template.",
+		"admin.template.load": "Load template",
+		"admin.template.load.hint": "Validates a .json and shows a preview before replacing positions, schedule and checklists.",
+		"admin.template.load.onlyWhenEmpty": "A template can only be loaded while no roadies exist.",
+		"admin.template.load.error": "We couldn't load that template.",
+		"admin.template.preview.title": "Review template",
+		"admin.template.preview.body": "This replaces positions, schedule and checklists. Imported schedule dates are recomputed from this store's opening date.",
+		"admin.template.preview.positions": "{count} positions",
+		"admin.template.preview.schedule": "{count} schedule events",
+		"admin.template.preview.paperwork": "{count} paperwork items",
+		"admin.template.preview.uniform": "{count} uniform items",
+		"admin.template.preview.leaderTalk": "Leader talk: {name}",
+		"admin.template.preview.confirm": "Load template",
+		"admin.template.loaded": "Template loaded.",
+		"today.title": "Today",
+		"today.placeholder.title": "Today is coming soon",
+		"today.placeholder.body": "The daily view — orientation, training and sign-offs — will live here. For now, use the Dashboard and Roster.",
+		"kiosk.title": "Kiosk",
+		"kiosk.subtitle": "Self-service sign-up",
+		"kiosk.placeholder.title": "Kiosk sign-up",
+		"kiosk.placeholder.body": "The kiosk sign-up flow is being prepared. This screen will let new roadies submit their details on a shared device.",
+		"kiosk.signOut.open": "Staff sign out",
+		"kiosk.signOut.title": "Staff sign out",
+		"kiosk.signOut.body": "Enter the staff PIN to sign out of the kiosk on this device.",
+		"kiosk.signOut.pinLabel": "Staff PIN",
+		"kiosk.signOut.pinPlaceholder": "Enter PIN",
+		"kiosk.signOut.confirm": "Sign out",
+		"kiosk.signOut.cancel": "Cancel",
+		"kiosk.signOut.error": "That PIN is not correct.",
+		"export.title": "Export",
+		"export.subtitle": "Download the roster for reporting",
+		"export.shareable": "Shareable export",
+		"export.shareable.hint": "Roster summary without contact details.",
+		"export.full": "Full export",
+		"export.full.hint": "Includes contact details. Admin and Store Manager only.",
+		"export.full.locked": "Contact details are visible only to Admin and Store Manager.",
+		"export.action.download": "Download CSV",
+		"export.loading": "Building export…",
+		"export.error": "We couldn't build that export.",
+		"export.empty": "There is nothing to export yet.",
+		"export.grandTotal": "Grand total",
+		"export.fohTotal": "Front of house",
+		"export.bohTotal": "Back of house",
+		"giftBags.title": "Gift Bags",
+		"giftBags.subtitle": "Gift bag answers and printable labels",
+		"giftBags.section.shoppingList": "Shopping list",
+		"giftBags.section.labels": "Labels",
+		"giftBags.filter.label": "Filter",
+		"giftBags.filter.all": "All",
+		"giftBags.filter.foh": "Front of house",
+		"giftBags.filter.boh": "Back of house",
+		"giftBags.filter.position": "Position",
+		"giftBags.filter.roadies": "Roadies only",
+		"giftBags.filter.leaders": "Leaders only",
+		"giftBags.filter.positionPlaceholder": "Select a position",
+		"giftBags.category.color": "Color",
+		"giftBags.category.candySnack": "Candy or snack",
+		"giftBags.category.shirtSize": "Shirt size",
+		"giftBags.category.hatSize": "Hat size",
+		"giftBags.category.sportsTeam": "Sports team",
+		"giftBags.category.drink": "Drink",
+		"giftBags.answer.count": "{count}",
+		"giftBags.noAnswer": "No answer",
+		"giftBags.action.print": "Print",
+		"giftBags.action.download": "Download",
+		"giftBags.loading": "Loading gift bags…",
+		"giftBags.error": "We couldn't load the gift bags.",
+		"giftBags.empty": "No gift bag answers have been recorded yet.",
+		"giftBags.labels.empty": "No labels to print yet.",
+		"leaders.title": "Leaders",
+		"leaders.subtitle": "Managers, trainers and market partners",
+		"leaders.loading": "Loading leaders…",
+		"leaders.error": "We couldn't load the leaders.",
+		"leaders.empty": "No leaders have been added yet.",
+		"leaders.section.legend": "Legend",
+		"leaders.section.plat": "Platinum",
+		"leaders.section.gold": "Gold",
+		"leaders.viewCard": "View card",
+		"leaders.card.title": "Leader card",
+		"leaders.card.back": "Back to leaders",
+		"leaders.card.notFound": "That leader card could not be found.",
+		"leaders.card.loading": "Loading leader card…",
+		"leaders.card.error": "We couldn't load this leader card.",
+		"common.loading": "Loading…",
+		"common.error": "Something went wrong.",
+		"common.retry": "Retry",
+		"common.cancel": "Cancel",
+		"common.confirm": "Confirm",
+		"common.close": "Close",
+		"common.save": "Save",
+		"common.none": "None",
+		"common.optional": "Optional",
+		"common.required": "Required",
+		"common.yes": "Yes",
+		"common.no": "No",
+		"footer.attribution": "Built with love using caffeine.ai"
+	},
+	es: {
+		"app.name": "Roadie Roster",
+		"app.tagline": "Plantilla de contratación del equipo",
+		"nav.today": "Hoy",
+		"nav.dashboard": "Panel",
+		"nav.roster": "Plantilla",
+		"nav.myProfile": "Mi perfil",
+		"nav.leaders": "Líderes",
+		"nav.admin": "Administración",
+		"nav.approvals": "Aprobar nuevos",
+		"nav.kiosk": "Quiosco",
+		"nav.export": "Exportar",
+		"nav.giftBags": "Bolsas de regalo",
+		"nav.signOut": "Cerrar sesión",
+		"nav.openMenu": "Abrir menú de navegación",
+		"nav.closeMenu": "Cerrar menú de navegación",
+		"auth.title": "Inicia sesión en Roadie",
+		"auth.description": "Inicia sesión con Internet Identity para ver la plantilla y el proceso de contratación.",
+		"auth.loading": "Cargando tu sesión…",
+		"gate.pending.title": "Esperando aprobación",
+		"gate.pending.body": "Recibimos tu inicio de sesión. Un administrador debe aprobar tu cuenta y asignarte un rol antes de continuar.",
+		"gate.pending.hint": "Vuelve pronto — esta página se actualiza automáticamente.",
+		"gate.error.title": "No pudimos cargar tu acceso",
+		"gate.error.body": "Algo salió mal al comprobar tu cuenta.",
+		"gate.retry": "Reintentar",
+		"gate.signOut": "Cerrar sesión",
+		"profile.title": "Cuéntanos quién eres",
+		"profile.description": "Añade tu nombre y cargo para que el equipo sepa quién eres. Un administrador aún debe aprobar tu acceso.",
+		"profile.editTitle": "Mi perfil",
+		"profile.editDescription": "Mantén tu nombre, cargo y datos de contacto actualizados.",
+		"profile.fullName": "Nombre completo",
+		"profile.fullName.placeholder": "Jordan Rivera",
+		"profile.fullName.required": "Ingresa tu nombre completo.",
+		"profile.preferredName": "Nombre preferido",
+		"profile.preferredName.placeholder": "Jordan",
+		"profile.title.label": "Cargo",
+		"profile.title.placeholder": "Gerente de tienda",
+		"profile.title.required": "Ingresa tu cargo.",
+		"profile.role.label": "Rol",
+		"profile.role.placeholder": "Selecciona un rol",
+		"profile.role.required": "Elige un rol.",
+		"profile.homeStoreNumber": "Número de tienda base",
+		"profile.homeStoreNumber.placeholder": "975",
+		"profile.homeStoreNumber.required": "Ingresa el número de tu tienda base.",
+		"profile.homeStoreCity": "Ciudad de tienda base",
+		"profile.homeStoreCity.placeholder": "Lake Charles",
+		"profile.homeStoreCity.required": "Ingresa la ciudad de tu tienda base.",
+		"profile.workPhone": "Teléfono del trabajo",
+		"profile.workPhone.placeholder": "(337) 555-0142",
+		"profile.workEmail": "Correo del trabajo",
+		"profile.workEmail.placeholder": "jordan@example.com",
+		"profile.arrivalDate": "Fecha de llegada",
+		"profile.departureDate": "Fecha de salida",
+		"profile.photo.alt": "Foto de perfil",
+		"profile.photo.add": "Agregar foto",
+		"profile.photo.change": "Cambiar foto",
+		"profile.photo.remove": "Quitar foto",
+		"profile.photo.hint": "Opcional. Tu foto se redimensiona antes de guardarse.",
+		"profile.contactHint": "El teléfono y el correo del trabajo solo son visibles para Admin y Gerente de tienda.",
+		"profile.submit": "Guardar perfil",
+		"profile.saving": "Guardando…",
+		"profile.saved": "Perfil guardado.",
+		"profile.error": "No pudimos guardar tu perfil.",
+		"profile.continue": "Continuar",
+		"profile.role.admin": "Administrador",
+		"profile.role.storeManager": "Gerente de tienda",
+		"profile.role.trainingManager": "Gerente de capacitación",
+		"profile.role.leadership": "Liderazgo",
+		"profile.role.visitingManager": "Gerente visitante",
+		"profile.role.trainer": "Entrenador",
+		"profile.role.kiosk": "Quiosco",
+		"profile.role.integration": "Integración",
+		"profile.unnamed": "Usuario sin nombre",
+		"profile.showId": "Mostrar ID",
+		"profile.showId.hint": "Revela el principal detrás de cada usuario.",
+		"profile.principal": "Principal",
+		"profile.aboutMe": "Sobre mí",
+		"profile.aboutMe.hint": "Opcional. Estas respuestas aparecen en tu ficha y ayudan al equipo a conocerte.",
+		"profile.hometown": "Ciudad natal",
+		"profile.hobbies": "¿Qué haces en tu día libre?",
+		"profile.favoriteTeam": "Equipo deportivo favorito",
+		"profile.favoriteTeam.placeholder": "ej. LSU Tigers, Saints",
+		"profile.favoriteSnack": "Dulce o snack favorito (marca)",
+		"profile.favoriteSnack.placeholder": "ej. Snickers, Hot Cheetos",
+		"profile.favoriteDrink": "Bebida favorita",
+		"profile.favoriteDrink.placeholder": "Refresco, bebida energética o tu café",
+		"profile.favoriteColor": "Color favorito",
+		"profile.favoriteColor.placeholder": "ej. Azul marino",
+		"profile.funFact": "Dato curioso",
+		"profile.goalHere": "Tu meta aquí",
+		"profile.shirtSize": "Talla de camiseta",
+		"profile.hatSize": "Talla de gorra",
+		"profile.selectPlaceholder": "Selecciona…",
+		"profile.hat.oneSize": "Talla única",
+		"profile.hat.sm": "S/M",
+		"profile.hat.lxl": "L/XL",
+		"guard.title": "No tienes acceso a esta página",
+		"guard.body": "Tu rol no incluye esta página. Usa la navegación para ir a una página que puedas abrir.",
+		"guard.back": "Ir al panel",
+		"dashboard.title": "Panel",
+		"dashboard.subtitle": "Progreso de contratación hacia la apertura",
+		"dashboard.kpi.hired": "Contratados",
+		"dashboard.kpi.buildTo": "Meta total",
+		"dashboard.kpi.stillNeeded": "Faltan",
+		"dashboard.kpi.showedAtOrientation": "Asistieron a orientación",
+		"dashboard.kpi.certified": "Certificados",
+		"dashboard.section.foh": "Sala",
+		"dashboard.section.boh": "Cocina",
+		"dashboard.position.hiredOf": "{hired} de {total}",
+		"dashboard.empty": "Aún no se han configurado puestos.",
+		"dashboard.loading": "Cargando panel…",
+		"dashboard.error": "No pudimos cargar el panel.",
+		"dashboard.kpi.hired.hint": "En plantilla ahora",
+		"dashboard.kpi.buildTo.hint": "Meta de apertura",
+		"dashboard.kpi.stillNeeded.hint": "Para llegar a la meta",
+		"dashboard.kpi.orientation.hint": "Fase pendiente",
+		"dashboard.kpi.certified.hint": "Fase pendiente",
+		"dashboard.position.onHandOf": "{onHand} en plantilla · meta {target}",
+		"dashboard.position.needed": "Faltan {count}",
+		"dashboard.position.over": "{count} de más",
+		"dashboard.position.filled": "Completo",
+		"dashboard.position.progressLabel": "{name}: {onHand} de {target} contratados",
+		"dashboard.panel.empty": "Aún no hay puestos en esta área.",
+		"dashboard.countdown.label": "Cuenta atrás para la apertura",
+		"dashboard.countdown.noDate": "Fecha de apertura sin definir",
+		"dashboard.countdown.days": "Días",
+		"dashboard.countdown.hours": "Horas",
+		"dashboard.countdown.minutes": "Min",
+		"dashboard.timeline.now": "Ahora",
+		"dashboard.timeline.empty": "Aún no se han añadido eventos al calendario.",
+		"dashboard.adjust.mode": "Ajustar meta",
+		"dashboard.adjust.done": "Terminar ajuste",
+		"dashboard.adjust.hint": "Cada toque guarda un cambio de +1 o −1 en la meta y queda registrado.",
+		"dashboard.adjust.opening": "Meta de apertura",
+		"dashboard.adjust.afterOpening": "Meta posterior a la apertura",
+		"dashboard.adjust.increase": "Aumentar {label}",
+		"dashboard.adjust.decrease": "Reducir {label}",
+		"dashboard.adjust.saving": "Guardando…",
+		"dashboard.adjust.error": "No pudimos guardar ese cambio.",
+		"dashboard.roster.title": "Plantilla del puesto",
+		"dashboard.roster.summary": "{onHand} en plantilla · meta {target}",
+		"dashboard.roster.loading": "Cargando plantilla…",
+		"dashboard.roster.error": "No pudimos cargar esta plantilla.",
+		"dashboard.roster.empty": "No hay roadies ni vacantes para este puesto.",
+		"dashboard.roster.openSpot": "Vacante",
+		"dashboard.roster.archivedTitle": "Ya no es roadie",
+		"dashboard.roster.rehire": "Recontratar",
+		"dashboard.roster.rehireError": "No pudimos recontratar a ese roadie.",
+		"roster.title": "Plantilla",
+		"roster.subtitle": "Todos los roadies del proceso",
+		"roster.search": "Buscar roadies",
+		"roster.searchPlaceholder": "Buscar por nombre o puesto",
+		"roster.filter.all": "Todos",
+		"roster.filter.active": "Activos",
+		"roster.filter.archived": "Archivados",
+		"roster.empty": "Ningún roadie coincide con tu búsqueda.",
+		"roster.emptyAll": "Aún no se ha añadido ningún roadie.",
+		"roster.loading": "Cargando plantilla…",
+		"roster.error": "No pudimos cargar la plantilla.",
+		"roster.viewCard": "Ver ficha",
+		"roster.archived": "Archivado",
+		"roadie.title": "Ficha del roadie",
+		"roadie.back": "Volver a la plantilla",
+		"roadie.notFound": "No se encontró esa ficha.",
+		"roadie.loading": "Cargando ficha…",
+		"roadie.error": "No pudimos cargar esta ficha.",
+		"roadie.section.details": "Detalles",
+		"roadie.section.contact": "Contacto",
+		"roadie.section.availability": "Disponibilidad",
+		"roadie.field.position": "Puesto",
+		"roadie.field.secondPosition": "Segundo puesto",
+		"roadie.field.crew": "Equipo",
+		"roadie.field.hiredAt": "Contratado",
+		"roadie.field.startDate": "Fecha de inicio",
+		"roadie.field.status": "Estado",
+		"roadie.field.phone": "Teléfono",
+		"roadie.field.email": "Correo",
+		"roadie.field.emergencyContact": "Contacto de emergencia",
+		"roadie.field.emergencyPhone": "Teléfono de emergencia",
+		"roadie.field.shirtSize": "Talla de camiseta",
+		"roadie.field.hatSize": "Talla de gorra",
+		"roadie.field.hometown": "Ciudad natal",
+		"roadie.field.funFact": "Dato curioso",
+		"roadie.field.hobbies": "Pasatiempos",
+		"roadie.field.favoriteSnack": "Snack favorito",
+		"roadie.field.favoriteMovie": "Película favorita",
+		"roadie.field.favoriteTeam": "Equipo favorito",
+		"roadie.field.favoriteDrink": "Bebida favorita",
+		"roadie.field.favoriteColor": "Color favorito",
+		"roadie.field.dayOff": "Día libre",
+		"roadie.field.goalHere": "Meta aquí",
+		"roadie.field.weekdayLunch": "Disponible para almuerzo entre semana",
+		"roadie.field.none": "No proporcionado",
+		"roadie.action.archive": "Archivar",
+		"roadie.action.rehire": "Recontratar",
+		"roadie.action.edit": "Editar datos",
+		"roadie.action.changePosition": "Cambiar puesto o equipo",
+		"roadie.action.flip": "Girar ficha",
+		"roadie.action.flipBack": "Ver frente",
+		"roadie.action.showBack": "Ver reverso",
+		"roadie.openingTeam": "#975 Equipo de apertura",
+		"roadie.positionCode": "Código de puesto",
+		"roadie.minor": "Menor",
+		"roadie.section.manager": "Gerente",
+		"roadie.section.card": "Ficha",
+		"roadie.card.tlc": "TLC",
+		"roadie.card.badge": "975",
+		"roadie.card.roadieSince": "Roadie desde",
+		"roadie.card.tier.roadie": "ROADIE",
+		"roadie.card.tier.gold": "ENTRENADOR NSO",
+		"roadie.card.tier.plat": "GERENTE",
+		"roadie.card.tier.plat.training": "GERENTE DE CAPACITACIÓN",
+		"roadie.card.tier.plat.visiting": "GERENTE VISITANTE",
+		"roadie.card.tier.legend": "SOCIO DE MERCADO",
+		"roadie.card.tier.legend.leadership": "LIDERAZGO",
+		"roadie.card.homeStore": "Tienda base",
+		"roadie.card.here": "Aquí",
+		"roadie.card.from": "Desde",
+		"roadie.card.openingTeam": "Equipo de apertura",
+		"roadie.card.birthdayBadge": "Mes de cumpleaños",
+		"roadie.card.stats": "Estadísticas del roadie",
+		"roadie.card.stat.orientation": "Orientación",
+		"roadie.card.stat.training": "Entrenamiento",
+		"roadie.card.stat.certified": "Certificado",
+		"roadie.card.comingSoon": "Próximamente",
+		"roadie.card.goal": "Mi meta",
+		"roadie.card.openingCrew": "Equipo de apertura",
+		"roadie.card.photoAlt": "Foto del roadie",
+		"roadie.section.paperwork": "Lista de papeleo",
+		"roadie.section.changeHistory": "Historial de cambios",
+		"roadie.field.preferredName": "Nombre preferido",
+		"roadie.field.birthday": "Cumpleaños",
+		"roadie.field.orientation": "Sesión de orientación",
+		"roadie.field.crossTrained": "Puesto con entrenamiento cruzado",
+		"roadie.field.corporateId": "ID de empleado corporativo",
+		"roadie.field.availabilitySignature": "Firma de disponibilidad",
+		"roadie.field.availabilitySignedAt": "Disponibilidad firmada",
+		"roadie.field.availability": "Disponibilidad",
+		"roadie.field.weekdayLunchShort": "Almuerzo entre semana",
+		"roadie.field.shiftsWanted": "Turnos deseados por semana",
+		"roadie.field.positionAppliedFor": "Puesto solicitado",
+		"roadie.resignPending": "Firma pendiente",
+		"roadie.signed": "Firmado",
+		"roadie.unsigned": "Sin firmar",
+		"roadie.managerOnly": "Visible solo para Admin y Gerente de tienda.",
+		"roadie.manager.empty": "Aún no hay datos de gerente.",
+		"roadie.paperwork.empty": "No hay elementos de papeleo configurados.",
+		"roadie.changeHistory.empty": "No hay cambios registrados para este roadie.",
+		"roadie.changeHistory.touchesContact": "Datos de contacto",
+		"roadie.edit.title": "Editar datos",
+		"roadie.edit.description": "Actualiza el perfil de este roadie. Los datos de contacto se gestionan en la pestaña Gerente.",
+		"roadie.edit.save": "Guardar datos",
+		"roadie.edit.saved": "Datos guardados.",
+		"roadie.edit.error": "No pudimos guardar esos datos.",
+		"roadie.changePosition.title": "Cambiar puesto o equipo",
+		"roadie.changePosition.description": "Mover a un roadie vuelve a comprobar el papeleo y la edad mínima del nuevo puesto.",
+		"roadie.changePosition.main": "Puesto principal",
+		"roadie.changePosition.second": "Segundo puesto",
+		"roadie.changePosition.crew": "Equipo",
+		"roadie.changePosition.save": "Mover roadie",
+		"roadie.changePosition.saved": "Puesto actualizado.",
+		"roadie.changePosition.error": "No pudimos cambiar ese puesto.",
+		"roadie.archive.title": "Marcar como ya no es roadie",
+		"roadie.archive.description": "Elige un motivo. La ficha se archiva y se conserva en el historial.",
+		"roadie.archive.reason": "Motivo",
+		"roadie.archive.reason.required": "Elige un motivo antes de archivar.",
+		"roadie.archive.other": "Otro motivo",
+		"roadie.archive.other.required": "Describe el motivo.",
+		"roadie.archive.confirm": "Archivar roadie",
+		"roadie.archive.saved": "Roadie archivado.",
+		"roadie.archive.error": "No pudimos archivar a ese roadie.",
+		"roadie.rehire.title": "Recontratar roadie",
+		"roadie.rehire.description": "El roadie vuelve a Contratado y conserva su historial.",
+		"roadie.rehire.warn": "Esta ficha se archivó como {reason}. Recontratar requiere un motivo y datos de contacto y firmas nuevos.",
+		"roadie.rehire.reason": "Motivo de recontratación",
+		"roadie.rehire.reason.required": "Se requiere un motivo para esta recontratación.",
+		"roadie.rehire.confirm": "Recontratar roadie",
+		"roadie.rehire.saved": "Roadie recontratado.",
+		"roadie.rehire.error": "No pudimos recontratar a ese roadie.",
+		"roadie.reason.noShow": "No se presentó",
+		"roadie.reason.quitDuringTraining": "Renunció durante el entrenamiento",
+		"roadie.reason.tookAnotherJob": "Tomó otro trabajo",
+		"roadie.reason.letGo": "Despedido",
+		"roadie.reason.other": "Otro",
+		"roadie.status.hired": "Contratado",
+		"roadie.status.paperworkDone": "Papeleo listo",
+		"roadie.status.archived": "Archivado",
+		"roadie.weekday.mon": "Lun",
+		"roadie.weekday.tue": "Mar",
+		"roadie.weekday.wed": "Mié",
+		"roadie.weekday.thu": "Jue",
+		"roadie.weekday.fri": "Vie",
+		"roadie.weekday.sat": "Sáb",
+		"roadie.weekday.sun": "Dom",
+		"roadie.shift.am": "AM",
+		"roadie.shift.pm": "PM",
+		"approvals.title": "Aprobar nuevos",
+		"approvals.subtitle": "Inicios de sesión pendientes de un rol",
+		"approvals.empty": "Nadie está esperando aprobación.",
+		"approvals.loading": "Cargando usuarios pendientes…",
+		"approvals.error": "No pudimos cargar los usuarios pendientes.",
+		"approvals.requestedAt": "Solicitado",
+		"approvals.principal": "Principal",
+		"approvals.action.approve": "Aprobar",
+		"approvals.action.reject": "Rechazar",
+		"approvals.role.label": "Rol",
+		"approvals.role.placeholder": "Selecciona un rol",
+		"approvals.role.required": "Elige un rol antes de aprobar.",
+		"approvals.stations.label": "Estaciones de entrenador",
+		"approvals.stations.hint": "Obligatorio cuando el rol es Entrenador.",
+		"approvals.accessEnd.label": "El acceso termina",
+		"approvals.accessEnd.hint": "Opcional. El acceso termina a las 11:59 PM hora Central de la tienda en esta fecha.",
+		"approvals.link.label": "Vincular a una persona existente",
+		"approvals.link.hint": "Opcional. Conecta este inicio de sesión a una ficha existente.",
+		"approvals.link.none": "No vincular",
+		"approvals.confirm.title": "Confirmar rol",
+		"approvals.confirm.body": "Estás a punto de otorgar acceso de {role}. Es un rol de alto privilegio.",
+		"approvals.confirm.action": "Confirmar y aprobar",
+		"approvals.cancel": "Cancelar",
+		"approvals.success": "Acceso otorgado.",
+		"approvals.error.generic": "No pudimos aprobar a ese usuario.",
+		"approvals.signup.section": "Registros pendientes",
+		"approvals.signup.submittedAt": "Enviado",
+		"approvals.signup.pending": "Pendiente",
+		"approvals.signup.loading": "Cargando registros pendientes…",
+		"approvals.signup.error": "No pudimos cargar los registros pendientes.",
+		"approvals.signup.empty": "No hay registros esperando revisión.",
+		"approvals.signup.duplicates.loading": "Buscando duplicados…",
+		"approvals.signup.duplicates.none": "No se encontraron fichas duplicadas.",
+		"approvals.signup.duplicates.title": "Posibles duplicados",
+		"approvals.signup.duplicates.row": "Ficha #{id} coincide en {field}",
+		"approvals.signup.main.label": "Puesto principal",
+		"approvals.signup.main.placeholder": "Selecciona un puesto",
+		"approvals.signup.main.required": "Elige un puesto principal antes de aprobar.",
+		"approvals.signup.second.label": "Segundo puesto",
+		"approvals.signup.second.none": "Sin segundo puesto",
+		"approvals.signup.crew.label": "Equipo",
+		"approvals.signup.crew.none": "Sin equipo",
+		"approvals.signup.orientation.label": "Sesión de orientación",
+		"approvals.signup.orientation.placeholder": "Selecciona una sesión",
+		"approvals.signup.orientation.hint": "Las sesiones pasadas se ocultan. Por defecto, la sesión del área del puesto.",
+		"approvals.signup.start.label": "Fecha de inicio",
+		"approvals.signup.signature.label": "Firma del gerente",
+		"approvals.signup.signature.placeholder": "Escribe tu nombre completo",
+		"approvals.signup.signature.required": "Firma antes de aprobar.",
+		"approvals.signup.minor.blocked": "Este solicitante es menor y el puesto exige una edad mínima mayor.",
+		"approvals.signup.action.approve": "Firmar y aprobar",
+		"approvals.signup.approve.error": "No pudimos aprobar ese registro.",
+		"approvals.users.section": "Inicios de sesión pendientes",
+		"admin.title": "Administración",
+		"admin.subtitle": "Gestiona accesos, roles y ajustes de la tienda",
+		"admin.section.access": "Accesos otorgados",
+		"admin.section.store": "Ajustes de la tienda",
+		"admin.section.positions": "Puestos",
+		"admin.section.schedule": "Calendario",
+		"admin.section.checklists": "Listas de verificación",
+		"admin.section.template": "Plantilla de tienda",
+		"admin.section.crews": "Equipos",
+		"admin.section.changeLog": "Registro de cambios",
+		"admin.access.empty": "Aún no hay accesos otorgados.",
+		"admin.access.loading": "Cargando accesos…",
+		"admin.access.error": "No pudimos cargar los accesos.",
+		"admin.access.role": "Rol",
+		"admin.access.stations": "Estaciones",
+		"admin.access.accessEnd": "El acceso termina",
+		"admin.access.approvedAt": "Aprobado",
+		"admin.access.action.changeRole": "Cambiar rol",
+		"admin.access.action.remove": "Quitar acceso",
+		"admin.access.lastAdmin": "No se puede quitar al último administrador.",
+		"admin.access.adminCount": "{count} administradores",
+		"admin.store.loading": "Cargando ajustes…",
+		"admin.store.error": "No pudimos cargar los ajustes de la tienda.",
+		"admin.store.save": "Guardar ajustes",
+		"admin.store.saved": "Ajustes de la tienda guardados.",
+		"admin.positions.empty": "No hay puestos configurados.",
+		"admin.crews.empty": "No hay equipos configurados.",
+		"admin.changeLog.empty": "Aún no hay cambios registrados.",
+		"admin.changeLog.loading": "Cargando registro de cambios…",
+		"admin.changeLog.error": "No pudimos cargar el registro de cambios.",
+		"admin.template.download": "Descargar plantilla",
+		"admin.template.download.hint": "Guarda un .json con el calendario, los puestos, las listas y la charla de líder. Sin datos de personas, logos, número de tienda, ciudad ni fecha de apertura.",
+		"admin.template.download.error": "No pudimos generar la plantilla.",
+		"admin.template.load": "Cargar plantilla",
+		"admin.template.load.hint": "Valida un .json y muestra una vista previa antes de reemplazar puestos, calendario y listas.",
+		"admin.template.load.onlyWhenEmpty": "Solo se puede cargar una plantilla mientras no existan roadies.",
+		"admin.template.load.error": "No pudimos cargar esa plantilla.",
+		"admin.template.preview.title": "Revisar plantilla",
+		"admin.template.preview.body": "Esto reemplaza puestos, calendario y listas. Las fechas del calendario importado se recalculan desde la fecha de apertura de esta tienda.",
+		"admin.template.preview.positions": "{count} puestos",
+		"admin.template.preview.schedule": "{count} eventos del calendario",
+		"admin.template.preview.paperwork": "{count} elementos de papeleo",
+		"admin.template.preview.uniform": "{count} elementos de uniforme",
+		"admin.template.preview.leaderTalk": "Charla de líder: {name}",
+		"admin.template.preview.confirm": "Cargar plantilla",
+		"admin.template.loaded": "Plantilla cargada.",
+		"today.title": "Hoy",
+		"today.placeholder.title": "Hoy llegará pronto",
+		"today.placeholder.body": "La vista diaria — orientación, entrenamiento y firmas — vivirá aquí. Por ahora, usa el Panel y la Plantilla.",
+		"kiosk.title": "Quiosco",
+		"kiosk.subtitle": "Registro de autoservicio",
+		"kiosk.placeholder.title": "Registro en quiosco",
+		"kiosk.placeholder.body": "El flujo de registro del quiosco se está preparando. Esta pantalla permitirá a los nuevos roadies enviar sus datos en un dispositivo compartido.",
+		"kiosk.signOut.open": "Salida del personal",
+		"kiosk.signOut.title": "Salida del personal",
+		"kiosk.signOut.body": "Ingresa el PIN del personal para cerrar la sesión del quiosco en este dispositivo.",
+		"kiosk.signOut.pinLabel": "PIN del personal",
+		"kiosk.signOut.pinPlaceholder": "Ingresa el PIN",
+		"kiosk.signOut.confirm": "Cerrar sesión",
+		"kiosk.signOut.cancel": "Cancelar",
+		"kiosk.signOut.error": "Ese PIN no es correcto.",
+		"export.title": "Exportar",
+		"export.subtitle": "Descarga la plantilla para informes",
+		"export.shareable": "Exportación compartible",
+		"export.shareable.hint": "Resumen de la plantilla sin datos de contacto.",
+		"export.full": "Exportación completa",
+		"export.full.hint": "Incluye datos de contacto. Solo Admin y Gerente de tienda.",
+		"export.full.locked": "Los datos de contacto solo son visibles para Admin y Gerente de tienda.",
+		"export.action.download": "Descargar CSV",
+		"export.loading": "Generando exportación…",
+		"export.error": "No pudimos generar esa exportación.",
+		"export.empty": "Aún no hay nada que exportar.",
+		"export.grandTotal": "Total general",
+		"export.fohTotal": "Sala",
+		"export.bohTotal": "Cocina",
+		"giftBags.title": "Bolsas de regalo",
+		"giftBags.subtitle": "Respuestas de bolsas de regalo y etiquetas imprimibles",
+		"giftBags.section.shoppingList": "Lista de compras",
+		"giftBags.section.labels": "Etiquetas",
+		"giftBags.filter.label": "Filtro",
+		"giftBags.filter.all": "Todos",
+		"giftBags.filter.foh": "Sala",
+		"giftBags.filter.boh": "Cocina",
+		"giftBags.filter.position": "Puesto",
+		"giftBags.filter.roadies": "Solo roadies",
+		"giftBags.filter.leaders": "Solo líderes",
+		"giftBags.filter.positionPlaceholder": "Selecciona un puesto",
+		"giftBags.category.color": "Color",
+		"giftBags.category.candySnack": "Dulce o snack",
+		"giftBags.category.shirtSize": "Talla de camiseta",
+		"giftBags.category.hatSize": "Talla de gorra",
+		"giftBags.category.sportsTeam": "Equipo deportivo",
+		"giftBags.category.drink": "Bebida",
+		"giftBags.answer.count": "{count}",
+		"giftBags.noAnswer": "Sin respuesta",
+		"giftBags.action.print": "Imprimir",
+		"giftBags.action.download": "Descargar",
+		"giftBags.loading": "Cargando bolsas de regalo…",
+		"giftBags.error": "No pudimos cargar las bolsas de regalo.",
+		"giftBags.empty": "Aún no se han registrado respuestas de bolsas de regalo.",
+		"giftBags.labels.empty": "Aún no hay etiquetas para imprimir.",
+		"leaders.title": "Líderes",
+		"leaders.subtitle": "Gerentes, entrenadores y socios de mercado",
+		"leaders.loading": "Cargando líderes…",
+		"leaders.error": "No pudimos cargar los líderes.",
+		"leaders.empty": "Aún no se ha añadido ningún líder.",
+		"leaders.section.legend": "Leyenda",
+		"leaders.section.plat": "Platino",
+		"leaders.section.gold": "Oro",
+		"leaders.viewCard": "Ver ficha",
+		"leaders.card.title": "Ficha del líder",
+		"leaders.card.back": "Volver a líderes",
+		"leaders.card.notFound": "No se encontró esa ficha de líder.",
+		"leaders.card.loading": "Cargando ficha del líder…",
+		"leaders.card.error": "No pudimos cargar esta ficha de líder.",
+		"common.loading": "Cargando…",
+		"common.error": "Algo salió mal.",
+		"common.retry": "Reintentar",
+		"common.cancel": "Cancelar",
+		"common.confirm": "Confirmar",
+		"common.close": "Cerrar",
+		"common.save": "Guardar",
+		"common.none": "Ninguno",
+		"common.optional": "Opcional",
+		"common.required": "Obligatorio",
+		"common.yes": "Sí",
+		"common.no": "No",
+		"footer.attribution": "Hecho con cariño usando caffeine.ai"
+	}
+};
+//#endregion
+//#region src/hooks/useI18n.ts
+var I18nContext = (0, import_react.createContext)(null);
+function translate(locale, key, vars) {
+	let value = (dictionaries[locale] ?? dictionaries.en)[key] ?? dictionaries.en[key] ?? key;
+	if (vars) for (const [name, replacement] of Object.entries(vars)) value = value.replaceAll(`{${name}}`, String(replacement));
+	return value;
+}
+/** Access the copy dictionary. Falls back to English outside a provider. */
+function useI18n() {
+	const ctx = (0, import_react.useContext)(I18nContext);
+	if (ctx) return ctx;
+	return {
+		locale: "en",
+		setLocale: () => {},
+		t: (key, vars) => translate("en", key, vars)
+	};
+}
+//#endregion
+//#region src/components/approvals/TrainerStationsPicker.tsx
+/**
+* Multi-select of trainer stations. Only rendered when the chosen role is
+* Trainer; the selection is required by the backend for that role.
+*/
+function TrainerStationsPicker({ positions, selectedIds, onChange }) {
+	const { t } = useI18n();
+	const toggle = (id) => {
+		onChange(selectedIds.includes(id) ? selectedIds.filter((value) => value !== id) : [...selectedIds, id]);
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("fieldset", {
+		className: "space-y-2 md:col-span-2",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("legend", {
+				className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+				children: t("approvals.stations.label")
+			}),
+			positions.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-sm text-muted-foreground",
+				children: t("admin.positions.empty")
+			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "flex flex-wrap gap-2",
+				children: positions.map((position) => {
+					const id = position.id.toString();
+					const checked = selectedIds.includes(id);
+					return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {
+						className: `touch-target flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${checked ? "border-primary bg-primary/10 text-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/50"}`,
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+							type: "checkbox",
+							className: "h-4 w-4 accent-[var(--primary)]",
+							checked,
+							"data-ocid": "approvals.station.checkbox",
+							onChange: () => toggle(id)
+						}), position.name]
+					}, id);
+				})
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-xs text-muted-foreground",
+				children: t("approvals.stations.hint")
+			})
+		]
+	});
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/class-variance-authority@0.7.1/node_modules/class-variance-authority/dist/index.mjs
+/**
+* Copyright 2022 Joe Bell. All rights reserved.
+*
+* This file is licensed to you under the Apache License, Version 2.0
+* (the "License"); you may not use this file except in compliance with the
+* License. You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+* WARRANTIES OR REPRESENTATIONS OF ANY KIND, either express or implied. See the
+* License for the specific language governing permissions and limitations under
+* the License.
+*/ var falsyToString = (value) => typeof value === "boolean" ? `${value}` : value === 0 ? "0" : value;
+var cx = clsx;
+var cva = (base, config) => (props) => {
+	var _config_compoundVariants;
+	if ((config === null || config === void 0 ? void 0 : config.variants) == null) return cx(base, props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
+	const { variants, defaultVariants } = config;
+	const getVariantClassNames = Object.keys(variants).map((variant) => {
+		const variantProp = props === null || props === void 0 ? void 0 : props[variant];
+		const defaultVariantProp = defaultVariants === null || defaultVariants === void 0 ? void 0 : defaultVariants[variant];
+		if (variantProp === null) return null;
+		const variantKey = falsyToString(variantProp) || falsyToString(defaultVariantProp);
+		return variants[variant][variantKey];
+	});
+	const propsWithoutUndefined = props && Object.entries(props).reduce((acc, param) => {
+		let [key, value] = param;
+		if (value === void 0) return acc;
+		acc[key] = value;
+		return acc;
+	}, {});
+	return cx(base, getVariantClassNames, config === null || config === void 0 ? void 0 : (_config_compoundVariants = config.compoundVariants) === null || _config_compoundVariants === void 0 ? void 0 : _config_compoundVariants.reduce((acc, param) => {
+		let { class: cvClass, className: cvClassName, ...compoundVariantOptions } = param;
+		return Object.entries(compoundVariantOptions).every((param) => {
+			let [key, value] = param;
+			return Array.isArray(value) ? value.includes({
+				...defaultVariants,
+				...propsWithoutUndefined
+			}[key]) : {
+				...defaultVariants,
+				...propsWithoutUndefined
+			}[key] === value;
+		}) ? [
+			...acc,
+			cvClass,
+			cvClassName
+		] : acc;
+	}, []), props === null || props === void 0 ? void 0 : props.class, props === null || props === void 0 ? void 0 : props.className);
+};
+//#endregion
 //#region src/components/ui/button.tsx
 var buttonVariants = cva("inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive", {
 	variants: {
@@ -38764,6 +40526,4558 @@ function Button({ className, variant, size, asChild = false, ...props }) {
 		...props
 	});
 }
+//#endregion
+//#region src/components/ui/input.tsx
+function Input({ className, type, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+		type,
+		"data-slot": "input",
+		className: cn("file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm", "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]", "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive", className),
+		...props
+	});
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+number@1.1.1/node_modules/@radix-ui/number/dist/index.mjs
+function clamp$1(value, [min, max]) {
+	return Math.min(max, Math.max(min, value));
+}
+typeof window !== "undefined" && window.document && window.document.createElement;
+function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
+	return function handleEvent(event) {
+		originalEventHandler?.(event);
+		if (checkForDefaultPrevented === false || !event.defaultPrevented) return ourEventHandler?.(event);
+	};
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-context@1.1.2_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-context/dist/index.mjs
+function createContext2(rootComponentName, defaultContext) {
+	const Context = import_react.createContext(defaultContext);
+	const Provider = (props) => {
+		const { children, ...context } = props;
+		const value = import_react.useMemo(() => context, Object.values(context));
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Context.Provider, {
+			value,
+			children
+		});
+	};
+	Provider.displayName = rootComponentName + "Provider";
+	function useContext2(consumerName) {
+		const context = import_react.useContext(Context);
+		if (context) return context;
+		if (defaultContext !== void 0) return defaultContext;
+		throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
+	}
+	return [Provider, useContext2];
+}
+function createContextScope(scopeName, createContextScopeDeps = []) {
+	let defaultContexts = [];
+	function createContext3(rootComponentName, defaultContext) {
+		const BaseContext = import_react.createContext(defaultContext);
+		const index = defaultContexts.length;
+		defaultContexts = [...defaultContexts, defaultContext];
+		const Provider = (props) => {
+			const { scope, children, ...context } = props;
+			const Context = scope?.[scopeName]?.[index] || BaseContext;
+			const value = import_react.useMemo(() => context, Object.values(context));
+			return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Context.Provider, {
+				value,
+				children
+			});
+		};
+		Provider.displayName = rootComponentName + "Provider";
+		function useContext2(consumerName, scope) {
+			const Context = scope?.[scopeName]?.[index] || BaseContext;
+			const context = import_react.useContext(Context);
+			if (context) return context;
+			if (defaultContext !== void 0) return defaultContext;
+			throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
+		}
+		return [Provider, useContext2];
+	}
+	const createScope = () => {
+		const scopeContexts = defaultContexts.map((defaultContext) => {
+			return import_react.createContext(defaultContext);
+		});
+		return function useScope(scope) {
+			const contexts = scope?.[scopeName] || scopeContexts;
+			return import_react.useMemo(() => ({ [`__scope${scopeName}`]: {
+				...scope,
+				[scopeName]: contexts
+			} }), [scope, contexts]);
+		};
+	};
+	createScope.scopeName = scopeName;
+	return [createContext3, composeContextScopes(createScope, ...createContextScopeDeps)];
+}
+function composeContextScopes(...scopes) {
+	const baseScope = scopes[0];
+	if (scopes.length === 1) return baseScope;
+	const createScope = () => {
+		const scopeHooks = scopes.map((createScope2) => ({
+			useScope: createScope2(),
+			scopeName: createScope2.scopeName
+		}));
+		return function useComposedScopes(overrideScopes) {
+			const nextScopes = scopeHooks.reduce((nextScopes2, { useScope, scopeName }) => {
+				const currentScope = useScope(overrideScopes)[`__scope${scopeName}`];
+				return {
+					...nextScopes2,
+					...currentScope
+				};
+			}, {});
+			return import_react.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
+		};
+	};
+	createScope.scopeName = baseScope.scopeName;
+	return createScope;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-slot@1.2.3_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-slot/dist/index.mjs
+// @__NO_SIDE_EFFECTS__
+function createSlot(ownerName) {
+	const SlotClone = /* @__PURE__ */ createSlotClone(ownerName);
+	const Slot2 = import_react.forwardRef((props, forwardedRef) => {
+		const { children, ...slotProps } = props;
+		const childrenArray = import_react.Children.toArray(children);
+		const slottable = childrenArray.find(isSlottable);
+		if (slottable) {
+			const newElement = slottable.props.children;
+			const newChildren = childrenArray.map((child) => {
+				if (child === slottable) {
+					if (import_react.Children.count(newElement) > 1) return import_react.Children.only(null);
+					return import_react.isValidElement(newElement) ? newElement.props.children : null;
+				} else return child;
+			});
+			return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlotClone, {
+				...slotProps,
+				ref: forwardedRef,
+				children: import_react.isValidElement(newElement) ? import_react.cloneElement(newElement, void 0, newChildren) : null
+			});
+		}
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlotClone, {
+			...slotProps,
+			ref: forwardedRef,
+			children
+		});
+	});
+	Slot2.displayName = `${ownerName}.Slot`;
+	return Slot2;
+}
+// @__NO_SIDE_EFFECTS__
+function createSlotClone(ownerName) {
+	const SlotClone = import_react.forwardRef((props, forwardedRef) => {
+		const { children, ...slotProps } = props;
+		if (import_react.isValidElement(children)) {
+			const childrenRef = getElementRef$1(children);
+			const props2 = mergeProps(slotProps, children.props);
+			if (children.type !== import_react.Fragment) props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
+			return import_react.cloneElement(children, props2);
+		}
+		return import_react.Children.count(children) > 1 ? import_react.Children.only(null) : null;
+	});
+	SlotClone.displayName = `${ownerName}.SlotClone`;
+	return SlotClone;
+}
+var SLOTTABLE_IDENTIFIER = Symbol("radix.slottable");
+function isSlottable(child) {
+	return import_react.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
+}
+function mergeProps(slotProps, childProps) {
+	const overrideProps = { ...childProps };
+	for (const propName in childProps) {
+		const slotPropValue = slotProps[propName];
+		const childPropValue = childProps[propName];
+		if (/^on[A-Z]/.test(propName)) {
+			if (slotPropValue && childPropValue) overrideProps[propName] = (...args) => {
+				const result = childPropValue(...args);
+				slotPropValue(...args);
+				return result;
+			};
+			else if (slotPropValue) overrideProps[propName] = slotPropValue;
+		} else if (propName === "style") overrideProps[propName] = {
+			...slotPropValue,
+			...childPropValue
+		};
+		else if (propName === "className") overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
+	}
+	return {
+		...slotProps,
+		...overrideProps
+	};
+}
+function getElementRef$1(element) {
+	let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
+	let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+	if (mayWarn) return element.ref;
+	getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
+	mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+	if (mayWarn) return element.props.ref;
+	return element.props.ref || element.ref;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-collection@1.1.7_@types+react-dom@19.1.11_@types+react@19.1.17__@types+_60f944c86d7d4a96d0f33ac85e20f38f/node_modules/@radix-ui/react-collection/dist/index.mjs
+function createCollection(name) {
+	const PROVIDER_NAME = name + "CollectionProvider";
+	const [createCollectionContext, createCollectionScope] = createContextScope(PROVIDER_NAME);
+	const [CollectionProviderImpl, useCollectionContext] = createCollectionContext(PROVIDER_NAME, {
+		collectionRef: { current: null },
+		itemMap: /* @__PURE__ */ new Map()
+	});
+	const CollectionProvider = (props) => {
+		const { scope, children } = props;
+		const ref = import_react.useRef(null);
+		const itemMap = import_react.useRef(/* @__PURE__ */ new Map()).current;
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CollectionProviderImpl, {
+			scope,
+			itemMap,
+			collectionRef: ref,
+			children
+		});
+	};
+	CollectionProvider.displayName = PROVIDER_NAME;
+	const COLLECTION_SLOT_NAME = name + "CollectionSlot";
+	const CollectionSlotImpl = /* @__PURE__ */ createSlot(COLLECTION_SLOT_NAME);
+	const CollectionSlot = import_react.forwardRef((props, forwardedRef) => {
+		const { scope, children } = props;
+		const composedRefs = useComposedRefs(forwardedRef, useCollectionContext(COLLECTION_SLOT_NAME, scope).collectionRef);
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CollectionSlotImpl, {
+			ref: composedRefs,
+			children
+		});
+	});
+	CollectionSlot.displayName = COLLECTION_SLOT_NAME;
+	const ITEM_SLOT_NAME = name + "CollectionItemSlot";
+	const ITEM_DATA_ATTR = "data-radix-collection-item";
+	const CollectionItemSlotImpl = /* @__PURE__ */ createSlot(ITEM_SLOT_NAME);
+	const CollectionItemSlot = import_react.forwardRef((props, forwardedRef) => {
+		const { scope, children, ...itemData } = props;
+		const ref = import_react.useRef(null);
+		const composedRefs = useComposedRefs(forwardedRef, ref);
+		const context = useCollectionContext(ITEM_SLOT_NAME, scope);
+		import_react.useEffect(() => {
+			context.itemMap.set(ref, {
+				ref,
+				...itemData
+			});
+			return () => void context.itemMap.delete(ref);
+		});
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CollectionItemSlotImpl, {
+			[ITEM_DATA_ATTR]: "",
+			ref: composedRefs,
+			children
+		});
+	});
+	CollectionItemSlot.displayName = ITEM_SLOT_NAME;
+	function useCollection(scope) {
+		const context = useCollectionContext(name + "CollectionConsumer", scope);
+		return import_react.useCallback(() => {
+			const collectionNode = context.collectionRef.current;
+			if (!collectionNode) return [];
+			const orderedNodes = Array.from(collectionNode.querySelectorAll(`[${ITEM_DATA_ATTR}]`));
+			return Array.from(context.itemMap.values()).sort((a, b) => orderedNodes.indexOf(a.ref.current) - orderedNodes.indexOf(b.ref.current));
+		}, [context.collectionRef, context.itemMap]);
+	}
+	return [
+		{
+			Provider: CollectionProvider,
+			Slot: CollectionSlot,
+			ItemSlot: CollectionItemSlot
+		},
+		useCollection,
+		createCollectionScope
+	];
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-direction@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-direction/dist/index.mjs
+var DirectionContext = import_react.createContext(void 0);
+function useDirection(localDir) {
+	const globalDir = import_react.useContext(DirectionContext);
+	return localDir || globalDir || "ltr";
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-primitive@2.1.3_@types+react-dom@19.1.11_@types+react@19.1.17__@types+r_309699a331ceb1f69dcb31d3df00e5e5/node_modules/@radix-ui/react-primitive/dist/index.mjs
+var Primitive = [
+	"a",
+	"button",
+	"div",
+	"form",
+	"h2",
+	"h3",
+	"img",
+	"input",
+	"label",
+	"li",
+	"nav",
+	"ol",
+	"p",
+	"select",
+	"span",
+	"svg",
+	"ul"
+].reduce((primitive, node) => {
+	const Slot = /* @__PURE__ */ createSlot(`Primitive.${node}`);
+	const Node = import_react.forwardRef((props, forwardedRef) => {
+		const { asChild, ...primitiveProps } = props;
+		const Comp = asChild ? Slot : node;
+		if (typeof window !== "undefined") window[Symbol.for("radix-ui")] = true;
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Comp, {
+			...primitiveProps,
+			ref: forwardedRef
+		});
+	});
+	Node.displayName = `Primitive.${node}`;
+	return {
+		...primitive,
+		[node]: Node
+	};
+}, {});
+function dispatchDiscreteCustomEvent(target, event) {
+	if (target) import_react_dom.flushSync(() => target.dispatchEvent(event));
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-callback-ref@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-callback-ref/dist/index.mjs
+function useCallbackRef$1(callback) {
+	const callbackRef = import_react.useRef(callback);
+	import_react.useEffect(() => {
+		callbackRef.current = callback;
+	});
+	return import_react.useMemo(() => (...args) => callbackRef.current?.(...args), []);
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-escape-keydown@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-escape-keydown/dist/index.mjs
+function useEscapeKeydown(onEscapeKeyDownProp, ownerDocument = globalThis?.document) {
+	const onEscapeKeyDown = useCallbackRef$1(onEscapeKeyDownProp);
+	import_react.useEffect(() => {
+		const handleKeyDown = (event) => {
+			if (event.key === "Escape") onEscapeKeyDown(event);
+		};
+		ownerDocument.addEventListener("keydown", handleKeyDown, { capture: true });
+		return () => ownerDocument.removeEventListener("keydown", handleKeyDown, { capture: true });
+	}, [onEscapeKeyDown, ownerDocument]);
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-dismissable-layer@1.1.11_@types+react-dom@19.1.11_@types+react@19.1.17__04759484545efd16289eb59f8087867a/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs
+var DISMISSABLE_LAYER_NAME = "DismissableLayer";
+var CONTEXT_UPDATE = "dismissableLayer.update";
+var POINTER_DOWN_OUTSIDE = "dismissableLayer.pointerDownOutside";
+var FOCUS_OUTSIDE = "dismissableLayer.focusOutside";
+var originalBodyPointerEvents;
+var DismissableLayerContext = import_react.createContext({
+	layers: /* @__PURE__ */ new Set(),
+	layersWithOutsidePointerEventsDisabled: /* @__PURE__ */ new Set(),
+	branches: /* @__PURE__ */ new Set()
+});
+var DismissableLayer = import_react.forwardRef((props, forwardedRef) => {
+	const { disableOutsidePointerEvents = false, onEscapeKeyDown, onPointerDownOutside, onFocusOutside, onInteractOutside, onDismiss, ...layerProps } = props;
+	const context = import_react.useContext(DismissableLayerContext);
+	const [node, setNode] = import_react.useState(null);
+	const ownerDocument = node?.ownerDocument ?? globalThis?.document;
+	const [, force] = import_react.useState({});
+	const composedRefs = useComposedRefs(forwardedRef, (node2) => setNode(node2));
+	const layers = Array.from(context.layers);
+	const [highestLayerWithOutsidePointerEventsDisabled] = [...context.layersWithOutsidePointerEventsDisabled].slice(-1);
+	const highestLayerWithOutsidePointerEventsDisabledIndex = layers.indexOf(highestLayerWithOutsidePointerEventsDisabled);
+	const index = node ? layers.indexOf(node) : -1;
+	const isBodyPointerEventsDisabled = context.layersWithOutsidePointerEventsDisabled.size > 0;
+	const isPointerEventsEnabled = index >= highestLayerWithOutsidePointerEventsDisabledIndex;
+	const pointerDownOutside = usePointerDownOutside((event) => {
+		const target = event.target;
+		const isPointerDownOnBranch = [...context.branches].some((branch) => branch.contains(target));
+		if (!isPointerEventsEnabled || isPointerDownOnBranch) return;
+		onPointerDownOutside?.(event);
+		onInteractOutside?.(event);
+		if (!event.defaultPrevented) onDismiss?.();
+	}, ownerDocument);
+	const focusOutside = useFocusOutside((event) => {
+		const target = event.target;
+		if ([...context.branches].some((branch) => branch.contains(target))) return;
+		onFocusOutside?.(event);
+		onInteractOutside?.(event);
+		if (!event.defaultPrevented) onDismiss?.();
+	}, ownerDocument);
+	useEscapeKeydown((event) => {
+		if (!(index === context.layers.size - 1)) return;
+		onEscapeKeyDown?.(event);
+		if (!event.defaultPrevented && onDismiss) {
+			event.preventDefault();
+			onDismiss();
+		}
+	}, ownerDocument);
+	import_react.useEffect(() => {
+		if (!node) return;
+		if (disableOutsidePointerEvents) {
+			if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
+				originalBodyPointerEvents = ownerDocument.body.style.pointerEvents;
+				ownerDocument.body.style.pointerEvents = "none";
+			}
+			context.layersWithOutsidePointerEventsDisabled.add(node);
+		}
+		context.layers.add(node);
+		dispatchUpdate();
+		return () => {
+			if (disableOutsidePointerEvents && context.layersWithOutsidePointerEventsDisabled.size === 1) ownerDocument.body.style.pointerEvents = originalBodyPointerEvents;
+		};
+	}, [
+		node,
+		ownerDocument,
+		disableOutsidePointerEvents,
+		context
+	]);
+	import_react.useEffect(() => {
+		return () => {
+			if (!node) return;
+			context.layers.delete(node);
+			context.layersWithOutsidePointerEventsDisabled.delete(node);
+			dispatchUpdate();
+		};
+	}, [node, context]);
+	import_react.useEffect(() => {
+		const handleUpdate = () => force({});
+		document.addEventListener(CONTEXT_UPDATE, handleUpdate);
+		return () => document.removeEventListener(CONTEXT_UPDATE, handleUpdate);
+	}, []);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		...layerProps,
+		ref: composedRefs,
+		style: {
+			pointerEvents: isBodyPointerEventsDisabled ? isPointerEventsEnabled ? "auto" : "none" : void 0,
+			...props.style
+		},
+		onFocusCapture: composeEventHandlers(props.onFocusCapture, focusOutside.onFocusCapture),
+		onBlurCapture: composeEventHandlers(props.onBlurCapture, focusOutside.onBlurCapture),
+		onPointerDownCapture: composeEventHandlers(props.onPointerDownCapture, pointerDownOutside.onPointerDownCapture)
+	});
+});
+DismissableLayer.displayName = DISMISSABLE_LAYER_NAME;
+var BRANCH_NAME = "DismissableLayerBranch";
+var DismissableLayerBranch = import_react.forwardRef((props, forwardedRef) => {
+	const context = import_react.useContext(DismissableLayerContext);
+	const ref = import_react.useRef(null);
+	const composedRefs = useComposedRefs(forwardedRef, ref);
+	import_react.useEffect(() => {
+		const node = ref.current;
+		if (node) {
+			context.branches.add(node);
+			return () => {
+				context.branches.delete(node);
+			};
+		}
+	}, [context.branches]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		...props,
+		ref: composedRefs
+	});
+});
+DismissableLayerBranch.displayName = BRANCH_NAME;
+function usePointerDownOutside(onPointerDownOutside, ownerDocument = globalThis?.document) {
+	const handlePointerDownOutside = useCallbackRef$1(onPointerDownOutside);
+	const isPointerInsideReactTreeRef = import_react.useRef(false);
+	const handleClickRef = import_react.useRef(() => {});
+	import_react.useEffect(() => {
+		const handlePointerDown = (event) => {
+			if (event.target && !isPointerInsideReactTreeRef.current) {
+				let handleAndDispatchPointerDownOutsideEvent2 = function() {
+					handleAndDispatchCustomEvent(POINTER_DOWN_OUTSIDE, handlePointerDownOutside, eventDetail, { discrete: true });
+				};
+				const eventDetail = { originalEvent: event };
+				if (event.pointerType === "touch") {
+					ownerDocument.removeEventListener("click", handleClickRef.current);
+					handleClickRef.current = handleAndDispatchPointerDownOutsideEvent2;
+					ownerDocument.addEventListener("click", handleClickRef.current, { once: true });
+				} else handleAndDispatchPointerDownOutsideEvent2();
+			} else ownerDocument.removeEventListener("click", handleClickRef.current);
+			isPointerInsideReactTreeRef.current = false;
+		};
+		const timerId = window.setTimeout(() => {
+			ownerDocument.addEventListener("pointerdown", handlePointerDown);
+		}, 0);
+		return () => {
+			window.clearTimeout(timerId);
+			ownerDocument.removeEventListener("pointerdown", handlePointerDown);
+			ownerDocument.removeEventListener("click", handleClickRef.current);
+		};
+	}, [ownerDocument, handlePointerDownOutside]);
+	return { onPointerDownCapture: () => isPointerInsideReactTreeRef.current = true };
+}
+function useFocusOutside(onFocusOutside, ownerDocument = globalThis?.document) {
+	const handleFocusOutside = useCallbackRef$1(onFocusOutside);
+	const isFocusInsideReactTreeRef = import_react.useRef(false);
+	import_react.useEffect(() => {
+		const handleFocus = (event) => {
+			if (event.target && !isFocusInsideReactTreeRef.current) handleAndDispatchCustomEvent(FOCUS_OUTSIDE, handleFocusOutside, { originalEvent: event }, { discrete: false });
+		};
+		ownerDocument.addEventListener("focusin", handleFocus);
+		return () => ownerDocument.removeEventListener("focusin", handleFocus);
+	}, [ownerDocument, handleFocusOutside]);
+	return {
+		onFocusCapture: () => isFocusInsideReactTreeRef.current = true,
+		onBlurCapture: () => isFocusInsideReactTreeRef.current = false
+	};
+}
+function dispatchUpdate() {
+	const event = new CustomEvent(CONTEXT_UPDATE);
+	document.dispatchEvent(event);
+}
+function handleAndDispatchCustomEvent(name, handler, detail, { discrete }) {
+	const target = detail.originalEvent.target;
+	const event = new CustomEvent(name, {
+		bubbles: false,
+		cancelable: true,
+		detail
+	});
+	if (handler) target.addEventListener(name, handler, { once: true });
+	if (discrete) dispatchDiscreteCustomEvent(target, event);
+	else target.dispatchEvent(event);
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-focus-guards@1.1.3_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-focus-guards/dist/index.mjs
+var count$1 = 0;
+function useFocusGuards() {
+	import_react.useEffect(() => {
+		const edgeGuards = document.querySelectorAll("[data-radix-focus-guard]");
+		document.body.insertAdjacentElement("afterbegin", edgeGuards[0] ?? createFocusGuard());
+		document.body.insertAdjacentElement("beforeend", edgeGuards[1] ?? createFocusGuard());
+		count$1++;
+		return () => {
+			if (count$1 === 1) document.querySelectorAll("[data-radix-focus-guard]").forEach((node) => node.remove());
+			count$1--;
+		};
+	}, []);
+}
+function createFocusGuard() {
+	const element = document.createElement("span");
+	element.setAttribute("data-radix-focus-guard", "");
+	element.tabIndex = 0;
+	element.style.outline = "none";
+	element.style.opacity = "0";
+	element.style.position = "fixed";
+	element.style.pointerEvents = "none";
+	return element;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-focus-scope@1.1.7_@types+react-dom@19.1.11_@types+react@19.1.17__@types_743eb681fa5947458d78d51e929a6f1d/node_modules/@radix-ui/react-focus-scope/dist/index.mjs
+var AUTOFOCUS_ON_MOUNT = "focusScope.autoFocusOnMount";
+var AUTOFOCUS_ON_UNMOUNT = "focusScope.autoFocusOnUnmount";
+var EVENT_OPTIONS$1 = {
+	bubbles: false,
+	cancelable: true
+};
+var FOCUS_SCOPE_NAME = "FocusScope";
+var FocusScope = import_react.forwardRef((props, forwardedRef) => {
+	const { loop = false, trapped = false, onMountAutoFocus: onMountAutoFocusProp, onUnmountAutoFocus: onUnmountAutoFocusProp, ...scopeProps } = props;
+	const [container, setContainer] = import_react.useState(null);
+	const onMountAutoFocus = useCallbackRef$1(onMountAutoFocusProp);
+	const onUnmountAutoFocus = useCallbackRef$1(onUnmountAutoFocusProp);
+	const lastFocusedElementRef = import_react.useRef(null);
+	const composedRefs = useComposedRefs(forwardedRef, (node) => setContainer(node));
+	const focusScope = import_react.useRef({
+		paused: false,
+		pause() {
+			this.paused = true;
+		},
+		resume() {
+			this.paused = false;
+		}
+	}).current;
+	import_react.useEffect(() => {
+		if (trapped) {
+			let handleFocusIn2 = function(event) {
+				if (focusScope.paused || !container) return;
+				const target = event.target;
+				if (container.contains(target)) lastFocusedElementRef.current = target;
+				else focus(lastFocusedElementRef.current, { select: true });
+			}, handleFocusOut2 = function(event) {
+				if (focusScope.paused || !container) return;
+				const relatedTarget = event.relatedTarget;
+				if (relatedTarget === null) return;
+				if (!container.contains(relatedTarget)) focus(lastFocusedElementRef.current, { select: true });
+			}, handleMutations2 = function(mutations) {
+				if (document.activeElement !== document.body) return;
+				for (const mutation of mutations) if (mutation.removedNodes.length > 0) focus(container);
+			};
+			document.addEventListener("focusin", handleFocusIn2);
+			document.addEventListener("focusout", handleFocusOut2);
+			const mutationObserver = new MutationObserver(handleMutations2);
+			if (container) mutationObserver.observe(container, {
+				childList: true,
+				subtree: true
+			});
+			return () => {
+				document.removeEventListener("focusin", handleFocusIn2);
+				document.removeEventListener("focusout", handleFocusOut2);
+				mutationObserver.disconnect();
+			};
+		}
+	}, [
+		trapped,
+		container,
+		focusScope.paused
+	]);
+	import_react.useEffect(() => {
+		if (container) {
+			focusScopesStack.add(focusScope);
+			const previouslyFocusedElement = document.activeElement;
+			if (!container.contains(previouslyFocusedElement)) {
+				const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS$1);
+				container.addEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
+				container.dispatchEvent(mountEvent);
+				if (!mountEvent.defaultPrevented) {
+					focusFirst$1(removeLinks(getTabbableCandidates(container)), { select: true });
+					if (document.activeElement === previouslyFocusedElement) focus(container);
+				}
+			}
+			return () => {
+				container.removeEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
+				setTimeout(() => {
+					const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS$1);
+					container.addEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
+					container.dispatchEvent(unmountEvent);
+					if (!unmountEvent.defaultPrevented) focus(previouslyFocusedElement ?? document.body, { select: true });
+					container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
+					focusScopesStack.remove(focusScope);
+				}, 0);
+			};
+		}
+	}, [
+		container,
+		onMountAutoFocus,
+		onUnmountAutoFocus,
+		focusScope
+	]);
+	const handleKeyDown = import_react.useCallback((event) => {
+		if (!loop && !trapped) return;
+		if (focusScope.paused) return;
+		const isTabKey = event.key === "Tab" && !event.altKey && !event.ctrlKey && !event.metaKey;
+		const focusedElement = document.activeElement;
+		if (isTabKey && focusedElement) {
+			const container2 = event.currentTarget;
+			const [first, last] = getTabbableEdges(container2);
+			if (!(first && last)) {
+				if (focusedElement === container2) event.preventDefault();
+			} else if (!event.shiftKey && focusedElement === last) {
+				event.preventDefault();
+				if (loop) focus(first, { select: true });
+			} else if (event.shiftKey && focusedElement === first) {
+				event.preventDefault();
+				if (loop) focus(last, { select: true });
+			}
+		}
+	}, [
+		loop,
+		trapped,
+		focusScope.paused
+	]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		tabIndex: -1,
+		...scopeProps,
+		ref: composedRefs,
+		onKeyDown: handleKeyDown
+	});
+});
+FocusScope.displayName = FOCUS_SCOPE_NAME;
+function focusFirst$1(candidates, { select = false } = {}) {
+	const previouslyFocusedElement = document.activeElement;
+	for (const candidate of candidates) {
+		focus(candidate, { select });
+		if (document.activeElement !== previouslyFocusedElement) return;
+	}
+}
+function getTabbableEdges(container) {
+	const candidates = getTabbableCandidates(container);
+	return [findVisible(candidates, container), findVisible(candidates.reverse(), container)];
+}
+function getTabbableCandidates(container) {
+	const nodes = [];
+	const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, { acceptNode: (node) => {
+		const isHiddenInput = node.tagName === "INPUT" && node.type === "hidden";
+		if (node.disabled || node.hidden || isHiddenInput) return NodeFilter.FILTER_SKIP;
+		return node.tabIndex >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+	} });
+	while (walker.nextNode()) nodes.push(walker.currentNode);
+	return nodes;
+}
+function findVisible(elements, container) {
+	for (const element of elements) if (!isHidden(element, { upTo: container })) return element;
+}
+function isHidden(node, { upTo }) {
+	if (getComputedStyle(node).visibility === "hidden") return true;
+	while (node) {
+		if (upTo !== void 0 && node === upTo) return false;
+		if (getComputedStyle(node).display === "none") return true;
+		node = node.parentElement;
+	}
+	return false;
+}
+function isSelectableInput(element) {
+	return element instanceof HTMLInputElement && "select" in element;
+}
+function focus(element, { select = false } = {}) {
+	if (element && element.focus) {
+		const previouslyFocusedElement = document.activeElement;
+		element.focus({ preventScroll: true });
+		if (element !== previouslyFocusedElement && isSelectableInput(element) && select) element.select();
+	}
+}
+var focusScopesStack = createFocusScopesStack();
+function createFocusScopesStack() {
+	let stack = [];
+	return {
+		add(focusScope) {
+			const activeFocusScope = stack[0];
+			if (focusScope !== activeFocusScope) activeFocusScope?.pause();
+			stack = arrayRemove(stack, focusScope);
+			stack.unshift(focusScope);
+		},
+		remove(focusScope) {
+			stack = arrayRemove(stack, focusScope);
+			stack[0]?.resume();
+		}
+	};
+}
+function arrayRemove(array, item) {
+	const updatedArray = [...array];
+	const index = updatedArray.indexOf(item);
+	if (index !== -1) updatedArray.splice(index, 1);
+	return updatedArray;
+}
+function removeLinks(items) {
+	return items.filter((item) => item.tagName !== "A");
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-layout-effect@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-layout-effect/dist/index.mjs
+var useLayoutEffect2 = globalThis?.document ? import_react.useLayoutEffect : () => {};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-id@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-id/dist/index.mjs
+var useReactId = import_react[" useId ".trim().toString()] || (() => void 0);
+var count = 0;
+function useId(deterministicId) {
+	const [id, setId] = import_react.useState(useReactId());
+	useLayoutEffect2(() => {
+		if (!deterministicId) setId((reactId) => reactId ?? String(count++));
+	}, [deterministicId]);
+	return deterministicId || (id ? `radix-${id}` : "");
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@floating-ui+utils@0.2.11/node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs
+/**
+* Custom positioning reference element.
+* @see https://floating-ui.com/docs/virtual-elements
+*/
+var sides = [
+	"top",
+	"right",
+	"bottom",
+	"left"
+];
+var min = Math.min;
+var max = Math.max;
+var round = Math.round;
+var floor = Math.floor;
+var createCoords = (v) => ({
+	x: v,
+	y: v
+});
+var oppositeSideMap = {
+	left: "right",
+	right: "left",
+	bottom: "top",
+	top: "bottom"
+};
+function clamp(start, value, end) {
+	return max(start, min(value, end));
+}
+function evaluate(value, param) {
+	return typeof value === "function" ? value(param) : value;
+}
+function getSide(placement) {
+	return placement.split("-")[0];
+}
+function getAlignment(placement) {
+	return placement.split("-")[1];
+}
+function getOppositeAxis(axis) {
+	return axis === "x" ? "y" : "x";
+}
+function getAxisLength(axis) {
+	return axis === "y" ? "height" : "width";
+}
+function getSideAxis(placement) {
+	const firstChar = placement[0];
+	return firstChar === "t" || firstChar === "b" ? "y" : "x";
+}
+function getAlignmentAxis(placement) {
+	return getOppositeAxis(getSideAxis(placement));
+}
+function getAlignmentSides(placement, rects, rtl) {
+	if (rtl === void 0) rtl = false;
+	const alignment = getAlignment(placement);
+	const alignmentAxis = getAlignmentAxis(placement);
+	const length = getAxisLength(alignmentAxis);
+	let mainAlignmentSide = alignmentAxis === "x" ? alignment === (rtl ? "end" : "start") ? "right" : "left" : alignment === "start" ? "bottom" : "top";
+	if (rects.reference[length] > rects.floating[length]) mainAlignmentSide = getOppositePlacement(mainAlignmentSide);
+	return [mainAlignmentSide, getOppositePlacement(mainAlignmentSide)];
+}
+function getExpandedPlacements(placement) {
+	const oppositePlacement = getOppositePlacement(placement);
+	return [
+		getOppositeAlignmentPlacement(placement),
+		oppositePlacement,
+		getOppositeAlignmentPlacement(oppositePlacement)
+	];
+}
+function getOppositeAlignmentPlacement(placement) {
+	return placement.includes("start") ? placement.replace("start", "end") : placement.replace("end", "start");
+}
+var lrPlacement = ["left", "right"];
+var rlPlacement = ["right", "left"];
+var tbPlacement = ["top", "bottom"];
+var btPlacement = ["bottom", "top"];
+function getSideList(side, isStart, rtl) {
+	switch (side) {
+		case "top":
+		case "bottom":
+			if (rtl) return isStart ? rlPlacement : lrPlacement;
+			return isStart ? lrPlacement : rlPlacement;
+		case "left":
+		case "right": return isStart ? tbPlacement : btPlacement;
+		default: return [];
+	}
+}
+function getOppositeAxisPlacements(placement, flipAlignment, direction, rtl) {
+	const alignment = getAlignment(placement);
+	let list = getSideList(getSide(placement), direction === "start", rtl);
+	if (alignment) {
+		list = list.map((side) => side + "-" + alignment);
+		if (flipAlignment) list = list.concat(list.map(getOppositeAlignmentPlacement));
+	}
+	return list;
+}
+function getOppositePlacement(placement) {
+	const side = getSide(placement);
+	return oppositeSideMap[side] + placement.slice(side.length);
+}
+function expandPaddingObject(padding) {
+	return {
+		top: 0,
+		right: 0,
+		bottom: 0,
+		left: 0,
+		...padding
+	};
+}
+function getPaddingObject(padding) {
+	return typeof padding !== "number" ? expandPaddingObject(padding) : {
+		top: padding,
+		right: padding,
+		bottom: padding,
+		left: padding
+	};
+}
+function rectToClientRect(rect) {
+	const { x, y, width, height } = rect;
+	return {
+		width,
+		height,
+		top: y,
+		left: x,
+		right: x + width,
+		bottom: y + height,
+		x,
+		y
+	};
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@floating-ui+core@1.7.5/node_modules/@floating-ui/core/dist/floating-ui.core.mjs
+function computeCoordsFromPlacement(_ref, placement, rtl) {
+	let { reference, floating } = _ref;
+	const sideAxis = getSideAxis(placement);
+	const alignmentAxis = getAlignmentAxis(placement);
+	const alignLength = getAxisLength(alignmentAxis);
+	const side = getSide(placement);
+	const isVertical = sideAxis === "y";
+	const commonX = reference.x + reference.width / 2 - floating.width / 2;
+	const commonY = reference.y + reference.height / 2 - floating.height / 2;
+	const commonAlign = reference[alignLength] / 2 - floating[alignLength] / 2;
+	let coords;
+	switch (side) {
+		case "top":
+			coords = {
+				x: commonX,
+				y: reference.y - floating.height
+			};
+			break;
+		case "bottom":
+			coords = {
+				x: commonX,
+				y: reference.y + reference.height
+			};
+			break;
+		case "right":
+			coords = {
+				x: reference.x + reference.width,
+				y: commonY
+			};
+			break;
+		case "left":
+			coords = {
+				x: reference.x - floating.width,
+				y: commonY
+			};
+			break;
+		default: coords = {
+			x: reference.x,
+			y: reference.y
+		};
+	}
+	switch (getAlignment(placement)) {
+		case "start":
+			coords[alignmentAxis] -= commonAlign * (rtl && isVertical ? -1 : 1);
+			break;
+		case "end": coords[alignmentAxis] += commonAlign * (rtl && isVertical ? -1 : 1);
+	}
+	return coords;
+}
+/**
+* Resolves with an object of overflow side offsets that determine how much the
+* element is overflowing a given clipping boundary on each side.
+* - positive = overflowing the boundary by that number of pixels
+* - negative = how many pixels left before it will overflow
+* - 0 = lies flush with the boundary
+* @see https://floating-ui.com/docs/detectOverflow
+*/
+async function detectOverflow(state, options) {
+	var _await$platform$isEle;
+	if (options === void 0) options = {};
+	const { x, y, platform, rects, elements, strategy } = state;
+	const { boundary = "clippingAncestors", rootBoundary = "viewport", elementContext = "floating", altBoundary = false, padding = 0 } = evaluate(options, state);
+	const paddingObject = getPaddingObject(padding);
+	const element = elements[altBoundary ? elementContext === "floating" ? "reference" : "floating" : elementContext];
+	const clippingClientRect = rectToClientRect(await platform.getClippingRect({
+		element: ((_await$platform$isEle = await (platform.isElement == null ? void 0 : platform.isElement(element))) != null ? _await$platform$isEle : true) ? element : element.contextElement || await (platform.getDocumentElement == null ? void 0 : platform.getDocumentElement(elements.floating)),
+		boundary,
+		rootBoundary,
+		strategy
+	}));
+	const rect = elementContext === "floating" ? {
+		x,
+		y,
+		width: rects.floating.width,
+		height: rects.floating.height
+	} : rects.reference;
+	const offsetParent = await (platform.getOffsetParent == null ? void 0 : platform.getOffsetParent(elements.floating));
+	const offsetScale = await (platform.isElement == null ? void 0 : platform.isElement(offsetParent)) ? await (platform.getScale == null ? void 0 : platform.getScale(offsetParent)) || {
+		x: 1,
+		y: 1
+	} : {
+		x: 1,
+		y: 1
+	};
+	const elementClientRect = rectToClientRect(platform.convertOffsetParentRelativeRectToViewportRelativeRect ? await platform.convertOffsetParentRelativeRectToViewportRelativeRect({
+		elements,
+		rect,
+		offsetParent,
+		strategy
+	}) : rect);
+	return {
+		top: (clippingClientRect.top - elementClientRect.top + paddingObject.top) / offsetScale.y,
+		bottom: (elementClientRect.bottom - clippingClientRect.bottom + paddingObject.bottom) / offsetScale.y,
+		left: (clippingClientRect.left - elementClientRect.left + paddingObject.left) / offsetScale.x,
+		right: (elementClientRect.right - clippingClientRect.right + paddingObject.right) / offsetScale.x
+	};
+}
+var MAX_RESET_COUNT = 50;
+/**
+* Computes the `x` and `y` coordinates that will place the floating element
+* next to a given reference element.
+*
+* This export does not have any `platform` interface logic. You will need to
+* write one for the platform you are using Floating UI with.
+*/
+var computePosition$1 = async (reference, floating, config) => {
+	const { placement = "bottom", strategy = "absolute", middleware = [], platform } = config;
+	const platformWithDetectOverflow = platform.detectOverflow ? platform : {
+		...platform,
+		detectOverflow
+	};
+	const rtl = await (platform.isRTL == null ? void 0 : platform.isRTL(floating));
+	let rects = await platform.getElementRects({
+		reference,
+		floating,
+		strategy
+	});
+	let { x, y } = computeCoordsFromPlacement(rects, placement, rtl);
+	let statefulPlacement = placement;
+	let resetCount = 0;
+	const middlewareData = {};
+	for (let i = 0; i < middleware.length; i++) {
+		const currentMiddleware = middleware[i];
+		if (!currentMiddleware) continue;
+		const { name, fn } = currentMiddleware;
+		const { x: nextX, y: nextY, data, reset } = await fn({
+			x,
+			y,
+			initialPlacement: placement,
+			placement: statefulPlacement,
+			strategy,
+			middlewareData,
+			rects,
+			platform: platformWithDetectOverflow,
+			elements: {
+				reference,
+				floating
+			}
+		});
+		x = nextX != null ? nextX : x;
+		y = nextY != null ? nextY : y;
+		middlewareData[name] = {
+			...middlewareData[name],
+			...data
+		};
+		if (reset && resetCount < MAX_RESET_COUNT) {
+			resetCount++;
+			if (typeof reset === "object") {
+				if (reset.placement) statefulPlacement = reset.placement;
+				if (reset.rects) rects = reset.rects === true ? await platform.getElementRects({
+					reference,
+					floating,
+					strategy
+				}) : reset.rects;
+				({x, y} = computeCoordsFromPlacement(rects, statefulPlacement, rtl));
+			}
+			i = -1;
+		}
+	}
+	return {
+		x,
+		y,
+		placement: statefulPlacement,
+		strategy,
+		middlewareData
+	};
+};
+/**
+* Provides data to position an inner element of the floating element so that it
+* appears centered to the reference element.
+* @see https://floating-ui.com/docs/arrow
+*/
+var arrow$3 = (options) => ({
+	name: "arrow",
+	options,
+	async fn(state) {
+		const { x, y, placement, rects, platform, elements, middlewareData } = state;
+		const { element, padding = 0 } = evaluate(options, state) || {};
+		if (element == null) return {};
+		const paddingObject = getPaddingObject(padding);
+		const coords = {
+			x,
+			y
+		};
+		const axis = getAlignmentAxis(placement);
+		const length = getAxisLength(axis);
+		const arrowDimensions = await platform.getDimensions(element);
+		const isYAxis = axis === "y";
+		const minProp = isYAxis ? "top" : "left";
+		const maxProp = isYAxis ? "bottom" : "right";
+		const clientProp = isYAxis ? "clientHeight" : "clientWidth";
+		const endDiff = rects.reference[length] + rects.reference[axis] - coords[axis] - rects.floating[length];
+		const startDiff = coords[axis] - rects.reference[axis];
+		const arrowOffsetParent = await (platform.getOffsetParent == null ? void 0 : platform.getOffsetParent(element));
+		let clientSize = arrowOffsetParent ? arrowOffsetParent[clientProp] : 0;
+		if (!clientSize || !await (platform.isElement == null ? void 0 : platform.isElement(arrowOffsetParent))) clientSize = elements.floating[clientProp] || rects.floating[length];
+		const centerToReference = endDiff / 2 - startDiff / 2;
+		const largestPossiblePadding = clientSize / 2 - arrowDimensions[length] / 2 - 1;
+		const minPadding = min(paddingObject[minProp], largestPossiblePadding);
+		const maxPadding = min(paddingObject[maxProp], largestPossiblePadding);
+		const min$1 = minPadding;
+		const max = clientSize - arrowDimensions[length] - maxPadding;
+		const center = clientSize / 2 - arrowDimensions[length] / 2 + centerToReference;
+		const offset = clamp(min$1, center, max);
+		const shouldAddOffset = !middlewareData.arrow && getAlignment(placement) != null && center !== offset && rects.reference[length] / 2 - (center < min$1 ? minPadding : maxPadding) - arrowDimensions[length] / 2 < 0;
+		const alignmentOffset = shouldAddOffset ? center < min$1 ? center - min$1 : center - max : 0;
+		return {
+			[axis]: coords[axis] + alignmentOffset,
+			data: {
+				[axis]: offset,
+				centerOffset: center - offset - alignmentOffset,
+				...shouldAddOffset && { alignmentOffset }
+			},
+			reset: shouldAddOffset
+		};
+	}
+});
+/**
+* Optimizes the visibility of the floating element by flipping the `placement`
+* in order to keep it in view when the preferred placement(s) will overflow the
+* clipping boundary. Alternative to `autoPlacement`.
+* @see https://floating-ui.com/docs/flip
+*/
+var flip$2 = function(options) {
+	if (options === void 0) options = {};
+	return {
+		name: "flip",
+		options,
+		async fn(state) {
+			var _middlewareData$arrow, _middlewareData$flip;
+			const { placement, middlewareData, rects, initialPlacement, platform, elements } = state;
+			const { mainAxis: checkMainAxis = true, crossAxis: checkCrossAxis = true, fallbackPlacements: specifiedFallbackPlacements, fallbackStrategy = "bestFit", fallbackAxisSideDirection = "none", flipAlignment = true, ...detectOverflowOptions } = evaluate(options, state);
+			if ((_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) return {};
+			const side = getSide(placement);
+			const initialSideAxis = getSideAxis(initialPlacement);
+			const isBasePlacement = getSide(initialPlacement) === initialPlacement;
+			const rtl = await (platform.isRTL == null ? void 0 : platform.isRTL(elements.floating));
+			const fallbackPlacements = specifiedFallbackPlacements || (isBasePlacement || !flipAlignment ? [getOppositePlacement(initialPlacement)] : getExpandedPlacements(initialPlacement));
+			const hasFallbackAxisSideDirection = fallbackAxisSideDirection !== "none";
+			if (!specifiedFallbackPlacements && hasFallbackAxisSideDirection) fallbackPlacements.push(...getOppositeAxisPlacements(initialPlacement, flipAlignment, fallbackAxisSideDirection, rtl));
+			const placements = [initialPlacement, ...fallbackPlacements];
+			const overflow = await platform.detectOverflow(state, detectOverflowOptions);
+			const overflows = [];
+			let overflowsData = ((_middlewareData$flip = middlewareData.flip) == null ? void 0 : _middlewareData$flip.overflows) || [];
+			if (checkMainAxis) overflows.push(overflow[side]);
+			if (checkCrossAxis) {
+				const sides = getAlignmentSides(placement, rects, rtl);
+				overflows.push(overflow[sides[0]], overflow[sides[1]]);
+			}
+			overflowsData = [...overflowsData, {
+				placement,
+				overflows
+			}];
+			if (!overflows.every((side) => side <= 0)) {
+				var _middlewareData$flip2, _overflowsData$filter;
+				const nextIndex = (((_middlewareData$flip2 = middlewareData.flip) == null ? void 0 : _middlewareData$flip2.index) || 0) + 1;
+				const nextPlacement = placements[nextIndex];
+				if (nextPlacement) {
+					if (!(checkCrossAxis === "alignment" ? initialSideAxis !== getSideAxis(nextPlacement) : false) || overflowsData.every((d) => getSideAxis(d.placement) === initialSideAxis ? d.overflows[0] > 0 : true)) return {
+						data: {
+							index: nextIndex,
+							overflows: overflowsData
+						},
+						reset: { placement: nextPlacement }
+					};
+				}
+				let resetPlacement = (_overflowsData$filter = overflowsData.filter((d) => d.overflows[0] <= 0).sort((a, b) => a.overflows[1] - b.overflows[1])[0]) == null ? void 0 : _overflowsData$filter.placement;
+				if (!resetPlacement) switch (fallbackStrategy) {
+					case "bestFit": {
+						var _overflowsData$filter2;
+						const placement = (_overflowsData$filter2 = overflowsData.filter((d) => {
+							if (hasFallbackAxisSideDirection) {
+								const currentSideAxis = getSideAxis(d.placement);
+								return currentSideAxis === initialSideAxis || currentSideAxis === "y";
+							}
+							return true;
+						}).map((d) => [d.placement, d.overflows.filter((overflow) => overflow > 0).reduce((acc, overflow) => acc + overflow, 0)]).sort((a, b) => a[1] - b[1])[0]) == null ? void 0 : _overflowsData$filter2[0];
+						if (placement) resetPlacement = placement;
+						break;
+					}
+					case "initialPlacement": resetPlacement = initialPlacement;
+				}
+				if (placement !== resetPlacement) return { reset: { placement: resetPlacement } };
+			}
+			return {};
+		}
+	};
+};
+function getSideOffsets(overflow, rect) {
+	return {
+		top: overflow.top - rect.height,
+		right: overflow.right - rect.width,
+		bottom: overflow.bottom - rect.height,
+		left: overflow.left - rect.width
+	};
+}
+function isAnySideFullyClipped(overflow) {
+	return sides.some((side) => overflow[side] >= 0);
+}
+/**
+* Provides data to hide the floating element in applicable situations, such as
+* when it is not in the same clipping context as the reference element.
+* @see https://floating-ui.com/docs/hide
+*/
+var hide$2 = function(options) {
+	if (options === void 0) options = {};
+	return {
+		name: "hide",
+		options,
+		async fn(state) {
+			const { rects, platform } = state;
+			const { strategy = "referenceHidden", ...detectOverflowOptions } = evaluate(options, state);
+			switch (strategy) {
+				case "referenceHidden": {
+					const offsets = getSideOffsets(await platform.detectOverflow(state, {
+						...detectOverflowOptions,
+						elementContext: "reference"
+					}), rects.reference);
+					return { data: {
+						referenceHiddenOffsets: offsets,
+						referenceHidden: isAnySideFullyClipped(offsets)
+					} };
+				}
+				case "escaped": {
+					const offsets = getSideOffsets(await platform.detectOverflow(state, {
+						...detectOverflowOptions,
+						altBoundary: true
+					}), rects.floating);
+					return { data: {
+						escapedOffsets: offsets,
+						escaped: isAnySideFullyClipped(offsets)
+					} };
+				}
+				default: return {};
+			}
+		}
+	};
+};
+var originSides = /*#__PURE__*/ new Set(["left", "top"]);
+async function convertValueToCoords(state, options) {
+	const { placement, platform, elements } = state;
+	const rtl = await (platform.isRTL == null ? void 0 : platform.isRTL(elements.floating));
+	const side = getSide(placement);
+	const alignment = getAlignment(placement);
+	const isVertical = getSideAxis(placement) === "y";
+	const mainAxisMulti = originSides.has(side) ? -1 : 1;
+	const crossAxisMulti = rtl && isVertical ? -1 : 1;
+	const rawValue = evaluate(options, state);
+	let { mainAxis, crossAxis, alignmentAxis } = typeof rawValue === "number" ? {
+		mainAxis: rawValue,
+		crossAxis: 0,
+		alignmentAxis: null
+	} : {
+		mainAxis: rawValue.mainAxis || 0,
+		crossAxis: rawValue.crossAxis || 0,
+		alignmentAxis: rawValue.alignmentAxis
+	};
+	if (alignment && typeof alignmentAxis === "number") crossAxis = alignment === "end" ? alignmentAxis * -1 : alignmentAxis;
+	return isVertical ? {
+		x: crossAxis * crossAxisMulti,
+		y: mainAxis * mainAxisMulti
+	} : {
+		x: mainAxis * mainAxisMulti,
+		y: crossAxis * crossAxisMulti
+	};
+}
+/**
+* Modifies the placement by translating the floating element along the
+* specified axes.
+* A number (shorthand for `mainAxis` or distance), or an axes configuration
+* object may be passed.
+* @see https://floating-ui.com/docs/offset
+*/
+var offset$2 = function(options) {
+	if (options === void 0) options = 0;
+	return {
+		name: "offset",
+		options,
+		async fn(state) {
+			var _middlewareData$offse, _middlewareData$arrow;
+			const { x, y, placement, middlewareData } = state;
+			const diffCoords = await convertValueToCoords(state, options);
+			if (placement === ((_middlewareData$offse = middlewareData.offset) == null ? void 0 : _middlewareData$offse.placement) && (_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) return {};
+			return {
+				x: x + diffCoords.x,
+				y: y + diffCoords.y,
+				data: {
+					...diffCoords,
+					placement
+				}
+			};
+		}
+	};
+};
+/**
+* Optimizes the visibility of the floating element by shifting it in order to
+* keep it in view when it will overflow the clipping boundary.
+* @see https://floating-ui.com/docs/shift
+*/
+var shift$2 = function(options) {
+	if (options === void 0) options = {};
+	return {
+		name: "shift",
+		options,
+		async fn(state) {
+			const { x, y, placement, platform } = state;
+			const { mainAxis: checkMainAxis = true, crossAxis: checkCrossAxis = false, limiter = { fn: (_ref) => {
+				let { x, y } = _ref;
+				return {
+					x,
+					y
+				};
+			} }, ...detectOverflowOptions } = evaluate(options, state);
+			const coords = {
+				x,
+				y
+			};
+			const overflow = await platform.detectOverflow(state, detectOverflowOptions);
+			const crossAxis = getSideAxis(getSide(placement));
+			const mainAxis = getOppositeAxis(crossAxis);
+			let mainAxisCoord = coords[mainAxis];
+			let crossAxisCoord = coords[crossAxis];
+			if (checkMainAxis) {
+				const minSide = mainAxis === "y" ? "top" : "left";
+				const maxSide = mainAxis === "y" ? "bottom" : "right";
+				const min = mainAxisCoord + overflow[minSide];
+				const max = mainAxisCoord - overflow[maxSide];
+				mainAxisCoord = clamp(min, mainAxisCoord, max);
+			}
+			if (checkCrossAxis) {
+				const minSide = crossAxis === "y" ? "top" : "left";
+				const maxSide = crossAxis === "y" ? "bottom" : "right";
+				const min = crossAxisCoord + overflow[minSide];
+				const max = crossAxisCoord - overflow[maxSide];
+				crossAxisCoord = clamp(min, crossAxisCoord, max);
+			}
+			const limitedCoords = limiter.fn({
+				...state,
+				[mainAxis]: mainAxisCoord,
+				[crossAxis]: crossAxisCoord
+			});
+			return {
+				...limitedCoords,
+				data: {
+					x: limitedCoords.x - x,
+					y: limitedCoords.y - y,
+					enabled: {
+						[mainAxis]: checkMainAxis,
+						[crossAxis]: checkCrossAxis
+					}
+				}
+			};
+		}
+	};
+};
+/**
+* Built-in `limiter` that will stop `shift()` at a certain point.
+*/
+var limitShift$2 = function(options) {
+	if (options === void 0) options = {};
+	return {
+		options,
+		fn(state) {
+			const { x, y, placement, rects, middlewareData } = state;
+			const { offset = 0, mainAxis: checkMainAxis = true, crossAxis: checkCrossAxis = true } = evaluate(options, state);
+			const coords = {
+				x,
+				y
+			};
+			const crossAxis = getSideAxis(placement);
+			const mainAxis = getOppositeAxis(crossAxis);
+			let mainAxisCoord = coords[mainAxis];
+			let crossAxisCoord = coords[crossAxis];
+			const rawOffset = evaluate(offset, state);
+			const computedOffset = typeof rawOffset === "number" ? {
+				mainAxis: rawOffset,
+				crossAxis: 0
+			} : {
+				mainAxis: 0,
+				crossAxis: 0,
+				...rawOffset
+			};
+			if (checkMainAxis) {
+				const len = mainAxis === "y" ? "height" : "width";
+				const limitMin = rects.reference[mainAxis] - rects.floating[len] + computedOffset.mainAxis;
+				const limitMax = rects.reference[mainAxis] + rects.reference[len] - computedOffset.mainAxis;
+				if (mainAxisCoord < limitMin) mainAxisCoord = limitMin;
+				else if (mainAxisCoord > limitMax) mainAxisCoord = limitMax;
+			}
+			if (checkCrossAxis) {
+				var _middlewareData$offse, _middlewareData$offse2;
+				const len = mainAxis === "y" ? "width" : "height";
+				const isOriginSide = originSides.has(getSide(placement));
+				const limitMin = rects.reference[crossAxis] - rects.floating[len] + (isOriginSide ? ((_middlewareData$offse = middlewareData.offset) == null ? void 0 : _middlewareData$offse[crossAxis]) || 0 : 0) + (isOriginSide ? 0 : computedOffset.crossAxis);
+				const limitMax = rects.reference[crossAxis] + rects.reference[len] + (isOriginSide ? 0 : ((_middlewareData$offse2 = middlewareData.offset) == null ? void 0 : _middlewareData$offse2[crossAxis]) || 0) - (isOriginSide ? computedOffset.crossAxis : 0);
+				if (crossAxisCoord < limitMin) crossAxisCoord = limitMin;
+				else if (crossAxisCoord > limitMax) crossAxisCoord = limitMax;
+			}
+			return {
+				[mainAxis]: mainAxisCoord,
+				[crossAxis]: crossAxisCoord
+			};
+		}
+	};
+};
+/**
+* Provides data that allows you to change the size of the floating element —
+* for instance, prevent it from overflowing the clipping boundary or match the
+* width of the reference element.
+* @see https://floating-ui.com/docs/size
+*/
+var size$2 = function(options) {
+	if (options === void 0) options = {};
+	return {
+		name: "size",
+		options,
+		async fn(state) {
+			var _state$middlewareData, _state$middlewareData2;
+			const { placement, rects, platform, elements } = state;
+			const { apply = () => {}, ...detectOverflowOptions } = evaluate(options, state);
+			const overflow = await platform.detectOverflow(state, detectOverflowOptions);
+			const side = getSide(placement);
+			const alignment = getAlignment(placement);
+			const isYAxis = getSideAxis(placement) === "y";
+			const { width, height } = rects.floating;
+			let heightSide;
+			let widthSide;
+			if (side === "top" || side === "bottom") {
+				heightSide = side;
+				widthSide = alignment === (await (platform.isRTL == null ? void 0 : platform.isRTL(elements.floating)) ? "start" : "end") ? "left" : "right";
+			} else {
+				widthSide = side;
+				heightSide = alignment === "end" ? "top" : "bottom";
+			}
+			const maximumClippingHeight = height - overflow.top - overflow.bottom;
+			const maximumClippingWidth = width - overflow.left - overflow.right;
+			const overflowAvailableHeight = min(height - overflow[heightSide], maximumClippingHeight);
+			const overflowAvailableWidth = min(width - overflow[widthSide], maximumClippingWidth);
+			const noShift = !state.middlewareData.shift;
+			let availableHeight = overflowAvailableHeight;
+			let availableWidth = overflowAvailableWidth;
+			if ((_state$middlewareData = state.middlewareData.shift) != null && _state$middlewareData.enabled.x) availableWidth = maximumClippingWidth;
+			if ((_state$middlewareData2 = state.middlewareData.shift) != null && _state$middlewareData2.enabled.y) availableHeight = maximumClippingHeight;
+			if (noShift && !alignment) {
+				const xMin = max(overflow.left, 0);
+				const xMax = max(overflow.right, 0);
+				const yMin = max(overflow.top, 0);
+				const yMax = max(overflow.bottom, 0);
+				if (isYAxis) availableWidth = width - 2 * (xMin !== 0 || xMax !== 0 ? xMin + xMax : max(overflow.left, overflow.right));
+				else availableHeight = height - 2 * (yMin !== 0 || yMax !== 0 ? yMin + yMax : max(overflow.top, overflow.bottom));
+			}
+			await apply({
+				...state,
+				availableWidth,
+				availableHeight
+			});
+			const nextDimensions = await platform.getDimensions(elements.floating);
+			if (width !== nextDimensions.width || height !== nextDimensions.height) return { reset: { rects: true } };
+			return {};
+		}
+	};
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@floating-ui+utils@0.2.11/node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs
+function hasWindow() {
+	return typeof window !== "undefined";
+}
+function getNodeName(node) {
+	if (isNode(node)) return (node.nodeName || "").toLowerCase();
+	return "#document";
+}
+function getWindow(node) {
+	var _node$ownerDocument;
+	return (node == null || (_node$ownerDocument = node.ownerDocument) == null ? void 0 : _node$ownerDocument.defaultView) || window;
+}
+function getDocumentElement(node) {
+	var _ref;
+	return (_ref = (isNode(node) ? node.ownerDocument : node.document) || window.document) == null ? void 0 : _ref.documentElement;
+}
+function isNode(value) {
+	if (!hasWindow()) return false;
+	return value instanceof Node || value instanceof getWindow(value).Node;
+}
+function isElement(value) {
+	if (!hasWindow()) return false;
+	return value instanceof Element || value instanceof getWindow(value).Element;
+}
+function isHTMLElement(value) {
+	if (!hasWindow()) return false;
+	return value instanceof HTMLElement || value instanceof getWindow(value).HTMLElement;
+}
+function isShadowRoot(value) {
+	if (!hasWindow() || typeof ShadowRoot === "undefined") return false;
+	return value instanceof ShadowRoot || value instanceof getWindow(value).ShadowRoot;
+}
+function isOverflowElement(element) {
+	const { overflow, overflowX, overflowY, display } = getComputedStyle$1(element);
+	return /auto|scroll|overlay|hidden|clip/.test(overflow + overflowY + overflowX) && display !== "inline" && display !== "contents";
+}
+function isTableElement(element) {
+	return /^(table|td|th)$/.test(getNodeName(element));
+}
+function isTopLayer(element) {
+	try {
+		if (element.matches(":popover-open")) return true;
+	} catch (_e) {}
+	try {
+		return element.matches(":modal");
+	} catch (_e) {
+		return false;
+	}
+}
+var willChangeRe = /transform|translate|scale|rotate|perspective|filter/;
+var containRe = /paint|layout|strict|content/;
+var isNotNone = (value) => !!value && value !== "none";
+var isWebKitValue;
+function isContainingBlock(elementOrCss) {
+	const css = isElement(elementOrCss) ? getComputedStyle$1(elementOrCss) : elementOrCss;
+	return isNotNone(css.transform) || isNotNone(css.translate) || isNotNone(css.scale) || isNotNone(css.rotate) || isNotNone(css.perspective) || !isWebKit() && (isNotNone(css.backdropFilter) || isNotNone(css.filter)) || willChangeRe.test(css.willChange || "") || containRe.test(css.contain || "");
+}
+function getContainingBlock(element) {
+	let currentNode = getParentNode(element);
+	while (isHTMLElement(currentNode) && !isLastTraversableNode(currentNode)) {
+		if (isContainingBlock(currentNode)) return currentNode;
+		else if (isTopLayer(currentNode)) return null;
+		currentNode = getParentNode(currentNode);
+	}
+	return null;
+}
+function isWebKit() {
+	if (isWebKitValue == null) isWebKitValue = typeof CSS !== "undefined" && CSS.supports && CSS.supports("-webkit-backdrop-filter", "none");
+	return isWebKitValue;
+}
+function isLastTraversableNode(node) {
+	return /^(html|body|#document)$/.test(getNodeName(node));
+}
+function getComputedStyle$1(element) {
+	return getWindow(element).getComputedStyle(element);
+}
+function getNodeScroll(element) {
+	if (isElement(element)) return {
+		scrollLeft: element.scrollLeft,
+		scrollTop: element.scrollTop
+	};
+	return {
+		scrollLeft: element.scrollX,
+		scrollTop: element.scrollY
+	};
+}
+function getParentNode(node) {
+	if (getNodeName(node) === "html") return node;
+	const result = node.assignedSlot || node.parentNode || isShadowRoot(node) && node.host || getDocumentElement(node);
+	return isShadowRoot(result) ? result.host : result;
+}
+function getNearestOverflowAncestor(node) {
+	const parentNode = getParentNode(node);
+	if (isLastTraversableNode(parentNode)) return node.ownerDocument ? node.ownerDocument.body : node.body;
+	if (isHTMLElement(parentNode) && isOverflowElement(parentNode)) return parentNode;
+	return getNearestOverflowAncestor(parentNode);
+}
+function getOverflowAncestors(node, list, traverseIframes) {
+	var _node$ownerDocument2;
+	if (list === void 0) list = [];
+	if (traverseIframes === void 0) traverseIframes = true;
+	const scrollableAncestor = getNearestOverflowAncestor(node);
+	const isBody = scrollableAncestor === ((_node$ownerDocument2 = node.ownerDocument) == null ? void 0 : _node$ownerDocument2.body);
+	const win = getWindow(scrollableAncestor);
+	if (isBody) {
+		const frameElement = getFrameElement(win);
+		return list.concat(win, win.visualViewport || [], isOverflowElement(scrollableAncestor) ? scrollableAncestor : [], frameElement && traverseIframes ? getOverflowAncestors(frameElement) : []);
+	} else return list.concat(scrollableAncestor, getOverflowAncestors(scrollableAncestor, [], traverseIframes));
+}
+function getFrameElement(win) {
+	return win.parent && Object.getPrototypeOf(win.parent) ? win.frameElement : null;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@floating-ui+dom@1.7.6/node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs
+function getCssDimensions(element) {
+	const css = getComputedStyle$1(element);
+	let width = parseFloat(css.width) || 0;
+	let height = parseFloat(css.height) || 0;
+	const hasOffset = isHTMLElement(element);
+	const offsetWidth = hasOffset ? element.offsetWidth : width;
+	const offsetHeight = hasOffset ? element.offsetHeight : height;
+	const shouldFallback = round(width) !== offsetWidth || round(height) !== offsetHeight;
+	if (shouldFallback) {
+		width = offsetWidth;
+		height = offsetHeight;
+	}
+	return {
+		width,
+		height,
+		$: shouldFallback
+	};
+}
+function unwrapElement(element) {
+	return !isElement(element) ? element.contextElement : element;
+}
+function getScale(element) {
+	const domElement = unwrapElement(element);
+	if (!isHTMLElement(domElement)) return createCoords(1);
+	const rect = domElement.getBoundingClientRect();
+	const { width, height, $ } = getCssDimensions(domElement);
+	let x = ($ ? round(rect.width) : rect.width) / width;
+	let y = ($ ? round(rect.height) : rect.height) / height;
+	if (!x || !Number.isFinite(x)) x = 1;
+	if (!y || !Number.isFinite(y)) y = 1;
+	return {
+		x,
+		y
+	};
+}
+var noOffsets = /*#__PURE__*/ createCoords(0);
+function getVisualOffsets(element) {
+	const win = getWindow(element);
+	if (!isWebKit() || !win.visualViewport) return noOffsets;
+	return {
+		x: win.visualViewport.offsetLeft,
+		y: win.visualViewport.offsetTop
+	};
+}
+function shouldAddVisualOffsets(element, isFixed, floatingOffsetParent) {
+	if (isFixed === void 0) isFixed = false;
+	if (!floatingOffsetParent || isFixed && floatingOffsetParent !== getWindow(element)) return false;
+	return isFixed;
+}
+function getBoundingClientRect(element, includeScale, isFixedStrategy, offsetParent) {
+	if (includeScale === void 0) includeScale = false;
+	if (isFixedStrategy === void 0) isFixedStrategy = false;
+	const clientRect = element.getBoundingClientRect();
+	const domElement = unwrapElement(element);
+	let scale = createCoords(1);
+	if (includeScale) {
+		if (offsetParent) {
+			if (isElement(offsetParent)) scale = getScale(offsetParent);
+		} else scale = getScale(element);
+	}
+	const visualOffsets = shouldAddVisualOffsets(domElement, isFixedStrategy, offsetParent) ? getVisualOffsets(domElement) : createCoords(0);
+	let x = (clientRect.left + visualOffsets.x) / scale.x;
+	let y = (clientRect.top + visualOffsets.y) / scale.y;
+	let width = clientRect.width / scale.x;
+	let height = clientRect.height / scale.y;
+	if (domElement) {
+		const win = getWindow(domElement);
+		const offsetWin = offsetParent && isElement(offsetParent) ? getWindow(offsetParent) : offsetParent;
+		let currentWin = win;
+		let currentIFrame = getFrameElement(currentWin);
+		while (currentIFrame && offsetParent && offsetWin !== currentWin) {
+			const iframeScale = getScale(currentIFrame);
+			const iframeRect = currentIFrame.getBoundingClientRect();
+			const css = getComputedStyle$1(currentIFrame);
+			const left = iframeRect.left + (currentIFrame.clientLeft + parseFloat(css.paddingLeft)) * iframeScale.x;
+			const top = iframeRect.top + (currentIFrame.clientTop + parseFloat(css.paddingTop)) * iframeScale.y;
+			x *= iframeScale.x;
+			y *= iframeScale.y;
+			width *= iframeScale.x;
+			height *= iframeScale.y;
+			x += left;
+			y += top;
+			currentWin = getWindow(currentIFrame);
+			currentIFrame = getFrameElement(currentWin);
+		}
+	}
+	return rectToClientRect({
+		width,
+		height,
+		x,
+		y
+	});
+}
+function getWindowScrollBarX(element, rect) {
+	const leftScroll = getNodeScroll(element).scrollLeft;
+	if (!rect) return getBoundingClientRect(getDocumentElement(element)).left + leftScroll;
+	return rect.left + leftScroll;
+}
+function getHTMLOffset(documentElement, scroll) {
+	const htmlRect = documentElement.getBoundingClientRect();
+	return {
+		x: htmlRect.left + scroll.scrollLeft - getWindowScrollBarX(documentElement, htmlRect),
+		y: htmlRect.top + scroll.scrollTop
+	};
+}
+function convertOffsetParentRelativeRectToViewportRelativeRect(_ref) {
+	let { elements, rect, offsetParent, strategy } = _ref;
+	const isFixed = strategy === "fixed";
+	const documentElement = getDocumentElement(offsetParent);
+	const topLayer = elements ? isTopLayer(elements.floating) : false;
+	if (offsetParent === documentElement || topLayer && isFixed) return rect;
+	let scroll = {
+		scrollLeft: 0,
+		scrollTop: 0
+	};
+	let scale = createCoords(1);
+	const offsets = createCoords(0);
+	const isOffsetParentAnElement = isHTMLElement(offsetParent);
+	if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
+		if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) scroll = getNodeScroll(offsetParent);
+		if (isOffsetParentAnElement) {
+			const offsetRect = getBoundingClientRect(offsetParent);
+			scale = getScale(offsetParent);
+			offsets.x = offsetRect.x + offsetParent.clientLeft;
+			offsets.y = offsetRect.y + offsetParent.clientTop;
+		}
+	}
+	const htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll) : createCoords(0);
+	return {
+		width: rect.width * scale.x,
+		height: rect.height * scale.y,
+		x: rect.x * scale.x - scroll.scrollLeft * scale.x + offsets.x + htmlOffset.x,
+		y: rect.y * scale.y - scroll.scrollTop * scale.y + offsets.y + htmlOffset.y
+	};
+}
+function getClientRects(element) {
+	return Array.from(element.getClientRects());
+}
+function getDocumentRect(element) {
+	const html = getDocumentElement(element);
+	const scroll = getNodeScroll(element);
+	const body = element.ownerDocument.body;
+	const width = max(html.scrollWidth, html.clientWidth, body.scrollWidth, body.clientWidth);
+	const height = max(html.scrollHeight, html.clientHeight, body.scrollHeight, body.clientHeight);
+	let x = -scroll.scrollLeft + getWindowScrollBarX(element);
+	const y = -scroll.scrollTop;
+	if (getComputedStyle$1(body).direction === "rtl") x += max(html.clientWidth, body.clientWidth) - width;
+	return {
+		width,
+		height,
+		x,
+		y
+	};
+}
+var SCROLLBAR_MAX = 25;
+function getViewportRect(element, strategy) {
+	const win = getWindow(element);
+	const html = getDocumentElement(element);
+	const visualViewport = win.visualViewport;
+	let width = html.clientWidth;
+	let height = html.clientHeight;
+	let x = 0;
+	let y = 0;
+	if (visualViewport) {
+		width = visualViewport.width;
+		height = visualViewport.height;
+		const visualViewportBased = isWebKit();
+		if (!visualViewportBased || visualViewportBased && strategy === "fixed") {
+			x = visualViewport.offsetLeft;
+			y = visualViewport.offsetTop;
+		}
+	}
+	const windowScrollbarX = getWindowScrollBarX(html);
+	if (windowScrollbarX <= 0) {
+		const doc = html.ownerDocument;
+		const body = doc.body;
+		const bodyStyles = getComputedStyle(body);
+		const bodyMarginInline = doc.compatMode === "CSS1Compat" ? parseFloat(bodyStyles.marginLeft) + parseFloat(bodyStyles.marginRight) || 0 : 0;
+		const clippingStableScrollbarWidth = Math.abs(html.clientWidth - body.clientWidth - bodyMarginInline);
+		if (clippingStableScrollbarWidth <= SCROLLBAR_MAX) width -= clippingStableScrollbarWidth;
+	} else if (windowScrollbarX <= SCROLLBAR_MAX) width += windowScrollbarX;
+	return {
+		width,
+		height,
+		x,
+		y
+	};
+}
+function getInnerBoundingClientRect(element, strategy) {
+	const clientRect = getBoundingClientRect(element, true, strategy === "fixed");
+	const top = clientRect.top + element.clientTop;
+	const left = clientRect.left + element.clientLeft;
+	const scale = isHTMLElement(element) ? getScale(element) : createCoords(1);
+	return {
+		width: element.clientWidth * scale.x,
+		height: element.clientHeight * scale.y,
+		x: left * scale.x,
+		y: top * scale.y
+	};
+}
+function getClientRectFromClippingAncestor(element, clippingAncestor, strategy) {
+	let rect;
+	if (clippingAncestor === "viewport") rect = getViewportRect(element, strategy);
+	else if (clippingAncestor === "document") rect = getDocumentRect(getDocumentElement(element));
+	else if (isElement(clippingAncestor)) rect = getInnerBoundingClientRect(clippingAncestor, strategy);
+	else {
+		const visualOffsets = getVisualOffsets(element);
+		rect = {
+			x: clippingAncestor.x - visualOffsets.x,
+			y: clippingAncestor.y - visualOffsets.y,
+			width: clippingAncestor.width,
+			height: clippingAncestor.height
+		};
+	}
+	return rectToClientRect(rect);
+}
+function hasFixedPositionAncestor(element, stopNode) {
+	const parentNode = getParentNode(element);
+	if (parentNode === stopNode || !isElement(parentNode) || isLastTraversableNode(parentNode)) return false;
+	return getComputedStyle$1(parentNode).position === "fixed" || hasFixedPositionAncestor(parentNode, stopNode);
+}
+function getClippingElementAncestors(element, cache) {
+	const cachedResult = cache.get(element);
+	if (cachedResult) return cachedResult;
+	let result = getOverflowAncestors(element, [], false).filter((el) => isElement(el) && getNodeName(el) !== "body");
+	let currentContainingBlockComputedStyle = null;
+	const elementIsFixed = getComputedStyle$1(element).position === "fixed";
+	let currentNode = elementIsFixed ? getParentNode(element) : element;
+	while (isElement(currentNode) && !isLastTraversableNode(currentNode)) {
+		const computedStyle = getComputedStyle$1(currentNode);
+		const currentNodeIsContaining = isContainingBlock(currentNode);
+		if (!currentNodeIsContaining && computedStyle.position === "fixed") currentContainingBlockComputedStyle = null;
+		if (elementIsFixed ? !currentNodeIsContaining && !currentContainingBlockComputedStyle : !currentNodeIsContaining && computedStyle.position === "static" && !!currentContainingBlockComputedStyle && (currentContainingBlockComputedStyle.position === "absolute" || currentContainingBlockComputedStyle.position === "fixed") || isOverflowElement(currentNode) && !currentNodeIsContaining && hasFixedPositionAncestor(element, currentNode)) result = result.filter((ancestor) => ancestor !== currentNode);
+		else currentContainingBlockComputedStyle = computedStyle;
+		currentNode = getParentNode(currentNode);
+	}
+	cache.set(element, result);
+	return result;
+}
+function getClippingRect(_ref) {
+	let { element, boundary, rootBoundary, strategy } = _ref;
+	const clippingAncestors = [...boundary === "clippingAncestors" ? isTopLayer(element) ? [] : getClippingElementAncestors(element, this._c) : [].concat(boundary), rootBoundary];
+	const firstRect = getClientRectFromClippingAncestor(element, clippingAncestors[0], strategy);
+	let top = firstRect.top;
+	let right = firstRect.right;
+	let bottom = firstRect.bottom;
+	let left = firstRect.left;
+	for (let i = 1; i < clippingAncestors.length; i++) {
+		const rect = getClientRectFromClippingAncestor(element, clippingAncestors[i], strategy);
+		top = max(rect.top, top);
+		right = min(rect.right, right);
+		bottom = min(rect.bottom, bottom);
+		left = max(rect.left, left);
+	}
+	return {
+		width: right - left,
+		height: bottom - top,
+		x: left,
+		y: top
+	};
+}
+function getDimensions(element) {
+	const { width, height } = getCssDimensions(element);
+	return {
+		width,
+		height
+	};
+}
+function getRectRelativeToOffsetParent(element, offsetParent, strategy) {
+	const isOffsetParentAnElement = isHTMLElement(offsetParent);
+	const documentElement = getDocumentElement(offsetParent);
+	const isFixed = strategy === "fixed";
+	const rect = getBoundingClientRect(element, true, isFixed, offsetParent);
+	let scroll = {
+		scrollLeft: 0,
+		scrollTop: 0
+	};
+	const offsets = createCoords(0);
+	function setLeftRTLScrollbarOffset() {
+		offsets.x = getWindowScrollBarX(documentElement);
+	}
+	if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
+		if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) scroll = getNodeScroll(offsetParent);
+		if (isOffsetParentAnElement) {
+			const offsetRect = getBoundingClientRect(offsetParent, true, isFixed, offsetParent);
+			offsets.x = offsetRect.x + offsetParent.clientLeft;
+			offsets.y = offsetRect.y + offsetParent.clientTop;
+		} else if (documentElement) setLeftRTLScrollbarOffset();
+	}
+	if (isFixed && !isOffsetParentAnElement && documentElement) setLeftRTLScrollbarOffset();
+	const htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll) : createCoords(0);
+	return {
+		x: rect.left + scroll.scrollLeft - offsets.x - htmlOffset.x,
+		y: rect.top + scroll.scrollTop - offsets.y - htmlOffset.y,
+		width: rect.width,
+		height: rect.height
+	};
+}
+function isStaticPositioned(element) {
+	return getComputedStyle$1(element).position === "static";
+}
+function getTrueOffsetParent(element, polyfill) {
+	if (!isHTMLElement(element) || getComputedStyle$1(element).position === "fixed") return null;
+	if (polyfill) return polyfill(element);
+	let rawOffsetParent = element.offsetParent;
+	if (getDocumentElement(element) === rawOffsetParent) rawOffsetParent = rawOffsetParent.ownerDocument.body;
+	return rawOffsetParent;
+}
+function getOffsetParent(element, polyfill) {
+	const win = getWindow(element);
+	if (isTopLayer(element)) return win;
+	if (!isHTMLElement(element)) {
+		let svgOffsetParent = getParentNode(element);
+		while (svgOffsetParent && !isLastTraversableNode(svgOffsetParent)) {
+			if (isElement(svgOffsetParent) && !isStaticPositioned(svgOffsetParent)) return svgOffsetParent;
+			svgOffsetParent = getParentNode(svgOffsetParent);
+		}
+		return win;
+	}
+	let offsetParent = getTrueOffsetParent(element, polyfill);
+	while (offsetParent && isTableElement(offsetParent) && isStaticPositioned(offsetParent)) offsetParent = getTrueOffsetParent(offsetParent, polyfill);
+	if (offsetParent && isLastTraversableNode(offsetParent) && isStaticPositioned(offsetParent) && !isContainingBlock(offsetParent)) return win;
+	return offsetParent || getContainingBlock(element) || win;
+}
+var getElementRects = async function(data) {
+	const getOffsetParentFn = this.getOffsetParent || getOffsetParent;
+	const getDimensionsFn = this.getDimensions;
+	const floatingDimensions = await getDimensionsFn(data.floating);
+	return {
+		reference: getRectRelativeToOffsetParent(data.reference, await getOffsetParentFn(data.floating), data.strategy),
+		floating: {
+			x: 0,
+			y: 0,
+			width: floatingDimensions.width,
+			height: floatingDimensions.height
+		}
+	};
+};
+function isRTL(element) {
+	return getComputedStyle$1(element).direction === "rtl";
+}
+var platform = {
+	convertOffsetParentRelativeRectToViewportRelativeRect,
+	getDocumentElement,
+	getClippingRect,
+	getOffsetParent,
+	getElementRects,
+	getClientRects,
+	getDimensions,
+	getScale,
+	isElement,
+	isRTL
+};
+function rectsAreEqual(a, b) {
+	return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+}
+function observeMove(element, onMove) {
+	let io = null;
+	let timeoutId;
+	const root = getDocumentElement(element);
+	function cleanup() {
+		var _io;
+		clearTimeout(timeoutId);
+		(_io = io) == null || _io.disconnect();
+		io = null;
+	}
+	function refresh(skip, threshold) {
+		if (skip === void 0) skip = false;
+		if (threshold === void 0) threshold = 1;
+		cleanup();
+		const elementRectForRootMargin = element.getBoundingClientRect();
+		const { left, top, width, height } = elementRectForRootMargin;
+		if (!skip) onMove();
+		if (!width || !height) return;
+		const insetTop = floor(top);
+		const insetRight = floor(root.clientWidth - (left + width));
+		const insetBottom = floor(root.clientHeight - (top + height));
+		const insetLeft = floor(left);
+		const options = {
+			rootMargin: -insetTop + "px " + -insetRight + "px " + -insetBottom + "px " + -insetLeft + "px",
+			threshold: max(0, min(1, threshold)) || 1
+		};
+		let isFirstUpdate = true;
+		function handleObserve(entries) {
+			const ratio = entries[0].intersectionRatio;
+			if (ratio !== threshold) {
+				if (!isFirstUpdate) return refresh();
+				if (!ratio) timeoutId = setTimeout(() => {
+					refresh(false, 1e-7);
+				}, 1e3);
+				else refresh(false, ratio);
+			}
+			if (ratio === 1 && !rectsAreEqual(elementRectForRootMargin, element.getBoundingClientRect())) refresh();
+			isFirstUpdate = false;
+		}
+		try {
+			io = new IntersectionObserver(handleObserve, {
+				...options,
+				root: root.ownerDocument
+			});
+		} catch (_e) {
+			io = new IntersectionObserver(handleObserve, options);
+		}
+		io.observe(element);
+	}
+	refresh(true);
+	return cleanup;
+}
+/**
+* Automatically updates the position of the floating element when necessary.
+* Should only be called when the floating element is mounted on the DOM or
+* visible on the screen.
+* @returns cleanup function that should be invoked when the floating element is
+* removed from the DOM or hidden from the screen.
+* @see https://floating-ui.com/docs/autoUpdate
+*/
+function autoUpdate(reference, floating, update, options) {
+	if (options === void 0) options = {};
+	const { ancestorScroll = true, ancestorResize = true, elementResize = typeof ResizeObserver === "function", layoutShift = typeof IntersectionObserver === "function", animationFrame = false } = options;
+	const referenceEl = unwrapElement(reference);
+	const ancestors = ancestorScroll || ancestorResize ? [...referenceEl ? getOverflowAncestors(referenceEl) : [], ...floating ? getOverflowAncestors(floating) : []] : [];
+	ancestors.forEach((ancestor) => {
+		ancestorScroll && ancestor.addEventListener("scroll", update, { passive: true });
+		ancestorResize && ancestor.addEventListener("resize", update);
+	});
+	const cleanupIo = referenceEl && layoutShift ? observeMove(referenceEl, update) : null;
+	let reobserveFrame = -1;
+	let resizeObserver = null;
+	if (elementResize) {
+		resizeObserver = new ResizeObserver((_ref) => {
+			let [firstEntry] = _ref;
+			if (firstEntry && firstEntry.target === referenceEl && resizeObserver && floating) {
+				resizeObserver.unobserve(floating);
+				cancelAnimationFrame(reobserveFrame);
+				reobserveFrame = requestAnimationFrame(() => {
+					var _resizeObserver;
+					(_resizeObserver = resizeObserver) == null || _resizeObserver.observe(floating);
+				});
+			}
+			update();
+		});
+		if (referenceEl && !animationFrame) resizeObserver.observe(referenceEl);
+		if (floating) resizeObserver.observe(floating);
+	}
+	let frameId;
+	let prevRefRect = animationFrame ? getBoundingClientRect(reference) : null;
+	if (animationFrame) frameLoop();
+	function frameLoop() {
+		const nextRefRect = getBoundingClientRect(reference);
+		if (prevRefRect && !rectsAreEqual(prevRefRect, nextRefRect)) update();
+		prevRefRect = nextRefRect;
+		frameId = requestAnimationFrame(frameLoop);
+	}
+	update();
+	return () => {
+		var _resizeObserver2;
+		ancestors.forEach((ancestor) => {
+			ancestorScroll && ancestor.removeEventListener("scroll", update);
+			ancestorResize && ancestor.removeEventListener("resize", update);
+		});
+		cleanupIo?.();
+		(_resizeObserver2 = resizeObserver) == null || _resizeObserver2.disconnect();
+		resizeObserver = null;
+		if (animationFrame) cancelAnimationFrame(frameId);
+	};
+}
+/**
+* Modifies the placement by translating the floating element along the
+* specified axes.
+* A number (shorthand for `mainAxis` or distance), or an axes configuration
+* object may be passed.
+* @see https://floating-ui.com/docs/offset
+*/
+var offset$1 = offset$2;
+/**
+* Optimizes the visibility of the floating element by shifting it in order to
+* keep it in view when it will overflow the clipping boundary.
+* @see https://floating-ui.com/docs/shift
+*/
+var shift$1 = shift$2;
+/**
+* Optimizes the visibility of the floating element by flipping the `placement`
+* in order to keep it in view when the preferred placement(s) will overflow the
+* clipping boundary. Alternative to `autoPlacement`.
+* @see https://floating-ui.com/docs/flip
+*/
+var flip$1 = flip$2;
+/**
+* Provides data that allows you to change the size of the floating element —
+* for instance, prevent it from overflowing the clipping boundary or match the
+* width of the reference element.
+* @see https://floating-ui.com/docs/size
+*/
+var size$1 = size$2;
+/**
+* Provides data to hide the floating element in applicable situations, such as
+* when it is not in the same clipping context as the reference element.
+* @see https://floating-ui.com/docs/hide
+*/
+var hide$1 = hide$2;
+/**
+* Provides data to position an inner element of the floating element so that it
+* appears centered to the reference element.
+* @see https://floating-ui.com/docs/arrow
+*/
+var arrow$2 = arrow$3;
+/**
+* Built-in `limiter` that will stop `shift()` at a certain point.
+*/
+var limitShift$1 = limitShift$2;
+/**
+* Computes the `x` and `y` coordinates that will place the floating element
+* next to a given reference element.
+*/
+var computePosition = (reference, floating, options) => {
+	const cache = /* @__PURE__ */ new Map();
+	const mergedOptions = {
+		platform,
+		...options
+	};
+	const platformWithCache = {
+		...mergedOptions.platform,
+		_c: cache
+	};
+	return computePosition$1(reference, floating, {
+		...mergedOptions,
+		platform: platformWithCache
+	});
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@floating-ui+react-dom@2.1.8_react-dom@19.1.5_react@19.1.5__react@19.1.5/node_modules/@floating-ui/react-dom/dist/floating-ui.react-dom.mjs
+var index = typeof document !== "undefined" ? import_react.useLayoutEffect : function noop() {};
+function deepEqual$1(a, b) {
+	if (a === b) return true;
+	if (typeof a !== typeof b) return false;
+	if (typeof a === "function" && a.toString() === b.toString()) return true;
+	let length;
+	let i;
+	let keys;
+	if (a && b && typeof a === "object") {
+		if (Array.isArray(a)) {
+			length = a.length;
+			if (length !== b.length) return false;
+			for (i = length; i-- !== 0;) if (!deepEqual$1(a[i], b[i])) return false;
+			return true;
+		}
+		keys = Object.keys(a);
+		length = keys.length;
+		if (length !== Object.keys(b).length) return false;
+		for (i = length; i-- !== 0;) if (!{}.hasOwnProperty.call(b, keys[i])) return false;
+		for (i = length; i-- !== 0;) {
+			const key = keys[i];
+			if (key === "_owner" && a.$$typeof) continue;
+			if (!deepEqual$1(a[key], b[key])) return false;
+		}
+		return true;
+	}
+	return a !== a && b !== b;
+}
+function getDPR(element) {
+	if (typeof window === "undefined") return 1;
+	return (element.ownerDocument.defaultView || window).devicePixelRatio || 1;
+}
+function roundByDPR(element, value) {
+	const dpr = getDPR(element);
+	return Math.round(value * dpr) / dpr;
+}
+function useLatestRef(value) {
+	const ref = import_react.useRef(value);
+	index(() => {
+		ref.current = value;
+	});
+	return ref;
+}
+/**
+* Provides data to position a floating element.
+* @see https://floating-ui.com/docs/useFloating
+*/
+function useFloating(options) {
+	if (options === void 0) options = {};
+	const { placement = "bottom", strategy = "absolute", middleware = [], platform, elements: { reference: externalReference, floating: externalFloating } = {}, transform = true, whileElementsMounted, open } = options;
+	const [data, setData] = import_react.useState({
+		x: 0,
+		y: 0,
+		strategy,
+		placement,
+		middlewareData: {},
+		isPositioned: false
+	});
+	const [latestMiddleware, setLatestMiddleware] = import_react.useState(middleware);
+	if (!deepEqual$1(latestMiddleware, middleware)) setLatestMiddleware(middleware);
+	const [_reference, _setReference] = import_react.useState(null);
+	const [_floating, _setFloating] = import_react.useState(null);
+	const setReference = import_react.useCallback((node) => {
+		if (node !== referenceRef.current) {
+			referenceRef.current = node;
+			_setReference(node);
+		}
+	}, []);
+	const setFloating = import_react.useCallback((node) => {
+		if (node !== floatingRef.current) {
+			floatingRef.current = node;
+			_setFloating(node);
+		}
+	}, []);
+	const referenceEl = externalReference || _reference;
+	const floatingEl = externalFloating || _floating;
+	const referenceRef = import_react.useRef(null);
+	const floatingRef = import_react.useRef(null);
+	const dataRef = import_react.useRef(data);
+	const hasWhileElementsMounted = whileElementsMounted != null;
+	const whileElementsMountedRef = useLatestRef(whileElementsMounted);
+	const platformRef = useLatestRef(platform);
+	const openRef = useLatestRef(open);
+	const update = import_react.useCallback(() => {
+		if (!referenceRef.current || !floatingRef.current) return;
+		const config = {
+			placement,
+			strategy,
+			middleware: latestMiddleware
+		};
+		if (platformRef.current) config.platform = platformRef.current;
+		computePosition(referenceRef.current, floatingRef.current, config).then((data) => {
+			const fullData = {
+				...data,
+				isPositioned: openRef.current !== false
+			};
+			if (isMountedRef.current && !deepEqual$1(dataRef.current, fullData)) {
+				dataRef.current = fullData;
+				import_react_dom.flushSync(() => {
+					setData(fullData);
+				});
+			}
+		});
+	}, [
+		latestMiddleware,
+		placement,
+		strategy,
+		platformRef,
+		openRef
+	]);
+	index(() => {
+		if (open === false && dataRef.current.isPositioned) {
+			dataRef.current.isPositioned = false;
+			setData((data) => ({
+				...data,
+				isPositioned: false
+			}));
+		}
+	}, [open]);
+	const isMountedRef = import_react.useRef(false);
+	index(() => {
+		isMountedRef.current = true;
+		return () => {
+			isMountedRef.current = false;
+		};
+	}, []);
+	index(() => {
+		if (referenceEl) referenceRef.current = referenceEl;
+		if (floatingEl) floatingRef.current = floatingEl;
+		if (referenceEl && floatingEl) {
+			if (whileElementsMountedRef.current) return whileElementsMountedRef.current(referenceEl, floatingEl, update);
+			update();
+		}
+	}, [
+		referenceEl,
+		floatingEl,
+		update,
+		whileElementsMountedRef,
+		hasWhileElementsMounted
+	]);
+	const refs = import_react.useMemo(() => ({
+		reference: referenceRef,
+		floating: floatingRef,
+		setReference,
+		setFloating
+	}), [setReference, setFloating]);
+	const elements = import_react.useMemo(() => ({
+		reference: referenceEl,
+		floating: floatingEl
+	}), [referenceEl, floatingEl]);
+	const floatingStyles = import_react.useMemo(() => {
+		const initialStyles = {
+			position: strategy,
+			left: 0,
+			top: 0
+		};
+		if (!elements.floating) return initialStyles;
+		const x = roundByDPR(elements.floating, data.x);
+		const y = roundByDPR(elements.floating, data.y);
+		if (transform) return {
+			...initialStyles,
+			transform: "translate(" + x + "px, " + y + "px)",
+			...getDPR(elements.floating) >= 1.5 && { willChange: "transform" }
+		};
+		return {
+			position: strategy,
+			left: x,
+			top: y
+		};
+	}, [
+		strategy,
+		transform,
+		elements.floating,
+		data.x,
+		data.y
+	]);
+	return import_react.useMemo(() => ({
+		...data,
+		update,
+		refs,
+		elements,
+		floatingStyles
+	}), [
+		data,
+		update,
+		refs,
+		elements,
+		floatingStyles
+	]);
+}
+/**
+* Provides data to position an inner element of the floating element so that it
+* appears centered to the reference element.
+* This wraps the core `arrow` middleware to allow React refs as the element.
+* @see https://floating-ui.com/docs/arrow
+*/
+var arrow$1 = (options) => {
+	function isRef(value) {
+		return {}.hasOwnProperty.call(value, "current");
+	}
+	return {
+		name: "arrow",
+		options,
+		fn(state) {
+			const { element, padding } = typeof options === "function" ? options(state) : options;
+			if (element && isRef(element)) {
+				if (element.current != null) return arrow$2({
+					element: element.current,
+					padding
+				}).fn(state);
+				return {};
+			}
+			if (element) return arrow$2({
+				element,
+				padding
+			}).fn(state);
+			return {};
+		}
+	};
+};
+/**
+* Modifies the placement by translating the floating element along the
+* specified axes.
+* A number (shorthand for `mainAxis` or distance), or an axes configuration
+* object may be passed.
+* @see https://floating-ui.com/docs/offset
+*/
+var offset = (options, deps) => {
+	const result = offset$1(options);
+	return {
+		name: result.name,
+		fn: result.fn,
+		options: [options, deps]
+	};
+};
+/**
+* Optimizes the visibility of the floating element by shifting it in order to
+* keep it in view when it will overflow the clipping boundary.
+* @see https://floating-ui.com/docs/shift
+*/
+var shift = (options, deps) => {
+	const result = shift$1(options);
+	return {
+		name: result.name,
+		fn: result.fn,
+		options: [options, deps]
+	};
+};
+/**
+* Built-in `limiter` that will stop `shift()` at a certain point.
+*/
+var limitShift = (options, deps) => {
+	return {
+		fn: limitShift$1(options).fn,
+		options: [options, deps]
+	};
+};
+/**
+* Optimizes the visibility of the floating element by flipping the `placement`
+* in order to keep it in view when the preferred placement(s) will overflow the
+* clipping boundary. Alternative to `autoPlacement`.
+* @see https://floating-ui.com/docs/flip
+*/
+var flip = (options, deps) => {
+	const result = flip$1(options);
+	return {
+		name: result.name,
+		fn: result.fn,
+		options: [options, deps]
+	};
+};
+/**
+* Provides data that allows you to change the size of the floating element —
+* for instance, prevent it from overflowing the clipping boundary or match the
+* width of the reference element.
+* @see https://floating-ui.com/docs/size
+*/
+var size = (options, deps) => {
+	const result = size$1(options);
+	return {
+		name: result.name,
+		fn: result.fn,
+		options: [options, deps]
+	};
+};
+/**
+* Provides data to hide the floating element in applicable situations, such as
+* when it is not in the same clipping context as the reference element.
+* @see https://floating-ui.com/docs/hide
+*/
+var hide = (options, deps) => {
+	const result = hide$1(options);
+	return {
+		name: result.name,
+		fn: result.fn,
+		options: [options, deps]
+	};
+};
+/**
+* Provides data to position an inner element of the floating element so that it
+* appears centered to the reference element.
+* This wraps the core `arrow` middleware to allow React refs as the element.
+* @see https://floating-ui.com/docs/arrow
+*/
+var arrow = (options, deps) => {
+	const result = arrow$1(options);
+	return {
+		name: result.name,
+		fn: result.fn,
+		options: [options, deps]
+	};
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-arrow@1.1.7_@types+react-dom@19.1.11_@types+react@19.1.17__@types+react_e400ed2c4baa8f9b19a0cf32e66488f5/node_modules/@radix-ui/react-arrow/dist/index.mjs
+var NAME$1 = "Arrow";
+var Arrow$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { children, width = 10, height = 5, ...arrowProps } = props;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.svg, {
+		...arrowProps,
+		ref: forwardedRef,
+		width,
+		height,
+		viewBox: "0 0 30 10",
+		preserveAspectRatio: "none",
+		children: props.asChild ? children : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("polygon", { points: "0,0 30,0 15,10" })
+	});
+});
+Arrow$1.displayName = NAME$1;
+var Root$3 = Arrow$1;
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-size@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-size/dist/index.mjs
+function useSize(element) {
+	const [size, setSize] = import_react.useState(void 0);
+	useLayoutEffect2(() => {
+		if (element) {
+			setSize({
+				width: element.offsetWidth,
+				height: element.offsetHeight
+			});
+			const resizeObserver = new ResizeObserver((entries) => {
+				if (!Array.isArray(entries)) return;
+				if (!entries.length) return;
+				const entry = entries[0];
+				let width;
+				let height;
+				if ("borderBoxSize" in entry) {
+					const borderSizeEntry = entry["borderBoxSize"];
+					const borderSize = Array.isArray(borderSizeEntry) ? borderSizeEntry[0] : borderSizeEntry;
+					width = borderSize["inlineSize"];
+					height = borderSize["blockSize"];
+				} else {
+					width = element.offsetWidth;
+					height = element.offsetHeight;
+				}
+				setSize({
+					width,
+					height
+				});
+			});
+			resizeObserver.observe(element, { box: "border-box" });
+			return () => resizeObserver.unobserve(element);
+		} else setSize(void 0);
+	}, [element]);
+	return size;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-popper@1.2.8_@types+react-dom@19.1.11_@types+react@19.1.17__@types+reac_51e1cc63cb3364d9942e5c32d7f34537/node_modules/@radix-ui/react-popper/dist/index.mjs
+var POPPER_NAME = "Popper";
+var [createPopperContext, createPopperScope] = createContextScope(POPPER_NAME);
+var [PopperProvider, usePopperContext] = createPopperContext(POPPER_NAME);
+var Popper = (props) => {
+	const { __scopePopper, children } = props;
+	const [anchor, setAnchor] = import_react.useState(null);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PopperProvider, {
+		scope: __scopePopper,
+		anchor,
+		onAnchorChange: setAnchor,
+		children
+	});
+};
+Popper.displayName = POPPER_NAME;
+var ANCHOR_NAME = "PopperAnchor";
+var PopperAnchor = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopePopper, virtualRef, ...anchorProps } = props;
+	const context = usePopperContext(ANCHOR_NAME, __scopePopper);
+	const ref = import_react.useRef(null);
+	const composedRefs = useComposedRefs(forwardedRef, ref);
+	const anchorRef = import_react.useRef(null);
+	import_react.useEffect(() => {
+		const previousAnchor = anchorRef.current;
+		anchorRef.current = virtualRef?.current || ref.current;
+		if (previousAnchor !== anchorRef.current) context.onAnchorChange(anchorRef.current);
+	});
+	return virtualRef ? null : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		...anchorProps,
+		ref: composedRefs
+	});
+});
+PopperAnchor.displayName = ANCHOR_NAME;
+var CONTENT_NAME$3 = "PopperContent";
+var [PopperContentProvider, useContentContext] = createPopperContext(CONTENT_NAME$3);
+var PopperContent = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopePopper, side = "bottom", sideOffset = 0, align = "center", alignOffset = 0, arrowPadding = 0, avoidCollisions = true, collisionBoundary = [], collisionPadding: collisionPaddingProp = 0, sticky = "partial", hideWhenDetached = false, updatePositionStrategy = "optimized", onPlaced, ...contentProps } = props;
+	const context = usePopperContext(CONTENT_NAME$3, __scopePopper);
+	const [content, setContent] = import_react.useState(null);
+	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
+	const [arrow$4, setArrow] = import_react.useState(null);
+	const arrowSize = useSize(arrow$4);
+	const arrowWidth = arrowSize?.width ?? 0;
+	const arrowHeight = arrowSize?.height ?? 0;
+	const desiredPlacement = side + (align !== "center" ? "-" + align : "");
+	const collisionPadding = typeof collisionPaddingProp === "number" ? collisionPaddingProp : {
+		top: 0,
+		right: 0,
+		bottom: 0,
+		left: 0,
+		...collisionPaddingProp
+	};
+	const boundary = Array.isArray(collisionBoundary) ? collisionBoundary : [collisionBoundary];
+	const hasExplicitBoundaries = boundary.length > 0;
+	const detectOverflowOptions = {
+		padding: collisionPadding,
+		boundary: boundary.filter(isNotNull),
+		altBoundary: hasExplicitBoundaries
+	};
+	const { refs, floatingStyles, placement, isPositioned, middlewareData } = useFloating({
+		strategy: "fixed",
+		placement: desiredPlacement,
+		whileElementsMounted: (...args) => {
+			return autoUpdate(...args, { animationFrame: updatePositionStrategy === "always" });
+		},
+		elements: { reference: context.anchor },
+		middleware: [
+			offset({
+				mainAxis: sideOffset + arrowHeight,
+				alignmentAxis: alignOffset
+			}),
+			avoidCollisions && shift({
+				mainAxis: true,
+				crossAxis: false,
+				limiter: sticky === "partial" ? limitShift() : void 0,
+				...detectOverflowOptions
+			}),
+			avoidCollisions && flip({ ...detectOverflowOptions }),
+			size({
+				...detectOverflowOptions,
+				apply: ({ elements, rects, availableWidth, availableHeight }) => {
+					const { width: anchorWidth, height: anchorHeight } = rects.reference;
+					const contentStyle = elements.floating.style;
+					contentStyle.setProperty("--radix-popper-available-width", `${availableWidth}px`);
+					contentStyle.setProperty("--radix-popper-available-height", `${availableHeight}px`);
+					contentStyle.setProperty("--radix-popper-anchor-width", `${anchorWidth}px`);
+					contentStyle.setProperty("--radix-popper-anchor-height", `${anchorHeight}px`);
+				}
+			}),
+			arrow$4 && arrow({
+				element: arrow$4,
+				padding: arrowPadding
+			}),
+			transformOrigin({
+				arrowWidth,
+				arrowHeight
+			}),
+			hideWhenDetached && hide({
+				strategy: "referenceHidden",
+				...detectOverflowOptions
+			})
+		]
+	});
+	const [placedSide, placedAlign] = getSideAndAlignFromPlacement(placement);
+	const handlePlaced = useCallbackRef$1(onPlaced);
+	useLayoutEffect2(() => {
+		if (isPositioned) handlePlaced?.();
+	}, [isPositioned, handlePlaced]);
+	const arrowX = middlewareData.arrow?.x;
+	const arrowY = middlewareData.arrow?.y;
+	const cannotCenterArrow = middlewareData.arrow?.centerOffset !== 0;
+	const [contentZIndex, setContentZIndex] = import_react.useState();
+	useLayoutEffect2(() => {
+		if (content) setContentZIndex(window.getComputedStyle(content).zIndex);
+	}, [content]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		ref: refs.setFloating,
+		"data-radix-popper-content-wrapper": "",
+		style: {
+			...floatingStyles,
+			transform: isPositioned ? floatingStyles.transform : "translate(0, -200%)",
+			minWidth: "max-content",
+			zIndex: contentZIndex,
+			["--radix-popper-transform-origin"]: [middlewareData.transformOrigin?.x, middlewareData.transformOrigin?.y].join(" "),
+			...middlewareData.hide?.referenceHidden && {
+				visibility: "hidden",
+				pointerEvents: "none"
+			}
+		},
+		dir: props.dir,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PopperContentProvider, {
+			scope: __scopePopper,
+			placedSide,
+			onArrowChange: setArrow,
+			arrowX,
+			arrowY,
+			shouldHideArrow: cannotCenterArrow,
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+				"data-side": placedSide,
+				"data-align": placedAlign,
+				...contentProps,
+				ref: composedRefs,
+				style: {
+					...contentProps.style,
+					animation: !isPositioned ? "none" : void 0
+				}
+			})
+		})
+	});
+});
+PopperContent.displayName = CONTENT_NAME$3;
+var ARROW_NAME$1 = "PopperArrow";
+var OPPOSITE_SIDE = {
+	top: "bottom",
+	right: "left",
+	bottom: "top",
+	left: "right"
+};
+var PopperArrow = import_react.forwardRef(function PopperArrow2(props, forwardedRef) {
+	const { __scopePopper, ...arrowProps } = props;
+	const contentContext = useContentContext(ARROW_NAME$1, __scopePopper);
+	const baseSide = OPPOSITE_SIDE[contentContext.placedSide];
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+		ref: contentContext.onArrowChange,
+		style: {
+			position: "absolute",
+			left: contentContext.arrowX,
+			top: contentContext.arrowY,
+			[baseSide]: 0,
+			transformOrigin: {
+				top: "",
+				right: "0 0",
+				bottom: "center 0",
+				left: "100% 0"
+			}[contentContext.placedSide],
+			transform: {
+				top: "translateY(100%)",
+				right: "translateY(50%) rotate(90deg) translateX(-50%)",
+				bottom: `rotate(180deg)`,
+				left: "translateY(50%) rotate(-90deg) translateX(50%)"
+			}[contentContext.placedSide],
+			visibility: contentContext.shouldHideArrow ? "hidden" : void 0
+		},
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$3, {
+			...arrowProps,
+			ref: forwardedRef,
+			style: {
+				...arrowProps.style,
+				display: "block"
+			}
+		})
+	});
+});
+PopperArrow.displayName = ARROW_NAME$1;
+function isNotNull(value) {
+	return value !== null;
+}
+var transformOrigin = (options) => ({
+	name: "transformOrigin",
+	options,
+	fn(data) {
+		const { placement, rects, middlewareData } = data;
+		const isArrowHidden = middlewareData.arrow?.centerOffset !== 0;
+		const arrowWidth = isArrowHidden ? 0 : options.arrowWidth;
+		const arrowHeight = isArrowHidden ? 0 : options.arrowHeight;
+		const [placedSide, placedAlign] = getSideAndAlignFromPlacement(placement);
+		const noArrowAlign = {
+			start: "0%",
+			center: "50%",
+			end: "100%"
+		}[placedAlign];
+		const arrowXCenter = (middlewareData.arrow?.x ?? 0) + arrowWidth / 2;
+		const arrowYCenter = (middlewareData.arrow?.y ?? 0) + arrowHeight / 2;
+		let x = "";
+		let y = "";
+		if (placedSide === "bottom") {
+			x = isArrowHidden ? noArrowAlign : `${arrowXCenter}px`;
+			y = `${-arrowHeight}px`;
+		} else if (placedSide === "top") {
+			x = isArrowHidden ? noArrowAlign : `${arrowXCenter}px`;
+			y = `${rects.floating.height + arrowHeight}px`;
+		} else if (placedSide === "right") {
+			x = `${-arrowHeight}px`;
+			y = isArrowHidden ? noArrowAlign : `${arrowYCenter}px`;
+		} else if (placedSide === "left") {
+			x = `${rects.floating.width + arrowHeight}px`;
+			y = isArrowHidden ? noArrowAlign : `${arrowYCenter}px`;
+		}
+		return { data: {
+			x,
+			y
+		} };
+	}
+});
+function getSideAndAlignFromPlacement(placement) {
+	const [side, align = "center"] = placement.split("-");
+	return [side, align];
+}
+var Root2$2 = Popper;
+var Anchor = PopperAnchor;
+var Content$2 = PopperContent;
+var Arrow = PopperArrow;
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-portal@1.1.9_@types+react-dom@19.1.11_@types+react@19.1.17__@types+reac_00d6c26182c5d909cf1a6f84c4ed5dcf/node_modules/@radix-ui/react-portal/dist/index.mjs
+var PORTAL_NAME$2 = "Portal";
+var Portal$2 = import_react.forwardRef((props, forwardedRef) => {
+	const { container: containerProp, ...portalProps } = props;
+	const [mounted, setMounted] = import_react.useState(false);
+	useLayoutEffect2(() => setMounted(true), []);
+	const container = containerProp || mounted && globalThis?.document?.body;
+	return container ? import_react_dom.createPortal(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		...portalProps,
+		ref: forwardedRef
+	}), container) : null;
+});
+Portal$2.displayName = PORTAL_NAME$2;
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-controllable-state@1.2.2_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-controllable-state/dist/index.mjs
+var useInsertionEffect = import_react[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
+function useControllableState({ prop, defaultProp, onChange = () => {}, caller }) {
+	const [uncontrolledProp, setUncontrolledProp, onChangeRef] = useUncontrolledState({
+		defaultProp,
+		onChange
+	});
+	const isControlled = prop !== void 0;
+	const value = isControlled ? prop : uncontrolledProp;
+	{
+		const isControlledRef = import_react.useRef(prop !== void 0);
+		import_react.useEffect(() => {
+			const wasControlled = isControlledRef.current;
+			if (wasControlled !== isControlled) console.warn(`${caller} is changing from ${wasControlled ? "controlled" : "uncontrolled"} to ${isControlled ? "controlled" : "uncontrolled"}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`);
+			isControlledRef.current = isControlled;
+		}, [isControlled, caller]);
+	}
+	return [value, import_react.useCallback((nextValue) => {
+		if (isControlled) {
+			const value2 = isFunction$2(nextValue) ? nextValue(prop) : nextValue;
+			if (value2 !== prop) onChangeRef.current?.(value2);
+		} else setUncontrolledProp(nextValue);
+	}, [
+		isControlled,
+		prop,
+		setUncontrolledProp,
+		onChangeRef
+	])];
+}
+function useUncontrolledState({ defaultProp, onChange }) {
+	const [value, setValue] = import_react.useState(defaultProp);
+	const prevValueRef = import_react.useRef(value);
+	const onChangeRef = import_react.useRef(onChange);
+	useInsertionEffect(() => {
+		onChangeRef.current = onChange;
+	}, [onChange]);
+	import_react.useEffect(() => {
+		if (prevValueRef.current !== value) {
+			onChangeRef.current?.(value);
+			prevValueRef.current = value;
+		}
+	}, [value, prevValueRef]);
+	return [
+		value,
+		setValue,
+		onChangeRef
+	];
+}
+function isFunction$2(value) {
+	return typeof value === "function";
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-previous@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-previous/dist/index.mjs
+function usePrevious$1(value) {
+	const ref = import_react.useRef({
+		value,
+		previous: value
+	});
+	return import_react.useMemo(() => {
+		if (ref.current.value !== value) {
+			ref.current.previous = ref.current.value;
+			ref.current.value = value;
+		}
+		return ref.current.previous;
+	}, [value]);
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-visually-hidden@1.2.3_@types+react-dom@19.1.11_@types+react@19.1.17__@t_2a2b88bd961f03d5fe7a951235142447/node_modules/@radix-ui/react-visually-hidden/dist/index.mjs
+var VISUALLY_HIDDEN_STYLES = Object.freeze({
+	position: "absolute",
+	border: 0,
+	width: 1,
+	height: 1,
+	padding: 0,
+	margin: -1,
+	overflow: "hidden",
+	clip: "rect(0, 0, 0, 0)",
+	whiteSpace: "nowrap",
+	wordWrap: "normal"
+});
+var NAME = "VisuallyHidden";
+var VisuallyHidden = import_react.forwardRef((props, forwardedRef) => {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+		...props,
+		ref: forwardedRef,
+		style: {
+			...VISUALLY_HIDDEN_STYLES,
+			...props.style
+		}
+	});
+});
+VisuallyHidden.displayName = NAME;
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/aria-hidden@1.2.6/node_modules/aria-hidden/dist/es2015/index.js
+var getDefaultParent = function(originalTarget) {
+	if (typeof document === "undefined") return null;
+	return (Array.isArray(originalTarget) ? originalTarget[0] : originalTarget).ownerDocument.body;
+};
+var counterMap = /* @__PURE__ */ new WeakMap();
+var uncontrolledNodes = /* @__PURE__ */ new WeakMap();
+var markerMap = {};
+var lockCount = 0;
+var unwrapHost = function(node) {
+	return node && (node.host || unwrapHost(node.parentNode));
+};
+var correctTargets = function(parent, targets) {
+	return targets.map(function(target) {
+		if (parent.contains(target)) return target;
+		var correctedTarget = unwrapHost(target);
+		if (correctedTarget && parent.contains(correctedTarget)) return correctedTarget;
+		console.error("aria-hidden", target, "in not contained inside", parent, ". Doing nothing");
+		return null;
+	}).filter(function(x) {
+		return Boolean(x);
+	});
+};
+/**
+* Marks everything except given node(or nodes) as aria-hidden
+* @param {Element | Element[]} originalTarget - elements to keep on the page
+* @param [parentNode] - top element, defaults to document.body
+* @param {String} [markerName] - a special attribute to mark every node
+* @param {String} [controlAttribute] - html Attribute to control
+* @return {Undo} undo command
+*/
+var applyAttributeToOthers = function(originalTarget, parentNode, markerName, controlAttribute) {
+	var targets = correctTargets(parentNode, Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
+	if (!markerMap[markerName]) markerMap[markerName] = /* @__PURE__ */ new WeakMap();
+	var markerCounter = markerMap[markerName];
+	var hiddenNodes = [];
+	var elementsToKeep = /* @__PURE__ */ new Set();
+	var elementsToStop = new Set(targets);
+	var keep = function(el) {
+		if (!el || elementsToKeep.has(el)) return;
+		elementsToKeep.add(el);
+		keep(el.parentNode);
+	};
+	targets.forEach(keep);
+	var deep = function(parent) {
+		if (!parent || elementsToStop.has(parent)) return;
+		Array.prototype.forEach.call(parent.children, function(node) {
+			if (elementsToKeep.has(node)) deep(node);
+			else try {
+				var attr = node.getAttribute(controlAttribute);
+				var alreadyHidden = attr !== null && attr !== "false";
+				var counterValue = (counterMap.get(node) || 0) + 1;
+				var markerValue = (markerCounter.get(node) || 0) + 1;
+				counterMap.set(node, counterValue);
+				markerCounter.set(node, markerValue);
+				hiddenNodes.push(node);
+				if (counterValue === 1 && alreadyHidden) uncontrolledNodes.set(node, true);
+				if (markerValue === 1) node.setAttribute(markerName, "true");
+				if (!alreadyHidden) node.setAttribute(controlAttribute, "true");
+			} catch (e) {
+				console.error("aria-hidden: cannot operate on ", node, e);
+			}
+		});
+	};
+	deep(parentNode);
+	elementsToKeep.clear();
+	lockCount++;
+	return function() {
+		hiddenNodes.forEach(function(node) {
+			var counterValue = counterMap.get(node) - 1;
+			var markerValue = markerCounter.get(node) - 1;
+			counterMap.set(node, counterValue);
+			markerCounter.set(node, markerValue);
+			if (!counterValue) {
+				if (!uncontrolledNodes.has(node)) node.removeAttribute(controlAttribute);
+				uncontrolledNodes.delete(node);
+			}
+			if (!markerValue) node.removeAttribute(markerName);
+		});
+		lockCount--;
+		if (!lockCount) {
+			counterMap = /* @__PURE__ */ new WeakMap();
+			counterMap = /* @__PURE__ */ new WeakMap();
+			uncontrolledNodes = /* @__PURE__ */ new WeakMap();
+			markerMap = {};
+		}
+	};
+};
+/**
+* Marks everything except given node(or nodes) as aria-hidden
+* @param {Element | Element[]} originalTarget - elements to keep on the page
+* @param [parentNode] - top element, defaults to document.body
+* @param {String} [markerName] - a special attribute to mark every node
+* @return {Undo} undo command
+*/
+var hideOthers = function(originalTarget, parentNode, markerName) {
+	if (markerName === void 0) markerName = "data-aria-hidden";
+	var targets = Array.from(Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
+	var activeParentNode = parentNode || getDefaultParent(originalTarget);
+	if (!activeParentNode) return function() {
+		return null;
+	};
+	targets.push.apply(targets, Array.from(activeParentNode.querySelectorAll("[aria-live], script")));
+	return applyAttributeToOthers(targets, activeParentNode, markerName, "aria-hidden");
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/tslib@2.8.1/node_modules/tslib/tslib.es6.mjs
+var __assign = function() {
+	__assign = Object.assign || function __assign(t) {
+		for (var s, i = 1, n = arguments.length; i < n; i++) {
+			s = arguments[i];
+			for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+		}
+		return t;
+	};
+	return __assign.apply(this, arguments);
+};
+function __rest(s, e) {
+	var t = {};
+	for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) t[p] = s[p];
+	if (s != null && typeof Object.getOwnPropertySymbols === "function") {
+		for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i])) t[p[i]] = s[p[i]];
+	}
+	return t;
+}
+function __spreadArray(to, from, pack) {
+	if (pack || arguments.length === 2) {
+		for (var i = 0, l = from.length, ar; i < l; i++) if (ar || !(i in from)) {
+			if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+			ar[i] = from[i];
+		}
+	}
+	return to.concat(ar || Array.prototype.slice.call(from));
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll-bar/dist/es2015/constants.js
+var zeroRightClassName = "right-scroll-bar-position";
+var fullWidthClassName = "width-before-scroll-bar";
+var noScrollbarsClassName = "with-scroll-bars-hidden";
+/**
+* Name of a CSS variable containing the amount of "hidden" scrollbar
+* ! might be undefined ! use will fallback!
+*/
+var removedBarSizeVariable = "--removed-body-scroll-bar-size";
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.1.17_react@19.1.5/node_modules/use-callback-ref/dist/es2015/assignRef.js
+/**
+* Assigns a value for a given ref, no matter of the ref format
+* @param {RefObject} ref - a callback function or ref object
+* @param value - a new value
+*
+* @see https://github.com/theKashey/use-callback-ref#assignref
+* @example
+* const refObject = useRef();
+* const refFn = (ref) => {....}
+*
+* assignRef(refObject, "refValue");
+* assignRef(refFn, "refValue");
+*/
+function assignRef(ref, value) {
+	if (typeof ref === "function") ref(value);
+	else if (ref) ref.current = value;
+	return ref;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.1.17_react@19.1.5/node_modules/use-callback-ref/dist/es2015/useRef.js
+/**
+* creates a MutableRef with ref change callback
+* @param initialValue - initial ref value
+* @param {Function} callback - a callback to run when value changes
+*
+* @example
+* const ref = useCallbackRef(0, (newValue, oldValue) => console.log(oldValue, '->', newValue);
+* ref.current = 1;
+* // prints 0 -> 1
+*
+* @see https://reactjs.org/docs/hooks-reference.html#useref
+* @see https://github.com/theKashey/use-callback-ref#usecallbackref---to-replace-reactuseref
+* @returns {MutableRefObject}
+*/
+function useCallbackRef(initialValue, callback) {
+	var ref = (0, import_react.useState)(function() {
+		return {
+			value: initialValue,
+			callback,
+			facade: {
+				get current() {
+					return ref.value;
+				},
+				set current(value) {
+					var last = ref.value;
+					if (last !== value) {
+						ref.value = value;
+						ref.callback(value, last);
+					}
+				}
+			}
+		};
+	})[0];
+	ref.callback = callback;
+	return ref.facade;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.1.17_react@19.1.5/node_modules/use-callback-ref/dist/es2015/useMergeRef.js
+var useIsomorphicLayoutEffect = typeof window !== "undefined" ? import_react.useLayoutEffect : import_react.useEffect;
+var currentValues = /* @__PURE__ */ new WeakMap();
+/**
+* Merges two or more refs together providing a single interface to set their value
+* @param {RefObject|Ref} refs
+* @returns {MutableRefObject} - a new ref, which translates all changes to {refs}
+*
+* @see {@link mergeRefs} a version without buit-in memoization
+* @see https://github.com/theKashey/use-callback-ref#usemergerefs
+* @example
+* const Component = React.forwardRef((props, ref) => {
+*   const ownRef = useRef();
+*   const domRef = useMergeRefs([ref, ownRef]); // 👈 merge together
+*   return <div ref={domRef}>...</div>
+* }
+*/
+function useMergeRefs(refs, defaultValue) {
+	var callbackRef = useCallbackRef(defaultValue || null, function(newValue) {
+		return refs.forEach(function(ref) {
+			return assignRef(ref, newValue);
+		});
+	});
+	useIsomorphicLayoutEffect(function() {
+		var oldValue = currentValues.get(callbackRef);
+		if (oldValue) {
+			var prevRefs_1 = new Set(oldValue);
+			var nextRefs_1 = new Set(refs);
+			var current_1 = callbackRef.current;
+			prevRefs_1.forEach(function(ref) {
+				if (!nextRefs_1.has(ref)) assignRef(ref, null);
+			});
+			nextRefs_1.forEach(function(ref) {
+				if (!prevRefs_1.has(ref)) assignRef(ref, current_1);
+			});
+		}
+		currentValues.set(callbackRef, refs);
+	}, [refs]);
+	return callbackRef;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-sidecar@1.1.3_@types+react@19.1.17_react@19.1.5/node_modules/use-sidecar/dist/es2015/medium.js
+function ItoI(a) {
+	return a;
+}
+function innerCreateMedium(defaults, middleware) {
+	if (middleware === void 0) middleware = ItoI;
+	var buffer = [];
+	var assigned = false;
+	return {
+		read: function() {
+			if (assigned) throw new Error("Sidecar: could not `read` from an `assigned` medium. `read` could be used only with `useMedium`.");
+			if (buffer.length) return buffer[buffer.length - 1];
+			return defaults;
+		},
+		useMedium: function(data) {
+			var item = middleware(data, assigned);
+			buffer.push(item);
+			return function() {
+				buffer = buffer.filter(function(x) {
+					return x !== item;
+				});
+			};
+		},
+		assignSyncMedium: function(cb) {
+			assigned = true;
+			while (buffer.length) {
+				var cbs = buffer;
+				buffer = [];
+				cbs.forEach(cb);
+			}
+			buffer = {
+				push: function(x) {
+					return cb(x);
+				},
+				filter: function() {
+					return buffer;
+				}
+			};
+		},
+		assignMedium: function(cb) {
+			assigned = true;
+			var pendingQueue = [];
+			if (buffer.length) {
+				var cbs = buffer;
+				buffer = [];
+				cbs.forEach(cb);
+				pendingQueue = buffer;
+			}
+			var executeQueue = function() {
+				var cbs = pendingQueue;
+				pendingQueue = [];
+				cbs.forEach(cb);
+			};
+			var cycle = function() {
+				return Promise.resolve().then(executeQueue);
+			};
+			cycle();
+			buffer = {
+				push: function(x) {
+					pendingQueue.push(x);
+					cycle();
+				},
+				filter: function(filter) {
+					pendingQueue = pendingQueue.filter(filter);
+					return buffer;
+				}
+			};
+		}
+	};
+}
+function createSidecarMedium(options) {
+	if (options === void 0) options = {};
+	var medium = innerCreateMedium(null);
+	medium.options = __assign({
+		async: true,
+		ssr: false
+	}, options);
+	return medium;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-sidecar@1.1.3_@types+react@19.1.17_react@19.1.5/node_modules/use-sidecar/dist/es2015/exports.js
+var SideCar = function(_a) {
+	var sideCar = _a.sideCar, rest = __rest(_a, ["sideCar"]);
+	if (!sideCar) throw new Error("Sidecar: please provide `sideCar` property to import the right car");
+	var Target = sideCar.read();
+	if (!Target) throw new Error("Sidecar medium not found");
+	return import_react.createElement(Target, __assign({}, rest));
+};
+SideCar.isSideCarExport = true;
+function exportSidecar(medium, exported) {
+	medium.useMedium(exported);
+	return SideCar;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/medium.js
+var effectCar = createSidecarMedium();
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/UI.js
+var nothing = function() {};
+/**
+* Removes scrollbar from the page and contain the scroll within the Lock
+*/
+var RemoveScroll = import_react.forwardRef(function(props, parentRef) {
+	var ref = import_react.useRef(null);
+	var _a = import_react.useState({
+		onScrollCapture: nothing,
+		onWheelCapture: nothing,
+		onTouchMoveCapture: nothing
+	}), callbacks = _a[0], setCallbacks = _a[1];
+	var forwardProps = props.forwardProps, children = props.children, className = props.className, removeScrollBar = props.removeScrollBar, enabled = props.enabled, shards = props.shards, sideCar = props.sideCar, noRelative = props.noRelative, noIsolation = props.noIsolation, inert = props.inert, allowPinchZoom = props.allowPinchZoom, _b = props.as, Container = _b === void 0 ? "div" : _b, gapMode = props.gapMode, rest = __rest(props, [
+		"forwardProps",
+		"children",
+		"className",
+		"removeScrollBar",
+		"enabled",
+		"shards",
+		"sideCar",
+		"noRelative",
+		"noIsolation",
+		"inert",
+		"allowPinchZoom",
+		"as",
+		"gapMode"
+	]);
+	var SideCar = sideCar;
+	var containerRef = useMergeRefs([ref, parentRef]);
+	var containerProps = __assign(__assign({}, rest), callbacks);
+	return import_react.createElement(import_react.Fragment, null, enabled && import_react.createElement(SideCar, {
+		sideCar: effectCar,
+		removeScrollBar,
+		shards,
+		noRelative,
+		noIsolation,
+		inert,
+		setCallbacks,
+		allowPinchZoom: !!allowPinchZoom,
+		lockRef: ref,
+		gapMode
+	}), forwardProps ? import_react.cloneElement(import_react.Children.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : import_react.createElement(Container, __assign({}, containerProps, {
+		className,
+		ref: containerRef
+	}), children));
+});
+RemoveScroll.defaultProps = {
+	enabled: true,
+	removeScrollBar: true,
+	inert: false
+};
+RemoveScroll.classNames = {
+	fullWidth: fullWidthClassName,
+	zeroRight: zeroRightClassName
+};
+var getNonce = function() {
+	if (typeof __webpack_nonce__ !== "undefined") return __webpack_nonce__;
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.1.17_react@19.1.5/node_modules/react-style-singleton/dist/es2015/singleton.js
+function makeStyleTag() {
+	if (!document) return null;
+	var tag = document.createElement("style");
+	tag.type = "text/css";
+	var nonce = getNonce();
+	if (nonce) tag.setAttribute("nonce", nonce);
+	return tag;
+}
+function injectStyles(tag, css) {
+	if (tag.styleSheet) tag.styleSheet.cssText = css;
+	else tag.appendChild(document.createTextNode(css));
+}
+function insertStyleTag(tag) {
+	(document.head || document.getElementsByTagName("head")[0]).appendChild(tag);
+}
+var stylesheetSingleton = function() {
+	var counter = 0;
+	var stylesheet = null;
+	return {
+		add: function(style) {
+			if (counter == 0) {
+				if (stylesheet = makeStyleTag()) {
+					injectStyles(stylesheet, style);
+					insertStyleTag(stylesheet);
+				}
+			}
+			counter++;
+		},
+		remove: function() {
+			counter--;
+			if (!counter && stylesheet) {
+				stylesheet.parentNode && stylesheet.parentNode.removeChild(stylesheet);
+				stylesheet = null;
+			}
+		}
+	};
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.1.17_react@19.1.5/node_modules/react-style-singleton/dist/es2015/hook.js
+/**
+* creates a hook to control style singleton
+* @see {@link styleSingleton} for a safer component version
+* @example
+* ```tsx
+* const useStyle = styleHookSingleton();
+* ///
+* useStyle('body { overflow: hidden}');
+*/
+var styleHookSingleton = function() {
+	var sheet = stylesheetSingleton();
+	return function(styles, isDynamic) {
+		import_react.useEffect(function() {
+			sheet.add(styles);
+			return function() {
+				sheet.remove();
+			};
+		}, [styles && isDynamic]);
+	};
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.1.17_react@19.1.5/node_modules/react-style-singleton/dist/es2015/component.js
+/**
+* create a Component to add styles on demand
+* - styles are added when first instance is mounted
+* - styles are removed when the last instance is unmounted
+* - changing styles in runtime does nothing unless dynamic is set. But with multiple components that can lead to the undefined behavior
+*/
+var styleSingleton = function() {
+	var useStyle = styleHookSingleton();
+	var Sheet = function(_a) {
+		var styles = _a.styles, dynamic = _a.dynamic;
+		useStyle(styles, dynamic);
+		return null;
+	};
+	return Sheet;
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll-bar/dist/es2015/utils.js
+var zeroGap = {
+	left: 0,
+	top: 0,
+	right: 0,
+	gap: 0
+};
+var parse = function(x) {
+	return parseInt(x || "", 10) || 0;
+};
+var getOffset = function(gapMode) {
+	var cs = window.getComputedStyle(document.body);
+	var left = cs[gapMode === "padding" ? "paddingLeft" : "marginLeft"];
+	var top = cs[gapMode === "padding" ? "paddingTop" : "marginTop"];
+	var right = cs[gapMode === "padding" ? "paddingRight" : "marginRight"];
+	return [
+		parse(left),
+		parse(top),
+		parse(right)
+	];
+};
+var getGapWidth = function(gapMode) {
+	if (gapMode === void 0) gapMode = "margin";
+	if (typeof window === "undefined") return zeroGap;
+	var offsets = getOffset(gapMode);
+	var documentWidth = document.documentElement.clientWidth;
+	var windowWidth = window.innerWidth;
+	return {
+		left: offsets[0],
+		top: offsets[1],
+		right: offsets[2],
+		gap: Math.max(0, windowWidth - documentWidth + offsets[2] - offsets[0])
+	};
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll-bar/dist/es2015/component.js
+var Style = styleSingleton();
+var lockAttribute = "data-scroll-locked";
+var getStyles = function(_a, allowRelative, gapMode, important) {
+	var left = _a.left, top = _a.top, right = _a.right, gap = _a.gap;
+	if (gapMode === void 0) gapMode = "margin";
+	return "\n  .".concat(noScrollbarsClassName, " {\n   overflow: hidden ").concat(important, ";\n   padding-right: ").concat(gap, "px ").concat(important, ";\n  }\n  body[").concat(lockAttribute, "] {\n    overflow: hidden ").concat(important, ";\n    overscroll-behavior: contain;\n    ").concat([
+		allowRelative && "position: relative ".concat(important, ";"),
+		gapMode === "margin" && "\n    padding-left: ".concat(left, "px;\n    padding-top: ").concat(top, "px;\n    padding-right: ").concat(right, "px;\n    margin-left:0;\n    margin-top:0;\n    margin-right: ").concat(gap, "px ").concat(important, ";\n    "),
+		gapMode === "padding" && "padding-right: ".concat(gap, "px ").concat(important, ";")
+	].filter(Boolean).join(""), "\n  }\n  \n  .").concat(zeroRightClassName, " {\n    right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " {\n    margin-right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(zeroRightClassName, " .").concat(zeroRightClassName, " {\n    right: 0 ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " .").concat(fullWidthClassName, " {\n    margin-right: 0 ").concat(important, ";\n  }\n  \n  body[").concat(lockAttribute, "] {\n    ").concat(removedBarSizeVariable, ": ").concat(gap, "px;\n  }\n");
+};
+var getCurrentUseCounter = function() {
+	var counter = parseInt(document.body.getAttribute("data-scroll-locked") || "0", 10);
+	return isFinite(counter) ? counter : 0;
+};
+var useLockAttribute = function() {
+	import_react.useEffect(function() {
+		document.body.setAttribute(lockAttribute, (getCurrentUseCounter() + 1).toString());
+		return function() {
+			var newCounter = getCurrentUseCounter() - 1;
+			if (newCounter <= 0) document.body.removeAttribute(lockAttribute);
+			else document.body.setAttribute(lockAttribute, newCounter.toString());
+		};
+	}, []);
+};
+/**
+* Removes page scrollbar and blocks page scroll when mounted
+*/
+var RemoveScrollBar = function(_a) {
+	var noRelative = _a.noRelative, noImportant = _a.noImportant, _b = _a.gapMode, gapMode = _b === void 0 ? "margin" : _b;
+	useLockAttribute();
+	var gap = import_react.useMemo(function() {
+		return getGapWidth(gapMode);
+	}, [gapMode]);
+	return import_react.createElement(Style, { styles: getStyles(gap, !noRelative, gapMode, !noImportant ? "!important" : "") });
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/aggresiveCapture.js
+var passiveSupported = false;
+if (typeof window !== "undefined") try {
+	var options = Object.defineProperty({}, "passive", { get: function() {
+		passiveSupported = true;
+		return true;
+	} });
+	window.addEventListener("test", options, options);
+	window.removeEventListener("test", options, options);
+} catch (err) {
+	passiveSupported = false;
+}
+var nonPassive = passiveSupported ? { passive: false } : false;
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/handleScroll.js
+var alwaysContainsScroll = function(node) {
+	return node.tagName === "TEXTAREA";
+};
+var elementCanBeScrolled = function(node, overflow) {
+	if (!(node instanceof Element)) return false;
+	var styles = window.getComputedStyle(node);
+	return styles[overflow] !== "hidden" && !(styles.overflowY === styles.overflowX && !alwaysContainsScroll(node) && styles[overflow] === "visible");
+};
+var elementCouldBeVScrolled = function(node) {
+	return elementCanBeScrolled(node, "overflowY");
+};
+var elementCouldBeHScrolled = function(node) {
+	return elementCanBeScrolled(node, "overflowX");
+};
+var locationCouldBeScrolled = function(axis, node) {
+	var ownerDocument = node.ownerDocument;
+	var current = node;
+	do {
+		if (typeof ShadowRoot !== "undefined" && current instanceof ShadowRoot) current = current.host;
+		if (elementCouldBeScrolled(axis, current)) {
+			var _a = getScrollVariables(axis, current);
+			if (_a[1] > _a[2]) return true;
+		}
+		current = current.parentNode;
+	} while (current && current !== ownerDocument.body);
+	return false;
+};
+var getVScrollVariables = function(_a) {
+	return [
+		_a.scrollTop,
+		_a.scrollHeight,
+		_a.clientHeight
+	];
+};
+var getHScrollVariables = function(_a) {
+	return [
+		_a.scrollLeft,
+		_a.scrollWidth,
+		_a.clientWidth
+	];
+};
+var elementCouldBeScrolled = function(axis, node) {
+	return axis === "v" ? elementCouldBeVScrolled(node) : elementCouldBeHScrolled(node);
+};
+var getScrollVariables = function(axis, node) {
+	return axis === "v" ? getVScrollVariables(node) : getHScrollVariables(node);
+};
+var getDirectionFactor = function(axis, direction) {
+	/**
+	* If the element's direction is rtl (right-to-left), then scrollLeft is 0 when the scrollbar is at its rightmost position,
+	* and then increasingly negative as you scroll towards the end of the content.
+	* @see https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollLeft
+	*/
+	return axis === "h" && direction === "rtl" ? -1 : 1;
+};
+var handleScroll = function(axis, endTarget, event, sourceDelta, noOverscroll) {
+	var directionFactor = getDirectionFactor(axis, window.getComputedStyle(endTarget).direction);
+	var delta = directionFactor * sourceDelta;
+	var target = event.target;
+	var targetInLock = endTarget.contains(target);
+	var shouldCancelScroll = false;
+	var isDeltaPositive = delta > 0;
+	var availableScroll = 0;
+	var availableScrollTop = 0;
+	do {
+		if (!target) break;
+		var _a = getScrollVariables(axis, target), position = _a[0];
+		var elementScroll = _a[1] - _a[2] - directionFactor * position;
+		if (position || elementScroll) {
+			if (elementCouldBeScrolled(axis, target)) {
+				availableScroll += elementScroll;
+				availableScrollTop += position;
+			}
+		}
+		var parent_1 = target.parentNode;
+		target = parent_1 && parent_1.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? parent_1.host : parent_1;
+	} while (!targetInLock && target !== document.body || targetInLock && (endTarget.contains(target) || endTarget === target));
+	if (isDeltaPositive && (noOverscroll && Math.abs(availableScroll) < 1 || !noOverscroll && delta > availableScroll)) shouldCancelScroll = true;
+	else if (!isDeltaPositive && (noOverscroll && Math.abs(availableScrollTop) < 1 || !noOverscroll && -delta > availableScrollTop)) shouldCancelScroll = true;
+	return shouldCancelScroll;
+};
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/SideEffect.js
+var getTouchXY = function(event) {
+	return "changedTouches" in event ? [event.changedTouches[0].clientX, event.changedTouches[0].clientY] : [0, 0];
+};
+var getDeltaXY = function(event) {
+	return [event.deltaX, event.deltaY];
+};
+var extractRef = function(ref) {
+	return ref && "current" in ref ? ref.current : ref;
+};
+var deltaCompare = function(x, y) {
+	return x[0] === y[0] && x[1] === y[1];
+};
+var generateStyle = function(id) {
+	return "\n  .block-interactivity-".concat(id, " {pointer-events: none;}\n  .allow-interactivity-").concat(id, " {pointer-events: all;}\n");
+};
+var idCounter = 0;
+var lockStack = [];
+function RemoveScrollSideCar(props) {
+	var shouldPreventQueue = import_react.useRef([]);
+	var touchStartRef = import_react.useRef([0, 0]);
+	var activeAxis = import_react.useRef();
+	var id = import_react.useState(idCounter++)[0];
+	var Style = import_react.useState(styleSingleton)[0];
+	var lastProps = import_react.useRef(props);
+	import_react.useEffect(function() {
+		lastProps.current = props;
+	}, [props]);
+	import_react.useEffect(function() {
+		if (props.inert) {
+			document.body.classList.add("block-interactivity-".concat(id));
+			var allow_1 = __spreadArray([props.lockRef.current], (props.shards || []).map(extractRef), true).filter(Boolean);
+			allow_1.forEach(function(el) {
+				return el.classList.add("allow-interactivity-".concat(id));
+			});
+			return function() {
+				document.body.classList.remove("block-interactivity-".concat(id));
+				allow_1.forEach(function(el) {
+					return el.classList.remove("allow-interactivity-".concat(id));
+				});
+			};
+		}
+	}, [
+		props.inert,
+		props.lockRef.current,
+		props.shards
+	]);
+	var shouldCancelEvent = import_react.useCallback(function(event, parent) {
+		if ("touches" in event && event.touches.length === 2 || event.type === "wheel" && event.ctrlKey) return !lastProps.current.allowPinchZoom;
+		var touch = getTouchXY(event);
+		var touchStart = touchStartRef.current;
+		var deltaX = "deltaX" in event ? event.deltaX : touchStart[0] - touch[0];
+		var deltaY = "deltaY" in event ? event.deltaY : touchStart[1] - touch[1];
+		var currentAxis;
+		var target = event.target;
+		var moveDirection = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
+		if ("touches" in event && moveDirection === "h" && target.type === "range") return false;
+		var selection = window.getSelection();
+		var anchorNode = selection && selection.anchorNode;
+		if (anchorNode ? anchorNode === target || anchorNode.contains(target) : false) return false;
+		var canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
+		if (!canBeScrolledInMainDirection) return true;
+		if (canBeScrolledInMainDirection) currentAxis = moveDirection;
+		else {
+			currentAxis = moveDirection === "v" ? "h" : "v";
+			canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
+		}
+		if (!canBeScrolledInMainDirection) return false;
+		if (!activeAxis.current && "changedTouches" in event && (deltaX || deltaY)) activeAxis.current = currentAxis;
+		if (!currentAxis) return true;
+		var cancelingAxis = activeAxis.current || currentAxis;
+		return handleScroll(cancelingAxis, parent, event, cancelingAxis === "h" ? deltaX : deltaY, true);
+	}, []);
+	var shouldPrevent = import_react.useCallback(function(_event) {
+		var event = _event;
+		if (!lockStack.length || lockStack[lockStack.length - 1] !== Style) return;
+		var delta = "deltaY" in event ? getDeltaXY(event) : getTouchXY(event);
+		var sourceEvent = shouldPreventQueue.current.filter(function(e) {
+			return e.name === event.type && (e.target === event.target || event.target === e.shadowParent) && deltaCompare(e.delta, delta);
+		})[0];
+		if (sourceEvent && sourceEvent.should) {
+			if (event.cancelable) event.preventDefault();
+			return;
+		}
+		if (!sourceEvent) {
+			var shardNodes = (lastProps.current.shards || []).map(extractRef).filter(Boolean).filter(function(node) {
+				return node.contains(event.target);
+			});
+			if (shardNodes.length > 0 ? shouldCancelEvent(event, shardNodes[0]) : !lastProps.current.noIsolation) {
+				if (event.cancelable) event.preventDefault();
+			}
+		}
+	}, []);
+	var shouldCancel = import_react.useCallback(function(name, delta, target, should) {
+		var event = {
+			name,
+			delta,
+			target,
+			should,
+			shadowParent: getOutermostShadowParent(target)
+		};
+		shouldPreventQueue.current.push(event);
+		setTimeout(function() {
+			shouldPreventQueue.current = shouldPreventQueue.current.filter(function(e) {
+				return e !== event;
+			});
+		}, 1);
+	}, []);
+	var scrollTouchStart = import_react.useCallback(function(event) {
+		touchStartRef.current = getTouchXY(event);
+		activeAxis.current = void 0;
+	}, []);
+	var scrollWheel = import_react.useCallback(function(event) {
+		shouldCancel(event.type, getDeltaXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
+	}, []);
+	var scrollTouchMove = import_react.useCallback(function(event) {
+		shouldCancel(event.type, getTouchXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
+	}, []);
+	import_react.useEffect(function() {
+		lockStack.push(Style);
+		props.setCallbacks({
+			onScrollCapture: scrollWheel,
+			onWheelCapture: scrollWheel,
+			onTouchMoveCapture: scrollTouchMove
+		});
+		document.addEventListener("wheel", shouldPrevent, nonPassive);
+		document.addEventListener("touchmove", shouldPrevent, nonPassive);
+		document.addEventListener("touchstart", scrollTouchStart, nonPassive);
+		return function() {
+			lockStack = lockStack.filter(function(inst) {
+				return inst !== Style;
+			});
+			document.removeEventListener("wheel", shouldPrevent, nonPassive);
+			document.removeEventListener("touchmove", shouldPrevent, nonPassive);
+			document.removeEventListener("touchstart", scrollTouchStart, nonPassive);
+		};
+	}, []);
+	var removeScrollBar = props.removeScrollBar, inert = props.inert;
+	return import_react.createElement(import_react.Fragment, null, inert ? import_react.createElement(Style, { styles: generateStyle(id) }) : null, removeScrollBar ? import_react.createElement(RemoveScrollBar, {
+		noRelative: props.noRelative,
+		gapMode: props.gapMode
+	}) : null);
+}
+function getOutermostShadowParent(node) {
+	var shadowParent = null;
+	while (node !== null) {
+		if (node instanceof ShadowRoot) {
+			shadowParent = node.host;
+			node = node.host;
+		}
+		node = node.parentNode;
+	}
+	return shadowParent;
+}
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/sidecar.js
+var sidecar_default = exportSidecar(effectCar, RemoveScrollSideCar);
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/Combination.js
+var ReactRemoveScroll = import_react.forwardRef(function(props, ref) {
+	return import_react.createElement(RemoveScroll, __assign({}, props, {
+		ref,
+		sideCar: sidecar_default
+	}));
+});
+ReactRemoveScroll.classNames = RemoveScroll.classNames;
+//#endregion
+//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-select@2.2.6_@types+react-dom@19.1.11_@types+react@19.1.17__@types+reac_cb58f6075c67cda862b2ccded649f0ec/node_modules/@radix-ui/react-select/dist/index.mjs
+var OPEN_KEYS = [
+	" ",
+	"Enter",
+	"ArrowUp",
+	"ArrowDown"
+];
+var SELECTION_KEYS = [" ", "Enter"];
+var SELECT_NAME = "Select";
+var [Collection$1, useCollection$1, createCollectionScope$1] = createCollection(SELECT_NAME);
+var [createSelectContext, createSelectScope] = createContextScope(SELECT_NAME, [createCollectionScope$1, createPopperScope]);
+var usePopperScope = createPopperScope();
+var [SelectProvider, useSelectContext] = createSelectContext(SELECT_NAME);
+var [SelectNativeOptionsProvider, useSelectNativeOptionsContext] = createSelectContext(SELECT_NAME);
+var Select$1 = (props) => {
+	const { __scopeSelect, children, open: openProp, defaultOpen, onOpenChange, value: valueProp, defaultValue, onValueChange, dir, name, autoComplete, disabled, required, form } = props;
+	const popperScope = usePopperScope(__scopeSelect);
+	const [trigger, setTrigger] = import_react.useState(null);
+	const [valueNode, setValueNode] = import_react.useState(null);
+	const [valueNodeHasChildren, setValueNodeHasChildren] = import_react.useState(false);
+	const direction = useDirection(dir);
+	const [open, setOpen] = useControllableState({
+		prop: openProp,
+		defaultProp: defaultOpen ?? false,
+		onChange: onOpenChange,
+		caller: SELECT_NAME
+	});
+	const [value, setValue] = useControllableState({
+		prop: valueProp,
+		defaultProp: defaultValue,
+		onChange: onValueChange,
+		caller: SELECT_NAME
+	});
+	const triggerPointerDownPosRef = import_react.useRef(null);
+	const isFormControl = trigger ? form || !!trigger.closest("form") : true;
+	const [nativeOptionsSet, setNativeOptionsSet] = import_react.useState(/* @__PURE__ */ new Set());
+	const nativeSelectKey = Array.from(nativeOptionsSet).map((option) => option.props.value).join(";");
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root2$2, {
+		...popperScope,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectProvider, {
+			required,
+			scope: __scopeSelect,
+			trigger,
+			onTriggerChange: setTrigger,
+			valueNode,
+			onValueNodeChange: setValueNode,
+			valueNodeHasChildren,
+			onValueNodeHasChildrenChange: setValueNodeHasChildren,
+			contentId: useId(),
+			value,
+			onValueChange: setValue,
+			open,
+			onOpenChange: setOpen,
+			dir: direction,
+			triggerPointerDownPosRef,
+			disabled,
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.Provider, {
+				scope: __scopeSelect,
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectNativeOptionsProvider, {
+					scope: props.__scopeSelect,
+					onNativeOptionAdd: import_react.useCallback((option) => {
+						setNativeOptionsSet((prev) => new Set(prev).add(option));
+					}, []),
+					onNativeOptionRemove: import_react.useCallback((option) => {
+						setNativeOptionsSet((prev) => {
+							const optionsSet = new Set(prev);
+							optionsSet.delete(option);
+							return optionsSet;
+						});
+					}, []),
+					children
+				})
+			}), isFormControl ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectBubbleInput, {
+				"aria-hidden": true,
+				required,
+				tabIndex: -1,
+				name,
+				autoComplete,
+				value,
+				onChange: (event) => setValue(event.target.value),
+				disabled,
+				form,
+				children: [value === void 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "" }) : null, Array.from(nativeOptionsSet)]
+			}, nativeSelectKey) : null]
+		})
+	});
+};
+Select$1.displayName = SELECT_NAME;
+var TRIGGER_NAME$3 = "SelectTrigger";
+var SelectTrigger$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, disabled = false, ...triggerProps } = props;
+	const popperScope = usePopperScope(__scopeSelect);
+	const context = useSelectContext(TRIGGER_NAME$3, __scopeSelect);
+	const isDisabled = context.disabled || disabled;
+	const composedRefs = useComposedRefs(forwardedRef, context.onTriggerChange);
+	const getItems = useCollection$1(__scopeSelect);
+	const pointerTypeRef = import_react.useRef("touch");
+	const [searchRef, handleTypeaheadSearch, resetTypeahead] = useTypeaheadSearch((search) => {
+		const enabledItems = getItems().filter((item) => !item.disabled);
+		const nextItem = findNextItem(enabledItems, search, enabledItems.find((item) => item.value === context.value));
+		if (nextItem !== void 0) context.onValueChange(nextItem.value);
+	});
+	const handleOpen = (pointerEvent) => {
+		if (!isDisabled) {
+			context.onOpenChange(true);
+			resetTypeahead();
+		}
+		if (pointerEvent) context.triggerPointerDownPosRef.current = {
+			x: Math.round(pointerEvent.pageX),
+			y: Math.round(pointerEvent.pageY)
+		};
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Anchor, {
+		asChild: true,
+		...popperScope,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
+			type: "button",
+			role: "combobox",
+			"aria-controls": context.contentId,
+			"aria-expanded": context.open,
+			"aria-required": context.required,
+			"aria-autocomplete": "none",
+			dir: context.dir,
+			"data-state": context.open ? "open" : "closed",
+			disabled: isDisabled,
+			"data-disabled": isDisabled ? "" : void 0,
+			"data-placeholder": shouldShowPlaceholder(context.value) ? "" : void 0,
+			...triggerProps,
+			ref: composedRefs,
+			onClick: composeEventHandlers(triggerProps.onClick, (event) => {
+				event.currentTarget.focus();
+				if (pointerTypeRef.current !== "mouse") handleOpen(event);
+			}),
+			onPointerDown: composeEventHandlers(triggerProps.onPointerDown, (event) => {
+				pointerTypeRef.current = event.pointerType;
+				const target = event.target;
+				if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId);
+				if (event.button === 0 && event.ctrlKey === false && event.pointerType === "mouse") {
+					handleOpen(event);
+					event.preventDefault();
+				}
+			}),
+			onKeyDown: composeEventHandlers(triggerProps.onKeyDown, (event) => {
+				const isTypingAhead = searchRef.current !== "";
+				if (!(event.ctrlKey || event.altKey || event.metaKey) && event.key.length === 1) handleTypeaheadSearch(event.key);
+				if (isTypingAhead && event.key === " ") return;
+				if (OPEN_KEYS.includes(event.key)) {
+					handleOpen();
+					event.preventDefault();
+				}
+			})
+		})
+	});
+});
+SelectTrigger$1.displayName = TRIGGER_NAME$3;
+var VALUE_NAME = "SelectValue";
+var SelectValue$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, className, style, children, placeholder = "", ...valueProps } = props;
+	const context = useSelectContext(VALUE_NAME, __scopeSelect);
+	const { onValueNodeHasChildrenChange } = context;
+	const hasChildren = children !== void 0;
+	const composedRefs = useComposedRefs(forwardedRef, context.onValueNodeChange);
+	useLayoutEffect2(() => {
+		onValueNodeHasChildrenChange(hasChildren);
+	}, [onValueNodeHasChildrenChange, hasChildren]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+		...valueProps,
+		ref: composedRefs,
+		style: { pointerEvents: "none" },
+		children: shouldShowPlaceholder(context.value) ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children: placeholder }) : children
+	});
+});
+SelectValue$1.displayName = VALUE_NAME;
+var ICON_NAME = "SelectIcon";
+var SelectIcon = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, children, ...iconProps } = props;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+		"aria-hidden": true,
+		...iconProps,
+		ref: forwardedRef,
+		children: children || "▼"
+	});
+});
+SelectIcon.displayName = ICON_NAME;
+var PORTAL_NAME$1 = "SelectPortal";
+var SelectPortal = (props) => {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal$2, {
+		asChild: true,
+		...props
+	});
+};
+SelectPortal.displayName = PORTAL_NAME$1;
+var CONTENT_NAME$2 = "SelectContent";
+var SelectContent$1 = import_react.forwardRef((props, forwardedRef) => {
+	const context = useSelectContext(CONTENT_NAME$2, props.__scopeSelect);
+	const [fragment, setFragment] = import_react.useState();
+	useLayoutEffect2(() => {
+		setFragment(new DocumentFragment());
+	}, []);
+	if (!context.open) {
+		const frag = fragment;
+		return frag ? import_react_dom.createPortal(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContentProvider, {
+			scope: props.__scopeSelect,
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.Slot, {
+				scope: props.__scopeSelect,
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { children: props.children })
+			})
+		}), frag) : null;
+	}
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContentImpl, {
+		...props,
+		ref: forwardedRef
+	});
+});
+SelectContent$1.displayName = CONTENT_NAME$2;
+var CONTENT_MARGIN = 10;
+var [SelectContentProvider, useSelectContentContext] = createSelectContext(CONTENT_NAME$2);
+var CONTENT_IMPL_NAME = "SelectContentImpl";
+var Slot$1 = /* @__PURE__ */ createSlot("SelectContent.RemoveScroll");
+var SelectContentImpl = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, position = "item-aligned", onCloseAutoFocus, onEscapeKeyDown, onPointerDownOutside, side, sideOffset, align, alignOffset, arrowPadding, collisionBoundary, collisionPadding, sticky, hideWhenDetached, avoidCollisions, ...contentProps } = props;
+	const context = useSelectContext(CONTENT_NAME$2, __scopeSelect);
+	const [content, setContent] = import_react.useState(null);
+	const [viewport, setViewport] = import_react.useState(null);
+	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
+	const [selectedItem, setSelectedItem] = import_react.useState(null);
+	const [selectedItemText, setSelectedItemText] = import_react.useState(null);
+	const getItems = useCollection$1(__scopeSelect);
+	const [isPositioned, setIsPositioned] = import_react.useState(false);
+	const firstValidItemFoundRef = import_react.useRef(false);
+	import_react.useEffect(() => {
+		if (content) return hideOthers(content);
+	}, [content]);
+	useFocusGuards();
+	const focusFirst = import_react.useCallback((candidates) => {
+		const [firstItem, ...restItems] = getItems().map((item) => item.ref.current);
+		const [lastItem] = restItems.slice(-1);
+		const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
+		for (const candidate of candidates) {
+			if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
+			candidate?.scrollIntoView({ block: "nearest" });
+			if (candidate === firstItem && viewport) viewport.scrollTop = 0;
+			if (candidate === lastItem && viewport) viewport.scrollTop = viewport.scrollHeight;
+			candidate?.focus();
+			if (document.activeElement !== PREVIOUSLY_FOCUSED_ELEMENT) return;
+		}
+	}, [getItems, viewport]);
+	const focusSelectedItem = import_react.useCallback(() => focusFirst([selectedItem, content]), [
+		focusFirst,
+		selectedItem,
+		content
+	]);
+	import_react.useEffect(() => {
+		if (isPositioned) focusSelectedItem();
+	}, [isPositioned, focusSelectedItem]);
+	const { onOpenChange, triggerPointerDownPosRef } = context;
+	import_react.useEffect(() => {
+		if (content) {
+			let pointerMoveDelta = {
+				x: 0,
+				y: 0
+			};
+			const handlePointerMove = (event) => {
+				pointerMoveDelta = {
+					x: Math.abs(Math.round(event.pageX) - (triggerPointerDownPosRef.current?.x ?? 0)),
+					y: Math.abs(Math.round(event.pageY) - (triggerPointerDownPosRef.current?.y ?? 0))
+				};
+			};
+			const handlePointerUp = (event) => {
+				if (pointerMoveDelta.x <= 10 && pointerMoveDelta.y <= 10) event.preventDefault();
+				else if (!content.contains(event.target)) onOpenChange(false);
+				document.removeEventListener("pointermove", handlePointerMove);
+				triggerPointerDownPosRef.current = null;
+			};
+			if (triggerPointerDownPosRef.current !== null) {
+				document.addEventListener("pointermove", handlePointerMove);
+				document.addEventListener("pointerup", handlePointerUp, {
+					capture: true,
+					once: true
+				});
+			}
+			return () => {
+				document.removeEventListener("pointermove", handlePointerMove);
+				document.removeEventListener("pointerup", handlePointerUp, { capture: true });
+			};
+		}
+	}, [
+		content,
+		onOpenChange,
+		triggerPointerDownPosRef
+	]);
+	import_react.useEffect(() => {
+		const close = () => onOpenChange(false);
+		window.addEventListener("blur", close);
+		window.addEventListener("resize", close);
+		return () => {
+			window.removeEventListener("blur", close);
+			window.removeEventListener("resize", close);
+		};
+	}, [onOpenChange]);
+	const [searchRef, handleTypeaheadSearch] = useTypeaheadSearch((search) => {
+		const enabledItems = getItems().filter((item) => !item.disabled);
+		const nextItem = findNextItem(enabledItems, search, enabledItems.find((item) => item.ref.current === document.activeElement));
+		if (nextItem) setTimeout(() => nextItem.ref.current.focus());
+	});
+	const itemRefCallback = import_react.useCallback((node, value, disabled) => {
+		const isFirstValidItem = !firstValidItemFoundRef.current && !disabled;
+		if (context.value !== void 0 && context.value === value || isFirstValidItem) {
+			setSelectedItem(node);
+			if (isFirstValidItem) firstValidItemFoundRef.current = true;
+		}
+	}, [context.value]);
+	const handleItemLeave = import_react.useCallback(() => content?.focus(), [content]);
+	const itemTextRefCallback = import_react.useCallback((node, value, disabled) => {
+		const isFirstValidItem = !firstValidItemFoundRef.current && !disabled;
+		if (context.value !== void 0 && context.value === value || isFirstValidItem) setSelectedItemText(node);
+	}, [context.value]);
+	const SelectPosition = position === "popper" ? SelectPopperPosition : SelectItemAlignedPosition;
+	const popperContentProps = SelectPosition === SelectPopperPosition ? {
+		side,
+		sideOffset,
+		align,
+		alignOffset,
+		arrowPadding,
+		collisionBoundary,
+		collisionPadding,
+		sticky,
+		hideWhenDetached,
+		avoidCollisions
+	} : {};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContentProvider, {
+		scope: __scopeSelect,
+		content,
+		viewport,
+		onViewportChange: setViewport,
+		itemRefCallback,
+		selectedItem,
+		onItemLeave: handleItemLeave,
+		itemTextRefCallback,
+		focusSelectedItem,
+		selectedItemText,
+		position,
+		isPositioned,
+		searchRef,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ReactRemoveScroll, {
+			as: Slot$1,
+			allowPinchZoom: true,
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FocusScope, {
+				asChild: true,
+				trapped: context.open,
+				onMountAutoFocus: (event) => {
+					event.preventDefault();
+				},
+				onUnmountAutoFocus: composeEventHandlers(onCloseAutoFocus, (event) => {
+					context.trigger?.focus({ preventScroll: true });
+					event.preventDefault();
+				}),
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DismissableLayer, {
+					asChild: true,
+					disableOutsidePointerEvents: true,
+					onEscapeKeyDown,
+					onPointerDownOutside,
+					onFocusOutside: (event) => event.preventDefault(),
+					onDismiss: () => context.onOpenChange(false),
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectPosition, {
+						role: "listbox",
+						id: context.contentId,
+						"data-state": context.open ? "open" : "closed",
+						dir: context.dir,
+						onContextMenu: (event) => event.preventDefault(),
+						...contentProps,
+						...popperContentProps,
+						onPlaced: () => setIsPositioned(true),
+						ref: composedRefs,
+						style: {
+							display: "flex",
+							flexDirection: "column",
+							outline: "none",
+							...contentProps.style
+						},
+						onKeyDown: composeEventHandlers(contentProps.onKeyDown, (event) => {
+							const isModifierKey = event.ctrlKey || event.altKey || event.metaKey;
+							if (event.key === "Tab") event.preventDefault();
+							if (!isModifierKey && event.key.length === 1) handleTypeaheadSearch(event.key);
+							if ([
+								"ArrowUp",
+								"ArrowDown",
+								"Home",
+								"End"
+							].includes(event.key)) {
+								let candidateNodes = getItems().filter((item) => !item.disabled).map((item) => item.ref.current);
+								if (["ArrowUp", "End"].includes(event.key)) candidateNodes = candidateNodes.slice().reverse();
+								if (["ArrowUp", "ArrowDown"].includes(event.key)) {
+									const currentElement = event.target;
+									const currentIndex = candidateNodes.indexOf(currentElement);
+									candidateNodes = candidateNodes.slice(currentIndex + 1);
+								}
+								setTimeout(() => focusFirst(candidateNodes));
+								event.preventDefault();
+							}
+						})
+					})
+				})
+			})
+		})
+	});
+});
+SelectContentImpl.displayName = CONTENT_IMPL_NAME;
+var ITEM_ALIGNED_POSITION_NAME = "SelectItemAlignedPosition";
+var SelectItemAlignedPosition = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, onPlaced, ...popperProps } = props;
+	const context = useSelectContext(CONTENT_NAME$2, __scopeSelect);
+	const contentContext = useSelectContentContext(CONTENT_NAME$2, __scopeSelect);
+	const [contentWrapper, setContentWrapper] = import_react.useState(null);
+	const [content, setContent] = import_react.useState(null);
+	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
+	const getItems = useCollection$1(__scopeSelect);
+	const shouldExpandOnScrollRef = import_react.useRef(false);
+	const shouldRepositionRef = import_react.useRef(true);
+	const { viewport, selectedItem, selectedItemText, focusSelectedItem } = contentContext;
+	const position = import_react.useCallback(() => {
+		if (context.trigger && context.valueNode && contentWrapper && content && viewport && selectedItem && selectedItemText) {
+			const triggerRect = context.trigger.getBoundingClientRect();
+			const contentRect = content.getBoundingClientRect();
+			const valueNodeRect = context.valueNode.getBoundingClientRect();
+			const itemTextRect = selectedItemText.getBoundingClientRect();
+			if (context.dir !== "rtl") {
+				const itemTextOffset = itemTextRect.left - contentRect.left;
+				const left = valueNodeRect.left - itemTextOffset;
+				const leftDelta = triggerRect.left - left;
+				const minContentWidth = triggerRect.width + leftDelta;
+				const contentWidth = Math.max(minContentWidth, contentRect.width);
+				const rightEdge = window.innerWidth - CONTENT_MARGIN;
+				const clampedLeft = clamp$1(left, [CONTENT_MARGIN, Math.max(CONTENT_MARGIN, rightEdge - contentWidth)]);
+				contentWrapper.style.minWidth = minContentWidth + "px";
+				contentWrapper.style.left = clampedLeft + "px";
+			} else {
+				const itemTextOffset = contentRect.right - itemTextRect.right;
+				const right = window.innerWidth - valueNodeRect.right - itemTextOffset;
+				const rightDelta = window.innerWidth - triggerRect.right - right;
+				const minContentWidth = triggerRect.width + rightDelta;
+				const contentWidth = Math.max(minContentWidth, contentRect.width);
+				const leftEdge = window.innerWidth - CONTENT_MARGIN;
+				const clampedRight = clamp$1(right, [CONTENT_MARGIN, Math.max(CONTENT_MARGIN, leftEdge - contentWidth)]);
+				contentWrapper.style.minWidth = minContentWidth + "px";
+				contentWrapper.style.right = clampedRight + "px";
+			}
+			const items = getItems();
+			const availableHeight = window.innerHeight - CONTENT_MARGIN * 2;
+			const itemsHeight = viewport.scrollHeight;
+			const contentStyles = window.getComputedStyle(content);
+			const contentBorderTopWidth = parseInt(contentStyles.borderTopWidth, 10);
+			const contentPaddingTop = parseInt(contentStyles.paddingTop, 10);
+			const contentBorderBottomWidth = parseInt(contentStyles.borderBottomWidth, 10);
+			const contentPaddingBottom = parseInt(contentStyles.paddingBottom, 10);
+			const fullContentHeight = contentBorderTopWidth + contentPaddingTop + itemsHeight + contentPaddingBottom + contentBorderBottomWidth;
+			const minContentHeight = Math.min(selectedItem.offsetHeight * 5, fullContentHeight);
+			const viewportStyles = window.getComputedStyle(viewport);
+			const viewportPaddingTop = parseInt(viewportStyles.paddingTop, 10);
+			const viewportPaddingBottom = parseInt(viewportStyles.paddingBottom, 10);
+			const topEdgeToTriggerMiddle = triggerRect.top + triggerRect.height / 2 - CONTENT_MARGIN;
+			const triggerMiddleToBottomEdge = availableHeight - topEdgeToTriggerMiddle;
+			const selectedItemHalfHeight = selectedItem.offsetHeight / 2;
+			const itemOffsetMiddle = selectedItem.offsetTop + selectedItemHalfHeight;
+			const contentTopToItemMiddle = contentBorderTopWidth + contentPaddingTop + itemOffsetMiddle;
+			const itemMiddleToContentBottom = fullContentHeight - contentTopToItemMiddle;
+			if (contentTopToItemMiddle <= topEdgeToTriggerMiddle) {
+				const isLastItem = items.length > 0 && selectedItem === items[items.length - 1].ref.current;
+				contentWrapper.style.bottom = "0px";
+				const viewportOffsetBottom = content.clientHeight - viewport.offsetTop - viewport.offsetHeight;
+				const height = contentTopToItemMiddle + Math.max(triggerMiddleToBottomEdge, selectedItemHalfHeight + (isLastItem ? viewportPaddingBottom : 0) + viewportOffsetBottom + contentBorderBottomWidth);
+				contentWrapper.style.height = height + "px";
+			} else {
+				const isFirstItem = items.length > 0 && selectedItem === items[0].ref.current;
+				contentWrapper.style.top = "0px";
+				const height = Math.max(topEdgeToTriggerMiddle, contentBorderTopWidth + viewport.offsetTop + (isFirstItem ? viewportPaddingTop : 0) + selectedItemHalfHeight) + itemMiddleToContentBottom;
+				contentWrapper.style.height = height + "px";
+				viewport.scrollTop = contentTopToItemMiddle - topEdgeToTriggerMiddle + viewport.offsetTop;
+			}
+			contentWrapper.style.margin = `${CONTENT_MARGIN}px 0`;
+			contentWrapper.style.minHeight = minContentHeight + "px";
+			contentWrapper.style.maxHeight = availableHeight + "px";
+			onPlaced?.();
+			requestAnimationFrame(() => shouldExpandOnScrollRef.current = true);
+		}
+	}, [
+		getItems,
+		context.trigger,
+		context.valueNode,
+		contentWrapper,
+		content,
+		viewport,
+		selectedItem,
+		selectedItemText,
+		context.dir,
+		onPlaced
+	]);
+	useLayoutEffect2(() => position(), [position]);
+	const [contentZIndex, setContentZIndex] = import_react.useState();
+	useLayoutEffect2(() => {
+		if (content) setContentZIndex(window.getComputedStyle(content).zIndex);
+	}, [content]);
+	const handleScrollButtonChange = import_react.useCallback((node) => {
+		if (node && shouldRepositionRef.current === true) {
+			position();
+			focusSelectedItem?.();
+			shouldRepositionRef.current = false;
+		}
+	}, [position, focusSelectedItem]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectViewportProvider, {
+		scope: __scopeSelect,
+		contentWrapper,
+		shouldExpandOnScrollRef,
+		onScrollButtonChange: handleScrollButtonChange,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			ref: setContentWrapper,
+			style: {
+				display: "flex",
+				flexDirection: "column",
+				position: "fixed",
+				zIndex: contentZIndex
+			},
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+				...popperProps,
+				ref: composedRefs,
+				style: {
+					boxSizing: "border-box",
+					maxHeight: "100%",
+					...popperProps.style
+				}
+			})
+		})
+	});
+});
+SelectItemAlignedPosition.displayName = ITEM_ALIGNED_POSITION_NAME;
+var POPPER_POSITION_NAME = "SelectPopperPosition";
+var SelectPopperPosition = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, align = "start", collisionPadding = CONTENT_MARGIN, ...popperProps } = props;
+	const popperScope = usePopperScope(__scopeSelect);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Content$2, {
+		...popperScope,
+		...popperProps,
+		ref: forwardedRef,
+		align,
+		collisionPadding,
+		style: {
+			boxSizing: "border-box",
+			...popperProps.style,
+			"--radix-select-content-transform-origin": "var(--radix-popper-transform-origin)",
+			"--radix-select-content-available-width": "var(--radix-popper-available-width)",
+			"--radix-select-content-available-height": "var(--radix-popper-available-height)",
+			"--radix-select-trigger-width": "var(--radix-popper-anchor-width)",
+			"--radix-select-trigger-height": "var(--radix-popper-anchor-height)"
+		}
+	});
+});
+SelectPopperPosition.displayName = POPPER_POSITION_NAME;
+var [SelectViewportProvider, useSelectViewportContext] = createSelectContext(CONTENT_NAME$2, {});
+var VIEWPORT_NAME = "SelectViewport";
+var SelectViewport = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, nonce, ...viewportProps } = props;
+	const contentContext = useSelectContentContext(VIEWPORT_NAME, __scopeSelect);
+	const viewportContext = useSelectViewportContext(VIEWPORT_NAME, __scopeSelect);
+	const composedRefs = useComposedRefs(forwardedRef, contentContext.onViewportChange);
+	const prevScrollTopRef = import_react.useRef(0);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("style", {
+		dangerouslySetInnerHTML: { __html: `[data-radix-select-viewport]{scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;}[data-radix-select-viewport]::-webkit-scrollbar{display:none}` },
+		nonce
+	}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.Slot, {
+		scope: __scopeSelect,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+			"data-radix-select-viewport": "",
+			role: "presentation",
+			...viewportProps,
+			ref: composedRefs,
+			style: {
+				position: "relative",
+				flex: 1,
+				overflow: "hidden auto",
+				...viewportProps.style
+			},
+			onScroll: composeEventHandlers(viewportProps.onScroll, (event) => {
+				const viewport = event.currentTarget;
+				const { contentWrapper, shouldExpandOnScrollRef } = viewportContext;
+				if (shouldExpandOnScrollRef?.current && contentWrapper) {
+					const scrolledBy = Math.abs(prevScrollTopRef.current - viewport.scrollTop);
+					if (scrolledBy > 0) {
+						const availableHeight = window.innerHeight - CONTENT_MARGIN * 2;
+						const cssMinHeight = parseFloat(contentWrapper.style.minHeight);
+						const cssHeight = parseFloat(contentWrapper.style.height);
+						const prevHeight = Math.max(cssMinHeight, cssHeight);
+						if (prevHeight < availableHeight) {
+							const nextHeight = prevHeight + scrolledBy;
+							const clampedNextHeight = Math.min(availableHeight, nextHeight);
+							const heightDiff = nextHeight - clampedNextHeight;
+							contentWrapper.style.height = clampedNextHeight + "px";
+							if (contentWrapper.style.bottom === "0px") {
+								viewport.scrollTop = heightDiff > 0 ? heightDiff : 0;
+								contentWrapper.style.justifyContent = "flex-end";
+							}
+						}
+					}
+				}
+				prevScrollTopRef.current = viewport.scrollTop;
+			})
+		})
+	})] });
+});
+SelectViewport.displayName = VIEWPORT_NAME;
+var GROUP_NAME$1 = "SelectGroup";
+var [SelectGroupContextProvider, useSelectGroupContext] = createSelectContext(GROUP_NAME$1);
+var SelectGroup = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, ...groupProps } = props;
+	const groupId = useId();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectGroupContextProvider, {
+		scope: __scopeSelect,
+		id: groupId,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+			role: "group",
+			"aria-labelledby": groupId,
+			...groupProps,
+			ref: forwardedRef
+		})
+	});
+});
+SelectGroup.displayName = GROUP_NAME$1;
+var LABEL_NAME = "SelectLabel";
+var SelectLabel = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, ...labelProps } = props;
+	const groupContext = useSelectGroupContext(LABEL_NAME, __scopeSelect);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		id: groupContext.id,
+		...labelProps,
+		ref: forwardedRef
+	});
+});
+SelectLabel.displayName = LABEL_NAME;
+var ITEM_NAME$1 = "SelectItem";
+var [SelectItemContextProvider, useSelectItemContext] = createSelectContext(ITEM_NAME$1);
+var SelectItem$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, value, disabled = false, textValue: textValueProp, ...itemProps } = props;
+	const context = useSelectContext(ITEM_NAME$1, __scopeSelect);
+	const contentContext = useSelectContentContext(ITEM_NAME$1, __scopeSelect);
+	const isSelected = context.value === value;
+	const [textValue, setTextValue] = import_react.useState(textValueProp ?? "");
+	const [isFocused, setIsFocused] = import_react.useState(false);
+	const composedRefs = useComposedRefs(forwardedRef, (node) => contentContext.itemRefCallback?.(node, value, disabled));
+	const textId = useId();
+	const pointerTypeRef = import_react.useRef("touch");
+	const handleSelect = () => {
+		if (!disabled) {
+			context.onValueChange(value);
+			context.onOpenChange(false);
+		}
+	};
+	if (value === "") throw new Error("A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.");
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItemContextProvider, {
+		scope: __scopeSelect,
+		value,
+		disabled,
+		textId,
+		isSelected,
+		onItemTextChange: import_react.useCallback((node) => {
+			setTextValue((prevTextValue) => prevTextValue || (node?.textContent ?? "").trim());
+		}, []),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.ItemSlot, {
+			scope: __scopeSelect,
+			value,
+			disabled,
+			textValue,
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+				role: "option",
+				"aria-labelledby": textId,
+				"data-highlighted": isFocused ? "" : void 0,
+				"aria-selected": isSelected && isFocused,
+				"data-state": isSelected ? "checked" : "unchecked",
+				"aria-disabled": disabled || void 0,
+				"data-disabled": disabled ? "" : void 0,
+				tabIndex: disabled ? void 0 : -1,
+				...itemProps,
+				ref: composedRefs,
+				onFocus: composeEventHandlers(itemProps.onFocus, () => setIsFocused(true)),
+				onBlur: composeEventHandlers(itemProps.onBlur, () => setIsFocused(false)),
+				onClick: composeEventHandlers(itemProps.onClick, () => {
+					if (pointerTypeRef.current !== "mouse") handleSelect();
+				}),
+				onPointerUp: composeEventHandlers(itemProps.onPointerUp, () => {
+					if (pointerTypeRef.current === "mouse") handleSelect();
+				}),
+				onPointerDown: composeEventHandlers(itemProps.onPointerDown, (event) => {
+					pointerTypeRef.current = event.pointerType;
+				}),
+				onPointerMove: composeEventHandlers(itemProps.onPointerMove, (event) => {
+					pointerTypeRef.current = event.pointerType;
+					if (disabled) contentContext.onItemLeave?.();
+					else if (pointerTypeRef.current === "mouse") event.currentTarget.focus({ preventScroll: true });
+				}),
+				onPointerLeave: composeEventHandlers(itemProps.onPointerLeave, (event) => {
+					if (event.currentTarget === document.activeElement) contentContext.onItemLeave?.();
+				}),
+				onKeyDown: composeEventHandlers(itemProps.onKeyDown, (event) => {
+					if (contentContext.searchRef?.current !== "" && event.key === " ") return;
+					if (SELECTION_KEYS.includes(event.key)) handleSelect();
+					if (event.key === " ") event.preventDefault();
+				})
+			})
+		})
+	});
+});
+SelectItem$1.displayName = ITEM_NAME$1;
+var ITEM_TEXT_NAME = "SelectItemText";
+var SelectItemText = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, className, style, ...itemTextProps } = props;
+	const context = useSelectContext(ITEM_TEXT_NAME, __scopeSelect);
+	const contentContext = useSelectContentContext(ITEM_TEXT_NAME, __scopeSelect);
+	const itemContext = useSelectItemContext(ITEM_TEXT_NAME, __scopeSelect);
+	const nativeOptionsContext = useSelectNativeOptionsContext(ITEM_TEXT_NAME, __scopeSelect);
+	const [itemTextNode, setItemTextNode] = import_react.useState(null);
+	const composedRefs = useComposedRefs(forwardedRef, (node) => setItemTextNode(node), itemContext.onItemTextChange, (node) => contentContext.itemTextRefCallback?.(node, itemContext.value, itemContext.disabled));
+	const textContent = itemTextNode?.textContent;
+	const nativeOption = import_react.useMemo(() => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", {
+		value: itemContext.value,
+		disabled: itemContext.disabled,
+		children: textContent
+	}, itemContext.value), [
+		itemContext.disabled,
+		itemContext.value,
+		textContent
+	]);
+	const { onNativeOptionAdd, onNativeOptionRemove } = nativeOptionsContext;
+	useLayoutEffect2(() => {
+		onNativeOptionAdd(nativeOption);
+		return () => onNativeOptionRemove(nativeOption);
+	}, [
+		onNativeOptionAdd,
+		onNativeOptionRemove,
+		nativeOption
+	]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+		id: itemContext.textId,
+		...itemTextProps,
+		ref: composedRefs
+	}), itemContext.isSelected && context.valueNode && !context.valueNodeHasChildren ? import_react_dom.createPortal(itemTextProps.children, context.valueNode) : null] });
+});
+SelectItemText.displayName = ITEM_TEXT_NAME;
+var ITEM_INDICATOR_NAME = "SelectItemIndicator";
+var SelectItemIndicator = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, ...itemIndicatorProps } = props;
+	return useSelectItemContext(ITEM_INDICATOR_NAME, __scopeSelect).isSelected ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+		"aria-hidden": true,
+		...itemIndicatorProps,
+		ref: forwardedRef
+	}) : null;
+});
+SelectItemIndicator.displayName = ITEM_INDICATOR_NAME;
+var SCROLL_UP_BUTTON_NAME = "SelectScrollUpButton";
+var SelectScrollUpButton$1 = import_react.forwardRef((props, forwardedRef) => {
+	const contentContext = useSelectContentContext(SCROLL_UP_BUTTON_NAME, props.__scopeSelect);
+	const viewportContext = useSelectViewportContext(SCROLL_UP_BUTTON_NAME, props.__scopeSelect);
+	const [canScrollUp, setCanScrollUp] = import_react.useState(false);
+	const composedRefs = useComposedRefs(forwardedRef, viewportContext.onScrollButtonChange);
+	useLayoutEffect2(() => {
+		if (contentContext.viewport && contentContext.isPositioned) {
+			let handleScroll2 = function() {
+				const canScrollUp2 = viewport.scrollTop > 0;
+				setCanScrollUp(canScrollUp2);
+			};
+			const viewport = contentContext.viewport;
+			handleScroll2();
+			viewport.addEventListener("scroll", handleScroll2);
+			return () => viewport.removeEventListener("scroll", handleScroll2);
+		}
+	}, [contentContext.viewport, contentContext.isPositioned]);
+	return canScrollUp ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollButtonImpl, {
+		...props,
+		ref: composedRefs,
+		onAutoScroll: () => {
+			const { viewport, selectedItem } = contentContext;
+			if (viewport && selectedItem) viewport.scrollTop = viewport.scrollTop - selectedItem.offsetHeight;
+		}
+	}) : null;
+});
+SelectScrollUpButton$1.displayName = SCROLL_UP_BUTTON_NAME;
+var SCROLL_DOWN_BUTTON_NAME = "SelectScrollDownButton";
+var SelectScrollDownButton$1 = import_react.forwardRef((props, forwardedRef) => {
+	const contentContext = useSelectContentContext(SCROLL_DOWN_BUTTON_NAME, props.__scopeSelect);
+	const viewportContext = useSelectViewportContext(SCROLL_DOWN_BUTTON_NAME, props.__scopeSelect);
+	const [canScrollDown, setCanScrollDown] = import_react.useState(false);
+	const composedRefs = useComposedRefs(forwardedRef, viewportContext.onScrollButtonChange);
+	useLayoutEffect2(() => {
+		if (contentContext.viewport && contentContext.isPositioned) {
+			let handleScroll2 = function() {
+				const maxScroll = viewport.scrollHeight - viewport.clientHeight;
+				const canScrollDown2 = Math.ceil(viewport.scrollTop) < maxScroll;
+				setCanScrollDown(canScrollDown2);
+			};
+			const viewport = contentContext.viewport;
+			handleScroll2();
+			viewport.addEventListener("scroll", handleScroll2);
+			return () => viewport.removeEventListener("scroll", handleScroll2);
+		}
+	}, [contentContext.viewport, contentContext.isPositioned]);
+	return canScrollDown ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollButtonImpl, {
+		...props,
+		ref: composedRefs,
+		onAutoScroll: () => {
+			const { viewport, selectedItem } = contentContext;
+			if (viewport && selectedItem) viewport.scrollTop = viewport.scrollTop + selectedItem.offsetHeight;
+		}
+	}) : null;
+});
+SelectScrollDownButton$1.displayName = SCROLL_DOWN_BUTTON_NAME;
+var SelectScrollButtonImpl = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, onAutoScroll, ...scrollIndicatorProps } = props;
+	const contentContext = useSelectContentContext("SelectScrollButton", __scopeSelect);
+	const autoScrollTimerRef = import_react.useRef(null);
+	const getItems = useCollection$1(__scopeSelect);
+	const clearAutoScrollTimer = import_react.useCallback(() => {
+		if (autoScrollTimerRef.current !== null) {
+			window.clearInterval(autoScrollTimerRef.current);
+			autoScrollTimerRef.current = null;
+		}
+	}, []);
+	import_react.useEffect(() => {
+		return () => clearAutoScrollTimer();
+	}, [clearAutoScrollTimer]);
+	useLayoutEffect2(() => {
+		getItems().find((item) => item.ref.current === document.activeElement)?.ref.current?.scrollIntoView({ block: "nearest" });
+	}, [getItems]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		"aria-hidden": true,
+		...scrollIndicatorProps,
+		ref: forwardedRef,
+		style: {
+			flexShrink: 0,
+			...scrollIndicatorProps.style
+		},
+		onPointerDown: composeEventHandlers(scrollIndicatorProps.onPointerDown, () => {
+			if (autoScrollTimerRef.current === null) autoScrollTimerRef.current = window.setInterval(onAutoScroll, 50);
+		}),
+		onPointerMove: composeEventHandlers(scrollIndicatorProps.onPointerMove, () => {
+			contentContext.onItemLeave?.();
+			if (autoScrollTimerRef.current === null) autoScrollTimerRef.current = window.setInterval(onAutoScroll, 50);
+		}),
+		onPointerLeave: composeEventHandlers(scrollIndicatorProps.onPointerLeave, () => {
+			clearAutoScrollTimer();
+		})
+	});
+});
+var SEPARATOR_NAME = "SelectSeparator";
+var SelectSeparator = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, ...separatorProps } = props;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		"aria-hidden": true,
+		...separatorProps,
+		ref: forwardedRef
+	});
+});
+SelectSeparator.displayName = SEPARATOR_NAME;
+var ARROW_NAME = "SelectArrow";
+var SelectArrow = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, ...arrowProps } = props;
+	const popperScope = usePopperScope(__scopeSelect);
+	const context = useSelectContext(ARROW_NAME, __scopeSelect);
+	const contentContext = useSelectContentContext(ARROW_NAME, __scopeSelect);
+	return context.open && contentContext.position === "popper" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Arrow, {
+		...popperScope,
+		...arrowProps,
+		ref: forwardedRef
+	}) : null;
+});
+SelectArrow.displayName = ARROW_NAME;
+var BUBBLE_INPUT_NAME$2 = "SelectBubbleInput";
+var SelectBubbleInput = import_react.forwardRef(({ __scopeSelect, value, ...props }, forwardedRef) => {
+	const ref = import_react.useRef(null);
+	const composedRefs = useComposedRefs(forwardedRef, ref);
+	const prevValue = usePrevious$1(value);
+	import_react.useEffect(() => {
+		const select = ref.current;
+		if (!select) return;
+		const selectProto = window.HTMLSelectElement.prototype;
+		const setValue = Object.getOwnPropertyDescriptor(selectProto, "value").set;
+		if (prevValue !== value && setValue) {
+			const event = new Event("change", { bubbles: true });
+			setValue.call(select, value);
+			select.dispatchEvent(event);
+		}
+	}, [prevValue, value]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.select, {
+		...props,
+		style: {
+			...VISUALLY_HIDDEN_STYLES,
+			...props.style
+		},
+		ref: composedRefs,
+		defaultValue: value
+	});
+});
+SelectBubbleInput.displayName = BUBBLE_INPUT_NAME$2;
+function shouldShowPlaceholder(value) {
+	return value === "" || value === void 0;
+}
+function useTypeaheadSearch(onSearchChange) {
+	const handleSearchChange = useCallbackRef$1(onSearchChange);
+	const searchRef = import_react.useRef("");
+	const timerRef = import_react.useRef(0);
+	const handleTypeaheadSearch = import_react.useCallback((key) => {
+		const search = searchRef.current + key;
+		handleSearchChange(search);
+		(function updateSearch(value) {
+			searchRef.current = value;
+			window.clearTimeout(timerRef.current);
+			if (value !== "") timerRef.current = window.setTimeout(() => updateSearch(""), 1e3);
+		})(search);
+	}, [handleSearchChange]);
+	const resetTypeahead = import_react.useCallback(() => {
+		searchRef.current = "";
+		window.clearTimeout(timerRef.current);
+	}, []);
+	import_react.useEffect(() => {
+		return () => window.clearTimeout(timerRef.current);
+	}, []);
+	return [
+		searchRef,
+		handleTypeaheadSearch,
+		resetTypeahead
+	];
+}
+function findNextItem(items, search, currentItem) {
+	const normalizedSearch = search.length > 1 && Array.from(search).every((char) => char === search[0]) ? search[0] : search;
+	const currentItemIndex = currentItem ? items.indexOf(currentItem) : -1;
+	let wrappedItems = wrapArray$1(items, Math.max(currentItemIndex, 0));
+	if (normalizedSearch.length === 1) wrappedItems = wrappedItems.filter((v) => v !== currentItem);
+	const nextItem = wrappedItems.find((item) => item.textValue.toLowerCase().startsWith(normalizedSearch.toLowerCase()));
+	return nextItem !== currentItem ? nextItem : void 0;
+}
+function wrapArray$1(array, startIndex) {
+	return array.map((_, index) => array[(startIndex + index) % array.length]);
+}
+var Root2$1 = Select$1;
+var Trigger$1 = SelectTrigger$1;
+var Value = SelectValue$1;
+var Icon$1 = SelectIcon;
+var Portal$1 = SelectPortal;
+var Content2 = SelectContent$1;
+var Viewport = SelectViewport;
+var Item$1 = SelectItem$1;
+var ItemText = SelectItemText;
+var ItemIndicator = SelectItemIndicator;
+var ScrollUpButton = SelectScrollUpButton$1;
+var ScrollDownButton = SelectScrollDownButton$1;
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/lucide-react@0.511.0_react@19.1.5/node_modules/lucide-react/dist/esm/shared/src/utils.js
 /**
@@ -38811,7 +45125,7 @@ var defaultAttributes = {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
-var Icon$1 = (0, import_react.forwardRef)(({ color = "currentColor", size = 24, strokeWidth = 2, absoluteStrokeWidth, className = "", children, iconNode, ...rest }, ref) => (0, import_react.createElement)("svg", {
+var Icon = (0, import_react.forwardRef)(({ color = "currentColor", size = 24, strokeWidth = 2, absoluteStrokeWidth, className = "", children, iconNode, ...rest }, ref) => (0, import_react.createElement)("svg", {
 	ref,
 	...defaultAttributes,
 	width: size,
@@ -38831,7 +45145,7 @@ var Icon$1 = (0, import_react.forwardRef)(({ color = "currentColor", size = 24, 
 * See the LICENSE file in the root directory of this source tree.
 */
 var createLucideIcon = (iconName, iconNode) => {
-	const Component = (0, import_react.forwardRef)(({ className, ...props }, ref) => (0, import_react.createElement)(Icon$1, {
+	const Component = (0, import_react.forwardRef)(({ className, ...props }, ref) => (0, import_react.createElement)(Icon, {
 		ref,
 		iconNode,
 		className: mergeClasses(`lucide-${toKebabCase(toPascalCase(iconName))}`, `lucide-${iconName}`, className),
@@ -39063,6 +45377,45 @@ var Eraser = createLucideIcon("eraser", [
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var EyeOff = createLucideIcon("eye-off", [
+	["path", {
+		d: "M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49",
+		key: "ct8e1f"
+	}],
+	["path", {
+		d: "M14.084 14.158a3 3 0 0 1-4.242-4.242",
+		key: "151rxh"
+	}],
+	["path", {
+		d: "M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143",
+		key: "13bj9a"
+	}],
+	["path", {
+		d: "m2 2 20 20",
+		key: "1ooewy"
+	}]
+]);
+/**
+* @license lucide-react v0.511.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
+var Eye = createLucideIcon("eye", [["path", {
+	d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
+	key: "1nclc0"
+}], ["circle", {
+	cx: "12",
+	cy: "12",
+	r: "3",
+	key: "1v7zrd"
+}]]);
+/**
+* @license lucide-react v0.511.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var FileSpreadsheet = createLucideIcon("file-spreadsheet", [
 	["path", {
 		d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z",
@@ -39272,6 +45625,30 @@ var Plus = createLucideIcon("plus", [["path", {
 	d: "M12 5v14",
 	key: "s699le"
 }]]);
+/**
+* @license lucide-react v0.511.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
+var Printer = createLucideIcon("printer", [
+	["path", {
+		d: "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2",
+		key: "143wyd"
+	}],
+	["path", {
+		d: "M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6",
+		key: "1itne7"
+	}],
+	["rect", {
+		x: "6",
+		y: "14",
+		width: "12",
+		height: "8",
+		rx: "1",
+		key: "1ue0tg"
+	}]
+]);
 /**
 * @license lucide-react v0.511.0 - ISC
 *
@@ -39560,6 +45937,26 @@ var TriangleAlert = createLucideIcon("triangle-alert", [
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Upload = createLucideIcon("upload", [
+	["path", {
+		d: "M12 3v12",
+		key: "1x0j5s"
+	}],
+	["path", {
+		d: "m17 8-5-5-5 5",
+		key: "7q97r8"
+	}],
+	["path", {
+		d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4",
+		key: "ih7n3h"
+	}]
+]);
+/**
+* @license lucide-react v0.511.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var UserCheck = createLucideIcon("user-check", [
 	["path", {
 		d: "m16 11 2 2 4-4",
@@ -39688,122 +46085,81 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
-//#region src/components/States.tsx
-/** A layout-matched loading state. */
-function LoadingState({ label = "Loading…", className, ocid = "page.loading_state" }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("output", {
-		"data-ocid": ocid,
-		className: cn("flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card p-8 text-muted-foreground", className),
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
-			className: "h-6 w-6 animate-spin text-primary",
-			"aria-hidden": "true"
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-			className: "text-sm",
-			children: label
+//#region src/components/ui/select.tsx
+function Select({ ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root2$1, {
+		"data-slot": "select",
+		...props
+	});
+}
+function SelectValue({ ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Value, {
+		"data-slot": "select-value",
+		...props
+	});
+}
+function SelectTrigger({ className, size = "default", children, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Trigger$1, {
+		"data-slot": "select-trigger",
+		"data-size": size,
+		className: cn("border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4", className),
+		...props,
+		children: [children, /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon$1, {
+			asChild: true,
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, { className: "size-4 opacity-50" })
 		})]
 	});
 }
-/** A recoverable error state. */
-function ErrorState({ title = "Something went wrong", message, onRetry, className, ocid = "page.error_state" }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		"data-ocid": ocid,
-		className: cn("flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-destructive/30 bg-card p-8 text-center", className),
+function SelectContent({ className, children, position = "popper", ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal$1, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Content2, {
+		"data-slot": "select-content",
+		className: cn("bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border shadow-md", position === "popper" && "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1", className),
+		position,
+		...props,
 		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TriangleAlert, {
-				className: "h-6 w-6 text-destructive",
-				"aria-hidden": "true"
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollUpButton, {}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Viewport, {
+				className: cn("p-1", position === "popper" && "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)] scroll-my-1"),
+				children
 			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "font-display text-lg font-semibold uppercase tracking-wide text-foreground",
-				children: title
-			}), message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "mt-1 text-sm text-muted-foreground",
-				children: message
-			})] }),
-			onRetry && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-				type: "button",
-				variant: "outline",
-				className: "touch-target",
-				"data-ocid": "page.retry_button",
-				onClick: onRetry,
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, {
-					className: "mr-2 h-4 w-4",
-					"aria-hidden": "true"
-				}), "Retry"]
-			})
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollDownButton, {})
 		]
+	}) });
+}
+function SelectItem({ className, children, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Item$1, {
+		"data-slot": "select-item",
+		className: cn("focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2", className),
+		...props,
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			className: "absolute right-2 flex size-3.5 items-center justify-center",
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ItemIndicator, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { className: "size-4" }) })
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ItemText, { children })]
 	});
 }
-/** A helpful empty state with an optional action. */
-function EmptyState({ title, message, action, className, ocid = "page.empty_state" }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		"data-ocid": ocid,
-		className: cn("flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card p-8 text-center", className),
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Inbox, {
-				className: "h-7 w-7 text-muted-foreground",
-				"aria-hidden": "true"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "font-display text-lg font-semibold uppercase tracking-wide text-foreground",
-				children: title
-			}), message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "mx-auto mt-1 max-w-md text-sm text-muted-foreground",
-				children: message
-			})] }),
-			action
-		]
+function SelectScrollUpButton({ className, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScrollUpButton, {
+		"data-slot": "select-scroll-up-button",
+		className: cn("flex cursor-default items-center justify-center py-1", className),
+		...props,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronUp, { className: "size-4" })
+	});
+}
+function SelectScrollDownButton({ className, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScrollDownButton, {
+		"data-slot": "select-scroll-down-button",
+		className: cn("flex cursor-default items-center justify-center py-1", className),
+		...props,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, { className: "size-4" })
 	});
 }
 //#endregion
-//#region src/components/StoreLogo.tsx
-/**
-* The store mark: a navy disc with a red ring, a white star and three white
-* stripes. Rendered as inline SVG so it stays crisp at every size and always
-* uses the exact brand colors (navy #14284B, red #B22234, white).
-*/
-function StoreLogo({ className, title = "Roadie store logo" }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", {
-		viewBox: "0 0 64 64",
-		role: "img",
-		"aria-label": title,
-		"data-ocid": "store.logo",
-		className: cn("h-10 w-10 shrink-0", className),
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("title", { children: title }),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
-				cx: "32",
-				cy: "32",
-				r: "31",
-				fill: "#B22234"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
-				cx: "32",
-				cy: "32",
-				r: "27",
-				fill: "#14284B"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
-				d: "M32 13.5l4.6 9.3 10.3 1.5-7.45 7.26 1.76 10.25L32 36.98l-9.21 4.84 1.76-10.25L17.1 24.3l10.3-1.5z",
-				fill: "#FFFFFF"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", {
-				x: "20",
-				y: "45",
-				width: "24",
-				height: "2.6",
-				rx: "1.3",
-				fill: "#FFFFFF"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", {
-				x: "23",
-				y: "50",
-				width: "18",
-				height: "2.6",
-				rx: "1.3",
-				fill: "#FFFFFF"
-			})
-		]
+//#region src/components/ui/textarea.tsx
+function Textarea({ className, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("textarea", {
+		"data-slot": "textarea",
+		className: cn("border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm", className),
+		...props
 	});
 }
 //#endregion
@@ -40055,6 +46411,45 @@ function useSetKioskPin() {
 		}
 	});
 }
+/**
+* Store the caller's staff profile on their pending access request. Used by the
+* post-sign-in profile form before an Admin approves the caller. The backend
+* traps when the caller has no pending request, so callers only invoke this
+* while the access state is pending.
+*/
+function useSubmitStaffProfile() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (profile) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.submitStaffProfile(profile);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["myAccess"] });
+			queryClient.invalidateQueries({ queryKey: ["pendingUsers"] });
+		}
+	});
+}
+/**
+* Update the caller's own staff profile on their access grant. Existing users
+* approved before profiles existed use this to fill theirs in without losing
+* access. The backend traps when the caller has no grant.
+*/
+function useUpdateMyStaffProfile() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (profile) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.updateMyStaffProfile(profile);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["myAccess"] });
+			queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
+		}
+	});
+}
 function useStoreInfo() {
 	const { actor, isFetching } = useActor(createActor);
 	return useQuery({
@@ -40065,6 +46460,67 @@ function useStoreInfo() {
 		},
 		enabled: !!actor && !isFetching
 	});
+}
+var NO_STORE_LOGOS = {
+	logo: null,
+	secondaryLogo: null
+};
+/** Coerce one optional logo field to `PhotoRef | null`. */
+function toPhotoRef(value) {
+	return value instanceof Uint8Array ? value : null;
+}
+/**
+* Normalize the public `getStoreLogo` result. The current binding returns a
+* `StoreLogos` record with both logos; an older actor (or a test mock) may
+* return a bare `PhotoRef` for the main logo, which is treated as `logo` with
+* no secondary logo.
+*/
+function normalizeStoreLogos(value) {
+	if (value instanceof Uint8Array) return {
+		logo: value,
+		secondaryLogo: null
+	};
+	if (typeof value === "object" && value !== null) {
+		const record = value;
+		return {
+			logo: toPhotoRef(record.logo),
+			secondaryLogo: toPhotoRef(record.secondaryLogo)
+		};
+	}
+	return NO_STORE_LOGOS;
+}
+/**
+* The store's uploaded logo bytes, read from the public `getStoreLogo`
+* endpoint. Both the main logo and the secondary logo are exposed so callers
+* can render either. The bytes never change for a given store, so the read is
+* cached indefinitely. Older actors (and test mocks) may not expose
+* `getStoreLogo`; the hook then resolves to both logos absent so callers fall
+* back to the built-in star instead of surfacing an error.
+*/
+function useStoreLogo() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["storeLogo"],
+		queryFn: async () => {
+			if (!actor) return NO_STORE_LOGOS;
+			const readLogo = readOptionalStoreLogo(actor);
+			if (!readLogo) return NO_STORE_LOGOS;
+			return normalizeStoreLogos(await readLogo());
+		},
+		enabled: !!actor && !isFetching,
+		staleTime: Number.POSITIVE_INFINITY
+	});
+}
+/**
+* Narrow an actor to its optional `getStoreLogo` read. The generated bindings
+* do not declare the method, so it is looked up structurally and only invoked
+* when the running actor actually exposes it.
+*/
+function readOptionalStoreLogo(actor) {
+	if (typeof actor !== "object" || actor === null) return null;
+	const candidate = actor.getStoreLogo;
+	if (typeof candidate !== "function") return null;
+	return () => candidate.call(actor);
 }
 function usePositions() {
 	const { actor, isFetching } = useActor(createActor);
@@ -40098,6 +46554,7 @@ function useUpdateStoreInfo() {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["storeInfo"] });
+			queryClient.invalidateQueries({ queryKey: ["storeLogo"] });
 		}
 	});
 }
@@ -40237,6 +46694,42 @@ function useSaveStoreTemplate() {
 		return actor.saveStoreTemplate(name);
 	} });
 }
+/**
+* Download the current store configuration as a template file. This is a
+* mutation rather than a query so the build runs only when an Admin taps
+* Download, never on page load. The caller passes the returned file to the
+* download handler.
+*/
+function useDownloadStoreTemplate() {
+	const { actor } = useActor(createActor);
+	return useMutation({ mutationFn: async () => {
+		if (!actor) throw new Error("Backend is not ready");
+		return actor.downloadStoreTemplate();
+	} });
+}
+/**
+* Load a store template file (Admin only). The backend validates the file and
+* refuses once any roadie exists; on success it replaces positions, schedule
+* and checklists, so the affected reads are invalidated.
+*/
+function useLoadStoreTemplate() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (file) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.loadStoreTemplate(file);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["positions"] });
+			queryClient.invalidateQueries({ queryKey: ["schedule"] });
+			queryClient.invalidateQueries({ queryKey: ["checklists"] });
+			queryClient.invalidateQueries({ queryKey: ["storeInfo"] });
+			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+			queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+		}
+	});
+}
 function useRoadies() {
 	const { actor, isFetching } = useActor(createActor);
 	return useQuery({
@@ -40276,6 +46769,23 @@ function useRoadiePhoto(id) {
 		},
 		enabled: !!actor && !isFetching && id !== void 0,
 		staleTime: Number.POSITIVE_INFINITY
+	});
+}
+/**
+* The leaders roster: managers, trainers and market partners with their staff
+* profile, title and travel dates. Readable by every role except Kiosk and
+* Integration, so callers pass `enabled` (typically `canLeaders(role)`) to
+* avoid a trapping read for those roles.
+*/
+function useLeaders(enabled = true) {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["leaders"],
+		queryFn: async () => {
+			if (!actor) return [];
+			return actor.listLeaders();
+		},
+		enabled: enabled && !!actor && !isFetching
 	});
 }
 function useCrews() {
@@ -40341,6 +46851,939 @@ function useFullExport() {
 	} });
 }
 //#endregion
+//#region src/lib/format.ts
+/**
+* A stored photo/signature reference is the raw uploaded bytes. Render it as a
+* data URL so an `<img>` can display it without a round trip to storage.
+* Returns null for an empty or missing reference.
+*/
+function refToDataUrl(ref, contentType = "image/png") {
+	if (!ref || ref.length === 0) return null;
+	let binary = "";
+	for (let i = 0; i < ref.length; i += 1) binary += String.fromCharCode(ref[i]);
+	return `data:${contentType};base64,${btoa(binary)}`;
+}
+/** Read a browser `File` into the raw bytes the backend stores as a ref. */
+async function fileToRef(file) {
+	return new Uint8Array(await file.arrayBuffer());
+}
+/** JPEG quality used when re-encoding an upload. */
+var UPLOAD_JPEG_QUALITY = .8;
+/**
+* How long to wait for an image to decode before falling back to the original
+* file. A real browser decodes a small image in a few milliseconds, so this is
+* only a safety net for an undecodable file; keeping it short means a submit
+* never stalls on an image the browser cannot read.
+*/
+var IMAGE_LOAD_TIMEOUT_MS = 500;
+/** Load a `File` into an `HTMLImageElement` for canvas re-encoding. */
+function loadImage(file) {
+	return new Promise((resolve, reject) => {
+		const url = URL.createObjectURL(file);
+		const image = new Image();
+		const timer = setTimeout(() => {
+			URL.revokeObjectURL(url);
+			reject(/* @__PURE__ */ new Error("Timed out reading the image"));
+		}, IMAGE_LOAD_TIMEOUT_MS);
+		image.onload = () => {
+			clearTimeout(timer);
+			URL.revokeObjectURL(url);
+			resolve(image);
+		};
+		image.onerror = () => {
+			clearTimeout(timer);
+			URL.revokeObjectURL(url);
+			reject(/* @__PURE__ */ new Error("Could not read the image"));
+		};
+		image.src = url;
+	});
+}
+/** Draw an image onto a canvas at a scaled size and read it back as a blob. */
+function encodeCanvas(image, width, height, quality) {
+	const canvas = document.createElement("canvas");
+	canvas.width = width;
+	canvas.height = height;
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return Promise.resolve(null);
+	ctx.drawImage(image, 0, 0, width, height);
+	return new Promise((resolve) => {
+		canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
+	});
+}
+/**
+* Downscale a photo or signature to at most `MAX_UPLOAD_EDGE` on its longest
+* edge, re-encode it as JPEG at `UPLOAD_JPEG_QUALITY`, and step the quality
+* down until the result fits `MAX_UPLOAD_BYTES`. Falls back to the original
+* file when the browser cannot decode or re-encode it.
+*/
+async function resizeImageFile(file) {
+	let image;
+	try {
+		image = await loadImage(file);
+	} catch {
+		return file;
+	}
+	const longest = Math.max(image.naturalWidth, image.naturalHeight);
+	const scale = longest > 800 ? 800 / longest : 1;
+	const width = Math.max(1, Math.round(image.naturalWidth * scale));
+	const height = Math.max(1, Math.round(image.naturalHeight * scale));
+	let quality = UPLOAD_JPEG_QUALITY;
+	let blob = await encodeCanvas(image, width, height, quality);
+	while (blob && blob.size > 307200 && quality > .4) {
+		quality = Math.round((quality - .1) * 10) / 10;
+		blob = await encodeCanvas(image, width, height, quality);
+	}
+	if (!blob) return file;
+	const name = file.name.replace(/\.[^.]+$/, "") || "upload";
+	return new File([blob], `${name}.jpg`, { type: "image/jpeg" });
+}
+/** Motoko `Time.now()` nanoseconds -> JS Date. Returns null when invalid. */
+function timestampToDate(timestamp) {
+	const date = new Date(Number(timestamp / 1000000n));
+	return Number.isNaN(date.getTime()) ? null : date;
+}
+/**
+* Motoko `DateOnly` (nanoseconds at UTC midnight) -> JS Date. The returned Date
+* is the UTC instant of that calendar day, so its `getUTC*` accessors are the
+* intended calendar values regardless of the device time zone.
+*/
+function dateOnlyToDate(dateOnly) {
+	const date = new Date(Number(dateOnly / 1000000n));
+	return Number.isNaN(date.getTime()) ? null : date;
+}
+/**
+* Format a backend timestamp for display in the store's time zone; falls back
+* to an em dash. Pass `timeZone` (an IANA name such as `America/Chicago`) so a
+* schedule time reads the same on every device.
+*/
+function formatTimestamp(timestamp, timeZone) {
+	const date = timestampToDate(timestamp);
+	if (!date) return "—";
+	return date.toLocaleString(void 0, {
+		dateStyle: "medium",
+		timeStyle: "short",
+		timeZone
+	});
+}
+/**
+* Format a backend date-only value for display in UTC; falls back to an em
+* dash. A date-only value is a calendar day, so it must not shift with the
+* device time zone.
+*/
+function formatDateOnly(dateOnly) {
+	const date = dateOnlyToDate(dateOnly);
+	if (!date) return "—";
+	return date.toLocaleDateString(void 0, {
+		dateStyle: "medium",
+		timeZone: "UTC"
+	});
+}
+/**
+* Format a backend date-only value as a long date in UTC (e.g. "February 8,
+* 2027"); falls back to an em dash. Used where a calendar day is shown in full,
+* such as the opening-day countdown, and must not shift with the device zone.
+*/
+function formatDateOnlyLong(dateOnly) {
+	const date = dateOnlyToDate(dateOnly);
+	if (!date) return "—";
+	return date.toLocaleDateString(void 0, {
+		dateStyle: "long",
+		timeZone: "UTC"
+	});
+}
+/**
+* Format a timestamp that represents a calendar day (e.g. a hire date) as a
+* date-only value in UTC, so it reads the same on every device. Delegates to
+* `formatDateOnly` after reducing the instant to its UTC calendar day.
+*/
+function formatTimestampDateOnly(timestamp) {
+	const date = timestampToDate(timestamp);
+	if (!date) return "—";
+	return formatDateOnly(dateToDateOnly(date));
+}
+/** Convert a JS Date to a Motoko `Timestamp` (nanoseconds since epoch). */
+function dateToTimestamp(date) {
+	return BigInt(date.getTime()) * 1000000n;
+}
+/** Convert a JS Date to a Motoko `DateOnly` (nanoseconds at UTC midnight). */
+function dateToDateOnly(date) {
+	const utcMidnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+	return BigInt(utcMidnight) * 1000000n;
+}
+/**
+* Format a date-only value as a short month and day (e.g. "Mar 14") in UTC, so
+* a birthday reads the same calendar day on every device.
+*/
+function formatDateOnlyMonthDay(dateOnly) {
+	const date = dateOnlyToDate(dateOnly);
+	if (!date) return null;
+	return date.toLocaleDateString(void 0, {
+		month: "short",
+		day: "numeric",
+		timeZone: "UTC"
+	});
+}
+/**
+* Format a timestamp as a medium date in the store's time zone (e.g. for the
+* opening timeline). Falls back to an em dash when invalid.
+*/
+function formatTimestampMediumDate(timestamp, timeZone) {
+	const date = timestampToDate(timestamp);
+	if (!date) return "—";
+	return date.toLocaleDateString(void 0, {
+		dateStyle: "medium",
+		timeZone
+	});
+}
+/** Human label for a roadie status enum value. */
+function roadieStatusLabel(status) {
+	return {
+		hired: "Hired",
+		paperworkDone: "Paperwork done",
+		oriented: "Oriented",
+		inTraining: "In training",
+		certified: "Certified",
+		needsMoreTime: "Needs more time",
+		active: "Active",
+		archived: "Archived"
+	}[status] ?? status;
+}
+/** Human label for a role enum value. */
+function roleLabel(role) {
+	return {
+		admin: "Admin",
+		storeManager: "Store Manager",
+		trainingManager: "Training Manager",
+		leadership: "Leadership",
+		visitingManager: "Visiting Manager",
+		trainer: "Trainer",
+		kiosk: "Kiosk",
+		integration: "Integration"
+	}[role] ?? role;
+}
+/**
+* Render a staff member's display name and title from their staff profile.
+* Prefers the preferred name over the full name, and appends the title when
+* present. Falls back to `fallback` (the localized "Unnamed user" copy) when no
+* profile exists or it carries no name, so a user approved before profiles
+* existed still renders a readable label.
+*/
+function staffDisplayName(profile, fallback = "Unnamed user") {
+	if (!profile) return fallback;
+	const name = profile.preferredName?.trim() || profile.fullName?.trim();
+	if (!name) return fallback;
+	const title = profile.title?.trim();
+	return title ? `${name} · ${title}` : name;
+}
+//#endregion
+//#region src/components/StaffProfileForm.tsx
+/**
+* The roles a staff member may request on their profile. The list is the
+* accepted set: Store Manager, Training Manager, NSO Trainer, Visiting Manager
+* and Market Partner/Leadership.
+*/
+var ROLE_OPTIONS = [
+	Role.storeManager,
+	Role.trainingManager,
+	Role.trainer,
+	Role.visitingManager,
+	Role.leadership
+];
+/** Roles that must supply the positions they train and their travel dates. */
+var TRAVEL_ROLES$1 = [Role.trainer, Role.visitingManager];
+/** Shirt sizes offered on the About Me section, matching the kiosk. */
+var SHIRT_SIZES$1 = [
+	"XS",
+	"S",
+	"M",
+	"L",
+	"XL",
+	"2XL",
+	"3XL"
+];
+/** Hat sizes offered on the About Me section, with a copy key per option. */
+var HAT_SIZES$1 = [
+	{
+		value: "One size",
+		key: "profile.hat.oneSize"
+	},
+	{
+		value: "S/M",
+		key: "profile.hat.sm"
+	},
+	{
+		value: "L/XL",
+		key: "profile.hat.lxl"
+	}
+];
+/** A `YYYY-MM-DD` value for a date input, read in UTC. */
+function dateOnlyToInput$1(value) {
+	if (value === void 0) return "";
+	const date = dateOnlyToDate(value);
+	if (!date) return "";
+	return date.toISOString().slice(0, 10);
+}
+function toDraft$3(profile) {
+	return {
+		fullName: profile?.fullName ?? "",
+		preferredName: profile?.preferredName ?? "",
+		title: profile?.title ?? "",
+		requestedRole: profile?.requestedRole ?? "",
+		homeStoreNumber: profile?.homeStoreNumber ?? "",
+		homeStoreCity: profile?.homeStoreCity ?? "",
+		workPhone: profile?.workPhone ?? "",
+		workEmail: profile?.workEmail ?? "",
+		arrivalDate: dateOnlyToInput$1(profile?.arrivalDate),
+		departureDate: dateOnlyToInput$1(profile?.departureDate),
+		trainerPositionIds: (profile?.trainerPositionIds ?? []).map((id) => id.toString()),
+		photo: profile?.photo ?? null,
+		hometown: profile?.hometown ?? "",
+		hobbies: profile?.hobbies ?? "",
+		favoriteTeam: profile?.favoriteTeam ?? "",
+		favoriteSnack: profile?.favoriteSnack ?? "",
+		favoriteDrink: profile?.favoriteDrink ?? "",
+		favoriteColor: profile?.favoriteColor ?? "",
+		funFact: profile?.funFact ?? "",
+		goalHere: profile?.goalHere ?? "",
+		shirtSize: profile?.shirtSize ?? "",
+		hatSize: profile?.hatSize ?? ""
+	};
+}
+/** Trim a value to `undefined` when blank, so optional fields stay absent. */
+function optional(value) {
+	const trimmed = value.trim();
+	return trimmed === "" ? void 0 : trimmed;
+}
+/** The maximum length of an About Me answer, matching the kiosk's cap. */
+var ABOUT_ME_MAX = 200;
+/** Trim and cap an optional About Me answer, dropping it when blank. */
+function optionalCapped(value) {
+	const trimmed = value.trim().slice(0, ABOUT_ME_MAX);
+	return trimmed === "" ? void 0 : trimmed;
+}
+/** Build the backend `StaffProfile` from the draft, dropping blank optionals. */
+function toProfile$1(draft) {
+	const travels = draft.requestedRole !== "" && TRAVEL_ROLES$1.includes(draft.requestedRole);
+	return {
+		fullName: draft.fullName.trim(),
+		preferredName: optional(draft.preferredName),
+		title: draft.title.trim(),
+		requestedRole: draft.requestedRole,
+		homeStoreNumber: draft.homeStoreNumber.trim(),
+		homeStoreCity: draft.homeStoreCity.trim(),
+		workPhone: optional(draft.workPhone),
+		workEmail: optional(draft.workEmail),
+		trainerPositionIds: travels ? draft.trainerPositionIds.map((id) => BigInt(id)) : [],
+		arrivalDate: travels && draft.arrivalDate ? dateToDateOnly(/* @__PURE__ */ new Date(`${draft.arrivalDate}T00:00:00Z`)) : void 0,
+		departureDate: travels && draft.departureDate ? dateToDateOnly(/* @__PURE__ */ new Date(`${draft.departureDate}T00:00:00Z`)) : void 0,
+		photo: draft.photo ?? void 0,
+		hometown: optionalCapped(draft.hometown),
+		hobbies: optionalCapped(draft.hobbies),
+		favoriteTeam: optionalCapped(draft.favoriteTeam),
+		favoriteSnack: optionalCapped(draft.favoriteSnack),
+		favoriteDrink: optionalCapped(draft.favoriteDrink),
+		favoriteColor: optionalCapped(draft.favoriteColor),
+		funFact: optionalCapped(draft.funFact),
+		goalHere: optionalCapped(draft.goalHere),
+		shirtSize: optional(draft.shirtSize),
+		hatSize: optional(draft.hatSize)
+	};
+}
+/**
+* The staff profile form, shared by the post-sign-in gate and the My profile
+* page. It owns its draft in local state and hands a complete `StaffProfile` to
+* `onSubmit`; the caller owns the mutation and its pending/error state.
+*/
+function StaffProfileForm({ initialProfile, submitLabel, pending, error, onSubmit, ocidPrefix = "profile" }) {
+	const { t } = useI18n();
+	const { data: positions } = usePositions();
+	const [draft, setDraft] = (0, import_react.useState)(() => toDraft$3(initialProfile));
+	const [validation, setValidation] = (0, import_react.useState)(null);
+	const [photoBusy, setPhotoBusy] = (0, import_react.useState)(false);
+	const fileInputRef = (0, import_react.useRef)(null);
+	const set = (key, value) => {
+		setValidation(null);
+		setDraft((current) => ({
+			...current,
+			[key]: value
+		}));
+	};
+	const travels = draft.requestedRole !== "" && TRAVEL_ROLES$1.includes(draft.requestedRole);
+	const handlePhoto = async (file) => {
+		if (!file) return;
+		setPhotoBusy(true);
+		try {
+			const ref = await fileToRef(await resizeImageFile(file));
+			set("photo", ref);
+		} finally {
+			setPhotoBusy(false);
+		}
+	};
+	const submit = (event) => {
+		event.preventDefault();
+		if (!draft.fullName.trim()) {
+			setValidation(t("profile.fullName.required"));
+			return;
+		}
+		if (!draft.title.trim()) {
+			setValidation(t("profile.title.required"));
+			return;
+		}
+		if (draft.requestedRole === "") {
+			setValidation(t("profile.role.required"));
+			return;
+		}
+		if (!draft.homeStoreNumber.trim()) {
+			setValidation(t("profile.homeStoreNumber.required"));
+			return;
+		}
+		if (!draft.homeStoreCity.trim()) {
+			setValidation(t("profile.homeStoreCity.required"));
+			return;
+		}
+		setValidation(null);
+		onSubmit(toProfile$1(draft));
+	};
+	const message = validation ?? error ?? null;
+	const photoPreview = refToDataUrl(draft.photo, "image/jpeg");
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
+		onSubmit: submit,
+		"data-ocid": `${ocidPrefix}.form`,
+		className: "flex flex-col gap-4",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex flex-col items-center gap-3 sm:flex-row sm:items-start",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted",
+					children: photoPreview ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+						src: photoPreview,
+						alt: t("profile.photo.alt"),
+						"data-ocid": `${ocidPrefix}.photo.preview`,
+						className: "h-full w-full object-cover"
+					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Upload, {
+						className: "h-6 w-6 text-muted-foreground",
+						"aria-hidden": "true"
+					})
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex flex-col gap-2",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+							ref: fileInputRef,
+							type: "file",
+							accept: "image/*",
+							className: "hidden",
+							"data-ocid": `${ocidPrefix}.photo.input`,
+							onChange: (event) => void handlePhoto(event.target.files?.[0])
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex flex-wrap gap-2",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+								type: "button",
+								variant: "outline",
+								className: "touch-target",
+								"data-ocid": `${ocidPrefix}.photo.upload_button`,
+								disabled: photoBusy,
+								onClick: () => fileInputRef.current?.click(),
+								children: [photoBusy && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
+									className: "mr-2 h-4 w-4 animate-spin",
+									"aria-hidden": "true"
+								}), draft.photo ? t("profile.photo.change") : t("profile.photo.add")]
+							}), draft.photo && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+								type: "button",
+								variant: "ghost",
+								className: "touch-target text-destructive hover:text-destructive",
+								"data-ocid": `${ocidPrefix}.photo.remove_button`,
+								onClick: () => set("photo", null),
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, {
+									className: "mr-2 h-4 w-4",
+									"aria-hidden": "true"
+								}), t("profile.photo.remove")]
+							})]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "text-xs text-muted-foreground",
+							children: t("profile.photo.hint")
+						})
+					]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "grid gap-4 sm:grid-cols-2",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.fullName"),
+						htmlFor: `${ocidPrefix}-full-name`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							id: `${ocidPrefix}-full-name`,
+							value: draft.fullName,
+							"data-ocid": `${ocidPrefix}.full_name.input`,
+							className: "touch-target",
+							placeholder: t("profile.fullName.placeholder"),
+							onChange: (event) => set("fullName", event.target.value)
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.preferredName"),
+						htmlFor: `${ocidPrefix}-preferred-name`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							id: `${ocidPrefix}-preferred-name`,
+							value: draft.preferredName,
+							"data-ocid": `${ocidPrefix}.preferred_name.input`,
+							className: "touch-target",
+							placeholder: t("profile.preferredName.placeholder"),
+							onChange: (event) => set("preferredName", event.target.value)
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.title.label"),
+						htmlFor: `${ocidPrefix}-title`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							id: `${ocidPrefix}-title`,
+							value: draft.title,
+							"data-ocid": `${ocidPrefix}.title.input`,
+							className: "touch-target",
+							placeholder: t("profile.title.placeholder"),
+							onChange: (event) => set("title", event.target.value)
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.role.label"),
+						htmlFor: `${ocidPrefix}-role`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+							value: draft.requestedRole,
+							onValueChange: (value) => set("requestedRole", value),
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+								id: `${ocidPrefix}-role`,
+								"data-ocid": `${ocidPrefix}.role.select`,
+								className: "touch-target w-full",
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("profile.role.placeholder") })
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: ROLE_OPTIONS.map((role) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+								value: role,
+								children: t(`profile.role.${role}`)
+							}, role)) })]
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.homeStoreNumber"),
+						htmlFor: `${ocidPrefix}-store-number`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							id: `${ocidPrefix}-store-number`,
+							value: draft.homeStoreNumber,
+							"data-ocid": `${ocidPrefix}.home_store_number.input`,
+							className: "touch-target",
+							placeholder: t("profile.homeStoreNumber.placeholder"),
+							onChange: (event) => set("homeStoreNumber", event.target.value)
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.homeStoreCity"),
+						htmlFor: `${ocidPrefix}-store-city`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							id: `${ocidPrefix}-store-city`,
+							value: draft.homeStoreCity,
+							"data-ocid": `${ocidPrefix}.home_store_city.input`,
+							className: "touch-target",
+							placeholder: t("profile.homeStoreCity.placeholder"),
+							onChange: (event) => set("homeStoreCity", event.target.value)
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.workPhone"),
+						htmlFor: `${ocidPrefix}-work-phone`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							id: `${ocidPrefix}-work-phone`,
+							type: "tel",
+							value: draft.workPhone,
+							"data-ocid": `${ocidPrefix}.work_phone.input`,
+							className: "touch-target",
+							placeholder: t("profile.workPhone.placeholder"),
+							onChange: (event) => set("workPhone", event.target.value)
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.workEmail"),
+						htmlFor: `${ocidPrefix}-work-email`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							id: `${ocidPrefix}-work-email`,
+							type: "email",
+							value: draft.workEmail,
+							"data-ocid": `${ocidPrefix}.work_email.input`,
+							className: "touch-target",
+							placeholder: t("profile.workEmail.placeholder"),
+							onChange: (event) => set("workEmail", event.target.value)
+						})
+					})
+				]
+			}),
+			travels && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex flex-col gap-4 rounded-md border border-border bg-muted/30 p-4",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrainerStationsPicker, {
+					positions: positions ?? [],
+					selectedIds: draft.trainerPositionIds,
+					onChange: (next) => set("trainerPositionIds", next)
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "grid gap-4 sm:grid-cols-2",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.arrivalDate"),
+						htmlFor: `${ocidPrefix}-arrival`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							id: `${ocidPrefix}-arrival`,
+							type: "date",
+							value: draft.arrivalDate,
+							"data-ocid": `${ocidPrefix}.arrival_date.input`,
+							className: "touch-target",
+							onChange: (event) => set("arrivalDate", event.target.value)
+						})
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.departureDate"),
+						htmlFor: `${ocidPrefix}-departure`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							id: `${ocidPrefix}-departure`,
+							type: "date",
+							value: draft.departureDate,
+							"data-ocid": `${ocidPrefix}.departure_date.input`,
+							className: "touch-target",
+							onChange: (event) => set("departureDate", event.target.value)
+						})
+					})]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-xs text-muted-foreground",
+				children: t("profile.contactHint")
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("fieldset", {
+				"data-ocid": `${ocidPrefix}.about_me.section`,
+				className: "flex flex-col gap-4 rounded-md border border-border bg-muted/30 p-4",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("legend", {
+						className: "px-1 font-display text-sm font-semibold uppercase tracking-wide text-foreground",
+						children: t("profile.aboutMe")
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-xs text-muted-foreground",
+						children: t("profile.aboutMe.hint")
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "grid gap-4 sm:grid-cols-2",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+								label: t("profile.hometown"),
+								htmlFor: `${ocidPrefix}-hometown`,
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+									id: `${ocidPrefix}-hometown`,
+									value: draft.hometown,
+									maxLength: ABOUT_ME_MAX,
+									"data-ocid": `${ocidPrefix}.hometown.input`,
+									className: "touch-target",
+									onChange: (event) => set("hometown", event.target.value)
+								})
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+								label: t("profile.favoriteTeam"),
+								htmlFor: `${ocidPrefix}-favorite-team`,
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+									id: `${ocidPrefix}-favorite-team`,
+									value: draft.favoriteTeam,
+									maxLength: ABOUT_ME_MAX,
+									"data-ocid": `${ocidPrefix}.favorite_team.input`,
+									className: "touch-target",
+									placeholder: t("profile.favoriteTeam.placeholder"),
+									onChange: (event) => set("favoriteTeam", event.target.value)
+								})
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+								label: t("profile.favoriteSnack"),
+								htmlFor: `${ocidPrefix}-favorite-snack`,
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+									id: `${ocidPrefix}-favorite-snack`,
+									value: draft.favoriteSnack,
+									maxLength: ABOUT_ME_MAX,
+									"data-ocid": `${ocidPrefix}.favorite_snack.input`,
+									className: "touch-target",
+									placeholder: t("profile.favoriteSnack.placeholder"),
+									onChange: (event) => set("favoriteSnack", event.target.value)
+								})
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+								label: t("profile.favoriteDrink"),
+								htmlFor: `${ocidPrefix}-favorite-drink`,
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+									id: `${ocidPrefix}-favorite-drink`,
+									value: draft.favoriteDrink,
+									maxLength: ABOUT_ME_MAX,
+									"data-ocid": `${ocidPrefix}.favorite_drink.input`,
+									className: "touch-target",
+									placeholder: t("profile.favoriteDrink.placeholder"),
+									onChange: (event) => set("favoriteDrink", event.target.value)
+								})
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+								label: t("profile.favoriteColor"),
+								htmlFor: `${ocidPrefix}-favorite-color`,
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+									id: `${ocidPrefix}-favorite-color`,
+									value: draft.favoriteColor,
+									maxLength: ABOUT_ME_MAX,
+									"data-ocid": `${ocidPrefix}.favorite_color.input`,
+									className: "touch-target",
+									placeholder: t("profile.favoriteColor.placeholder"),
+									onChange: (event) => set("favoriteColor", event.target.value)
+								})
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+								label: t("profile.shirtSize"),
+								htmlFor: `${ocidPrefix}-shirt-size`,
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+									value: draft.shirtSize || void 0,
+									onValueChange: (value) => set("shirtSize", value),
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+										id: `${ocidPrefix}-shirt-size`,
+										"data-ocid": `${ocidPrefix}.shirt_size.select`,
+										className: "touch-target w-full",
+										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("profile.selectPlaceholder") })
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: SHIRT_SIZES$1.map((size) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+										value: size,
+										children: size
+									}, size)) })]
+								})
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+								label: t("profile.hatSize"),
+								htmlFor: `${ocidPrefix}-hat-size`,
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+									value: draft.hatSize || void 0,
+									onValueChange: (value) => set("hatSize", value),
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+										id: `${ocidPrefix}-hat-size`,
+										"data-ocid": `${ocidPrefix}.hat_size.select`,
+										className: "touch-target w-full",
+										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("profile.selectPlaceholder") })
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: HAT_SIZES$1.map((size) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+										value: size.value,
+										children: t(size.key)
+									}, size.value)) })]
+								})
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.hobbies"),
+						htmlFor: `${ocidPrefix}-hobbies`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
+							id: `${ocidPrefix}-hobbies`,
+							value: draft.hobbies,
+							maxLength: ABOUT_ME_MAX,
+							rows: 2,
+							"data-ocid": `${ocidPrefix}.hobbies.textarea`,
+							onChange: (event) => set("hobbies", event.target.value)
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.funFact"),
+						htmlFor: `${ocidPrefix}-fun-fact`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
+							id: `${ocidPrefix}-fun-fact`,
+							value: draft.funFact,
+							maxLength: ABOUT_ME_MAX,
+							rows: 2,
+							"data-ocid": `${ocidPrefix}.fun_fact.textarea`,
+							onChange: (event) => set("funFact", event.target.value)
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+						label: t("profile.goalHere"),
+						htmlFor: `${ocidPrefix}-goal-here`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
+							id: `${ocidPrefix}-goal-here`,
+							value: draft.goalHere,
+							maxLength: ABOUT_ME_MAX,
+							rows: 3,
+							"data-ocid": `${ocidPrefix}.goal_here.textarea`,
+							onChange: (event) => set("goalHere", event.target.value)
+						})
+					})
+				]
+			}),
+			message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				role: "alert",
+				"data-ocid": `${ocidPrefix}.error_state`,
+				className: "text-sm font-medium text-destructive",
+				children: message
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "flex justify-end",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+					type: "submit",
+					className: "touch-target",
+					"data-ocid": `${ocidPrefix}.submit_button`,
+					disabled: pending || photoBusy,
+					children: [pending && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
+						className: "mr-2 h-4 w-4 animate-spin",
+						"aria-hidden": "true"
+					}), submitLabel]
+				})
+			})
+		]
+	});
+}
+//#endregion
+//#region src/components/States.tsx
+/** A layout-matched loading state. */
+function LoadingState({ label = "Loading…", className, ocid = "page.loading_state" }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("output", {
+		"data-ocid": ocid,
+		className: cn("flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card p-8 text-muted-foreground", className),
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
+			className: "h-6 w-6 animate-spin text-primary",
+			"aria-hidden": "true"
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			className: "text-sm",
+			children: label
+		})]
+	});
+}
+/** A recoverable error state. */
+function ErrorState({ title = "Something went wrong", message, onRetry, className, ocid = "page.error_state" }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		"data-ocid": ocid,
+		className: cn("flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-destructive/30 bg-card p-8 text-center", className),
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TriangleAlert, {
+				className: "h-6 w-6 text-destructive",
+				"aria-hidden": "true"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "font-display text-lg font-semibold uppercase tracking-wide text-foreground",
+				children: title
+			}), message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "mt-1 text-sm text-muted-foreground",
+				children: message
+			})] }),
+			onRetry && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+				type: "button",
+				variant: "outline",
+				className: "touch-target",
+				"data-ocid": "page.retry_button",
+				onClick: onRetry,
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, {
+					className: "mr-2 h-4 w-4",
+					"aria-hidden": "true"
+				}), "Retry"]
+			})
+		]
+	});
+}
+/** A helpful empty state with an optional action. */
+function EmptyState({ title, message, action, className, ocid = "page.empty_state" }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		"data-ocid": ocid,
+		className: cn("flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-card p-8 text-center", className),
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Inbox, {
+				className: "h-7 w-7 text-muted-foreground",
+				"aria-hidden": "true"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "font-display text-lg font-semibold uppercase tracking-wide text-foreground",
+				children: title
+			}), message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "mx-auto mt-1 max-w-md text-sm text-muted-foreground",
+				children: message
+			})] }),
+			action
+		]
+	});
+}
+//#endregion
+//#region src/components/StoreLogo.tsx
+/**
+* Detect an image's real MIME type from its leading bytes. An uploaded logo is
+* stored as raw bytes with no content type, so the data URL must be built from
+* the actual format rather than assuming PNG. Recognizes PNG, JPEG, WebP and
+* SVG; falls back to `image/png` for anything unrecognized.
+*/
+function detectImageMimeType(bytes) {
+	if (bytes.length >= 8 && bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71 && bytes[4] === 13 && bytes[5] === 10 && bytes[6] === 26 && bytes[7] === 10) return "image/png";
+	if (bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255) return "image/jpeg";
+	if (bytes.length >= 12 && bytes[0] === 82 && bytes[1] === 73 && bytes[2] === 70 && bytes[3] === 70 && bytes[8] === 87 && bytes[9] === 69 && bytes[10] === 66 && bytes[11] === 80) return "image/webp";
+	const head = new TextDecoder("utf-8", { fatal: false }).decode(bytes.subarray(0, 256)).replace(/^\uFEFF/, "").trimStart().toLowerCase();
+	if (head.startsWith("<svg") || head.startsWith("<?xml")) return "image/svg+xml";
+	return "image/png";
+}
+/** Build a data URL from raw logo bytes, using the detected image type. */
+function logoBytesToDataUrl(bytes) {
+	if (bytes.length === 0) return null;
+	let binary = "";
+	for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+	return `data:${detectImageMimeType(bytes)};base64,${btoa(binary)}`;
+}
+/**
+* The store mark. The `main` variant (the default) renders the uploaded main
+* logo when an Admin has set one, otherwise the built-in navy disc with a red
+* ring, a white star and three white stripes, drawn as inline SVG so it stays
+* crisp at every size and always uses the exact brand colors (navy #14284B, red
+* #B22234, white).
+*
+* The `secondary` variant renders the uploaded secondary logo in the same
+* height-sized, aspect-preserving way, and renders nothing at all when no
+* secondary logo has been uploaded — it never falls back to the star.
+*/
+function StoreLogo({ className, title = "Roadie store logo", variant = "main" }) {
+	const { data: logos } = useStoreLogo();
+	const bytes = variant === "secondary" ? logos?.secondaryLogo ?? null : logos?.logo ?? null;
+	const dataUrl = (0, import_react.useMemo)(() => bytes ? logoBytesToDataUrl(bytes) : null, [bytes]);
+	if (dataUrl) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+		src: dataUrl,
+		alt: `${title} ${variant === "secondary" ? "secondary " : ""}logo`,
+		"data-ocid": variant === "secondary" ? "store.logo.secondary" : "store.logo",
+		className: cn("h-10 shrink-0 object-contain", className, "w-auto max-w-[12rem]")
+	});
+	if (variant === "secondary") return null;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", {
+		viewBox: "0 0 64 64",
+		role: "img",
+		"aria-label": title,
+		"data-ocid": "store.logo",
+		className: cn("h-10 w-10 shrink-0", className),
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("title", { children: title }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+				cx: "32",
+				cy: "32",
+				r: "31",
+				fill: "#B22234"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+				cx: "32",
+				cy: "32",
+				r: "27",
+				fill: "#14284B"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
+				d: "M32 13.5l4.6 9.3 10.3 1.5-7.45 7.26 1.76 10.25L32 36.98l-9.21 4.84 1.76-10.25L17.1 24.3l10.3-1.5z",
+				fill: "#FFFFFF"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", {
+				x: "20",
+				y: "45",
+				width: "24",
+				height: "2.6",
+				rx: "1.3",
+				fill: "#FFFFFF"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", {
+				x: "23",
+				y: "50",
+				width: "18",
+				height: "2.6",
+				rx: "1.3",
+				fill: "#FFFFFF"
+			})
+		]
+	});
+}
+//#endregion
 //#region src/hooks/useAccess.ts
 /** Roles allowed to archive or rehire a roadie. */
 var ARCHIVE_ROLES = [Role.storeManager, Role.admin];
@@ -40363,6 +47806,24 @@ var EXPORT_ROLES = [
 ];
 /** Roles allowed to edit a roadie's details or change their position. */
 var EDIT_ROADIE_ROLES = [Role.admin, Role.storeManager];
+/** Roles allowed to see the Gift Bags surface. */
+var GIFT_BAGS_ROLES = [
+	Role.admin,
+	Role.storeManager,
+	Role.trainingManager
+];
+/**
+* Roles allowed to see the Leaders surface. Every readable role except Kiosk
+* and Integration, which have no roster read access.
+*/
+var LEADERS_ROLES = [
+	Role.admin,
+	Role.storeManager,
+	Role.trainingManager,
+	Role.trainer,
+	Role.visitingManager,
+	Role.leadership
+];
 /** The full navigation model; each item declares which roles may see it. */
 var NAV_ITEMS = [
 	{
@@ -40379,6 +47840,16 @@ var NAV_ITEMS = [
 		labelKey: "nav.roster",
 		to: "/roster",
 		allowedRoles: []
+	},
+	{
+		labelKey: "nav.myProfile",
+		to: "/my-profile",
+		allowedRoles: []
+	},
+	{
+		labelKey: "nav.leaders",
+		to: "/leaders",
+		allowedRoles: LEADERS_ROLES
 	},
 	{
 		labelKey: "nav.approvals",
@@ -40400,6 +47871,11 @@ var NAV_ITEMS = [
 		labelKey: "nav.export",
 		to: "/export",
 		allowedRoles: EXPORT_ROLES
+	},
+	{
+		labelKey: "nav.giftBags",
+		to: "/gift-bags",
+		allowedRoles: GIFT_BAGS_ROLES
 	}
 ];
 /** Resolve the caller's access state from the backend grant. */
@@ -40450,667 +47926,13 @@ function canExport(role) {
 function canEditRoadie(role) {
 	return !!role && EDIT_ROADIE_ROLES.includes(role);
 }
-var dictionaries = {
-	en: {
-		"app.name": "Roadie",
-		"app.tagline": "Restaurant crew hiring roster",
-		"nav.today": "Today",
-		"nav.dashboard": "Dashboard",
-		"nav.roster": "Roster",
-		"nav.admin": "Admin",
-		"nav.approvals": "Approve new hires",
-		"nav.kiosk": "Kiosk",
-		"nav.export": "Export",
-		"nav.signOut": "Sign out",
-		"nav.openMenu": "Open navigation menu",
-		"nav.closeMenu": "Close navigation menu",
-		"auth.title": "Sign in to Roadie",
-		"auth.description": "Sign in with Internet Identity to view the store roster and hiring pipeline.",
-		"auth.loading": "Loading your session…",
-		"gate.pending.title": "Waiting for approval",
-		"gate.pending.body": "Your sign-in was received. An admin needs to approve your account and assign a role before you can continue.",
-		"gate.pending.hint": "Check back shortly — this page updates automatically.",
-		"gate.error.title": "We couldn't load your access",
-		"gate.error.body": "Something went wrong while checking your account.",
-		"gate.retry": "Try again",
-		"gate.signOut": "Sign out",
-		"guard.title": "You don't have access to this page",
-		"guard.body": "Your role doesn't include this page. Use the navigation to reach a page you can open.",
-		"guard.back": "Go to dashboard",
-		"dashboard.title": "Dashboard",
-		"dashboard.subtitle": "Hiring progress toward opening day",
-		"dashboard.kpi.hired": "Hired",
-		"dashboard.kpi.buildTo": "Build-to total",
-		"dashboard.kpi.stillNeeded": "Still needed",
-		"dashboard.kpi.showedAtOrientation": "Showed at orientation",
-		"dashboard.kpi.certified": "Certified",
-		"dashboard.section.foh": "Front of house",
-		"dashboard.section.boh": "Back of house",
-		"dashboard.position.hiredOf": "{hired} of {total}",
-		"dashboard.empty": "No positions have been configured yet.",
-		"dashboard.loading": "Loading dashboard…",
-		"dashboard.error": "We couldn't load the dashboard.",
-		"dashboard.kpi.hired.hint": "On hand now",
-		"dashboard.kpi.buildTo.hint": "Opening target",
-		"dashboard.kpi.stillNeeded.hint": "To reach build-to",
-		"dashboard.kpi.orientation.hint": "Awaiting phase",
-		"dashboard.kpi.certified.hint": "Awaiting phase",
-		"dashboard.position.onHandOf": "{onHand} on hand · build to {target}",
-		"dashboard.position.needed": "{count} needed",
-		"dashboard.position.over": "{count} over",
-		"dashboard.position.filled": "Filled",
-		"dashboard.position.progressLabel": "{name}: {onHand} of {target} hired",
-		"dashboard.panel.empty": "No positions in this house yet.",
-		"dashboard.countdown.label": "Countdown to opening",
-		"dashboard.countdown.noDate": "Opening date not set",
-		"dashboard.countdown.days": "Days",
-		"dashboard.countdown.hours": "Hours",
-		"dashboard.countdown.minutes": "Min",
-		"dashboard.timeline.now": "Now",
-		"dashboard.timeline.empty": "No schedule events have been added yet.",
-		"dashboard.adjust.mode": "Adjust build to",
-		"dashboard.adjust.done": "Done adjusting",
-		"dashboard.adjust.hint": "Each tap saves a +1 or −1 change to the build-to target and is logged.",
-		"dashboard.adjust.opening": "Opening build to",
-		"dashboard.adjust.afterOpening": "After-opening build to",
-		"dashboard.adjust.increase": "Increase {label}",
-		"dashboard.adjust.decrease": "Decrease {label}",
-		"dashboard.adjust.saving": "Saving…",
-		"dashboard.adjust.error": "We couldn't save that change.",
-		"dashboard.roster.title": "Position roster",
-		"dashboard.roster.summary": "{onHand} on hand · build to {target}",
-		"dashboard.roster.loading": "Loading roster…",
-		"dashboard.roster.error": "We couldn't load this roster.",
-		"dashboard.roster.empty": "No roadies or open spots for this position.",
-		"dashboard.roster.openSpot": "Open spot",
-		"dashboard.roster.archivedTitle": "No longer a roadie",
-		"dashboard.roster.rehire": "Rehire",
-		"dashboard.roster.rehireError": "We couldn't rehire that roadie.",
-		"roster.title": "Roster",
-		"roster.subtitle": "Every roadie in the pipeline",
-		"roster.search": "Search roadies",
-		"roster.searchPlaceholder": "Search by name or position",
-		"roster.filter.all": "All",
-		"roster.filter.active": "Active",
-		"roster.filter.archived": "Archived",
-		"roster.empty": "No roadies match your search.",
-		"roster.emptyAll": "No roadies have been added yet.",
-		"roster.loading": "Loading roster…",
-		"roster.error": "We couldn't load the roster.",
-		"roster.viewCard": "View card",
-		"roster.archived": "Archived",
-		"roadie.title": "Roadie card",
-		"roadie.back": "Back to roster",
-		"roadie.notFound": "That roadie card could not be found.",
-		"roadie.loading": "Loading roadie card…",
-		"roadie.error": "We couldn't load this roadie card.",
-		"roadie.section.details": "Details",
-		"roadie.section.contact": "Contact",
-		"roadie.section.availability": "Availability",
-		"roadie.field.position": "Position",
-		"roadie.field.secondPosition": "Second position",
-		"roadie.field.crew": "Crew",
-		"roadie.field.hiredAt": "Hired",
-		"roadie.field.startDate": "Start date",
-		"roadie.field.status": "Status",
-		"roadie.field.phone": "Phone",
-		"roadie.field.email": "Email",
-		"roadie.field.emergencyContact": "Emergency contact",
-		"roadie.field.emergencyPhone": "Emergency phone",
-		"roadie.field.shirtSize": "Shirt size",
-		"roadie.field.hatSize": "Hat size",
-		"roadie.field.hometown": "Hometown",
-		"roadie.field.funFact": "Fun fact",
-		"roadie.field.hobbies": "Hobbies",
-		"roadie.field.favoriteSnack": "Favorite snack",
-		"roadie.field.favoriteMovie": "Favorite movie",
-		"roadie.field.goalHere": "Goal here",
-		"roadie.field.weekdayLunch": "Available weekday lunch",
-		"roadie.field.none": "Not provided",
-		"roadie.action.archive": "Archive",
-		"roadie.action.rehire": "Rehire",
-		"roadie.action.edit": "Edit details",
-		"roadie.action.changePosition": "Change position or crew",
-		"roadie.action.flip": "Flip card",
-		"roadie.action.flipBack": "Show front",
-		"roadie.openingTeam": "#975 Opening Team",
-		"roadie.positionCode": "Position code",
-		"roadie.minor": "Minor",
-		"roadie.section.manager": "Manager",
-		"roadie.section.card": "Card",
-		"roadie.section.paperwork": "Paperwork checklist",
-		"roadie.section.changeHistory": "Change history",
-		"roadie.field.preferredName": "Preferred name",
-		"roadie.field.birthday": "Birthday",
-		"roadie.field.orientation": "Orientation session",
-		"roadie.field.crossTrained": "Cross-trained position",
-		"roadie.field.corporateId": "Corporate employee ID",
-		"roadie.field.availabilitySignature": "Availability signature",
-		"roadie.field.availabilitySignedAt": "Availability signed",
-		"roadie.field.availability": "Availability",
-		"roadie.field.weekdayLunchShort": "Weekday lunch",
-		"roadie.field.shiftsWanted": "Shifts wanted per week",
-		"roadie.field.positionAppliedFor": "Position applied for",
-		"roadie.resignPending": "Re-sign pending",
-		"roadie.signed": "Signed",
-		"roadie.unsigned": "Not signed",
-		"roadie.managerOnly": "Visible to Admin and Store Manager only.",
-		"roadie.manager.empty": "No manager details recorded yet.",
-		"roadie.paperwork.empty": "No paperwork items configured.",
-		"roadie.changeHistory.empty": "No changes recorded for this roadie.",
-		"roadie.changeHistory.touchesContact": "Contact set",
-		"roadie.edit.title": "Edit details",
-		"roadie.edit.description": "Update this roadie's profile. Contact details are managed in the Manager tab.",
-		"roadie.edit.save": "Save details",
-		"roadie.edit.saved": "Details saved.",
-		"roadie.edit.error": "We couldn't save those details.",
-		"roadie.changePosition.title": "Change position or crew",
-		"roadie.changePosition.description": "Moving a roadie re-checks paperwork and minimum age for the new position.",
-		"roadie.changePosition.main": "Main position",
-		"roadie.changePosition.second": "Second position",
-		"roadie.changePosition.crew": "Crew",
-		"roadie.changePosition.save": "Move roadie",
-		"roadie.changePosition.saved": "Position updated.",
-		"roadie.changePosition.error": "We couldn't change that position.",
-		"roadie.archive.title": "Move to no longer a roadie",
-		"roadie.archive.description": "Choose a reason. The card is archived and kept in history.",
-		"roadie.archive.reason": "Reason",
-		"roadie.archive.reason.required": "Choose a reason before archiving.",
-		"roadie.archive.other": "Other reason",
-		"roadie.archive.other.required": "Describe the reason.",
-		"roadie.archive.confirm": "Archive roadie",
-		"roadie.archive.saved": "Roadie archived.",
-		"roadie.archive.error": "We couldn't archive that roadie.",
-		"roadie.rehire.title": "Rehire roadie",
-		"roadie.rehire.description": "The roadie returns to Hired and keeps their history.",
-		"roadie.rehire.warn": "This card was archived as {reason}. Rehiring needs a reason and fresh contact details and signatures.",
-		"roadie.rehire.reason": "Reason for rehire",
-		"roadie.rehire.reason.required": "A reason is required for this rehire.",
-		"roadie.rehire.confirm": "Rehire roadie",
-		"roadie.rehire.saved": "Roadie rehired.",
-		"roadie.rehire.error": "We couldn't rehire that roadie.",
-		"roadie.reason.noShow": "No-show",
-		"roadie.reason.quitDuringTraining": "Quit during training",
-		"roadie.reason.tookAnotherJob": "Took another job",
-		"roadie.reason.letGo": "Let go",
-		"roadie.reason.other": "Other",
-		"roadie.status.hired": "Hired",
-		"roadie.status.paperworkDone": "Paperwork done",
-		"roadie.status.archived": "Archived",
-		"roadie.weekday.mon": "Mon",
-		"roadie.weekday.tue": "Tue",
-		"roadie.weekday.wed": "Wed",
-		"roadie.weekday.thu": "Thu",
-		"roadie.weekday.fri": "Fri",
-		"roadie.weekday.sat": "Sat",
-		"roadie.weekday.sun": "Sun",
-		"roadie.shift.am": "AM",
-		"roadie.shift.pm": "PM",
-		"approvals.title": "Approve new hires",
-		"approvals.subtitle": "Pending sign-ins waiting for a role",
-		"approvals.empty": "No one is waiting for approval.",
-		"approvals.loading": "Loading pending users…",
-		"approvals.error": "We couldn't load pending users.",
-		"approvals.requestedAt": "Requested",
-		"approvals.principal": "Principal",
-		"approvals.action.approve": "Approve",
-		"approvals.action.reject": "Reject",
-		"approvals.role.label": "Role",
-		"approvals.role.placeholder": "Select a role",
-		"approvals.role.required": "Choose a role before approving.",
-		"approvals.stations.label": "Trainer stations",
-		"approvals.stations.hint": "Required when the role is Trainer.",
-		"approvals.accessEnd.label": "Access ends",
-		"approvals.accessEnd.hint": "Optional. Access ends at 11:59 PM Central store time on this date.",
-		"approvals.link.label": "Link to existing person",
-		"approvals.link.hint": "Optional. Connect this login to an existing roadie card.",
-		"approvals.link.none": "Do not link",
-		"approvals.confirm.title": "Confirm role",
-		"approvals.confirm.body": "You are about to grant {role} access. This is a high-privilege role.",
-		"approvals.confirm.action": "Confirm and approve",
-		"approvals.cancel": "Cancel",
-		"approvals.success": "Access granted.",
-		"approvals.error.generic": "We couldn't approve that user.",
-		"approvals.signup.section": "Pending sign-ups",
-		"approvals.signup.submittedAt": "Submitted",
-		"approvals.signup.pending": "Pending",
-		"approvals.signup.loading": "Loading pending sign-ups…",
-		"approvals.signup.error": "We couldn't load pending sign-ups.",
-		"approvals.signup.empty": "No sign-ups are waiting for review.",
-		"approvals.signup.duplicates.loading": "Checking for duplicates…",
-		"approvals.signup.duplicates.none": "No duplicate cards found.",
-		"approvals.signup.duplicates.title": "Possible duplicates",
-		"approvals.signup.duplicates.row": "Card #{id} matched on {field}",
-		"approvals.signup.main.label": "Main position",
-		"approvals.signup.main.placeholder": "Select a position",
-		"approvals.signup.main.required": "Choose a main position before approving.",
-		"approvals.signup.second.label": "Second position",
-		"approvals.signup.second.none": "No second position",
-		"approvals.signup.crew.label": "Crew",
-		"approvals.signup.crew.none": "No crew",
-		"approvals.signup.orientation.label": "Orientation session",
-		"approvals.signup.orientation.placeholder": "Select a session",
-		"approvals.signup.orientation.hint": "Past sessions are hidden. Defaults to the session for the position's house.",
-		"approvals.signup.start.label": "Start date",
-		"approvals.signup.signature.label": "Manager signature",
-		"approvals.signup.signature.placeholder": "Type your full name",
-		"approvals.signup.signature.required": "Sign before approving.",
-		"approvals.signup.minor.blocked": "This applicant is a minor and the position requires a higher minimum age.",
-		"approvals.signup.action.approve": "Sign and approve",
-		"approvals.signup.approve.error": "We couldn't approve that sign-up.",
-		"approvals.users.section": "Pending sign-ins",
-		"admin.title": "Admin",
-		"admin.subtitle": "Manage access, roles and store settings",
-		"admin.section.access": "Access grants",
-		"admin.section.store": "Store settings",
-		"admin.section.positions": "Positions",
-		"admin.section.schedule": "Schedule",
-		"admin.section.checklists": "Checklists",
-		"admin.section.template": "Store template",
-		"admin.section.crews": "Crews",
-		"admin.section.changeLog": "Change log",
-		"admin.access.empty": "No access grants yet.",
-		"admin.access.loading": "Loading access grants…",
-		"admin.access.error": "We couldn't load access grants.",
-		"admin.access.role": "Role",
-		"admin.access.stations": "Stations",
-		"admin.access.accessEnd": "Access ends",
-		"admin.access.approvedAt": "Approved",
-		"admin.access.action.changeRole": "Change role",
-		"admin.access.action.remove": "Remove access",
-		"admin.access.lastAdmin": "The last admin cannot be removed.",
-		"admin.access.adminCount": "{count} admins",
-		"admin.store.loading": "Loading store settings…",
-		"admin.store.error": "We couldn't load store settings.",
-		"admin.store.save": "Save settings",
-		"admin.store.saved": "Store settings saved.",
-		"admin.positions.empty": "No positions configured.",
-		"admin.crews.empty": "No crews configured.",
-		"admin.changeLog.empty": "No changes recorded yet.",
-		"admin.changeLog.loading": "Loading change log…",
-		"admin.changeLog.error": "We couldn't load the change log.",
-		"today.title": "Today",
-		"today.placeholder.title": "Today is coming soon",
-		"today.placeholder.body": "The daily view — orientation, training and sign-offs — will live here. For now, use the Dashboard and Roster.",
-		"kiosk.title": "Kiosk",
-		"kiosk.subtitle": "Self-service sign-up",
-		"kiosk.placeholder.title": "Kiosk sign-up",
-		"kiosk.placeholder.body": "The kiosk sign-up flow is being prepared. This screen will let new roadies submit their details on a shared device.",
-		"kiosk.signOut.open": "Staff sign out",
-		"kiosk.signOut.title": "Staff sign out",
-		"kiosk.signOut.body": "Enter the staff PIN to sign out of the kiosk on this device.",
-		"kiosk.signOut.pinLabel": "Staff PIN",
-		"kiosk.signOut.pinPlaceholder": "Enter PIN",
-		"kiosk.signOut.confirm": "Sign out",
-		"kiosk.signOut.cancel": "Cancel",
-		"kiosk.signOut.error": "That PIN is not correct.",
-		"export.title": "Export",
-		"export.subtitle": "Download the roster for reporting",
-		"export.shareable": "Shareable export",
-		"export.shareable.hint": "Roster summary without contact details.",
-		"export.full": "Full export",
-		"export.full.hint": "Includes contact details. Admin and Store Manager only.",
-		"export.full.locked": "Contact details are visible only to Admin and Store Manager.",
-		"export.action.download": "Download CSV",
-		"export.loading": "Building export…",
-		"export.error": "We couldn't build that export.",
-		"export.empty": "There is nothing to export yet.",
-		"export.grandTotal": "Grand total",
-		"export.fohTotal": "Front of house",
-		"export.bohTotal": "Back of house",
-		"common.loading": "Loading…",
-		"common.error": "Something went wrong.",
-		"common.retry": "Retry",
-		"common.cancel": "Cancel",
-		"common.confirm": "Confirm",
-		"common.close": "Close",
-		"common.save": "Save",
-		"common.none": "None",
-		"common.optional": "Optional",
-		"common.required": "Required",
-		"common.yes": "Yes",
-		"common.no": "No",
-		"footer.attribution": "Built with love using caffeine.ai"
-	},
-	es: {
-		"app.name": "Roadie",
-		"app.tagline": "Plantilla de contratación del equipo",
-		"nav.today": "Hoy",
-		"nav.dashboard": "Panel",
-		"nav.roster": "Plantilla",
-		"nav.admin": "Administración",
-		"nav.approvals": "Aprobar nuevos",
-		"nav.kiosk": "Quiosco",
-		"nav.export": "Exportar",
-		"nav.signOut": "Cerrar sesión",
-		"nav.openMenu": "Abrir menú de navegación",
-		"nav.closeMenu": "Cerrar menú de navegación",
-		"auth.title": "Inicia sesión en Roadie",
-		"auth.description": "Inicia sesión con Internet Identity para ver la plantilla y el proceso de contratación.",
-		"auth.loading": "Cargando tu sesión…",
-		"gate.pending.title": "Esperando aprobación",
-		"gate.pending.body": "Recibimos tu inicio de sesión. Un administrador debe aprobar tu cuenta y asignarte un rol antes de continuar.",
-		"gate.pending.hint": "Vuelve pronto — esta página se actualiza automáticamente.",
-		"gate.error.title": "No pudimos cargar tu acceso",
-		"gate.error.body": "Algo salió mal al comprobar tu cuenta.",
-		"gate.retry": "Reintentar",
-		"gate.signOut": "Cerrar sesión",
-		"guard.title": "No tienes acceso a esta página",
-		"guard.body": "Tu rol no incluye esta página. Usa la navegación para ir a una página que puedas abrir.",
-		"guard.back": "Ir al panel",
-		"dashboard.title": "Panel",
-		"dashboard.subtitle": "Progreso de contratación hacia la apertura",
-		"dashboard.kpi.hired": "Contratados",
-		"dashboard.kpi.buildTo": "Meta total",
-		"dashboard.kpi.stillNeeded": "Faltan",
-		"dashboard.kpi.showedAtOrientation": "Asistieron a orientación",
-		"dashboard.kpi.certified": "Certificados",
-		"dashboard.section.foh": "Sala",
-		"dashboard.section.boh": "Cocina",
-		"dashboard.position.hiredOf": "{hired} de {total}",
-		"dashboard.empty": "Aún no se han configurado puestos.",
-		"dashboard.loading": "Cargando panel…",
-		"dashboard.error": "No pudimos cargar el panel.",
-		"dashboard.kpi.hired.hint": "En plantilla ahora",
-		"dashboard.kpi.buildTo.hint": "Meta de apertura",
-		"dashboard.kpi.stillNeeded.hint": "Para llegar a la meta",
-		"dashboard.kpi.orientation.hint": "Fase pendiente",
-		"dashboard.kpi.certified.hint": "Fase pendiente",
-		"dashboard.position.onHandOf": "{onHand} en plantilla · meta {target}",
-		"dashboard.position.needed": "Faltan {count}",
-		"dashboard.position.over": "{count} de más",
-		"dashboard.position.filled": "Completo",
-		"dashboard.position.progressLabel": "{name}: {onHand} de {target} contratados",
-		"dashboard.panel.empty": "Aún no hay puestos en esta área.",
-		"dashboard.countdown.label": "Cuenta atrás para la apertura",
-		"dashboard.countdown.noDate": "Fecha de apertura sin definir",
-		"dashboard.countdown.days": "Días",
-		"dashboard.countdown.hours": "Horas",
-		"dashboard.countdown.minutes": "Min",
-		"dashboard.timeline.now": "Ahora",
-		"dashboard.timeline.empty": "Aún no se han añadido eventos al calendario.",
-		"dashboard.adjust.mode": "Ajustar meta",
-		"dashboard.adjust.done": "Terminar ajuste",
-		"dashboard.adjust.hint": "Cada toque guarda un cambio de +1 o −1 en la meta y queda registrado.",
-		"dashboard.adjust.opening": "Meta de apertura",
-		"dashboard.adjust.afterOpening": "Meta posterior a la apertura",
-		"dashboard.adjust.increase": "Aumentar {label}",
-		"dashboard.adjust.decrease": "Reducir {label}",
-		"dashboard.adjust.saving": "Guardando…",
-		"dashboard.adjust.error": "No pudimos guardar ese cambio.",
-		"dashboard.roster.title": "Plantilla del puesto",
-		"dashboard.roster.summary": "{onHand} en plantilla · meta {target}",
-		"dashboard.roster.loading": "Cargando plantilla…",
-		"dashboard.roster.error": "No pudimos cargar esta plantilla.",
-		"dashboard.roster.empty": "No hay roadies ni vacantes para este puesto.",
-		"dashboard.roster.openSpot": "Vacante",
-		"dashboard.roster.archivedTitle": "Ya no es roadie",
-		"dashboard.roster.rehire": "Recontratar",
-		"dashboard.roster.rehireError": "No pudimos recontratar a ese roadie.",
-		"roster.title": "Plantilla",
-		"roster.subtitle": "Todos los roadies del proceso",
-		"roster.search": "Buscar roadies",
-		"roster.searchPlaceholder": "Buscar por nombre o puesto",
-		"roster.filter.all": "Todos",
-		"roster.filter.active": "Activos",
-		"roster.filter.archived": "Archivados",
-		"roster.empty": "Ningún roadie coincide con tu búsqueda.",
-		"roster.emptyAll": "Aún no se ha añadido ningún roadie.",
-		"roster.loading": "Cargando plantilla…",
-		"roster.error": "No pudimos cargar la plantilla.",
-		"roster.viewCard": "Ver ficha",
-		"roster.archived": "Archivado",
-		"roadie.title": "Ficha del roadie",
-		"roadie.back": "Volver a la plantilla",
-		"roadie.notFound": "No se encontró esa ficha.",
-		"roadie.loading": "Cargando ficha…",
-		"roadie.error": "No pudimos cargar esta ficha.",
-		"roadie.section.details": "Detalles",
-		"roadie.section.contact": "Contacto",
-		"roadie.section.availability": "Disponibilidad",
-		"roadie.field.position": "Puesto",
-		"roadie.field.secondPosition": "Segundo puesto",
-		"roadie.field.crew": "Equipo",
-		"roadie.field.hiredAt": "Contratado",
-		"roadie.field.startDate": "Fecha de inicio",
-		"roadie.field.status": "Estado",
-		"roadie.field.phone": "Teléfono",
-		"roadie.field.email": "Correo",
-		"roadie.field.emergencyContact": "Contacto de emergencia",
-		"roadie.field.emergencyPhone": "Teléfono de emergencia",
-		"roadie.field.shirtSize": "Talla de camiseta",
-		"roadie.field.hatSize": "Talla de gorra",
-		"roadie.field.hometown": "Ciudad natal",
-		"roadie.field.funFact": "Dato curioso",
-		"roadie.field.hobbies": "Pasatiempos",
-		"roadie.field.favoriteSnack": "Snack favorito",
-		"roadie.field.favoriteMovie": "Película favorita",
-		"roadie.field.goalHere": "Meta aquí",
-		"roadie.field.weekdayLunch": "Disponible para almuerzo entre semana",
-		"roadie.field.none": "No proporcionado",
-		"roadie.action.archive": "Archivar",
-		"roadie.action.rehire": "Recontratar",
-		"roadie.action.edit": "Editar datos",
-		"roadie.action.changePosition": "Cambiar puesto o equipo",
-		"roadie.action.flip": "Girar ficha",
-		"roadie.action.flipBack": "Ver frente",
-		"roadie.openingTeam": "#975 Equipo de apertura",
-		"roadie.positionCode": "Código de puesto",
-		"roadie.minor": "Menor",
-		"roadie.section.manager": "Gerente",
-		"roadie.section.card": "Ficha",
-		"roadie.section.paperwork": "Lista de papeleo",
-		"roadie.section.changeHistory": "Historial de cambios",
-		"roadie.field.preferredName": "Nombre preferido",
-		"roadie.field.birthday": "Cumpleaños",
-		"roadie.field.orientation": "Sesión de orientación",
-		"roadie.field.crossTrained": "Puesto con entrenamiento cruzado",
-		"roadie.field.corporateId": "ID de empleado corporativo",
-		"roadie.field.availabilitySignature": "Firma de disponibilidad",
-		"roadie.field.availabilitySignedAt": "Disponibilidad firmada",
-		"roadie.field.availability": "Disponibilidad",
-		"roadie.field.weekdayLunchShort": "Almuerzo entre semana",
-		"roadie.field.shiftsWanted": "Turnos deseados por semana",
-		"roadie.field.positionAppliedFor": "Puesto solicitado",
-		"roadie.resignPending": "Firma pendiente",
-		"roadie.signed": "Firmado",
-		"roadie.unsigned": "Sin firmar",
-		"roadie.managerOnly": "Visible solo para Admin y Gerente de tienda.",
-		"roadie.manager.empty": "Aún no hay datos de gerente.",
-		"roadie.paperwork.empty": "No hay elementos de papeleo configurados.",
-		"roadie.changeHistory.empty": "No hay cambios registrados para este roadie.",
-		"roadie.changeHistory.touchesContact": "Datos de contacto",
-		"roadie.edit.title": "Editar datos",
-		"roadie.edit.description": "Actualiza el perfil de este roadie. Los datos de contacto se gestionan en la pestaña Gerente.",
-		"roadie.edit.save": "Guardar datos",
-		"roadie.edit.saved": "Datos guardados.",
-		"roadie.edit.error": "No pudimos guardar esos datos.",
-		"roadie.changePosition.title": "Cambiar puesto o equipo",
-		"roadie.changePosition.description": "Mover a un roadie vuelve a comprobar el papeleo y la edad mínima del nuevo puesto.",
-		"roadie.changePosition.main": "Puesto principal",
-		"roadie.changePosition.second": "Segundo puesto",
-		"roadie.changePosition.crew": "Equipo",
-		"roadie.changePosition.save": "Mover roadie",
-		"roadie.changePosition.saved": "Puesto actualizado.",
-		"roadie.changePosition.error": "No pudimos cambiar ese puesto.",
-		"roadie.archive.title": "Marcar como ya no es roadie",
-		"roadie.archive.description": "Elige un motivo. La ficha se archiva y se conserva en el historial.",
-		"roadie.archive.reason": "Motivo",
-		"roadie.archive.reason.required": "Elige un motivo antes de archivar.",
-		"roadie.archive.other": "Otro motivo",
-		"roadie.archive.other.required": "Describe el motivo.",
-		"roadie.archive.confirm": "Archivar roadie",
-		"roadie.archive.saved": "Roadie archivado.",
-		"roadie.archive.error": "No pudimos archivar a ese roadie.",
-		"roadie.rehire.title": "Recontratar roadie",
-		"roadie.rehire.description": "El roadie vuelve a Contratado y conserva su historial.",
-		"roadie.rehire.warn": "Esta ficha se archivó como {reason}. Recontratar requiere un motivo y datos de contacto y firmas nuevos.",
-		"roadie.rehire.reason": "Motivo de recontratación",
-		"roadie.rehire.reason.required": "Se requiere un motivo para esta recontratación.",
-		"roadie.rehire.confirm": "Recontratar roadie",
-		"roadie.rehire.saved": "Roadie recontratado.",
-		"roadie.rehire.error": "No pudimos recontratar a ese roadie.",
-		"roadie.reason.noShow": "No se presentó",
-		"roadie.reason.quitDuringTraining": "Renunció durante el entrenamiento",
-		"roadie.reason.tookAnotherJob": "Tomó otro trabajo",
-		"roadie.reason.letGo": "Despedido",
-		"roadie.reason.other": "Otro",
-		"roadie.status.hired": "Contratado",
-		"roadie.status.paperworkDone": "Papeleo listo",
-		"roadie.status.archived": "Archivado",
-		"roadie.weekday.mon": "Lun",
-		"roadie.weekday.tue": "Mar",
-		"roadie.weekday.wed": "Mié",
-		"roadie.weekday.thu": "Jue",
-		"roadie.weekday.fri": "Vie",
-		"roadie.weekday.sat": "Sáb",
-		"roadie.weekday.sun": "Dom",
-		"roadie.shift.am": "AM",
-		"roadie.shift.pm": "PM",
-		"approvals.title": "Aprobar nuevos",
-		"approvals.subtitle": "Inicios de sesión pendientes de un rol",
-		"approvals.empty": "Nadie está esperando aprobación.",
-		"approvals.loading": "Cargando usuarios pendientes…",
-		"approvals.error": "No pudimos cargar los usuarios pendientes.",
-		"approvals.requestedAt": "Solicitado",
-		"approvals.principal": "Principal",
-		"approvals.action.approve": "Aprobar",
-		"approvals.action.reject": "Rechazar",
-		"approvals.role.label": "Rol",
-		"approvals.role.placeholder": "Selecciona un rol",
-		"approvals.role.required": "Elige un rol antes de aprobar.",
-		"approvals.stations.label": "Estaciones de entrenador",
-		"approvals.stations.hint": "Obligatorio cuando el rol es Entrenador.",
-		"approvals.accessEnd.label": "El acceso termina",
-		"approvals.accessEnd.hint": "Opcional. El acceso termina a las 11:59 PM hora Central de la tienda en esta fecha.",
-		"approvals.link.label": "Vincular a una persona existente",
-		"approvals.link.hint": "Opcional. Conecta este inicio de sesión a una ficha existente.",
-		"approvals.link.none": "No vincular",
-		"approvals.confirm.title": "Confirmar rol",
-		"approvals.confirm.body": "Estás a punto de otorgar acceso de {role}. Es un rol de alto privilegio.",
-		"approvals.confirm.action": "Confirmar y aprobar",
-		"approvals.cancel": "Cancelar",
-		"approvals.success": "Acceso otorgado.",
-		"approvals.error.generic": "No pudimos aprobar a ese usuario.",
-		"approvals.signup.section": "Registros pendientes",
-		"approvals.signup.submittedAt": "Enviado",
-		"approvals.signup.pending": "Pendiente",
-		"approvals.signup.loading": "Cargando registros pendientes…",
-		"approvals.signup.error": "No pudimos cargar los registros pendientes.",
-		"approvals.signup.empty": "No hay registros esperando revisión.",
-		"approvals.signup.duplicates.loading": "Buscando duplicados…",
-		"approvals.signup.duplicates.none": "No se encontraron fichas duplicadas.",
-		"approvals.signup.duplicates.title": "Posibles duplicados",
-		"approvals.signup.duplicates.row": "Ficha #{id} coincide en {field}",
-		"approvals.signup.main.label": "Puesto principal",
-		"approvals.signup.main.placeholder": "Selecciona un puesto",
-		"approvals.signup.main.required": "Elige un puesto principal antes de aprobar.",
-		"approvals.signup.second.label": "Segundo puesto",
-		"approvals.signup.second.none": "Sin segundo puesto",
-		"approvals.signup.crew.label": "Equipo",
-		"approvals.signup.crew.none": "Sin equipo",
-		"approvals.signup.orientation.label": "Sesión de orientación",
-		"approvals.signup.orientation.placeholder": "Selecciona una sesión",
-		"approvals.signup.orientation.hint": "Las sesiones pasadas se ocultan. Por defecto, la sesión del área del puesto.",
-		"approvals.signup.start.label": "Fecha de inicio",
-		"approvals.signup.signature.label": "Firma del gerente",
-		"approvals.signup.signature.placeholder": "Escribe tu nombre completo",
-		"approvals.signup.signature.required": "Firma antes de aprobar.",
-		"approvals.signup.minor.blocked": "Este solicitante es menor y el puesto exige una edad mínima mayor.",
-		"approvals.signup.action.approve": "Firmar y aprobar",
-		"approvals.signup.approve.error": "No pudimos aprobar ese registro.",
-		"approvals.users.section": "Inicios de sesión pendientes",
-		"admin.title": "Administración",
-		"admin.subtitle": "Gestiona accesos, roles y ajustes de la tienda",
-		"admin.section.access": "Accesos otorgados",
-		"admin.section.store": "Ajustes de la tienda",
-		"admin.section.positions": "Puestos",
-		"admin.section.schedule": "Calendario",
-		"admin.section.checklists": "Listas de verificación",
-		"admin.section.template": "Plantilla de tienda",
-		"admin.section.crews": "Equipos",
-		"admin.section.changeLog": "Registro de cambios",
-		"admin.access.empty": "Aún no hay accesos otorgados.",
-		"admin.access.loading": "Cargando accesos…",
-		"admin.access.error": "No pudimos cargar los accesos.",
-		"admin.access.role": "Rol",
-		"admin.access.stations": "Estaciones",
-		"admin.access.accessEnd": "El acceso termina",
-		"admin.access.approvedAt": "Aprobado",
-		"admin.access.action.changeRole": "Cambiar rol",
-		"admin.access.action.remove": "Quitar acceso",
-		"admin.access.lastAdmin": "No se puede quitar al último administrador.",
-		"admin.access.adminCount": "{count} administradores",
-		"admin.store.loading": "Cargando ajustes…",
-		"admin.store.error": "No pudimos cargar los ajustes de la tienda.",
-		"admin.store.save": "Guardar ajustes",
-		"admin.store.saved": "Ajustes de la tienda guardados.",
-		"admin.positions.empty": "No hay puestos configurados.",
-		"admin.crews.empty": "No hay equipos configurados.",
-		"admin.changeLog.empty": "Aún no hay cambios registrados.",
-		"admin.changeLog.loading": "Cargando registro de cambios…",
-		"admin.changeLog.error": "No pudimos cargar el registro de cambios.",
-		"today.title": "Hoy",
-		"today.placeholder.title": "Hoy llegará pronto",
-		"today.placeholder.body": "La vista diaria — orientación, entrenamiento y firmas — vivirá aquí. Por ahora, usa el Panel y la Plantilla.",
-		"kiosk.title": "Quiosco",
-		"kiosk.subtitle": "Registro de autoservicio",
-		"kiosk.placeholder.title": "Registro en quiosco",
-		"kiosk.placeholder.body": "El flujo de registro del quiosco se está preparando. Esta pantalla permitirá a los nuevos roadies enviar sus datos en un dispositivo compartido.",
-		"kiosk.signOut.open": "Salida del personal",
-		"kiosk.signOut.title": "Salida del personal",
-		"kiosk.signOut.body": "Ingresa el PIN del personal para cerrar la sesión del quiosco en este dispositivo.",
-		"kiosk.signOut.pinLabel": "PIN del personal",
-		"kiosk.signOut.pinPlaceholder": "Ingresa el PIN",
-		"kiosk.signOut.confirm": "Cerrar sesión",
-		"kiosk.signOut.cancel": "Cancelar",
-		"kiosk.signOut.error": "Ese PIN no es correcto.",
-		"export.title": "Exportar",
-		"export.subtitle": "Descarga la plantilla para informes",
-		"export.shareable": "Exportación compartible",
-		"export.shareable.hint": "Resumen de la plantilla sin datos de contacto.",
-		"export.full": "Exportación completa",
-		"export.full.hint": "Incluye datos de contacto. Solo Admin y Gerente de tienda.",
-		"export.full.locked": "Los datos de contacto solo son visibles para Admin y Gerente de tienda.",
-		"export.action.download": "Descargar CSV",
-		"export.loading": "Generando exportación…",
-		"export.error": "No pudimos generar esa exportación.",
-		"export.empty": "Aún no hay nada que exportar.",
-		"export.grandTotal": "Total general",
-		"export.fohTotal": "Sala",
-		"export.bohTotal": "Cocina",
-		"common.loading": "Cargando…",
-		"common.error": "Algo salió mal.",
-		"common.retry": "Reintentar",
-		"common.cancel": "Cancelar",
-		"common.confirm": "Confirmar",
-		"common.close": "Cerrar",
-		"common.save": "Guardar",
-		"common.none": "Ninguno",
-		"common.optional": "Opcional",
-		"common.required": "Obligatorio",
-		"common.yes": "Sí",
-		"common.no": "No",
-		"footer.attribution": "Hecho con cariño usando caffeine.ai"
-	}
-};
-//#endregion
-//#region src/hooks/useI18n.ts
-var I18nContext = (0, import_react.createContext)(null);
-function translate(locale, key, vars) {
-	let value = (dictionaries[locale] ?? dictionaries.en)[key] ?? dictionaries.en[key] ?? key;
-	if (vars) for (const [name, replacement] of Object.entries(vars)) value = value.replaceAll(`{${name}}`, String(replacement));
-	return value;
+/** Whether the given role may open the Gift Bags surface. */
+function canGiftBags(role) {
+	return !!role && GIFT_BAGS_ROLES.includes(role);
 }
-/** Access the copy dictionary. Falls back to English outside a provider. */
-function useI18n() {
-	const ctx = (0, import_react.useContext)(I18nContext);
-	if (ctx) return ctx;
-	return {
-		locale: "en",
-		setLocale: () => {},
-		t: (key, vars) => translate("en", key, vars)
-	};
+/** Whether the given role may open the Leaders surface. */
+function canLeaders(role) {
+	return !!role && LEADERS_ROLES.includes(role);
 }
 //#endregion
 //#region src/components/ApprovalGate.tsx
@@ -41131,11 +47953,15 @@ function ApprovalGate({ children }) {
 	const access = useAccessState();
 	const requestAccess = useRequestAccess();
 	const bootstrapAdmin = useBootstrapAdmin();
+	const submitProfile = useSubmitStaffProfile();
+	const updateProfile = useUpdateMyStaffProfile();
 	const { actor } = useActor(createActor);
 	const requested = (0, import_react.useRef)(false);
 	const bootstrapped = (0, import_react.useRef)(false);
 	const bootstrapAttempts = (0, import_react.useRef)(0);
 	const requestAttempts = (0, import_react.useRef)(0);
+	const [profileSubmitted, setProfileSubmitted] = (0, import_react.useState)(false);
+	const [grantProfileSaved, setGrantProfileSaved] = (0, import_react.useState)(false);
 	(0, import_react.useEffect)(() => {
 		if (!actor) return;
 		if (access.kind === "loading" || access.kind === "error") return;
@@ -41162,7 +47988,46 @@ function ApprovalGate({ children }) {
 		access.kind,
 		requestAccess
 	]);
-	if (access.kind === "granted") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children });
+	if (access.kind === "granted") {
+		if (!access.grant.staffProfile && !grantProfileSaved) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+			"data-ocid": "gate.profile_state",
+			className: "mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-5 px-6 py-10",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "text-center",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, { className: "mx-auto h-20 w-20" }),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+							className: "mt-4 font-display text-3xl font-bold uppercase tracking-tight",
+							children: t("profile.title")
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "mx-auto mt-2 max-w-md text-sm text-muted-foreground",
+							children: t("profile.description")
+						})
+					]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "rounded-lg border border-border bg-card p-5 shadow-subtle",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StaffProfileForm, {
+						submitLabel: t("profile.continue"),
+						pending: updateProfile.isPending,
+						error: updateProfile.isError ? t("profile.error") : null,
+						onSubmit: (profile) => updateProfile.mutate(profile, { onSuccess: () => setGrantProfileSaved(true) })
+					})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "flex justify-center",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SignOutButton, {
+						label: t("gate.signOut"),
+						ocid: "gate.sign_out_button",
+						className: "touch-target rounded-md border border-input bg-card px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-muted"
+					})
+				})
+			]
+		});
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children });
+	}
 	const actorReady = !!actor;
 	if (access.kind === "loading" && actorReady) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		"data-ocid": "gate.loading_state",
@@ -41201,11 +48066,49 @@ function ApprovalGate({ children }) {
 			})
 		]
 	});
+	const requestSettled = requestAccess.isSuccess || requested.current;
+	if (access.kind === "pending" && requestSettled && !profileSubmitted) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		"data-ocid": "gate.profile_state",
+		className: "mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-5 px-6 py-10",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "text-center",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, { className: "mx-auto h-20 w-20" }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+						className: "mt-4 font-display text-3xl font-bold uppercase tracking-tight",
+						children: t("profile.title")
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "mx-auto mt-2 max-w-md text-sm text-muted-foreground",
+						children: t("profile.description")
+					})
+				]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "rounded-lg border border-border bg-card p-5 shadow-subtle",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StaffProfileForm, {
+					submitLabel: t("profile.continue"),
+					pending: submitProfile.isPending,
+					error: submitProfile.isError ? t("profile.error") : null,
+					onSubmit: (profile) => submitProfile.mutate(profile, { onSuccess: () => setProfileSubmitted(true) })
+				})
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "flex justify-center",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SignOutButton, {
+					label: t("gate.signOut"),
+					ocid: "gate.sign_out_button",
+					className: "touch-target rounded-md border border-input bg-card px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-muted"
+				})
+			})
+		]
+	});
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		"data-ocid": "gate.pending_state",
 		className: "mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-6 text-center",
 		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, { className: "h-16 w-16" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, { className: "h-32 w-32" }),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 				className: "inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 font-display text-xs font-semibold uppercase tracking-widest text-primary",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Clock, {
@@ -41815,11 +48718,11 @@ function createRandomKey() {
 function last(arr) {
 	return arr[arr.length - 1];
 }
-function isFunction$2(d) {
+function isFunction$1(d) {
 	return typeof d === "function";
 }
 function functionalUpdate(updater, previous) {
-	if (isFunction$2(updater)) return updater(previous);
+	if (isFunction$1(updater)) return updater(previous);
 	return updater;
 }
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -41884,19 +48787,19 @@ function hasObjectPrototype(o) {
 function isPlainArray(value) {
 	return Array.isArray(value) && value.length === Object.keys(value).length;
 }
-function deepEqual$1(a, b, opts) {
+function deepEqual(a, b, opts) {
 	if (a === b) return true;
 	if (typeof a !== typeof b) return false;
 	if (Array.isArray(a) && Array.isArray(b)) {
 		if (a.length !== b.length) return false;
-		for (let i = 0, l = a.length; i < l; i++) if (!deepEqual$1(a[i], b[i], opts)) return false;
+		for (let i = 0, l = a.length; i < l; i++) if (!deepEqual(a[i], b[i], opts)) return false;
 		return true;
 	}
 	if (isPlainObject(a) && isPlainObject(b)) {
 		const ignoreUndefined = (opts == null ? void 0 : opts.ignoreUndefined) ?? true;
 		if (opts == null ? void 0 : opts.partial) {
 			for (const k in b) if (!ignoreUndefined || b[k] !== void 0) {
-				if (!deepEqual$1(a[k], b[k], opts)) return false;
+				if (!deepEqual(a[k], b[k], opts)) return false;
 			}
 			return true;
 		}
@@ -41906,7 +48809,7 @@ function deepEqual$1(a, b, opts) {
 		let bCount = 0;
 		for (const k in b) if (!ignoreUndefined || b[k] !== void 0) {
 			bCount++;
-			if (bCount > aCount || !deepEqual$1(a[k], b[k], opts)) return false;
+			if (bCount > aCount || !deepEqual(a[k], b[k], opts)) return false;
 		}
 		return aCount === bCount;
 	}
@@ -43578,7 +50481,7 @@ var RouterCore = class {
 				ignoredProps.forEach((prop) => {
 					next.state[prop] = this.latestLocation.state[prop];
 				});
-				const isEqual = deepEqual$1(next.state, this.latestLocation.state);
+				const isEqual = deepEqual(next.state, this.latestLocation.state);
 				ignoredProps.forEach((prop) => {
 					delete next.state[prop];
 				});
@@ -43947,9 +50850,9 @@ var RouterCore = class {
 			}, this.parsePathnameCache);
 			if (!match) return false;
 			if (location.params) {
-				if (!deepEqual$1(match, location.params, { partial: true })) return false;
+				if (!deepEqual(match, location.params, { partial: true })) return false;
 			}
-			if (match && ((opts == null ? void 0 : opts.includeSearch) ?? true)) return deepEqual$1(baseLocation.search, next.search, { partial: true }) ? match : false;
+			if (match && ((opts == null ? void 0 : opts.includeSearch) ?? true)) return deepEqual(baseLocation.search, next.search, { partial: true }) ? match : false;
 			return match;
 		};
 		this.hasNotFoundMatch = () => {
@@ -44739,8 +51642,8 @@ function useNavigate(_defaultOpts) {
 }
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@tanstack+react-router@1.131.50_react-dom@19.1.5_react@19.1.5__react@19.1.5/node_modules/@tanstack/react-router/dist/esm/utils.js
-var useLayoutEffect$1 = typeof window !== "undefined" ? import_react.useLayoutEffect : import_react.useEffect;
-function usePrevious$1(value) {
+var useLayoutEffect = typeof window !== "undefined" ? import_react.useLayoutEffect : import_react.useEffect;
+function usePrevious(value) {
 	const ref = import_react.useRef({
 		value,
 		prev: null
@@ -44776,7 +51679,6 @@ function useForwardedRef(ref) {
 }
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@tanstack+react-router@1.131.50_react-dom@19.1.5_react@19.1.5__react@19.1.5/node_modules/@tanstack/react-router/dist/esm/link.js
-var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom(), 1);
 function useLinkProps(options, forwardedRef) {
 	const router = useRouter();
 	const [isTransitioning, setIsTransitioning] = import_react.useState(false);
@@ -44827,7 +51729,7 @@ function useLinkProps(options, forwardedRef) {
 			if (!(currentPathSplit.startsWith(nextPathSplit) && (currentPathSplit.length === nextPathSplit.length || currentPathSplit[nextPathSplit.length] === "/"))) return false;
 		}
 		if ((activeOptions == null ? void 0 : activeOptions.includeSearch) ?? true) {
-			if (!deepEqual$1(s.location.search, next.search, {
+			if (!deepEqual(s.location.search, next.search, {
 				partial: !(activeOptions == null ? void 0 : activeOptions.exact),
 				ignoreUndefined: !(activeOptions == null ? void 0 : activeOptions.explicitUndefined)
 			})) return false;
@@ -45201,11 +52103,11 @@ function Transitioner() {
 		}),
 		structuralSharing: true
 	});
-	const previousIsLoading = usePrevious$1(isLoading);
+	const previousIsLoading = usePrevious(isLoading);
 	const isAnyPending = isLoading || isTransitioning || hasPendingMatches;
-	const previousIsAnyPending = usePrevious$1(isAnyPending);
+	const previousIsAnyPending = usePrevious(isAnyPending);
 	const isPagePending = isLoading || hasPendingMatches;
-	const previousIsPagePending = usePrevious$1(isPagePending);
+	const previousIsPagePending = usePrevious(isPagePending);
 	router.startTransition = (fn) => {
 		setIsTransitioning(true);
 		import_react.startTransition(() => {
@@ -45231,7 +52133,7 @@ function Transitioner() {
 			unsub();
 		};
 	}, [router, router.history]);
-	useLayoutEffect$1(() => {
+	useLayoutEffect(() => {
 		if (typeof window !== "undefined" && router.ssr || mountLoadForRouter.current.router === router && mountLoadForRouter.current.mounted) return;
 		mountLoadForRouter.current = {
 			router,
@@ -45246,7 +52148,7 @@ function Transitioner() {
 		};
 		tryLoad();
 	}, [router]);
-	useLayoutEffect$1(() => {
+	useLayoutEffect(() => {
 		if (previousIsLoading && !isLoading) router.emit({
 			type: "onLoad",
 			...getLocationChangeInfo(router.state)
@@ -45256,7 +52158,7 @@ function Transitioner() {
 		router,
 		isLoading
 	]);
-	useLayoutEffect$1(() => {
+	useLayoutEffect(() => {
 		if (previousIsPagePending && !isPagePending) router.emit({
 			type: "onBeforeRouteMount",
 			...getLocationChangeInfo(router.state)
@@ -45266,7 +52168,7 @@ function Transitioner() {
 		previousIsPagePending,
 		router
 	]);
-	useLayoutEffect$1(() => {
+	useLayoutEffect(() => {
 		if (previousIsAnyPending && !isAnyPending) {
 			router.emit({
 				type: "onResolved",
@@ -45650,16 +52552,16 @@ function Layout({ children }) {
 				className: "sticky top-0 z-40 bg-secondary text-secondary-foreground",
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6",
+						className: "mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6 md:py-4",
 						children: [
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
 								to: "/dashboard",
 								"data-ocid": "header.home_link",
 								className: "flex min-w-0 items-center gap-3",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, { className: "h-10 w-10" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, { className: "h-14 w-14 md:h-[72px] md:w-[72px]" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 									className: "min-w-0",
 									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "block font-display text-xl font-bold uppercase leading-none tracking-wide",
+										className: "block font-display text-xl font-bold uppercase leading-none tracking-wide md:text-2xl",
 										children: t("app.name")
 									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 										className: "mt-0.5 block truncate text-xs text-white/70",
@@ -45734,683 +52636,6 @@ function Layout({ children }) {
 		]
 	});
 }
-typeof window !== "undefined" && window.document && window.document.createElement;
-function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
-	return function handleEvent(event) {
-		originalEventHandler?.(event);
-		if (checkForDefaultPrevented === false || !event.defaultPrevented) return ourEventHandler?.(event);
-	};
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-context@1.1.2_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-context/dist/index.mjs
-function createContext2(rootComponentName, defaultContext) {
-	const Context = import_react.createContext(defaultContext);
-	const Provider = (props) => {
-		const { children, ...context } = props;
-		const value = import_react.useMemo(() => context, Object.values(context));
-		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Context.Provider, {
-			value,
-			children
-		});
-	};
-	Provider.displayName = rootComponentName + "Provider";
-	function useContext2(consumerName) {
-		const context = import_react.useContext(Context);
-		if (context) return context;
-		if (defaultContext !== void 0) return defaultContext;
-		throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
-	}
-	return [Provider, useContext2];
-}
-function createContextScope(scopeName, createContextScopeDeps = []) {
-	let defaultContexts = [];
-	function createContext3(rootComponentName, defaultContext) {
-		const BaseContext = import_react.createContext(defaultContext);
-		const index = defaultContexts.length;
-		defaultContexts = [...defaultContexts, defaultContext];
-		const Provider = (props) => {
-			const { scope, children, ...context } = props;
-			const Context = scope?.[scopeName]?.[index] || BaseContext;
-			const value = import_react.useMemo(() => context, Object.values(context));
-			return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Context.Provider, {
-				value,
-				children
-			});
-		};
-		Provider.displayName = rootComponentName + "Provider";
-		function useContext2(consumerName, scope) {
-			const Context = scope?.[scopeName]?.[index] || BaseContext;
-			const context = import_react.useContext(Context);
-			if (context) return context;
-			if (defaultContext !== void 0) return defaultContext;
-			throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
-		}
-		return [Provider, useContext2];
-	}
-	const createScope = () => {
-		const scopeContexts = defaultContexts.map((defaultContext) => {
-			return import_react.createContext(defaultContext);
-		});
-		return function useScope(scope) {
-			const contexts = scope?.[scopeName] || scopeContexts;
-			return import_react.useMemo(() => ({ [`__scope${scopeName}`]: {
-				...scope,
-				[scopeName]: contexts
-			} }), [scope, contexts]);
-		};
-	};
-	createScope.scopeName = scopeName;
-	return [createContext3, composeContextScopes(createScope, ...createContextScopeDeps)];
-}
-function composeContextScopes(...scopes) {
-	const baseScope = scopes[0];
-	if (scopes.length === 1) return baseScope;
-	const createScope = () => {
-		const scopeHooks = scopes.map((createScope2) => ({
-			useScope: createScope2(),
-			scopeName: createScope2.scopeName
-		}));
-		return function useComposedScopes(overrideScopes) {
-			const nextScopes = scopeHooks.reduce((nextScopes2, { useScope, scopeName }) => {
-				const currentScope = useScope(overrideScopes)[`__scope${scopeName}`];
-				return {
-					...nextScopes2,
-					...currentScope
-				};
-			}, {});
-			return import_react.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
-		};
-	};
-	createScope.scopeName = baseScope.scopeName;
-	return createScope;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-layout-effect@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-layout-effect/dist/index.mjs
-var useLayoutEffect2 = globalThis?.document ? import_react.useLayoutEffect : () => {};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-id@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-id/dist/index.mjs
-var useReactId = import_react[" useId ".trim().toString()] || (() => void 0);
-var count$1 = 0;
-function useId(deterministicId) {
-	const [id, setId] = import_react.useState(useReactId());
-	useLayoutEffect2(() => {
-		if (!deterministicId) setId((reactId) => reactId ?? String(count$1++));
-	}, [deterministicId]);
-	return deterministicId || (id ? `radix-${id}` : "");
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-controllable-state@1.2.2_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-controllable-state/dist/index.mjs
-var useInsertionEffect = import_react[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
-function useControllableState({ prop, defaultProp, onChange = () => {}, caller }) {
-	const [uncontrolledProp, setUncontrolledProp, onChangeRef] = useUncontrolledState({
-		defaultProp,
-		onChange
-	});
-	const isControlled = prop !== void 0;
-	const value = isControlled ? prop : uncontrolledProp;
-	{
-		const isControlledRef = import_react.useRef(prop !== void 0);
-		import_react.useEffect(() => {
-			const wasControlled = isControlledRef.current;
-			if (wasControlled !== isControlled) console.warn(`${caller} is changing from ${wasControlled ? "controlled" : "uncontrolled"} to ${isControlled ? "controlled" : "uncontrolled"}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`);
-			isControlledRef.current = isControlled;
-		}, [isControlled, caller]);
-	}
-	return [value, import_react.useCallback((nextValue) => {
-		if (isControlled) {
-			const value2 = isFunction$1(nextValue) ? nextValue(prop) : nextValue;
-			if (value2 !== prop) onChangeRef.current?.(value2);
-		} else setUncontrolledProp(nextValue);
-	}, [
-		isControlled,
-		prop,
-		setUncontrolledProp,
-		onChangeRef
-	])];
-}
-function useUncontrolledState({ defaultProp, onChange }) {
-	const [value, setValue] = import_react.useState(defaultProp);
-	const prevValueRef = import_react.useRef(value);
-	const onChangeRef = import_react.useRef(onChange);
-	useInsertionEffect(() => {
-		onChangeRef.current = onChange;
-	}, [onChange]);
-	import_react.useEffect(() => {
-		if (prevValueRef.current !== value) {
-			onChangeRef.current?.(value);
-			prevValueRef.current = value;
-		}
-	}, [value, prevValueRef]);
-	return [
-		value,
-		setValue,
-		onChangeRef
-	];
-}
-function isFunction$1(value) {
-	return typeof value === "function";
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-slot@1.2.3_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-slot/dist/index.mjs
-// @__NO_SIDE_EFFECTS__
-function createSlot(ownerName) {
-	const SlotClone = /* @__PURE__ */ createSlotClone(ownerName);
-	const Slot2 = import_react.forwardRef((props, forwardedRef) => {
-		const { children, ...slotProps } = props;
-		const childrenArray = import_react.Children.toArray(children);
-		const slottable = childrenArray.find(isSlottable);
-		if (slottable) {
-			const newElement = slottable.props.children;
-			const newChildren = childrenArray.map((child) => {
-				if (child === slottable) {
-					if (import_react.Children.count(newElement) > 1) return import_react.Children.only(null);
-					return import_react.isValidElement(newElement) ? newElement.props.children : null;
-				} else return child;
-			});
-			return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlotClone, {
-				...slotProps,
-				ref: forwardedRef,
-				children: import_react.isValidElement(newElement) ? import_react.cloneElement(newElement, void 0, newChildren) : null
-			});
-		}
-		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlotClone, {
-			...slotProps,
-			ref: forwardedRef,
-			children
-		});
-	});
-	Slot2.displayName = `${ownerName}.Slot`;
-	return Slot2;
-}
-// @__NO_SIDE_EFFECTS__
-function createSlotClone(ownerName) {
-	const SlotClone = import_react.forwardRef((props, forwardedRef) => {
-		const { children, ...slotProps } = props;
-		if (import_react.isValidElement(children)) {
-			const childrenRef = getElementRef$1(children);
-			const props2 = mergeProps(slotProps, children.props);
-			if (children.type !== import_react.Fragment) props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
-			return import_react.cloneElement(children, props2);
-		}
-		return import_react.Children.count(children) > 1 ? import_react.Children.only(null) : null;
-	});
-	SlotClone.displayName = `${ownerName}.SlotClone`;
-	return SlotClone;
-}
-var SLOTTABLE_IDENTIFIER = Symbol("radix.slottable");
-function isSlottable(child) {
-	return import_react.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
-}
-function mergeProps(slotProps, childProps) {
-	const overrideProps = { ...childProps };
-	for (const propName in childProps) {
-		const slotPropValue = slotProps[propName];
-		const childPropValue = childProps[propName];
-		if (/^on[A-Z]/.test(propName)) {
-			if (slotPropValue && childPropValue) overrideProps[propName] = (...args) => {
-				const result = childPropValue(...args);
-				slotPropValue(...args);
-				return result;
-			};
-			else if (slotPropValue) overrideProps[propName] = slotPropValue;
-		} else if (propName === "style") overrideProps[propName] = {
-			...slotPropValue,
-			...childPropValue
-		};
-		else if (propName === "className") overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
-	}
-	return {
-		...slotProps,
-		...overrideProps
-	};
-}
-function getElementRef$1(element) {
-	let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
-	let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-	if (mayWarn) return element.ref;
-	getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
-	mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-	if (mayWarn) return element.props.ref;
-	return element.props.ref || element.ref;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-primitive@2.1.3_@types+react-dom@19.1.11_@types+react@19.1.17__@types+r_309699a331ceb1f69dcb31d3df00e5e5/node_modules/@radix-ui/react-primitive/dist/index.mjs
-var Primitive$1 = [
-	"a",
-	"button",
-	"div",
-	"form",
-	"h2",
-	"h3",
-	"img",
-	"input",
-	"label",
-	"li",
-	"nav",
-	"ol",
-	"p",
-	"select",
-	"span",
-	"svg",
-	"ul"
-].reduce((primitive, node) => {
-	const Slot = /* @__PURE__ */ createSlot(`Primitive.${node}`);
-	const Node = import_react.forwardRef((props, forwardedRef) => {
-		const { asChild, ...primitiveProps } = props;
-		const Comp = asChild ? Slot : node;
-		if (typeof window !== "undefined") window[Symbol.for("radix-ui")] = true;
-		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Comp, {
-			...primitiveProps,
-			ref: forwardedRef
-		});
-	});
-	Node.displayName = `Primitive.${node}`;
-	return {
-		...primitive,
-		[node]: Node
-	};
-}, {});
-function dispatchDiscreteCustomEvent(target, event) {
-	if (target) import_react_dom.flushSync(() => target.dispatchEvent(event));
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-callback-ref@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-callback-ref/dist/index.mjs
-function useCallbackRef$1(callback) {
-	const callbackRef = import_react.useRef(callback);
-	import_react.useEffect(() => {
-		callbackRef.current = callback;
-	});
-	return import_react.useMemo(() => (...args) => callbackRef.current?.(...args), []);
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-escape-keydown@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-escape-keydown/dist/index.mjs
-function useEscapeKeydown(onEscapeKeyDownProp, ownerDocument = globalThis?.document) {
-	const onEscapeKeyDown = useCallbackRef$1(onEscapeKeyDownProp);
-	import_react.useEffect(() => {
-		const handleKeyDown = (event) => {
-			if (event.key === "Escape") onEscapeKeyDown(event);
-		};
-		ownerDocument.addEventListener("keydown", handleKeyDown, { capture: true });
-		return () => ownerDocument.removeEventListener("keydown", handleKeyDown, { capture: true });
-	}, [onEscapeKeyDown, ownerDocument]);
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-dismissable-layer@1.1.11_@types+react-dom@19.1.11_@types+react@19.1.17__04759484545efd16289eb59f8087867a/node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs
-var DISMISSABLE_LAYER_NAME = "DismissableLayer";
-var CONTEXT_UPDATE = "dismissableLayer.update";
-var POINTER_DOWN_OUTSIDE = "dismissableLayer.pointerDownOutside";
-var FOCUS_OUTSIDE = "dismissableLayer.focusOutside";
-var originalBodyPointerEvents;
-var DismissableLayerContext = import_react.createContext({
-	layers: /* @__PURE__ */ new Set(),
-	layersWithOutsidePointerEventsDisabled: /* @__PURE__ */ new Set(),
-	branches: /* @__PURE__ */ new Set()
-});
-var DismissableLayer = import_react.forwardRef((props, forwardedRef) => {
-	const { disableOutsidePointerEvents = false, onEscapeKeyDown, onPointerDownOutside, onFocusOutside, onInteractOutside, onDismiss, ...layerProps } = props;
-	const context = import_react.useContext(DismissableLayerContext);
-	const [node, setNode] = import_react.useState(null);
-	const ownerDocument = node?.ownerDocument ?? globalThis?.document;
-	const [, force] = import_react.useState({});
-	const composedRefs = useComposedRefs(forwardedRef, (node2) => setNode(node2));
-	const layers = Array.from(context.layers);
-	const [highestLayerWithOutsidePointerEventsDisabled] = [...context.layersWithOutsidePointerEventsDisabled].slice(-1);
-	const highestLayerWithOutsidePointerEventsDisabledIndex = layers.indexOf(highestLayerWithOutsidePointerEventsDisabled);
-	const index = node ? layers.indexOf(node) : -1;
-	const isBodyPointerEventsDisabled = context.layersWithOutsidePointerEventsDisabled.size > 0;
-	const isPointerEventsEnabled = index >= highestLayerWithOutsidePointerEventsDisabledIndex;
-	const pointerDownOutside = usePointerDownOutside((event) => {
-		const target = event.target;
-		const isPointerDownOnBranch = [...context.branches].some((branch) => branch.contains(target));
-		if (!isPointerEventsEnabled || isPointerDownOnBranch) return;
-		onPointerDownOutside?.(event);
-		onInteractOutside?.(event);
-		if (!event.defaultPrevented) onDismiss?.();
-	}, ownerDocument);
-	const focusOutside = useFocusOutside((event) => {
-		const target = event.target;
-		if ([...context.branches].some((branch) => branch.contains(target))) return;
-		onFocusOutside?.(event);
-		onInteractOutside?.(event);
-		if (!event.defaultPrevented) onDismiss?.();
-	}, ownerDocument);
-	useEscapeKeydown((event) => {
-		if (!(index === context.layers.size - 1)) return;
-		onEscapeKeyDown?.(event);
-		if (!event.defaultPrevented && onDismiss) {
-			event.preventDefault();
-			onDismiss();
-		}
-	}, ownerDocument);
-	import_react.useEffect(() => {
-		if (!node) return;
-		if (disableOutsidePointerEvents) {
-			if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
-				originalBodyPointerEvents = ownerDocument.body.style.pointerEvents;
-				ownerDocument.body.style.pointerEvents = "none";
-			}
-			context.layersWithOutsidePointerEventsDisabled.add(node);
-		}
-		context.layers.add(node);
-		dispatchUpdate();
-		return () => {
-			if (disableOutsidePointerEvents && context.layersWithOutsidePointerEventsDisabled.size === 1) ownerDocument.body.style.pointerEvents = originalBodyPointerEvents;
-		};
-	}, [
-		node,
-		ownerDocument,
-		disableOutsidePointerEvents,
-		context
-	]);
-	import_react.useEffect(() => {
-		return () => {
-			if (!node) return;
-			context.layers.delete(node);
-			context.layersWithOutsidePointerEventsDisabled.delete(node);
-			dispatchUpdate();
-		};
-	}, [node, context]);
-	import_react.useEffect(() => {
-		const handleUpdate = () => force({});
-		document.addEventListener(CONTEXT_UPDATE, handleUpdate);
-		return () => document.removeEventListener(CONTEXT_UPDATE, handleUpdate);
-	}, []);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-		...layerProps,
-		ref: composedRefs,
-		style: {
-			pointerEvents: isBodyPointerEventsDisabled ? isPointerEventsEnabled ? "auto" : "none" : void 0,
-			...props.style
-		},
-		onFocusCapture: composeEventHandlers(props.onFocusCapture, focusOutside.onFocusCapture),
-		onBlurCapture: composeEventHandlers(props.onBlurCapture, focusOutside.onBlurCapture),
-		onPointerDownCapture: composeEventHandlers(props.onPointerDownCapture, pointerDownOutside.onPointerDownCapture)
-	});
-});
-DismissableLayer.displayName = DISMISSABLE_LAYER_NAME;
-var BRANCH_NAME = "DismissableLayerBranch";
-var DismissableLayerBranch = import_react.forwardRef((props, forwardedRef) => {
-	const context = import_react.useContext(DismissableLayerContext);
-	const ref = import_react.useRef(null);
-	const composedRefs = useComposedRefs(forwardedRef, ref);
-	import_react.useEffect(() => {
-		const node = ref.current;
-		if (node) {
-			context.branches.add(node);
-			return () => {
-				context.branches.delete(node);
-			};
-		}
-	}, [context.branches]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-		...props,
-		ref: composedRefs
-	});
-});
-DismissableLayerBranch.displayName = BRANCH_NAME;
-function usePointerDownOutside(onPointerDownOutside, ownerDocument = globalThis?.document) {
-	const handlePointerDownOutside = useCallbackRef$1(onPointerDownOutside);
-	const isPointerInsideReactTreeRef = import_react.useRef(false);
-	const handleClickRef = import_react.useRef(() => {});
-	import_react.useEffect(() => {
-		const handlePointerDown = (event) => {
-			if (event.target && !isPointerInsideReactTreeRef.current) {
-				let handleAndDispatchPointerDownOutsideEvent2 = function() {
-					handleAndDispatchCustomEvent(POINTER_DOWN_OUTSIDE, handlePointerDownOutside, eventDetail, { discrete: true });
-				};
-				const eventDetail = { originalEvent: event };
-				if (event.pointerType === "touch") {
-					ownerDocument.removeEventListener("click", handleClickRef.current);
-					handleClickRef.current = handleAndDispatchPointerDownOutsideEvent2;
-					ownerDocument.addEventListener("click", handleClickRef.current, { once: true });
-				} else handleAndDispatchPointerDownOutsideEvent2();
-			} else ownerDocument.removeEventListener("click", handleClickRef.current);
-			isPointerInsideReactTreeRef.current = false;
-		};
-		const timerId = window.setTimeout(() => {
-			ownerDocument.addEventListener("pointerdown", handlePointerDown);
-		}, 0);
-		return () => {
-			window.clearTimeout(timerId);
-			ownerDocument.removeEventListener("pointerdown", handlePointerDown);
-			ownerDocument.removeEventListener("click", handleClickRef.current);
-		};
-	}, [ownerDocument, handlePointerDownOutside]);
-	return { onPointerDownCapture: () => isPointerInsideReactTreeRef.current = true };
-}
-function useFocusOutside(onFocusOutside, ownerDocument = globalThis?.document) {
-	const handleFocusOutside = useCallbackRef$1(onFocusOutside);
-	const isFocusInsideReactTreeRef = import_react.useRef(false);
-	import_react.useEffect(() => {
-		const handleFocus = (event) => {
-			if (event.target && !isFocusInsideReactTreeRef.current) handleAndDispatchCustomEvent(FOCUS_OUTSIDE, handleFocusOutside, { originalEvent: event }, { discrete: false });
-		};
-		ownerDocument.addEventListener("focusin", handleFocus);
-		return () => ownerDocument.removeEventListener("focusin", handleFocus);
-	}, [ownerDocument, handleFocusOutside]);
-	return {
-		onFocusCapture: () => isFocusInsideReactTreeRef.current = true,
-		onBlurCapture: () => isFocusInsideReactTreeRef.current = false
-	};
-}
-function dispatchUpdate() {
-	const event = new CustomEvent(CONTEXT_UPDATE);
-	document.dispatchEvent(event);
-}
-function handleAndDispatchCustomEvent(name, handler, detail, { discrete }) {
-	const target = detail.originalEvent.target;
-	const event = new CustomEvent(name, {
-		bubbles: false,
-		cancelable: true,
-		detail
-	});
-	if (handler) target.addEventListener(name, handler, { once: true });
-	if (discrete) dispatchDiscreteCustomEvent(target, event);
-	else target.dispatchEvent(event);
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-focus-scope@1.1.7_@types+react-dom@19.1.11_@types+react@19.1.17__@types_743eb681fa5947458d78d51e929a6f1d/node_modules/@radix-ui/react-focus-scope/dist/index.mjs
-var AUTOFOCUS_ON_MOUNT = "focusScope.autoFocusOnMount";
-var AUTOFOCUS_ON_UNMOUNT = "focusScope.autoFocusOnUnmount";
-var EVENT_OPTIONS$1 = {
-	bubbles: false,
-	cancelable: true
-};
-var FOCUS_SCOPE_NAME = "FocusScope";
-var FocusScope = import_react.forwardRef((props, forwardedRef) => {
-	const { loop = false, trapped = false, onMountAutoFocus: onMountAutoFocusProp, onUnmountAutoFocus: onUnmountAutoFocusProp, ...scopeProps } = props;
-	const [container, setContainer] = import_react.useState(null);
-	const onMountAutoFocus = useCallbackRef$1(onMountAutoFocusProp);
-	const onUnmountAutoFocus = useCallbackRef$1(onUnmountAutoFocusProp);
-	const lastFocusedElementRef = import_react.useRef(null);
-	const composedRefs = useComposedRefs(forwardedRef, (node) => setContainer(node));
-	const focusScope = import_react.useRef({
-		paused: false,
-		pause() {
-			this.paused = true;
-		},
-		resume() {
-			this.paused = false;
-		}
-	}).current;
-	import_react.useEffect(() => {
-		if (trapped) {
-			let handleFocusIn2 = function(event) {
-				if (focusScope.paused || !container) return;
-				const target = event.target;
-				if (container.contains(target)) lastFocusedElementRef.current = target;
-				else focus(lastFocusedElementRef.current, { select: true });
-			}, handleFocusOut2 = function(event) {
-				if (focusScope.paused || !container) return;
-				const relatedTarget = event.relatedTarget;
-				if (relatedTarget === null) return;
-				if (!container.contains(relatedTarget)) focus(lastFocusedElementRef.current, { select: true });
-			}, handleMutations2 = function(mutations) {
-				if (document.activeElement !== document.body) return;
-				for (const mutation of mutations) if (mutation.removedNodes.length > 0) focus(container);
-			};
-			document.addEventListener("focusin", handleFocusIn2);
-			document.addEventListener("focusout", handleFocusOut2);
-			const mutationObserver = new MutationObserver(handleMutations2);
-			if (container) mutationObserver.observe(container, {
-				childList: true,
-				subtree: true
-			});
-			return () => {
-				document.removeEventListener("focusin", handleFocusIn2);
-				document.removeEventListener("focusout", handleFocusOut2);
-				mutationObserver.disconnect();
-			};
-		}
-	}, [
-		trapped,
-		container,
-		focusScope.paused
-	]);
-	import_react.useEffect(() => {
-		if (container) {
-			focusScopesStack.add(focusScope);
-			const previouslyFocusedElement = document.activeElement;
-			if (!container.contains(previouslyFocusedElement)) {
-				const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS$1);
-				container.addEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
-				container.dispatchEvent(mountEvent);
-				if (!mountEvent.defaultPrevented) {
-					focusFirst$1(removeLinks(getTabbableCandidates(container)), { select: true });
-					if (document.activeElement === previouslyFocusedElement) focus(container);
-				}
-			}
-			return () => {
-				container.removeEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
-				setTimeout(() => {
-					const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS$1);
-					container.addEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
-					container.dispatchEvent(unmountEvent);
-					if (!unmountEvent.defaultPrevented) focus(previouslyFocusedElement ?? document.body, { select: true });
-					container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
-					focusScopesStack.remove(focusScope);
-				}, 0);
-			};
-		}
-	}, [
-		container,
-		onMountAutoFocus,
-		onUnmountAutoFocus,
-		focusScope
-	]);
-	const handleKeyDown = import_react.useCallback((event) => {
-		if (!loop && !trapped) return;
-		if (focusScope.paused) return;
-		const isTabKey = event.key === "Tab" && !event.altKey && !event.ctrlKey && !event.metaKey;
-		const focusedElement = document.activeElement;
-		if (isTabKey && focusedElement) {
-			const container2 = event.currentTarget;
-			const [first, last] = getTabbableEdges(container2);
-			if (!(first && last)) {
-				if (focusedElement === container2) event.preventDefault();
-			} else if (!event.shiftKey && focusedElement === last) {
-				event.preventDefault();
-				if (loop) focus(first, { select: true });
-			} else if (event.shiftKey && focusedElement === first) {
-				event.preventDefault();
-				if (loop) focus(last, { select: true });
-			}
-		}
-	}, [
-		loop,
-		trapped,
-		focusScope.paused
-	]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-		tabIndex: -1,
-		...scopeProps,
-		ref: composedRefs,
-		onKeyDown: handleKeyDown
-	});
-});
-FocusScope.displayName = FOCUS_SCOPE_NAME;
-function focusFirst$1(candidates, { select = false } = {}) {
-	const previouslyFocusedElement = document.activeElement;
-	for (const candidate of candidates) {
-		focus(candidate, { select });
-		if (document.activeElement !== previouslyFocusedElement) return;
-	}
-}
-function getTabbableEdges(container) {
-	const candidates = getTabbableCandidates(container);
-	return [findVisible(candidates, container), findVisible(candidates.reverse(), container)];
-}
-function getTabbableCandidates(container) {
-	const nodes = [];
-	const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, { acceptNode: (node) => {
-		const isHiddenInput = node.tagName === "INPUT" && node.type === "hidden";
-		if (node.disabled || node.hidden || isHiddenInput) return NodeFilter.FILTER_SKIP;
-		return node.tabIndex >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-	} });
-	while (walker.nextNode()) nodes.push(walker.currentNode);
-	return nodes;
-}
-function findVisible(elements, container) {
-	for (const element of elements) if (!isHidden(element, { upTo: container })) return element;
-}
-function isHidden(node, { upTo }) {
-	if (getComputedStyle(node).visibility === "hidden") return true;
-	while (node) {
-		if (upTo !== void 0 && node === upTo) return false;
-		if (getComputedStyle(node).display === "none") return true;
-		node = node.parentElement;
-	}
-	return false;
-}
-function isSelectableInput(element) {
-	return element instanceof HTMLInputElement && "select" in element;
-}
-function focus(element, { select = false } = {}) {
-	if (element && element.focus) {
-		const previouslyFocusedElement = document.activeElement;
-		element.focus({ preventScroll: true });
-		if (element !== previouslyFocusedElement && isSelectableInput(element) && select) element.select();
-	}
-}
-var focusScopesStack = createFocusScopesStack();
-function createFocusScopesStack() {
-	let stack = [];
-	return {
-		add(focusScope) {
-			const activeFocusScope = stack[0];
-			if (focusScope !== activeFocusScope) activeFocusScope?.pause();
-			stack = arrayRemove(stack, focusScope);
-			stack.unshift(focusScope);
-		},
-		remove(focusScope) {
-			stack = arrayRemove(stack, focusScope);
-			stack[0]?.resume();
-		}
-	};
-}
-function arrayRemove(array, item) {
-	const updatedArray = [...array];
-	const index = updatedArray.indexOf(item);
-	if (index !== -1) updatedArray.splice(index, 1);
-	return updatedArray;
-}
-function removeLinks(items) {
-	return items.filter((item) => item.tagName !== "A");
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-portal@1.1.9_@types+react-dom@19.1.11_@types+react@19.1.17__@types+reac_00d6c26182c5d909cf1a6f84c4ed5dcf/node_modules/@radix-ui/react-portal/dist/index.mjs
-var PORTAL_NAME$2 = "Portal";
-var Portal$2 = import_react.forwardRef((props, forwardedRef) => {
-	const { container: containerProp, ...portalProps } = props;
-	const [mounted, setMounted] = import_react.useState(false);
-	useLayoutEffect2(() => setMounted(true), []);
-	const container = containerProp || mounted && globalThis?.document?.body;
-	return container ? import_react_dom.createPortal(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-		...portalProps,
-		ref: forwardedRef
-	}), container) : null;
-});
-Portal$2.displayName = PORTAL_NAME$2;
 //#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-presence@1.1.5_@types+react-dom@19.1.11_@types+react@19.1.17__@types+re_21e2bb85425f53f6c7108cfe0018fd7c/node_modules/@radix-ui/react-presence/dist/index.mjs
 function useStateMachine(initialState, machine) {
@@ -46511,846 +52736,6 @@ function getElementRef(element) {
 	return element.props.ref || element.ref;
 }
 //#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-focus-guards@1.1.3_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-focus-guards/dist/index.mjs
-var count = 0;
-function useFocusGuards() {
-	import_react.useEffect(() => {
-		const edgeGuards = document.querySelectorAll("[data-radix-focus-guard]");
-		document.body.insertAdjacentElement("afterbegin", edgeGuards[0] ?? createFocusGuard());
-		document.body.insertAdjacentElement("beforeend", edgeGuards[1] ?? createFocusGuard());
-		count++;
-		return () => {
-			if (count === 1) document.querySelectorAll("[data-radix-focus-guard]").forEach((node) => node.remove());
-			count--;
-		};
-	}, []);
-}
-function createFocusGuard() {
-	const element = document.createElement("span");
-	element.setAttribute("data-radix-focus-guard", "");
-	element.tabIndex = 0;
-	element.style.outline = "none";
-	element.style.opacity = "0";
-	element.style.position = "fixed";
-	element.style.pointerEvents = "none";
-	return element;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/tslib@2.8.1/node_modules/tslib/tslib.es6.mjs
-var __assign = function() {
-	__assign = Object.assign || function __assign(t) {
-		for (var s, i = 1, n = arguments.length; i < n; i++) {
-			s = arguments[i];
-			for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-		}
-		return t;
-	};
-	return __assign.apply(this, arguments);
-};
-function __rest(s, e) {
-	var t = {};
-	for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) t[p] = s[p];
-	if (s != null && typeof Object.getOwnPropertySymbols === "function") {
-		for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i])) t[p[i]] = s[p[i]];
-	}
-	return t;
-}
-function __spreadArray(to, from, pack) {
-	if (pack || arguments.length === 2) {
-		for (var i = 0, l = from.length, ar; i < l; i++) if (ar || !(i in from)) {
-			if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-			ar[i] = from[i];
-		}
-	}
-	return to.concat(ar || Array.prototype.slice.call(from));
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll-bar/dist/es2015/constants.js
-var zeroRightClassName = "right-scroll-bar-position";
-var fullWidthClassName = "width-before-scroll-bar";
-var noScrollbarsClassName = "with-scroll-bars-hidden";
-/**
-* Name of a CSS variable containing the amount of "hidden" scrollbar
-* ! might be undefined ! use will fallback!
-*/
-var removedBarSizeVariable = "--removed-body-scroll-bar-size";
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.1.17_react@19.1.5/node_modules/use-callback-ref/dist/es2015/assignRef.js
-/**
-* Assigns a value for a given ref, no matter of the ref format
-* @param {RefObject} ref - a callback function or ref object
-* @param value - a new value
-*
-* @see https://github.com/theKashey/use-callback-ref#assignref
-* @example
-* const refObject = useRef();
-* const refFn = (ref) => {....}
-*
-* assignRef(refObject, "refValue");
-* assignRef(refFn, "refValue");
-*/
-function assignRef(ref, value) {
-	if (typeof ref === "function") ref(value);
-	else if (ref) ref.current = value;
-	return ref;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.1.17_react@19.1.5/node_modules/use-callback-ref/dist/es2015/useRef.js
-/**
-* creates a MutableRef with ref change callback
-* @param initialValue - initial ref value
-* @param {Function} callback - a callback to run when value changes
-*
-* @example
-* const ref = useCallbackRef(0, (newValue, oldValue) => console.log(oldValue, '->', newValue);
-* ref.current = 1;
-* // prints 0 -> 1
-*
-* @see https://reactjs.org/docs/hooks-reference.html#useref
-* @see https://github.com/theKashey/use-callback-ref#usecallbackref---to-replace-reactuseref
-* @returns {MutableRefObject}
-*/
-function useCallbackRef(initialValue, callback) {
-	var ref = (0, import_react.useState)(function() {
-		return {
-			value: initialValue,
-			callback,
-			facade: {
-				get current() {
-					return ref.value;
-				},
-				set current(value) {
-					var last = ref.value;
-					if (last !== value) {
-						ref.value = value;
-						ref.callback(value, last);
-					}
-				}
-			}
-		};
-	})[0];
-	ref.callback = callback;
-	return ref.facade;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.1.17_react@19.1.5/node_modules/use-callback-ref/dist/es2015/useMergeRef.js
-var useIsomorphicLayoutEffect = typeof window !== "undefined" ? import_react.useLayoutEffect : import_react.useEffect;
-var currentValues = /* @__PURE__ */ new WeakMap();
-/**
-* Merges two or more refs together providing a single interface to set their value
-* @param {RefObject|Ref} refs
-* @returns {MutableRefObject} - a new ref, which translates all changes to {refs}
-*
-* @see {@link mergeRefs} a version without buit-in memoization
-* @see https://github.com/theKashey/use-callback-ref#usemergerefs
-* @example
-* const Component = React.forwardRef((props, ref) => {
-*   const ownRef = useRef();
-*   const domRef = useMergeRefs([ref, ownRef]); // 👈 merge together
-*   return <div ref={domRef}>...</div>
-* }
-*/
-function useMergeRefs(refs, defaultValue) {
-	var callbackRef = useCallbackRef(defaultValue || null, function(newValue) {
-		return refs.forEach(function(ref) {
-			return assignRef(ref, newValue);
-		});
-	});
-	useIsomorphicLayoutEffect(function() {
-		var oldValue = currentValues.get(callbackRef);
-		if (oldValue) {
-			var prevRefs_1 = new Set(oldValue);
-			var nextRefs_1 = new Set(refs);
-			var current_1 = callbackRef.current;
-			prevRefs_1.forEach(function(ref) {
-				if (!nextRefs_1.has(ref)) assignRef(ref, null);
-			});
-			nextRefs_1.forEach(function(ref) {
-				if (!prevRefs_1.has(ref)) assignRef(ref, current_1);
-			});
-		}
-		currentValues.set(callbackRef, refs);
-	}, [refs]);
-	return callbackRef;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-sidecar@1.1.3_@types+react@19.1.17_react@19.1.5/node_modules/use-sidecar/dist/es2015/medium.js
-function ItoI(a) {
-	return a;
-}
-function innerCreateMedium(defaults, middleware) {
-	if (middleware === void 0) middleware = ItoI;
-	var buffer = [];
-	var assigned = false;
-	return {
-		read: function() {
-			if (assigned) throw new Error("Sidecar: could not `read` from an `assigned` medium. `read` could be used only with `useMedium`.");
-			if (buffer.length) return buffer[buffer.length - 1];
-			return defaults;
-		},
-		useMedium: function(data) {
-			var item = middleware(data, assigned);
-			buffer.push(item);
-			return function() {
-				buffer = buffer.filter(function(x) {
-					return x !== item;
-				});
-			};
-		},
-		assignSyncMedium: function(cb) {
-			assigned = true;
-			while (buffer.length) {
-				var cbs = buffer;
-				buffer = [];
-				cbs.forEach(cb);
-			}
-			buffer = {
-				push: function(x) {
-					return cb(x);
-				},
-				filter: function() {
-					return buffer;
-				}
-			};
-		},
-		assignMedium: function(cb) {
-			assigned = true;
-			var pendingQueue = [];
-			if (buffer.length) {
-				var cbs = buffer;
-				buffer = [];
-				cbs.forEach(cb);
-				pendingQueue = buffer;
-			}
-			var executeQueue = function() {
-				var cbs = pendingQueue;
-				pendingQueue = [];
-				cbs.forEach(cb);
-			};
-			var cycle = function() {
-				return Promise.resolve().then(executeQueue);
-			};
-			cycle();
-			buffer = {
-				push: function(x) {
-					pendingQueue.push(x);
-					cycle();
-				},
-				filter: function(filter) {
-					pendingQueue = pendingQueue.filter(filter);
-					return buffer;
-				}
-			};
-		}
-	};
-}
-function createSidecarMedium(options) {
-	if (options === void 0) options = {};
-	var medium = innerCreateMedium(null);
-	medium.options = __assign({
-		async: true,
-		ssr: false
-	}, options);
-	return medium;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/use-sidecar@1.1.3_@types+react@19.1.17_react@19.1.5/node_modules/use-sidecar/dist/es2015/exports.js
-var SideCar = function(_a) {
-	var sideCar = _a.sideCar, rest = __rest(_a, ["sideCar"]);
-	if (!sideCar) throw new Error("Sidecar: please provide `sideCar` property to import the right car");
-	var Target = sideCar.read();
-	if (!Target) throw new Error("Sidecar medium not found");
-	return import_react.createElement(Target, __assign({}, rest));
-};
-SideCar.isSideCarExport = true;
-function exportSidecar(medium, exported) {
-	medium.useMedium(exported);
-	return SideCar;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/medium.js
-var effectCar = createSidecarMedium();
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/UI.js
-var nothing = function() {};
-/**
-* Removes scrollbar from the page and contain the scroll within the Lock
-*/
-var RemoveScroll = import_react.forwardRef(function(props, parentRef) {
-	var ref = import_react.useRef(null);
-	var _a = import_react.useState({
-		onScrollCapture: nothing,
-		onWheelCapture: nothing,
-		onTouchMoveCapture: nothing
-	}), callbacks = _a[0], setCallbacks = _a[1];
-	var forwardProps = props.forwardProps, children = props.children, className = props.className, removeScrollBar = props.removeScrollBar, enabled = props.enabled, shards = props.shards, sideCar = props.sideCar, noRelative = props.noRelative, noIsolation = props.noIsolation, inert = props.inert, allowPinchZoom = props.allowPinchZoom, _b = props.as, Container = _b === void 0 ? "div" : _b, gapMode = props.gapMode, rest = __rest(props, [
-		"forwardProps",
-		"children",
-		"className",
-		"removeScrollBar",
-		"enabled",
-		"shards",
-		"sideCar",
-		"noRelative",
-		"noIsolation",
-		"inert",
-		"allowPinchZoom",
-		"as",
-		"gapMode"
-	]);
-	var SideCar = sideCar;
-	var containerRef = useMergeRefs([ref, parentRef]);
-	var containerProps = __assign(__assign({}, rest), callbacks);
-	return import_react.createElement(import_react.Fragment, null, enabled && import_react.createElement(SideCar, {
-		sideCar: effectCar,
-		removeScrollBar,
-		shards,
-		noRelative,
-		noIsolation,
-		inert,
-		setCallbacks,
-		allowPinchZoom: !!allowPinchZoom,
-		lockRef: ref,
-		gapMode
-	}), forwardProps ? import_react.cloneElement(import_react.Children.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : import_react.createElement(Container, __assign({}, containerProps, {
-		className,
-		ref: containerRef
-	}), children));
-});
-RemoveScroll.defaultProps = {
-	enabled: true,
-	removeScrollBar: true,
-	inert: false
-};
-RemoveScroll.classNames = {
-	fullWidth: fullWidthClassName,
-	zeroRight: zeroRightClassName
-};
-var getNonce = function() {
-	if (typeof __webpack_nonce__ !== "undefined") return __webpack_nonce__;
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.1.17_react@19.1.5/node_modules/react-style-singleton/dist/es2015/singleton.js
-function makeStyleTag() {
-	if (!document) return null;
-	var tag = document.createElement("style");
-	tag.type = "text/css";
-	var nonce = getNonce();
-	if (nonce) tag.setAttribute("nonce", nonce);
-	return tag;
-}
-function injectStyles(tag, css) {
-	if (tag.styleSheet) tag.styleSheet.cssText = css;
-	else tag.appendChild(document.createTextNode(css));
-}
-function insertStyleTag(tag) {
-	(document.head || document.getElementsByTagName("head")[0]).appendChild(tag);
-}
-var stylesheetSingleton = function() {
-	var counter = 0;
-	var stylesheet = null;
-	return {
-		add: function(style) {
-			if (counter == 0) {
-				if (stylesheet = makeStyleTag()) {
-					injectStyles(stylesheet, style);
-					insertStyleTag(stylesheet);
-				}
-			}
-			counter++;
-		},
-		remove: function() {
-			counter--;
-			if (!counter && stylesheet) {
-				stylesheet.parentNode && stylesheet.parentNode.removeChild(stylesheet);
-				stylesheet = null;
-			}
-		}
-	};
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.1.17_react@19.1.5/node_modules/react-style-singleton/dist/es2015/hook.js
-/**
-* creates a hook to control style singleton
-* @see {@link styleSingleton} for a safer component version
-* @example
-* ```tsx
-* const useStyle = styleHookSingleton();
-* ///
-* useStyle('body { overflow: hidden}');
-*/
-var styleHookSingleton = function() {
-	var sheet = stylesheetSingleton();
-	return function(styles, isDynamic) {
-		import_react.useEffect(function() {
-			sheet.add(styles);
-			return function() {
-				sheet.remove();
-			};
-		}, [styles && isDynamic]);
-	};
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.1.17_react@19.1.5/node_modules/react-style-singleton/dist/es2015/component.js
-/**
-* create a Component to add styles on demand
-* - styles are added when first instance is mounted
-* - styles are removed when the last instance is unmounted
-* - changing styles in runtime does nothing unless dynamic is set. But with multiple components that can lead to the undefined behavior
-*/
-var styleSingleton = function() {
-	var useStyle = styleHookSingleton();
-	var Sheet = function(_a) {
-		var styles = _a.styles, dynamic = _a.dynamic;
-		useStyle(styles, dynamic);
-		return null;
-	};
-	return Sheet;
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll-bar/dist/es2015/utils.js
-var zeroGap = {
-	left: 0,
-	top: 0,
-	right: 0,
-	gap: 0
-};
-var parse = function(x) {
-	return parseInt(x || "", 10) || 0;
-};
-var getOffset = function(gapMode) {
-	var cs = window.getComputedStyle(document.body);
-	var left = cs[gapMode === "padding" ? "paddingLeft" : "marginLeft"];
-	var top = cs[gapMode === "padding" ? "paddingTop" : "marginTop"];
-	var right = cs[gapMode === "padding" ? "paddingRight" : "marginRight"];
-	return [
-		parse(left),
-		parse(top),
-		parse(right)
-	];
-};
-var getGapWidth = function(gapMode) {
-	if (gapMode === void 0) gapMode = "margin";
-	if (typeof window === "undefined") return zeroGap;
-	var offsets = getOffset(gapMode);
-	var documentWidth = document.documentElement.clientWidth;
-	var windowWidth = window.innerWidth;
-	return {
-		left: offsets[0],
-		top: offsets[1],
-		right: offsets[2],
-		gap: Math.max(0, windowWidth - documentWidth + offsets[2] - offsets[0])
-	};
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll-bar/dist/es2015/component.js
-var Style = styleSingleton();
-var lockAttribute = "data-scroll-locked";
-var getStyles = function(_a, allowRelative, gapMode, important) {
-	var left = _a.left, top = _a.top, right = _a.right, gap = _a.gap;
-	if (gapMode === void 0) gapMode = "margin";
-	return "\n  .".concat(noScrollbarsClassName, " {\n   overflow: hidden ").concat(important, ";\n   padding-right: ").concat(gap, "px ").concat(important, ";\n  }\n  body[").concat(lockAttribute, "] {\n    overflow: hidden ").concat(important, ";\n    overscroll-behavior: contain;\n    ").concat([
-		allowRelative && "position: relative ".concat(important, ";"),
-		gapMode === "margin" && "\n    padding-left: ".concat(left, "px;\n    padding-top: ").concat(top, "px;\n    padding-right: ").concat(right, "px;\n    margin-left:0;\n    margin-top:0;\n    margin-right: ").concat(gap, "px ").concat(important, ";\n    "),
-		gapMode === "padding" && "padding-right: ".concat(gap, "px ").concat(important, ";")
-	].filter(Boolean).join(""), "\n  }\n  \n  .").concat(zeroRightClassName, " {\n    right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " {\n    margin-right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(zeroRightClassName, " .").concat(zeroRightClassName, " {\n    right: 0 ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " .").concat(fullWidthClassName, " {\n    margin-right: 0 ").concat(important, ";\n  }\n  \n  body[").concat(lockAttribute, "] {\n    ").concat(removedBarSizeVariable, ": ").concat(gap, "px;\n  }\n");
-};
-var getCurrentUseCounter = function() {
-	var counter = parseInt(document.body.getAttribute("data-scroll-locked") || "0", 10);
-	return isFinite(counter) ? counter : 0;
-};
-var useLockAttribute = function() {
-	import_react.useEffect(function() {
-		document.body.setAttribute(lockAttribute, (getCurrentUseCounter() + 1).toString());
-		return function() {
-			var newCounter = getCurrentUseCounter() - 1;
-			if (newCounter <= 0) document.body.removeAttribute(lockAttribute);
-			else document.body.setAttribute(lockAttribute, newCounter.toString());
-		};
-	}, []);
-};
-/**
-* Removes page scrollbar and blocks page scroll when mounted
-*/
-var RemoveScrollBar = function(_a) {
-	var noRelative = _a.noRelative, noImportant = _a.noImportant, _b = _a.gapMode, gapMode = _b === void 0 ? "margin" : _b;
-	useLockAttribute();
-	var gap = import_react.useMemo(function() {
-		return getGapWidth(gapMode);
-	}, [gapMode]);
-	return import_react.createElement(Style, { styles: getStyles(gap, !noRelative, gapMode, !noImportant ? "!important" : "") });
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/aggresiveCapture.js
-var passiveSupported = false;
-if (typeof window !== "undefined") try {
-	var options = Object.defineProperty({}, "passive", { get: function() {
-		passiveSupported = true;
-		return true;
-	} });
-	window.addEventListener("test", options, options);
-	window.removeEventListener("test", options, options);
-} catch (err) {
-	passiveSupported = false;
-}
-var nonPassive = passiveSupported ? { passive: false } : false;
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/handleScroll.js
-var alwaysContainsScroll = function(node) {
-	return node.tagName === "TEXTAREA";
-};
-var elementCanBeScrolled = function(node, overflow) {
-	if (!(node instanceof Element)) return false;
-	var styles = window.getComputedStyle(node);
-	return styles[overflow] !== "hidden" && !(styles.overflowY === styles.overflowX && !alwaysContainsScroll(node) && styles[overflow] === "visible");
-};
-var elementCouldBeVScrolled = function(node) {
-	return elementCanBeScrolled(node, "overflowY");
-};
-var elementCouldBeHScrolled = function(node) {
-	return elementCanBeScrolled(node, "overflowX");
-};
-var locationCouldBeScrolled = function(axis, node) {
-	var ownerDocument = node.ownerDocument;
-	var current = node;
-	do {
-		if (typeof ShadowRoot !== "undefined" && current instanceof ShadowRoot) current = current.host;
-		if (elementCouldBeScrolled(axis, current)) {
-			var _a = getScrollVariables(axis, current);
-			if (_a[1] > _a[2]) return true;
-		}
-		current = current.parentNode;
-	} while (current && current !== ownerDocument.body);
-	return false;
-};
-var getVScrollVariables = function(_a) {
-	return [
-		_a.scrollTop,
-		_a.scrollHeight,
-		_a.clientHeight
-	];
-};
-var getHScrollVariables = function(_a) {
-	return [
-		_a.scrollLeft,
-		_a.scrollWidth,
-		_a.clientWidth
-	];
-};
-var elementCouldBeScrolled = function(axis, node) {
-	return axis === "v" ? elementCouldBeVScrolled(node) : elementCouldBeHScrolled(node);
-};
-var getScrollVariables = function(axis, node) {
-	return axis === "v" ? getVScrollVariables(node) : getHScrollVariables(node);
-};
-var getDirectionFactor = function(axis, direction) {
-	/**
-	* If the element's direction is rtl (right-to-left), then scrollLeft is 0 when the scrollbar is at its rightmost position,
-	* and then increasingly negative as you scroll towards the end of the content.
-	* @see https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollLeft
-	*/
-	return axis === "h" && direction === "rtl" ? -1 : 1;
-};
-var handleScroll = function(axis, endTarget, event, sourceDelta, noOverscroll) {
-	var directionFactor = getDirectionFactor(axis, window.getComputedStyle(endTarget).direction);
-	var delta = directionFactor * sourceDelta;
-	var target = event.target;
-	var targetInLock = endTarget.contains(target);
-	var shouldCancelScroll = false;
-	var isDeltaPositive = delta > 0;
-	var availableScroll = 0;
-	var availableScrollTop = 0;
-	do {
-		if (!target) break;
-		var _a = getScrollVariables(axis, target), position = _a[0];
-		var elementScroll = _a[1] - _a[2] - directionFactor * position;
-		if (position || elementScroll) {
-			if (elementCouldBeScrolled(axis, target)) {
-				availableScroll += elementScroll;
-				availableScrollTop += position;
-			}
-		}
-		var parent_1 = target.parentNode;
-		target = parent_1 && parent_1.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? parent_1.host : parent_1;
-	} while (!targetInLock && target !== document.body || targetInLock && (endTarget.contains(target) || endTarget === target));
-	if (isDeltaPositive && (noOverscroll && Math.abs(availableScroll) < 1 || !noOverscroll && delta > availableScroll)) shouldCancelScroll = true;
-	else if (!isDeltaPositive && (noOverscroll && Math.abs(availableScrollTop) < 1 || !noOverscroll && -delta > availableScrollTop)) shouldCancelScroll = true;
-	return shouldCancelScroll;
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/SideEffect.js
-var getTouchXY = function(event) {
-	return "changedTouches" in event ? [event.changedTouches[0].clientX, event.changedTouches[0].clientY] : [0, 0];
-};
-var getDeltaXY = function(event) {
-	return [event.deltaX, event.deltaY];
-};
-var extractRef = function(ref) {
-	return ref && "current" in ref ? ref.current : ref;
-};
-var deltaCompare = function(x, y) {
-	return x[0] === y[0] && x[1] === y[1];
-};
-var generateStyle = function(id) {
-	return "\n  .block-interactivity-".concat(id, " {pointer-events: none;}\n  .allow-interactivity-").concat(id, " {pointer-events: all;}\n");
-};
-var idCounter = 0;
-var lockStack = [];
-function RemoveScrollSideCar(props) {
-	var shouldPreventQueue = import_react.useRef([]);
-	var touchStartRef = import_react.useRef([0, 0]);
-	var activeAxis = import_react.useRef();
-	var id = import_react.useState(idCounter++)[0];
-	var Style = import_react.useState(styleSingleton)[0];
-	var lastProps = import_react.useRef(props);
-	import_react.useEffect(function() {
-		lastProps.current = props;
-	}, [props]);
-	import_react.useEffect(function() {
-		if (props.inert) {
-			document.body.classList.add("block-interactivity-".concat(id));
-			var allow_1 = __spreadArray([props.lockRef.current], (props.shards || []).map(extractRef), true).filter(Boolean);
-			allow_1.forEach(function(el) {
-				return el.classList.add("allow-interactivity-".concat(id));
-			});
-			return function() {
-				document.body.classList.remove("block-interactivity-".concat(id));
-				allow_1.forEach(function(el) {
-					return el.classList.remove("allow-interactivity-".concat(id));
-				});
-			};
-		}
-	}, [
-		props.inert,
-		props.lockRef.current,
-		props.shards
-	]);
-	var shouldCancelEvent = import_react.useCallback(function(event, parent) {
-		if ("touches" in event && event.touches.length === 2 || event.type === "wheel" && event.ctrlKey) return !lastProps.current.allowPinchZoom;
-		var touch = getTouchXY(event);
-		var touchStart = touchStartRef.current;
-		var deltaX = "deltaX" in event ? event.deltaX : touchStart[0] - touch[0];
-		var deltaY = "deltaY" in event ? event.deltaY : touchStart[1] - touch[1];
-		var currentAxis;
-		var target = event.target;
-		var moveDirection = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
-		if ("touches" in event && moveDirection === "h" && target.type === "range") return false;
-		var selection = window.getSelection();
-		var anchorNode = selection && selection.anchorNode;
-		if (anchorNode ? anchorNode === target || anchorNode.contains(target) : false) return false;
-		var canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
-		if (!canBeScrolledInMainDirection) return true;
-		if (canBeScrolledInMainDirection) currentAxis = moveDirection;
-		else {
-			currentAxis = moveDirection === "v" ? "h" : "v";
-			canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
-		}
-		if (!canBeScrolledInMainDirection) return false;
-		if (!activeAxis.current && "changedTouches" in event && (deltaX || deltaY)) activeAxis.current = currentAxis;
-		if (!currentAxis) return true;
-		var cancelingAxis = activeAxis.current || currentAxis;
-		return handleScroll(cancelingAxis, parent, event, cancelingAxis === "h" ? deltaX : deltaY, true);
-	}, []);
-	var shouldPrevent = import_react.useCallback(function(_event) {
-		var event = _event;
-		if (!lockStack.length || lockStack[lockStack.length - 1] !== Style) return;
-		var delta = "deltaY" in event ? getDeltaXY(event) : getTouchXY(event);
-		var sourceEvent = shouldPreventQueue.current.filter(function(e) {
-			return e.name === event.type && (e.target === event.target || event.target === e.shadowParent) && deltaCompare(e.delta, delta);
-		})[0];
-		if (sourceEvent && sourceEvent.should) {
-			if (event.cancelable) event.preventDefault();
-			return;
-		}
-		if (!sourceEvent) {
-			var shardNodes = (lastProps.current.shards || []).map(extractRef).filter(Boolean).filter(function(node) {
-				return node.contains(event.target);
-			});
-			if (shardNodes.length > 0 ? shouldCancelEvent(event, shardNodes[0]) : !lastProps.current.noIsolation) {
-				if (event.cancelable) event.preventDefault();
-			}
-		}
-	}, []);
-	var shouldCancel = import_react.useCallback(function(name, delta, target, should) {
-		var event = {
-			name,
-			delta,
-			target,
-			should,
-			shadowParent: getOutermostShadowParent(target)
-		};
-		shouldPreventQueue.current.push(event);
-		setTimeout(function() {
-			shouldPreventQueue.current = shouldPreventQueue.current.filter(function(e) {
-				return e !== event;
-			});
-		}, 1);
-	}, []);
-	var scrollTouchStart = import_react.useCallback(function(event) {
-		touchStartRef.current = getTouchXY(event);
-		activeAxis.current = void 0;
-	}, []);
-	var scrollWheel = import_react.useCallback(function(event) {
-		shouldCancel(event.type, getDeltaXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
-	}, []);
-	var scrollTouchMove = import_react.useCallback(function(event) {
-		shouldCancel(event.type, getTouchXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
-	}, []);
-	import_react.useEffect(function() {
-		lockStack.push(Style);
-		props.setCallbacks({
-			onScrollCapture: scrollWheel,
-			onWheelCapture: scrollWheel,
-			onTouchMoveCapture: scrollTouchMove
-		});
-		document.addEventListener("wheel", shouldPrevent, nonPassive);
-		document.addEventListener("touchmove", shouldPrevent, nonPassive);
-		document.addEventListener("touchstart", scrollTouchStart, nonPassive);
-		return function() {
-			lockStack = lockStack.filter(function(inst) {
-				return inst !== Style;
-			});
-			document.removeEventListener("wheel", shouldPrevent, nonPassive);
-			document.removeEventListener("touchmove", shouldPrevent, nonPassive);
-			document.removeEventListener("touchstart", scrollTouchStart, nonPassive);
-		};
-	}, []);
-	var removeScrollBar = props.removeScrollBar, inert = props.inert;
-	return import_react.createElement(import_react.Fragment, null, inert ? import_react.createElement(Style, { styles: generateStyle(id) }) : null, removeScrollBar ? import_react.createElement(RemoveScrollBar, {
-		noRelative: props.noRelative,
-		gapMode: props.gapMode
-	}) : null);
-}
-function getOutermostShadowParent(node) {
-	var shadowParent = null;
-	while (node !== null) {
-		if (node instanceof ShadowRoot) {
-			shadowParent = node.host;
-			node = node.host;
-		}
-		node = node.parentNode;
-	}
-	return shadowParent;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/sidecar.js
-var sidecar_default = exportSidecar(effectCar, RemoveScrollSideCar);
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.1.17_react@19.1.5/node_modules/react-remove-scroll/dist/es2015/Combination.js
-var ReactRemoveScroll = import_react.forwardRef(function(props, ref) {
-	return import_react.createElement(RemoveScroll, __assign({}, props, {
-		ref,
-		sideCar: sidecar_default
-	}));
-});
-ReactRemoveScroll.classNames = RemoveScroll.classNames;
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/aria-hidden@1.2.6/node_modules/aria-hidden/dist/es2015/index.js
-var getDefaultParent = function(originalTarget) {
-	if (typeof document === "undefined") return null;
-	return (Array.isArray(originalTarget) ? originalTarget[0] : originalTarget).ownerDocument.body;
-};
-var counterMap = /* @__PURE__ */ new WeakMap();
-var uncontrolledNodes = /* @__PURE__ */ new WeakMap();
-var markerMap = {};
-var lockCount = 0;
-var unwrapHost = function(node) {
-	return node && (node.host || unwrapHost(node.parentNode));
-};
-var correctTargets = function(parent, targets) {
-	return targets.map(function(target) {
-		if (parent.contains(target)) return target;
-		var correctedTarget = unwrapHost(target);
-		if (correctedTarget && parent.contains(correctedTarget)) return correctedTarget;
-		console.error("aria-hidden", target, "in not contained inside", parent, ". Doing nothing");
-		return null;
-	}).filter(function(x) {
-		return Boolean(x);
-	});
-};
-/**
-* Marks everything except given node(or nodes) as aria-hidden
-* @param {Element | Element[]} originalTarget - elements to keep on the page
-* @param [parentNode] - top element, defaults to document.body
-* @param {String} [markerName] - a special attribute to mark every node
-* @param {String} [controlAttribute] - html Attribute to control
-* @return {Undo} undo command
-*/
-var applyAttributeToOthers = function(originalTarget, parentNode, markerName, controlAttribute) {
-	var targets = correctTargets(parentNode, Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
-	if (!markerMap[markerName]) markerMap[markerName] = /* @__PURE__ */ new WeakMap();
-	var markerCounter = markerMap[markerName];
-	var hiddenNodes = [];
-	var elementsToKeep = /* @__PURE__ */ new Set();
-	var elementsToStop = new Set(targets);
-	var keep = function(el) {
-		if (!el || elementsToKeep.has(el)) return;
-		elementsToKeep.add(el);
-		keep(el.parentNode);
-	};
-	targets.forEach(keep);
-	var deep = function(parent) {
-		if (!parent || elementsToStop.has(parent)) return;
-		Array.prototype.forEach.call(parent.children, function(node) {
-			if (elementsToKeep.has(node)) deep(node);
-			else try {
-				var attr = node.getAttribute(controlAttribute);
-				var alreadyHidden = attr !== null && attr !== "false";
-				var counterValue = (counterMap.get(node) || 0) + 1;
-				var markerValue = (markerCounter.get(node) || 0) + 1;
-				counterMap.set(node, counterValue);
-				markerCounter.set(node, markerValue);
-				hiddenNodes.push(node);
-				if (counterValue === 1 && alreadyHidden) uncontrolledNodes.set(node, true);
-				if (markerValue === 1) node.setAttribute(markerName, "true");
-				if (!alreadyHidden) node.setAttribute(controlAttribute, "true");
-			} catch (e) {
-				console.error("aria-hidden: cannot operate on ", node, e);
-			}
-		});
-	};
-	deep(parentNode);
-	elementsToKeep.clear();
-	lockCount++;
-	return function() {
-		hiddenNodes.forEach(function(node) {
-			var counterValue = counterMap.get(node) - 1;
-			var markerValue = markerCounter.get(node) - 1;
-			counterMap.set(node, counterValue);
-			markerCounter.set(node, markerValue);
-			if (!counterValue) {
-				if (!uncontrolledNodes.has(node)) node.removeAttribute(controlAttribute);
-				uncontrolledNodes.delete(node);
-			}
-			if (!markerValue) node.removeAttribute(markerName);
-		});
-		lockCount--;
-		if (!lockCount) {
-			counterMap = /* @__PURE__ */ new WeakMap();
-			counterMap = /* @__PURE__ */ new WeakMap();
-			uncontrolledNodes = /* @__PURE__ */ new WeakMap();
-			markerMap = {};
-		}
-	};
-};
-/**
-* Marks everything except given node(or nodes) as aria-hidden
-* @param {Element | Element[]} originalTarget - elements to keep on the page
-* @param [parentNode] - top element, defaults to document.body
-* @param {String} [markerName] - a special attribute to mark every node
-* @return {Undo} undo command
-*/
-var hideOthers = function(originalTarget, parentNode, markerName) {
-	if (markerName === void 0) markerName = "data-aria-hidden";
-	var targets = Array.from(Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
-	var activeParentNode = parentNode || getDefaultParent(originalTarget);
-	if (!activeParentNode) return function() {
-		return null;
-	};
-	targets.push.apply(targets, Array.from(activeParentNode.querySelectorAll("[aria-live], script")));
-	return applyAttributeToOthers(targets, activeParentNode, markerName, "aria-hidden");
-};
-//#endregion
 //#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-dialog@1.1.15_@types+react-dom@19.1.11_@types+react@19.1.17__@types+rea_8cda88dee65e27ab93300d895457061b/node_modules/@radix-ui/react-dialog/dist/index.mjs
 var DIALOG_NAME = "Dialog";
 var [createDialogContext, createDialogScope] = createContextScope(DIALOG_NAME);
@@ -47380,12 +52765,12 @@ var Dialog$1 = (props) => {
 	});
 };
 Dialog$1.displayName = DIALOG_NAME;
-var TRIGGER_NAME$3 = "DialogTrigger";
+var TRIGGER_NAME$2 = "DialogTrigger";
 var DialogTrigger = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeDialog, ...triggerProps } = props;
-	const context = useDialogContext(TRIGGER_NAME$3, __scopeDialog);
+	const context = useDialogContext(TRIGGER_NAME$2, __scopeDialog);
 	const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.button, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
 		type: "button",
 		"aria-haspopup": "dialog",
 		"aria-expanded": context.open,
@@ -47396,12 +52781,12 @@ var DialogTrigger = import_react.forwardRef((props, forwardedRef) => {
 		onClick: composeEventHandlers(props.onClick, context.onOpenToggle)
 	});
 });
-DialogTrigger.displayName = TRIGGER_NAME$3;
-var PORTAL_NAME$1 = "DialogPortal";
-var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME$1, { forceMount: void 0 });
+DialogTrigger.displayName = TRIGGER_NAME$2;
+var PORTAL_NAME = "DialogPortal";
+var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME, { forceMount: void 0 });
 var DialogPortal$1 = (props) => {
 	const { __scopeDialog, forceMount, children, container } = props;
-	const context = useDialogContext(PORTAL_NAME$1, __scopeDialog);
+	const context = useDialogContext(PORTAL_NAME, __scopeDialog);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PortalProvider, {
 		scope: __scopeDialog,
 		forceMount,
@@ -47415,7 +52800,7 @@ var DialogPortal$1 = (props) => {
 		}))
 	});
 };
-DialogPortal$1.displayName = PORTAL_NAME$1;
+DialogPortal$1.displayName = PORTAL_NAME;
 var OVERLAY_NAME = "DialogOverlay";
 var DialogOverlay$1 = import_react.forwardRef((props, forwardedRef) => {
 	const portalContext = usePortalContext(OVERLAY_NAME, props.__scopeDialog);
@@ -47430,15 +52815,15 @@ var DialogOverlay$1 = import_react.forwardRef((props, forwardedRef) => {
 	}) : null;
 });
 DialogOverlay$1.displayName = OVERLAY_NAME;
-var Slot$1 = /* @__PURE__ */ createSlot("DialogOverlay.RemoveScroll");
+var Slot = /* @__PURE__ */ createSlot("DialogOverlay.RemoveScroll");
 var DialogOverlayImpl = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeDialog, ...overlayProps } = props;
 	const context = useDialogContext(OVERLAY_NAME, __scopeDialog);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ReactRemoveScroll, {
-		as: Slot$1,
+		as: Slot,
 		allowPinchZoom: true,
 		shards: [context.contentRef],
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
 			"data-state": getState$2(context.open),
 			...overlayProps,
 			ref: forwardedRef,
@@ -47449,11 +52834,11 @@ var DialogOverlayImpl = import_react.forwardRef((props, forwardedRef) => {
 		})
 	});
 });
-var CONTENT_NAME$3 = "DialogContent";
+var CONTENT_NAME$1 = "DialogContent";
 var DialogContent$1 = import_react.forwardRef((props, forwardedRef) => {
-	const portalContext = usePortalContext(CONTENT_NAME$3, props.__scopeDialog);
+	const portalContext = usePortalContext(CONTENT_NAME$1, props.__scopeDialog);
 	const { forceMount = portalContext.forceMount, ...contentProps } = props;
-	const context = useDialogContext(CONTENT_NAME$3, props.__scopeDialog);
+	const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
 		present: forceMount || context.open,
 		children: context.modal ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogContentModal, {
@@ -47465,9 +52850,9 @@ var DialogContent$1 = import_react.forwardRef((props, forwardedRef) => {
 		})
 	});
 });
-DialogContent$1.displayName = CONTENT_NAME$3;
+DialogContent$1.displayName = CONTENT_NAME$1;
 var DialogContentModal = import_react.forwardRef((props, forwardedRef) => {
-	const context = useDialogContext(CONTENT_NAME$3, props.__scopeDialog);
+	const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
 	const contentRef = import_react.useRef(null);
 	const composedRefs = useComposedRefs(forwardedRef, context.contentRef, contentRef);
 	import_react.useEffect(() => {
@@ -47492,7 +52877,7 @@ var DialogContentModal = import_react.forwardRef((props, forwardedRef) => {
 	});
 });
 var DialogContentNonModal = import_react.forwardRef((props, forwardedRef) => {
-	const context = useDialogContext(CONTENT_NAME$3, props.__scopeDialog);
+	const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
 	const hasInteractedOutsideRef = import_react.useRef(false);
 	const hasPointerDownOutsideRef = import_react.useRef(false);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogContentImpl, {
@@ -47523,7 +52908,7 @@ var DialogContentNonModal = import_react.forwardRef((props, forwardedRef) => {
 });
 var DialogContentImpl = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeDialog, trapFocus, onOpenAutoFocus, onCloseAutoFocus, ...contentProps } = props;
-	const context = useDialogContext(CONTENT_NAME$3, __scopeDialog);
+	const context = useDialogContext(CONTENT_NAME$1, __scopeDialog);
 	const contentRef = import_react.useRef(null);
 	const composedRefs = useComposedRefs(forwardedRef, contentRef);
 	useFocusGuards();
@@ -47552,7 +52937,7 @@ var TITLE_NAME = "DialogTitle";
 var DialogTitle$1 = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeDialog, ...titleProps } = props;
 	const context = useDialogContext(TITLE_NAME, __scopeDialog);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.h2, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.h2, {
 		id: context.titleId,
 		...titleProps,
 		ref: forwardedRef
@@ -47563,7 +52948,7 @@ var DESCRIPTION_NAME = "DialogDescription";
 var DialogDescription$1 = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeDialog, ...descriptionProps } = props;
 	const context = useDialogContext(DESCRIPTION_NAME, __scopeDialog);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.p, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.p, {
 		id: context.descriptionId,
 		...descriptionProps,
 		ref: forwardedRef
@@ -47574,7 +52959,7 @@ var CLOSE_NAME = "DialogClose";
 var DialogClose = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeDialog, ...closeProps } = props;
 	const context = useDialogContext(CLOSE_NAME, __scopeDialog);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.button, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
 		type: "button",
 		...closeProps,
 		ref: forwardedRef,
@@ -47587,7 +52972,7 @@ function getState$2(open) {
 }
 var TITLE_WARNING_NAME = "DialogTitleWarning";
 var [WarningProvider, useWarningContext] = createContext2(TITLE_WARNING_NAME, {
-	contentName: CONTENT_NAME$3,
+	contentName: CONTENT_NAME$1,
 	titleName: TITLE_NAME,
 	docsSlug: "dialog"
 });
@@ -47620,23 +53005,23 @@ var DescriptionWarning = ({ contentRef, descriptionId }) => {
 	]);
 	return null;
 };
-var Root$4 = Dialog$1;
-var Portal$1 = DialogPortal$1;
+var Root$2 = Dialog$1;
+var Portal = DialogPortal$1;
 var Overlay = DialogOverlay$1;
-var Content$2 = DialogContent$1;
+var Content$1 = DialogContent$1;
 var Title = DialogTitle$1;
 var Description = DialogDescription$1;
 var Close = DialogClose;
 //#endregion
 //#region src/components/ui/dialog.tsx
 function Dialog({ ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$4, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$2, {
 		"data-slot": "dialog",
 		...props
 	});
 }
 function DialogPortal({ ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal$1, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal, {
 		"data-slot": "dialog-portal",
 		...props
 	});
@@ -47651,7 +53036,7 @@ function DialogOverlay({ className, ...props }) {
 function DialogContent({ className, children, showCloseButton = true, ...props }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogPortal, {
 		"data-slot": "dialog-portal",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogOverlay, {}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Content$2, {
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogOverlay, {}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Content$1, {
 			"data-slot": "dialog-content",
 			className: cn("bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg", className),
 			...props,
@@ -47695,78 +53080,6 @@ function DialogDescription({ className, ...props }) {
 	});
 }
 //#endregion
-//#region src/components/ui/input.tsx
-function Input({ className, type, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-		type,
-		"data-slot": "input",
-		className: cn("file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm", "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]", "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive", className),
-		...props
-	});
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-primitive@2.1.4_@types+react-dom@19.1.11_@types+react@19.1.17__@types+r_de8c80ca3f5e88f6f5c9b47d921af618/node_modules/@radix-ui/react-primitive/dist/index.mjs
-var Primitive = [
-	"a",
-	"button",
-	"div",
-	"form",
-	"h2",
-	"h3",
-	"img",
-	"input",
-	"label",
-	"li",
-	"nav",
-	"ol",
-	"p",
-	"select",
-	"span",
-	"svg",
-	"ul"
-].reduce((primitive, node) => {
-	const Slot = /* @__PURE__ */ createSlot$1(`Primitive.${node}`);
-	const Node = import_react.forwardRef((props, forwardedRef) => {
-		const { asChild, ...primitiveProps } = props;
-		const Comp = asChild ? Slot : node;
-		if (typeof window !== "undefined") window[Symbol.for("radix-ui")] = true;
-		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Comp, {
-			...primitiveProps,
-			ref: forwardedRef
-		});
-	});
-	Node.displayName = `Primitive.${node}`;
-	return {
-		...primitive,
-		[node]: Node
-	};
-}, {});
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-label@2.1.8_@types+react-dom@19.1.11_@types+react@19.1.17__@types+react_e586ba67b9b1a3f07b8b4aab729b3189/node_modules/@radix-ui/react-label/dist/index.mjs
-var NAME$2 = "Label";
-var Label$1 = import_react.forwardRef((props, forwardedRef) => {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.label, {
-		...props,
-		ref: forwardedRef,
-		onMouseDown: (event) => {
-			if (event.target.closest("button, input, select, textarea")) return;
-			props.onMouseDown?.(event);
-			if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
-		}
-	});
-});
-Label$1.displayName = NAME$2;
-var Root$3 = Label$1;
-//#endregion
-//#region src/components/ui/label.tsx
-function Label({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$3, {
-		"data-slot": "label",
-		className: cn("flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50", className),
-		...props
-	});
-}
-//#endregion
 //#region src/components/PageHeader.tsx
 /** A page title block with an optional action slot. */
 function PageHeader({ title, subtitle, action, className }) {
@@ -47787,54 +53100,6 @@ function PageHeader({ title, subtitle, action, className }) {
 		})]
 	});
 }
-//#endregion
-//#region src/components/admin/FormField.tsx
-/** A labelled form row with an optional hint and error message. */
-function FormField({ label, htmlFor, hint, error, className, children }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: cn("flex flex-col gap-1.5", className),
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
-				htmlFor,
-				className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-				children: label
-			}),
-			children,
-			hint && !error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-xs text-muted-foreground",
-				children: hint
-			}),
-			error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-xs font-medium text-destructive",
-				role: "alert",
-				children: error
-			})
-		]
-	});
-}
-/** A section wrapper with a heading and optional description. */
-function AdminSection({ title, description, action, children, ocid }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
-		"data-ocid": ocid,
-		className: "rounded-lg border border-border bg-card p-5 shadow-subtle",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "min-w-0",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
-					className: "font-display text-lg font-semibold uppercase tracking-wide text-foreground",
-					children: title
-				}), description && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "mt-1 text-sm text-muted-foreground",
-					children: description
-				})]
-			}), action && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				className: "shrink-0",
-				children: action
-			})]
-		}), children]
-	});
-}
 var adminCopy = {
 	en: {
 		storeTitle: "Store info",
@@ -47847,6 +53112,9 @@ var adminCopy = {
 		storeLogoAlt: "Store logo",
 		storeLogoUpload: "Upload logo",
 		storeLogoRemove: "Remove logo",
+		storeSecondaryLogoAlt: "Secondary logo",
+		storeSecondaryLogoUpload: "Upload secondary logo",
+		storeSecondaryLogoRemove: "Remove secondary logo",
 		storeAppName: "App name",
 		storeStoreNumber: "Store number",
 		storeLocationName: "Location",
@@ -47925,8 +53193,9 @@ var adminCopy = {
 		checklistsAddItem: "Add item",
 		checklistsRemoveItem: "Remove item",
 		checklistsItemText: "Item text",
-		checklistsRequiresAlcoholCert: "Alcohol cert",
-		checklistsMinorOnly: "Under 18 only",
+		checklistsRequiresAlcoholCert: "Only alcohol positions",
+		checklistsMinorOnly: "Only under 18",
+		checklistsToggleHint: "Leave both off if the item applies to everyone.",
 		checklistsOrientationUniform: "Orientation uniform",
 		checklistsOrientationUniformHint: "What every roadie brings to orientation.",
 		checklistsPaperwork: "Paperwork",
@@ -47989,6 +53258,9 @@ var adminCopy = {
 		storeLogoAlt: "Logotipo de la tienda",
 		storeLogoUpload: "Subir logotipo",
 		storeLogoRemove: "Quitar logotipo",
+		storeSecondaryLogoAlt: "Logotipo secundario",
+		storeSecondaryLogoUpload: "Subir logotipo secundario",
+		storeSecondaryLogoRemove: "Quitar logotipo secundario",
 		storeAppName: "Nombre de la app",
 		storeStoreNumber: "Número de tienda",
 		storeLocationName: "Ubicación",
@@ -48067,8 +53339,9 @@ var adminCopy = {
 		checklistsAddItem: "Añadir artículo",
 		checklistsRemoveItem: "Quitar artículo",
 		checklistsItemText: "Texto del artículo",
-		checklistsRequiresAlcoholCert: "Cert. alcohol",
+		checklistsRequiresAlcoholCert: "Solo puestos con alcohol",
 		checklistsMinorOnly: "Solo menores de 18",
+		checklistsToggleHint: "Deja ambos desactivados si el artículo aplica a todos.",
 		checklistsOrientationUniform: "Uniforme de orientación",
 		checklistsOrientationUniformHint: "Lo que cada roadie trae a la orientación.",
 		checklistsPaperwork: "Papeleo",
@@ -48135,3325 +53408,6 @@ function useAdminCopy() {
 	return adminCopy[locale] ?? adminCopy.en;
 }
 //#endregion
-//#region src/components/approvals/TrainerStationsPicker.tsx
-/**
-* Multi-select of trainer stations. Only rendered when the chosen role is
-* Trainer; the selection is required by the backend for that role.
-*/
-function TrainerStationsPicker({ positions, selectedIds, onChange }) {
-	const { t } = useI18n();
-	const toggle = (id) => {
-		onChange(selectedIds.includes(id) ? selectedIds.filter((value) => value !== id) : [...selectedIds, id]);
-	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("fieldset", {
-		className: "space-y-2 md:col-span-2",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("legend", {
-				className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-				children: t("approvals.stations.label")
-			}),
-			positions.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-sm text-muted-foreground",
-				children: t("admin.positions.empty")
-			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				className: "flex flex-wrap gap-2",
-				children: positions.map((position) => {
-					const id = position.id.toString();
-					const checked = selectedIds.includes(id);
-					return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {
-						className: `touch-target flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${checked ? "border-primary bg-primary/10 text-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/50"}`,
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-							type: "checkbox",
-							className: "h-4 w-4 accent-[var(--primary)]",
-							checked,
-							"data-ocid": "approvals.station.checkbox",
-							onChange: () => toggle(id)
-						}), position.name]
-					}, id);
-				})
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-xs text-muted-foreground",
-				children: t("approvals.stations.hint")
-			})
-		]
-	});
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+number@1.1.1/node_modules/@radix-ui/number/dist/index.mjs
-function clamp$1(value, [min, max]) {
-	return Math.min(max, Math.max(min, value));
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-collection@1.1.7_@types+react-dom@19.1.11_@types+react@19.1.17__@types+_60f944c86d7d4a96d0f33ac85e20f38f/node_modules/@radix-ui/react-collection/dist/index.mjs
-function createCollection(name) {
-	const PROVIDER_NAME = name + "CollectionProvider";
-	const [createCollectionContext, createCollectionScope] = createContextScope(PROVIDER_NAME);
-	const [CollectionProviderImpl, useCollectionContext] = createCollectionContext(PROVIDER_NAME, {
-		collectionRef: { current: null },
-		itemMap: /* @__PURE__ */ new Map()
-	});
-	const CollectionProvider = (props) => {
-		const { scope, children } = props;
-		const ref = import_react.useRef(null);
-		const itemMap = import_react.useRef(/* @__PURE__ */ new Map()).current;
-		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CollectionProviderImpl, {
-			scope,
-			itemMap,
-			collectionRef: ref,
-			children
-		});
-	};
-	CollectionProvider.displayName = PROVIDER_NAME;
-	const COLLECTION_SLOT_NAME = name + "CollectionSlot";
-	const CollectionSlotImpl = /* @__PURE__ */ createSlot(COLLECTION_SLOT_NAME);
-	const CollectionSlot = import_react.forwardRef((props, forwardedRef) => {
-		const { scope, children } = props;
-		const composedRefs = useComposedRefs(forwardedRef, useCollectionContext(COLLECTION_SLOT_NAME, scope).collectionRef);
-		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CollectionSlotImpl, {
-			ref: composedRefs,
-			children
-		});
-	});
-	CollectionSlot.displayName = COLLECTION_SLOT_NAME;
-	const ITEM_SLOT_NAME = name + "CollectionItemSlot";
-	const ITEM_DATA_ATTR = "data-radix-collection-item";
-	const CollectionItemSlotImpl = /* @__PURE__ */ createSlot(ITEM_SLOT_NAME);
-	const CollectionItemSlot = import_react.forwardRef((props, forwardedRef) => {
-		const { scope, children, ...itemData } = props;
-		const ref = import_react.useRef(null);
-		const composedRefs = useComposedRefs(forwardedRef, ref);
-		const context = useCollectionContext(ITEM_SLOT_NAME, scope);
-		import_react.useEffect(() => {
-			context.itemMap.set(ref, {
-				ref,
-				...itemData
-			});
-			return () => void context.itemMap.delete(ref);
-		});
-		return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CollectionItemSlotImpl, {
-			[ITEM_DATA_ATTR]: "",
-			ref: composedRefs,
-			children
-		});
-	});
-	CollectionItemSlot.displayName = ITEM_SLOT_NAME;
-	function useCollection(scope) {
-		const context = useCollectionContext(name + "CollectionConsumer", scope);
-		return import_react.useCallback(() => {
-			const collectionNode = context.collectionRef.current;
-			if (!collectionNode) return [];
-			const orderedNodes = Array.from(collectionNode.querySelectorAll(`[${ITEM_DATA_ATTR}]`));
-			return Array.from(context.itemMap.values()).sort((a, b) => orderedNodes.indexOf(a.ref.current) - orderedNodes.indexOf(b.ref.current));
-		}, [context.collectionRef, context.itemMap]);
-	}
-	return [
-		{
-			Provider: CollectionProvider,
-			Slot: CollectionSlot,
-			ItemSlot: CollectionItemSlot
-		},
-		useCollection,
-		createCollectionScope
-	];
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-direction@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-direction/dist/index.mjs
-var DirectionContext = import_react.createContext(void 0);
-function useDirection(localDir) {
-	const globalDir = import_react.useContext(DirectionContext);
-	return localDir || globalDir || "ltr";
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@floating-ui+utils@0.2.11/node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs
-/**
-* Custom positioning reference element.
-* @see https://floating-ui.com/docs/virtual-elements
-*/
-var sides = [
-	"top",
-	"right",
-	"bottom",
-	"left"
-];
-var min = Math.min;
-var max = Math.max;
-var round = Math.round;
-var floor = Math.floor;
-var createCoords = (v) => ({
-	x: v,
-	y: v
-});
-var oppositeSideMap = {
-	left: "right",
-	right: "left",
-	bottom: "top",
-	top: "bottom"
-};
-function clamp(start, value, end) {
-	return max(start, min(value, end));
-}
-function evaluate(value, param) {
-	return typeof value === "function" ? value(param) : value;
-}
-function getSide(placement) {
-	return placement.split("-")[0];
-}
-function getAlignment(placement) {
-	return placement.split("-")[1];
-}
-function getOppositeAxis(axis) {
-	return axis === "x" ? "y" : "x";
-}
-function getAxisLength(axis) {
-	return axis === "y" ? "height" : "width";
-}
-function getSideAxis(placement) {
-	const firstChar = placement[0];
-	return firstChar === "t" || firstChar === "b" ? "y" : "x";
-}
-function getAlignmentAxis(placement) {
-	return getOppositeAxis(getSideAxis(placement));
-}
-function getAlignmentSides(placement, rects, rtl) {
-	if (rtl === void 0) rtl = false;
-	const alignment = getAlignment(placement);
-	const alignmentAxis = getAlignmentAxis(placement);
-	const length = getAxisLength(alignmentAxis);
-	let mainAlignmentSide = alignmentAxis === "x" ? alignment === (rtl ? "end" : "start") ? "right" : "left" : alignment === "start" ? "bottom" : "top";
-	if (rects.reference[length] > rects.floating[length]) mainAlignmentSide = getOppositePlacement(mainAlignmentSide);
-	return [mainAlignmentSide, getOppositePlacement(mainAlignmentSide)];
-}
-function getExpandedPlacements(placement) {
-	const oppositePlacement = getOppositePlacement(placement);
-	return [
-		getOppositeAlignmentPlacement(placement),
-		oppositePlacement,
-		getOppositeAlignmentPlacement(oppositePlacement)
-	];
-}
-function getOppositeAlignmentPlacement(placement) {
-	return placement.includes("start") ? placement.replace("start", "end") : placement.replace("end", "start");
-}
-var lrPlacement = ["left", "right"];
-var rlPlacement = ["right", "left"];
-var tbPlacement = ["top", "bottom"];
-var btPlacement = ["bottom", "top"];
-function getSideList(side, isStart, rtl) {
-	switch (side) {
-		case "top":
-		case "bottom":
-			if (rtl) return isStart ? rlPlacement : lrPlacement;
-			return isStart ? lrPlacement : rlPlacement;
-		case "left":
-		case "right": return isStart ? tbPlacement : btPlacement;
-		default: return [];
-	}
-}
-function getOppositeAxisPlacements(placement, flipAlignment, direction, rtl) {
-	const alignment = getAlignment(placement);
-	let list = getSideList(getSide(placement), direction === "start", rtl);
-	if (alignment) {
-		list = list.map((side) => side + "-" + alignment);
-		if (flipAlignment) list = list.concat(list.map(getOppositeAlignmentPlacement));
-	}
-	return list;
-}
-function getOppositePlacement(placement) {
-	const side = getSide(placement);
-	return oppositeSideMap[side] + placement.slice(side.length);
-}
-function expandPaddingObject(padding) {
-	return {
-		top: 0,
-		right: 0,
-		bottom: 0,
-		left: 0,
-		...padding
-	};
-}
-function getPaddingObject(padding) {
-	return typeof padding !== "number" ? expandPaddingObject(padding) : {
-		top: padding,
-		right: padding,
-		bottom: padding,
-		left: padding
-	};
-}
-function rectToClientRect(rect) {
-	const { x, y, width, height } = rect;
-	return {
-		width,
-		height,
-		top: y,
-		left: x,
-		right: x + width,
-		bottom: y + height,
-		x,
-		y
-	};
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@floating-ui+core@1.7.5/node_modules/@floating-ui/core/dist/floating-ui.core.mjs
-function computeCoordsFromPlacement(_ref, placement, rtl) {
-	let { reference, floating } = _ref;
-	const sideAxis = getSideAxis(placement);
-	const alignmentAxis = getAlignmentAxis(placement);
-	const alignLength = getAxisLength(alignmentAxis);
-	const side = getSide(placement);
-	const isVertical = sideAxis === "y";
-	const commonX = reference.x + reference.width / 2 - floating.width / 2;
-	const commonY = reference.y + reference.height / 2 - floating.height / 2;
-	const commonAlign = reference[alignLength] / 2 - floating[alignLength] / 2;
-	let coords;
-	switch (side) {
-		case "top":
-			coords = {
-				x: commonX,
-				y: reference.y - floating.height
-			};
-			break;
-		case "bottom":
-			coords = {
-				x: commonX,
-				y: reference.y + reference.height
-			};
-			break;
-		case "right":
-			coords = {
-				x: reference.x + reference.width,
-				y: commonY
-			};
-			break;
-		case "left":
-			coords = {
-				x: reference.x - floating.width,
-				y: commonY
-			};
-			break;
-		default: coords = {
-			x: reference.x,
-			y: reference.y
-		};
-	}
-	switch (getAlignment(placement)) {
-		case "start":
-			coords[alignmentAxis] -= commonAlign * (rtl && isVertical ? -1 : 1);
-			break;
-		case "end": coords[alignmentAxis] += commonAlign * (rtl && isVertical ? -1 : 1);
-	}
-	return coords;
-}
-/**
-* Resolves with an object of overflow side offsets that determine how much the
-* element is overflowing a given clipping boundary on each side.
-* - positive = overflowing the boundary by that number of pixels
-* - negative = how many pixels left before it will overflow
-* - 0 = lies flush with the boundary
-* @see https://floating-ui.com/docs/detectOverflow
-*/
-async function detectOverflow(state, options) {
-	var _await$platform$isEle;
-	if (options === void 0) options = {};
-	const { x, y, platform, rects, elements, strategy } = state;
-	const { boundary = "clippingAncestors", rootBoundary = "viewport", elementContext = "floating", altBoundary = false, padding = 0 } = evaluate(options, state);
-	const paddingObject = getPaddingObject(padding);
-	const element = elements[altBoundary ? elementContext === "floating" ? "reference" : "floating" : elementContext];
-	const clippingClientRect = rectToClientRect(await platform.getClippingRect({
-		element: ((_await$platform$isEle = await (platform.isElement == null ? void 0 : platform.isElement(element))) != null ? _await$platform$isEle : true) ? element : element.contextElement || await (platform.getDocumentElement == null ? void 0 : platform.getDocumentElement(elements.floating)),
-		boundary,
-		rootBoundary,
-		strategy
-	}));
-	const rect = elementContext === "floating" ? {
-		x,
-		y,
-		width: rects.floating.width,
-		height: rects.floating.height
-	} : rects.reference;
-	const offsetParent = await (platform.getOffsetParent == null ? void 0 : platform.getOffsetParent(elements.floating));
-	const offsetScale = await (platform.isElement == null ? void 0 : platform.isElement(offsetParent)) ? await (platform.getScale == null ? void 0 : platform.getScale(offsetParent)) || {
-		x: 1,
-		y: 1
-	} : {
-		x: 1,
-		y: 1
-	};
-	const elementClientRect = rectToClientRect(platform.convertOffsetParentRelativeRectToViewportRelativeRect ? await platform.convertOffsetParentRelativeRectToViewportRelativeRect({
-		elements,
-		rect,
-		offsetParent,
-		strategy
-	}) : rect);
-	return {
-		top: (clippingClientRect.top - elementClientRect.top + paddingObject.top) / offsetScale.y,
-		bottom: (elementClientRect.bottom - clippingClientRect.bottom + paddingObject.bottom) / offsetScale.y,
-		left: (clippingClientRect.left - elementClientRect.left + paddingObject.left) / offsetScale.x,
-		right: (elementClientRect.right - clippingClientRect.right + paddingObject.right) / offsetScale.x
-	};
-}
-var MAX_RESET_COUNT = 50;
-/**
-* Computes the `x` and `y` coordinates that will place the floating element
-* next to a given reference element.
-*
-* This export does not have any `platform` interface logic. You will need to
-* write one for the platform you are using Floating UI with.
-*/
-var computePosition$1 = async (reference, floating, config) => {
-	const { placement = "bottom", strategy = "absolute", middleware = [], platform } = config;
-	const platformWithDetectOverflow = platform.detectOverflow ? platform : {
-		...platform,
-		detectOverflow
-	};
-	const rtl = await (platform.isRTL == null ? void 0 : platform.isRTL(floating));
-	let rects = await platform.getElementRects({
-		reference,
-		floating,
-		strategy
-	});
-	let { x, y } = computeCoordsFromPlacement(rects, placement, rtl);
-	let statefulPlacement = placement;
-	let resetCount = 0;
-	const middlewareData = {};
-	for (let i = 0; i < middleware.length; i++) {
-		const currentMiddleware = middleware[i];
-		if (!currentMiddleware) continue;
-		const { name, fn } = currentMiddleware;
-		const { x: nextX, y: nextY, data, reset } = await fn({
-			x,
-			y,
-			initialPlacement: placement,
-			placement: statefulPlacement,
-			strategy,
-			middlewareData,
-			rects,
-			platform: platformWithDetectOverflow,
-			elements: {
-				reference,
-				floating
-			}
-		});
-		x = nextX != null ? nextX : x;
-		y = nextY != null ? nextY : y;
-		middlewareData[name] = {
-			...middlewareData[name],
-			...data
-		};
-		if (reset && resetCount < MAX_RESET_COUNT) {
-			resetCount++;
-			if (typeof reset === "object") {
-				if (reset.placement) statefulPlacement = reset.placement;
-				if (reset.rects) rects = reset.rects === true ? await platform.getElementRects({
-					reference,
-					floating,
-					strategy
-				}) : reset.rects;
-				({x, y} = computeCoordsFromPlacement(rects, statefulPlacement, rtl));
-			}
-			i = -1;
-		}
-	}
-	return {
-		x,
-		y,
-		placement: statefulPlacement,
-		strategy,
-		middlewareData
-	};
-};
-/**
-* Provides data to position an inner element of the floating element so that it
-* appears centered to the reference element.
-* @see https://floating-ui.com/docs/arrow
-*/
-var arrow$3 = (options) => ({
-	name: "arrow",
-	options,
-	async fn(state) {
-		const { x, y, placement, rects, platform, elements, middlewareData } = state;
-		const { element, padding = 0 } = evaluate(options, state) || {};
-		if (element == null) return {};
-		const paddingObject = getPaddingObject(padding);
-		const coords = {
-			x,
-			y
-		};
-		const axis = getAlignmentAxis(placement);
-		const length = getAxisLength(axis);
-		const arrowDimensions = await platform.getDimensions(element);
-		const isYAxis = axis === "y";
-		const minProp = isYAxis ? "top" : "left";
-		const maxProp = isYAxis ? "bottom" : "right";
-		const clientProp = isYAxis ? "clientHeight" : "clientWidth";
-		const endDiff = rects.reference[length] + rects.reference[axis] - coords[axis] - rects.floating[length];
-		const startDiff = coords[axis] - rects.reference[axis];
-		const arrowOffsetParent = await (platform.getOffsetParent == null ? void 0 : platform.getOffsetParent(element));
-		let clientSize = arrowOffsetParent ? arrowOffsetParent[clientProp] : 0;
-		if (!clientSize || !await (platform.isElement == null ? void 0 : platform.isElement(arrowOffsetParent))) clientSize = elements.floating[clientProp] || rects.floating[length];
-		const centerToReference = endDiff / 2 - startDiff / 2;
-		const largestPossiblePadding = clientSize / 2 - arrowDimensions[length] / 2 - 1;
-		const minPadding = min(paddingObject[minProp], largestPossiblePadding);
-		const maxPadding = min(paddingObject[maxProp], largestPossiblePadding);
-		const min$1 = minPadding;
-		const max = clientSize - arrowDimensions[length] - maxPadding;
-		const center = clientSize / 2 - arrowDimensions[length] / 2 + centerToReference;
-		const offset = clamp(min$1, center, max);
-		const shouldAddOffset = !middlewareData.arrow && getAlignment(placement) != null && center !== offset && rects.reference[length] / 2 - (center < min$1 ? minPadding : maxPadding) - arrowDimensions[length] / 2 < 0;
-		const alignmentOffset = shouldAddOffset ? center < min$1 ? center - min$1 : center - max : 0;
-		return {
-			[axis]: coords[axis] + alignmentOffset,
-			data: {
-				[axis]: offset,
-				centerOffset: center - offset - alignmentOffset,
-				...shouldAddOffset && { alignmentOffset }
-			},
-			reset: shouldAddOffset
-		};
-	}
-});
-/**
-* Optimizes the visibility of the floating element by flipping the `placement`
-* in order to keep it in view when the preferred placement(s) will overflow the
-* clipping boundary. Alternative to `autoPlacement`.
-* @see https://floating-ui.com/docs/flip
-*/
-var flip$2 = function(options) {
-	if (options === void 0) options = {};
-	return {
-		name: "flip",
-		options,
-		async fn(state) {
-			var _middlewareData$arrow, _middlewareData$flip;
-			const { placement, middlewareData, rects, initialPlacement, platform, elements } = state;
-			const { mainAxis: checkMainAxis = true, crossAxis: checkCrossAxis = true, fallbackPlacements: specifiedFallbackPlacements, fallbackStrategy = "bestFit", fallbackAxisSideDirection = "none", flipAlignment = true, ...detectOverflowOptions } = evaluate(options, state);
-			if ((_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) return {};
-			const side = getSide(placement);
-			const initialSideAxis = getSideAxis(initialPlacement);
-			const isBasePlacement = getSide(initialPlacement) === initialPlacement;
-			const rtl = await (platform.isRTL == null ? void 0 : platform.isRTL(elements.floating));
-			const fallbackPlacements = specifiedFallbackPlacements || (isBasePlacement || !flipAlignment ? [getOppositePlacement(initialPlacement)] : getExpandedPlacements(initialPlacement));
-			const hasFallbackAxisSideDirection = fallbackAxisSideDirection !== "none";
-			if (!specifiedFallbackPlacements && hasFallbackAxisSideDirection) fallbackPlacements.push(...getOppositeAxisPlacements(initialPlacement, flipAlignment, fallbackAxisSideDirection, rtl));
-			const placements = [initialPlacement, ...fallbackPlacements];
-			const overflow = await platform.detectOverflow(state, detectOverflowOptions);
-			const overflows = [];
-			let overflowsData = ((_middlewareData$flip = middlewareData.flip) == null ? void 0 : _middlewareData$flip.overflows) || [];
-			if (checkMainAxis) overflows.push(overflow[side]);
-			if (checkCrossAxis) {
-				const sides = getAlignmentSides(placement, rects, rtl);
-				overflows.push(overflow[sides[0]], overflow[sides[1]]);
-			}
-			overflowsData = [...overflowsData, {
-				placement,
-				overflows
-			}];
-			if (!overflows.every((side) => side <= 0)) {
-				var _middlewareData$flip2, _overflowsData$filter;
-				const nextIndex = (((_middlewareData$flip2 = middlewareData.flip) == null ? void 0 : _middlewareData$flip2.index) || 0) + 1;
-				const nextPlacement = placements[nextIndex];
-				if (nextPlacement) {
-					if (!(checkCrossAxis === "alignment" ? initialSideAxis !== getSideAxis(nextPlacement) : false) || overflowsData.every((d) => getSideAxis(d.placement) === initialSideAxis ? d.overflows[0] > 0 : true)) return {
-						data: {
-							index: nextIndex,
-							overflows: overflowsData
-						},
-						reset: { placement: nextPlacement }
-					};
-				}
-				let resetPlacement = (_overflowsData$filter = overflowsData.filter((d) => d.overflows[0] <= 0).sort((a, b) => a.overflows[1] - b.overflows[1])[0]) == null ? void 0 : _overflowsData$filter.placement;
-				if (!resetPlacement) switch (fallbackStrategy) {
-					case "bestFit": {
-						var _overflowsData$filter2;
-						const placement = (_overflowsData$filter2 = overflowsData.filter((d) => {
-							if (hasFallbackAxisSideDirection) {
-								const currentSideAxis = getSideAxis(d.placement);
-								return currentSideAxis === initialSideAxis || currentSideAxis === "y";
-							}
-							return true;
-						}).map((d) => [d.placement, d.overflows.filter((overflow) => overflow > 0).reduce((acc, overflow) => acc + overflow, 0)]).sort((a, b) => a[1] - b[1])[0]) == null ? void 0 : _overflowsData$filter2[0];
-						if (placement) resetPlacement = placement;
-						break;
-					}
-					case "initialPlacement": resetPlacement = initialPlacement;
-				}
-				if (placement !== resetPlacement) return { reset: { placement: resetPlacement } };
-			}
-			return {};
-		}
-	};
-};
-function getSideOffsets(overflow, rect) {
-	return {
-		top: overflow.top - rect.height,
-		right: overflow.right - rect.width,
-		bottom: overflow.bottom - rect.height,
-		left: overflow.left - rect.width
-	};
-}
-function isAnySideFullyClipped(overflow) {
-	return sides.some((side) => overflow[side] >= 0);
-}
-/**
-* Provides data to hide the floating element in applicable situations, such as
-* when it is not in the same clipping context as the reference element.
-* @see https://floating-ui.com/docs/hide
-*/
-var hide$2 = function(options) {
-	if (options === void 0) options = {};
-	return {
-		name: "hide",
-		options,
-		async fn(state) {
-			const { rects, platform } = state;
-			const { strategy = "referenceHidden", ...detectOverflowOptions } = evaluate(options, state);
-			switch (strategy) {
-				case "referenceHidden": {
-					const offsets = getSideOffsets(await platform.detectOverflow(state, {
-						...detectOverflowOptions,
-						elementContext: "reference"
-					}), rects.reference);
-					return { data: {
-						referenceHiddenOffsets: offsets,
-						referenceHidden: isAnySideFullyClipped(offsets)
-					} };
-				}
-				case "escaped": {
-					const offsets = getSideOffsets(await platform.detectOverflow(state, {
-						...detectOverflowOptions,
-						altBoundary: true
-					}), rects.floating);
-					return { data: {
-						escapedOffsets: offsets,
-						escaped: isAnySideFullyClipped(offsets)
-					} };
-				}
-				default: return {};
-			}
-		}
-	};
-};
-var originSides = /*#__PURE__*/ new Set(["left", "top"]);
-async function convertValueToCoords(state, options) {
-	const { placement, platform, elements } = state;
-	const rtl = await (platform.isRTL == null ? void 0 : platform.isRTL(elements.floating));
-	const side = getSide(placement);
-	const alignment = getAlignment(placement);
-	const isVertical = getSideAxis(placement) === "y";
-	const mainAxisMulti = originSides.has(side) ? -1 : 1;
-	const crossAxisMulti = rtl && isVertical ? -1 : 1;
-	const rawValue = evaluate(options, state);
-	let { mainAxis, crossAxis, alignmentAxis } = typeof rawValue === "number" ? {
-		mainAxis: rawValue,
-		crossAxis: 0,
-		alignmentAxis: null
-	} : {
-		mainAxis: rawValue.mainAxis || 0,
-		crossAxis: rawValue.crossAxis || 0,
-		alignmentAxis: rawValue.alignmentAxis
-	};
-	if (alignment && typeof alignmentAxis === "number") crossAxis = alignment === "end" ? alignmentAxis * -1 : alignmentAxis;
-	return isVertical ? {
-		x: crossAxis * crossAxisMulti,
-		y: mainAxis * mainAxisMulti
-	} : {
-		x: mainAxis * mainAxisMulti,
-		y: crossAxis * crossAxisMulti
-	};
-}
-/**
-* Modifies the placement by translating the floating element along the
-* specified axes.
-* A number (shorthand for `mainAxis` or distance), or an axes configuration
-* object may be passed.
-* @see https://floating-ui.com/docs/offset
-*/
-var offset$2 = function(options) {
-	if (options === void 0) options = 0;
-	return {
-		name: "offset",
-		options,
-		async fn(state) {
-			var _middlewareData$offse, _middlewareData$arrow;
-			const { x, y, placement, middlewareData } = state;
-			const diffCoords = await convertValueToCoords(state, options);
-			if (placement === ((_middlewareData$offse = middlewareData.offset) == null ? void 0 : _middlewareData$offse.placement) && (_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) return {};
-			return {
-				x: x + diffCoords.x,
-				y: y + diffCoords.y,
-				data: {
-					...diffCoords,
-					placement
-				}
-			};
-		}
-	};
-};
-/**
-* Optimizes the visibility of the floating element by shifting it in order to
-* keep it in view when it will overflow the clipping boundary.
-* @see https://floating-ui.com/docs/shift
-*/
-var shift$2 = function(options) {
-	if (options === void 0) options = {};
-	return {
-		name: "shift",
-		options,
-		async fn(state) {
-			const { x, y, placement, platform } = state;
-			const { mainAxis: checkMainAxis = true, crossAxis: checkCrossAxis = false, limiter = { fn: (_ref) => {
-				let { x, y } = _ref;
-				return {
-					x,
-					y
-				};
-			} }, ...detectOverflowOptions } = evaluate(options, state);
-			const coords = {
-				x,
-				y
-			};
-			const overflow = await platform.detectOverflow(state, detectOverflowOptions);
-			const crossAxis = getSideAxis(getSide(placement));
-			const mainAxis = getOppositeAxis(crossAxis);
-			let mainAxisCoord = coords[mainAxis];
-			let crossAxisCoord = coords[crossAxis];
-			if (checkMainAxis) {
-				const minSide = mainAxis === "y" ? "top" : "left";
-				const maxSide = mainAxis === "y" ? "bottom" : "right";
-				const min = mainAxisCoord + overflow[minSide];
-				const max = mainAxisCoord - overflow[maxSide];
-				mainAxisCoord = clamp(min, mainAxisCoord, max);
-			}
-			if (checkCrossAxis) {
-				const minSide = crossAxis === "y" ? "top" : "left";
-				const maxSide = crossAxis === "y" ? "bottom" : "right";
-				const min = crossAxisCoord + overflow[minSide];
-				const max = crossAxisCoord - overflow[maxSide];
-				crossAxisCoord = clamp(min, crossAxisCoord, max);
-			}
-			const limitedCoords = limiter.fn({
-				...state,
-				[mainAxis]: mainAxisCoord,
-				[crossAxis]: crossAxisCoord
-			});
-			return {
-				...limitedCoords,
-				data: {
-					x: limitedCoords.x - x,
-					y: limitedCoords.y - y,
-					enabled: {
-						[mainAxis]: checkMainAxis,
-						[crossAxis]: checkCrossAxis
-					}
-				}
-			};
-		}
-	};
-};
-/**
-* Built-in `limiter` that will stop `shift()` at a certain point.
-*/
-var limitShift$2 = function(options) {
-	if (options === void 0) options = {};
-	return {
-		options,
-		fn(state) {
-			const { x, y, placement, rects, middlewareData } = state;
-			const { offset = 0, mainAxis: checkMainAxis = true, crossAxis: checkCrossAxis = true } = evaluate(options, state);
-			const coords = {
-				x,
-				y
-			};
-			const crossAxis = getSideAxis(placement);
-			const mainAxis = getOppositeAxis(crossAxis);
-			let mainAxisCoord = coords[mainAxis];
-			let crossAxisCoord = coords[crossAxis];
-			const rawOffset = evaluate(offset, state);
-			const computedOffset = typeof rawOffset === "number" ? {
-				mainAxis: rawOffset,
-				crossAxis: 0
-			} : {
-				mainAxis: 0,
-				crossAxis: 0,
-				...rawOffset
-			};
-			if (checkMainAxis) {
-				const len = mainAxis === "y" ? "height" : "width";
-				const limitMin = rects.reference[mainAxis] - rects.floating[len] + computedOffset.mainAxis;
-				const limitMax = rects.reference[mainAxis] + rects.reference[len] - computedOffset.mainAxis;
-				if (mainAxisCoord < limitMin) mainAxisCoord = limitMin;
-				else if (mainAxisCoord > limitMax) mainAxisCoord = limitMax;
-			}
-			if (checkCrossAxis) {
-				var _middlewareData$offse, _middlewareData$offse2;
-				const len = mainAxis === "y" ? "width" : "height";
-				const isOriginSide = originSides.has(getSide(placement));
-				const limitMin = rects.reference[crossAxis] - rects.floating[len] + (isOriginSide ? ((_middlewareData$offse = middlewareData.offset) == null ? void 0 : _middlewareData$offse[crossAxis]) || 0 : 0) + (isOriginSide ? 0 : computedOffset.crossAxis);
-				const limitMax = rects.reference[crossAxis] + rects.reference[len] + (isOriginSide ? 0 : ((_middlewareData$offse2 = middlewareData.offset) == null ? void 0 : _middlewareData$offse2[crossAxis]) || 0) - (isOriginSide ? computedOffset.crossAxis : 0);
-				if (crossAxisCoord < limitMin) crossAxisCoord = limitMin;
-				else if (crossAxisCoord > limitMax) crossAxisCoord = limitMax;
-			}
-			return {
-				[mainAxis]: mainAxisCoord,
-				[crossAxis]: crossAxisCoord
-			};
-		}
-	};
-};
-/**
-* Provides data that allows you to change the size of the floating element —
-* for instance, prevent it from overflowing the clipping boundary or match the
-* width of the reference element.
-* @see https://floating-ui.com/docs/size
-*/
-var size$2 = function(options) {
-	if (options === void 0) options = {};
-	return {
-		name: "size",
-		options,
-		async fn(state) {
-			var _state$middlewareData, _state$middlewareData2;
-			const { placement, rects, platform, elements } = state;
-			const { apply = () => {}, ...detectOverflowOptions } = evaluate(options, state);
-			const overflow = await platform.detectOverflow(state, detectOverflowOptions);
-			const side = getSide(placement);
-			const alignment = getAlignment(placement);
-			const isYAxis = getSideAxis(placement) === "y";
-			const { width, height } = rects.floating;
-			let heightSide;
-			let widthSide;
-			if (side === "top" || side === "bottom") {
-				heightSide = side;
-				widthSide = alignment === (await (platform.isRTL == null ? void 0 : platform.isRTL(elements.floating)) ? "start" : "end") ? "left" : "right";
-			} else {
-				widthSide = side;
-				heightSide = alignment === "end" ? "top" : "bottom";
-			}
-			const maximumClippingHeight = height - overflow.top - overflow.bottom;
-			const maximumClippingWidth = width - overflow.left - overflow.right;
-			const overflowAvailableHeight = min(height - overflow[heightSide], maximumClippingHeight);
-			const overflowAvailableWidth = min(width - overflow[widthSide], maximumClippingWidth);
-			const noShift = !state.middlewareData.shift;
-			let availableHeight = overflowAvailableHeight;
-			let availableWidth = overflowAvailableWidth;
-			if ((_state$middlewareData = state.middlewareData.shift) != null && _state$middlewareData.enabled.x) availableWidth = maximumClippingWidth;
-			if ((_state$middlewareData2 = state.middlewareData.shift) != null && _state$middlewareData2.enabled.y) availableHeight = maximumClippingHeight;
-			if (noShift && !alignment) {
-				const xMin = max(overflow.left, 0);
-				const xMax = max(overflow.right, 0);
-				const yMin = max(overflow.top, 0);
-				const yMax = max(overflow.bottom, 0);
-				if (isYAxis) availableWidth = width - 2 * (xMin !== 0 || xMax !== 0 ? xMin + xMax : max(overflow.left, overflow.right));
-				else availableHeight = height - 2 * (yMin !== 0 || yMax !== 0 ? yMin + yMax : max(overflow.top, overflow.bottom));
-			}
-			await apply({
-				...state,
-				availableWidth,
-				availableHeight
-			});
-			const nextDimensions = await platform.getDimensions(elements.floating);
-			if (width !== nextDimensions.width || height !== nextDimensions.height) return { reset: { rects: true } };
-			return {};
-		}
-	};
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@floating-ui+utils@0.2.11/node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs
-function hasWindow() {
-	return typeof window !== "undefined";
-}
-function getNodeName(node) {
-	if (isNode(node)) return (node.nodeName || "").toLowerCase();
-	return "#document";
-}
-function getWindow(node) {
-	var _node$ownerDocument;
-	return (node == null || (_node$ownerDocument = node.ownerDocument) == null ? void 0 : _node$ownerDocument.defaultView) || window;
-}
-function getDocumentElement(node) {
-	var _ref;
-	return (_ref = (isNode(node) ? node.ownerDocument : node.document) || window.document) == null ? void 0 : _ref.documentElement;
-}
-function isNode(value) {
-	if (!hasWindow()) return false;
-	return value instanceof Node || value instanceof getWindow(value).Node;
-}
-function isElement(value) {
-	if (!hasWindow()) return false;
-	return value instanceof Element || value instanceof getWindow(value).Element;
-}
-function isHTMLElement(value) {
-	if (!hasWindow()) return false;
-	return value instanceof HTMLElement || value instanceof getWindow(value).HTMLElement;
-}
-function isShadowRoot(value) {
-	if (!hasWindow() || typeof ShadowRoot === "undefined") return false;
-	return value instanceof ShadowRoot || value instanceof getWindow(value).ShadowRoot;
-}
-function isOverflowElement(element) {
-	const { overflow, overflowX, overflowY, display } = getComputedStyle$1(element);
-	return /auto|scroll|overlay|hidden|clip/.test(overflow + overflowY + overflowX) && display !== "inline" && display !== "contents";
-}
-function isTableElement(element) {
-	return /^(table|td|th)$/.test(getNodeName(element));
-}
-function isTopLayer(element) {
-	try {
-		if (element.matches(":popover-open")) return true;
-	} catch (_e) {}
-	try {
-		return element.matches(":modal");
-	} catch (_e) {
-		return false;
-	}
-}
-var willChangeRe = /transform|translate|scale|rotate|perspective|filter/;
-var containRe = /paint|layout|strict|content/;
-var isNotNone = (value) => !!value && value !== "none";
-var isWebKitValue;
-function isContainingBlock(elementOrCss) {
-	const css = isElement(elementOrCss) ? getComputedStyle$1(elementOrCss) : elementOrCss;
-	return isNotNone(css.transform) || isNotNone(css.translate) || isNotNone(css.scale) || isNotNone(css.rotate) || isNotNone(css.perspective) || !isWebKit() && (isNotNone(css.backdropFilter) || isNotNone(css.filter)) || willChangeRe.test(css.willChange || "") || containRe.test(css.contain || "");
-}
-function getContainingBlock(element) {
-	let currentNode = getParentNode(element);
-	while (isHTMLElement(currentNode) && !isLastTraversableNode(currentNode)) {
-		if (isContainingBlock(currentNode)) return currentNode;
-		else if (isTopLayer(currentNode)) return null;
-		currentNode = getParentNode(currentNode);
-	}
-	return null;
-}
-function isWebKit() {
-	if (isWebKitValue == null) isWebKitValue = typeof CSS !== "undefined" && CSS.supports && CSS.supports("-webkit-backdrop-filter", "none");
-	return isWebKitValue;
-}
-function isLastTraversableNode(node) {
-	return /^(html|body|#document)$/.test(getNodeName(node));
-}
-function getComputedStyle$1(element) {
-	return getWindow(element).getComputedStyle(element);
-}
-function getNodeScroll(element) {
-	if (isElement(element)) return {
-		scrollLeft: element.scrollLeft,
-		scrollTop: element.scrollTop
-	};
-	return {
-		scrollLeft: element.scrollX,
-		scrollTop: element.scrollY
-	};
-}
-function getParentNode(node) {
-	if (getNodeName(node) === "html") return node;
-	const result = node.assignedSlot || node.parentNode || isShadowRoot(node) && node.host || getDocumentElement(node);
-	return isShadowRoot(result) ? result.host : result;
-}
-function getNearestOverflowAncestor(node) {
-	const parentNode = getParentNode(node);
-	if (isLastTraversableNode(parentNode)) return node.ownerDocument ? node.ownerDocument.body : node.body;
-	if (isHTMLElement(parentNode) && isOverflowElement(parentNode)) return parentNode;
-	return getNearestOverflowAncestor(parentNode);
-}
-function getOverflowAncestors(node, list, traverseIframes) {
-	var _node$ownerDocument2;
-	if (list === void 0) list = [];
-	if (traverseIframes === void 0) traverseIframes = true;
-	const scrollableAncestor = getNearestOverflowAncestor(node);
-	const isBody = scrollableAncestor === ((_node$ownerDocument2 = node.ownerDocument) == null ? void 0 : _node$ownerDocument2.body);
-	const win = getWindow(scrollableAncestor);
-	if (isBody) {
-		const frameElement = getFrameElement(win);
-		return list.concat(win, win.visualViewport || [], isOverflowElement(scrollableAncestor) ? scrollableAncestor : [], frameElement && traverseIframes ? getOverflowAncestors(frameElement) : []);
-	} else return list.concat(scrollableAncestor, getOverflowAncestors(scrollableAncestor, [], traverseIframes));
-}
-function getFrameElement(win) {
-	return win.parent && Object.getPrototypeOf(win.parent) ? win.frameElement : null;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@floating-ui+dom@1.7.6/node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs
-function getCssDimensions(element) {
-	const css = getComputedStyle$1(element);
-	let width = parseFloat(css.width) || 0;
-	let height = parseFloat(css.height) || 0;
-	const hasOffset = isHTMLElement(element);
-	const offsetWidth = hasOffset ? element.offsetWidth : width;
-	const offsetHeight = hasOffset ? element.offsetHeight : height;
-	const shouldFallback = round(width) !== offsetWidth || round(height) !== offsetHeight;
-	if (shouldFallback) {
-		width = offsetWidth;
-		height = offsetHeight;
-	}
-	return {
-		width,
-		height,
-		$: shouldFallback
-	};
-}
-function unwrapElement(element) {
-	return !isElement(element) ? element.contextElement : element;
-}
-function getScale(element) {
-	const domElement = unwrapElement(element);
-	if (!isHTMLElement(domElement)) return createCoords(1);
-	const rect = domElement.getBoundingClientRect();
-	const { width, height, $ } = getCssDimensions(domElement);
-	let x = ($ ? round(rect.width) : rect.width) / width;
-	let y = ($ ? round(rect.height) : rect.height) / height;
-	if (!x || !Number.isFinite(x)) x = 1;
-	if (!y || !Number.isFinite(y)) y = 1;
-	return {
-		x,
-		y
-	};
-}
-var noOffsets = /*#__PURE__*/ createCoords(0);
-function getVisualOffsets(element) {
-	const win = getWindow(element);
-	if (!isWebKit() || !win.visualViewport) return noOffsets;
-	return {
-		x: win.visualViewport.offsetLeft,
-		y: win.visualViewport.offsetTop
-	};
-}
-function shouldAddVisualOffsets(element, isFixed, floatingOffsetParent) {
-	if (isFixed === void 0) isFixed = false;
-	if (!floatingOffsetParent || isFixed && floatingOffsetParent !== getWindow(element)) return false;
-	return isFixed;
-}
-function getBoundingClientRect(element, includeScale, isFixedStrategy, offsetParent) {
-	if (includeScale === void 0) includeScale = false;
-	if (isFixedStrategy === void 0) isFixedStrategy = false;
-	const clientRect = element.getBoundingClientRect();
-	const domElement = unwrapElement(element);
-	let scale = createCoords(1);
-	if (includeScale) {
-		if (offsetParent) {
-			if (isElement(offsetParent)) scale = getScale(offsetParent);
-		} else scale = getScale(element);
-	}
-	const visualOffsets = shouldAddVisualOffsets(domElement, isFixedStrategy, offsetParent) ? getVisualOffsets(domElement) : createCoords(0);
-	let x = (clientRect.left + visualOffsets.x) / scale.x;
-	let y = (clientRect.top + visualOffsets.y) / scale.y;
-	let width = clientRect.width / scale.x;
-	let height = clientRect.height / scale.y;
-	if (domElement) {
-		const win = getWindow(domElement);
-		const offsetWin = offsetParent && isElement(offsetParent) ? getWindow(offsetParent) : offsetParent;
-		let currentWin = win;
-		let currentIFrame = getFrameElement(currentWin);
-		while (currentIFrame && offsetParent && offsetWin !== currentWin) {
-			const iframeScale = getScale(currentIFrame);
-			const iframeRect = currentIFrame.getBoundingClientRect();
-			const css = getComputedStyle$1(currentIFrame);
-			const left = iframeRect.left + (currentIFrame.clientLeft + parseFloat(css.paddingLeft)) * iframeScale.x;
-			const top = iframeRect.top + (currentIFrame.clientTop + parseFloat(css.paddingTop)) * iframeScale.y;
-			x *= iframeScale.x;
-			y *= iframeScale.y;
-			width *= iframeScale.x;
-			height *= iframeScale.y;
-			x += left;
-			y += top;
-			currentWin = getWindow(currentIFrame);
-			currentIFrame = getFrameElement(currentWin);
-		}
-	}
-	return rectToClientRect({
-		width,
-		height,
-		x,
-		y
-	});
-}
-function getWindowScrollBarX(element, rect) {
-	const leftScroll = getNodeScroll(element).scrollLeft;
-	if (!rect) return getBoundingClientRect(getDocumentElement(element)).left + leftScroll;
-	return rect.left + leftScroll;
-}
-function getHTMLOffset(documentElement, scroll) {
-	const htmlRect = documentElement.getBoundingClientRect();
-	return {
-		x: htmlRect.left + scroll.scrollLeft - getWindowScrollBarX(documentElement, htmlRect),
-		y: htmlRect.top + scroll.scrollTop
-	};
-}
-function convertOffsetParentRelativeRectToViewportRelativeRect(_ref) {
-	let { elements, rect, offsetParent, strategy } = _ref;
-	const isFixed = strategy === "fixed";
-	const documentElement = getDocumentElement(offsetParent);
-	const topLayer = elements ? isTopLayer(elements.floating) : false;
-	if (offsetParent === documentElement || topLayer && isFixed) return rect;
-	let scroll = {
-		scrollLeft: 0,
-		scrollTop: 0
-	};
-	let scale = createCoords(1);
-	const offsets = createCoords(0);
-	const isOffsetParentAnElement = isHTMLElement(offsetParent);
-	if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
-		if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) scroll = getNodeScroll(offsetParent);
-		if (isOffsetParentAnElement) {
-			const offsetRect = getBoundingClientRect(offsetParent);
-			scale = getScale(offsetParent);
-			offsets.x = offsetRect.x + offsetParent.clientLeft;
-			offsets.y = offsetRect.y + offsetParent.clientTop;
-		}
-	}
-	const htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll) : createCoords(0);
-	return {
-		width: rect.width * scale.x,
-		height: rect.height * scale.y,
-		x: rect.x * scale.x - scroll.scrollLeft * scale.x + offsets.x + htmlOffset.x,
-		y: rect.y * scale.y - scroll.scrollTop * scale.y + offsets.y + htmlOffset.y
-	};
-}
-function getClientRects(element) {
-	return Array.from(element.getClientRects());
-}
-function getDocumentRect(element) {
-	const html = getDocumentElement(element);
-	const scroll = getNodeScroll(element);
-	const body = element.ownerDocument.body;
-	const width = max(html.scrollWidth, html.clientWidth, body.scrollWidth, body.clientWidth);
-	const height = max(html.scrollHeight, html.clientHeight, body.scrollHeight, body.clientHeight);
-	let x = -scroll.scrollLeft + getWindowScrollBarX(element);
-	const y = -scroll.scrollTop;
-	if (getComputedStyle$1(body).direction === "rtl") x += max(html.clientWidth, body.clientWidth) - width;
-	return {
-		width,
-		height,
-		x,
-		y
-	};
-}
-var SCROLLBAR_MAX = 25;
-function getViewportRect(element, strategy) {
-	const win = getWindow(element);
-	const html = getDocumentElement(element);
-	const visualViewport = win.visualViewport;
-	let width = html.clientWidth;
-	let height = html.clientHeight;
-	let x = 0;
-	let y = 0;
-	if (visualViewport) {
-		width = visualViewport.width;
-		height = visualViewport.height;
-		const visualViewportBased = isWebKit();
-		if (!visualViewportBased || visualViewportBased && strategy === "fixed") {
-			x = visualViewport.offsetLeft;
-			y = visualViewport.offsetTop;
-		}
-	}
-	const windowScrollbarX = getWindowScrollBarX(html);
-	if (windowScrollbarX <= 0) {
-		const doc = html.ownerDocument;
-		const body = doc.body;
-		const bodyStyles = getComputedStyle(body);
-		const bodyMarginInline = doc.compatMode === "CSS1Compat" ? parseFloat(bodyStyles.marginLeft) + parseFloat(bodyStyles.marginRight) || 0 : 0;
-		const clippingStableScrollbarWidth = Math.abs(html.clientWidth - body.clientWidth - bodyMarginInline);
-		if (clippingStableScrollbarWidth <= SCROLLBAR_MAX) width -= clippingStableScrollbarWidth;
-	} else if (windowScrollbarX <= SCROLLBAR_MAX) width += windowScrollbarX;
-	return {
-		width,
-		height,
-		x,
-		y
-	};
-}
-function getInnerBoundingClientRect(element, strategy) {
-	const clientRect = getBoundingClientRect(element, true, strategy === "fixed");
-	const top = clientRect.top + element.clientTop;
-	const left = clientRect.left + element.clientLeft;
-	const scale = isHTMLElement(element) ? getScale(element) : createCoords(1);
-	return {
-		width: element.clientWidth * scale.x,
-		height: element.clientHeight * scale.y,
-		x: left * scale.x,
-		y: top * scale.y
-	};
-}
-function getClientRectFromClippingAncestor(element, clippingAncestor, strategy) {
-	let rect;
-	if (clippingAncestor === "viewport") rect = getViewportRect(element, strategy);
-	else if (clippingAncestor === "document") rect = getDocumentRect(getDocumentElement(element));
-	else if (isElement(clippingAncestor)) rect = getInnerBoundingClientRect(clippingAncestor, strategy);
-	else {
-		const visualOffsets = getVisualOffsets(element);
-		rect = {
-			x: clippingAncestor.x - visualOffsets.x,
-			y: clippingAncestor.y - visualOffsets.y,
-			width: clippingAncestor.width,
-			height: clippingAncestor.height
-		};
-	}
-	return rectToClientRect(rect);
-}
-function hasFixedPositionAncestor(element, stopNode) {
-	const parentNode = getParentNode(element);
-	if (parentNode === stopNode || !isElement(parentNode) || isLastTraversableNode(parentNode)) return false;
-	return getComputedStyle$1(parentNode).position === "fixed" || hasFixedPositionAncestor(parentNode, stopNode);
-}
-function getClippingElementAncestors(element, cache) {
-	const cachedResult = cache.get(element);
-	if (cachedResult) return cachedResult;
-	let result = getOverflowAncestors(element, [], false).filter((el) => isElement(el) && getNodeName(el) !== "body");
-	let currentContainingBlockComputedStyle = null;
-	const elementIsFixed = getComputedStyle$1(element).position === "fixed";
-	let currentNode = elementIsFixed ? getParentNode(element) : element;
-	while (isElement(currentNode) && !isLastTraversableNode(currentNode)) {
-		const computedStyle = getComputedStyle$1(currentNode);
-		const currentNodeIsContaining = isContainingBlock(currentNode);
-		if (!currentNodeIsContaining && computedStyle.position === "fixed") currentContainingBlockComputedStyle = null;
-		if (elementIsFixed ? !currentNodeIsContaining && !currentContainingBlockComputedStyle : !currentNodeIsContaining && computedStyle.position === "static" && !!currentContainingBlockComputedStyle && (currentContainingBlockComputedStyle.position === "absolute" || currentContainingBlockComputedStyle.position === "fixed") || isOverflowElement(currentNode) && !currentNodeIsContaining && hasFixedPositionAncestor(element, currentNode)) result = result.filter((ancestor) => ancestor !== currentNode);
-		else currentContainingBlockComputedStyle = computedStyle;
-		currentNode = getParentNode(currentNode);
-	}
-	cache.set(element, result);
-	return result;
-}
-function getClippingRect(_ref) {
-	let { element, boundary, rootBoundary, strategy } = _ref;
-	const clippingAncestors = [...boundary === "clippingAncestors" ? isTopLayer(element) ? [] : getClippingElementAncestors(element, this._c) : [].concat(boundary), rootBoundary];
-	const firstRect = getClientRectFromClippingAncestor(element, clippingAncestors[0], strategy);
-	let top = firstRect.top;
-	let right = firstRect.right;
-	let bottom = firstRect.bottom;
-	let left = firstRect.left;
-	for (let i = 1; i < clippingAncestors.length; i++) {
-		const rect = getClientRectFromClippingAncestor(element, clippingAncestors[i], strategy);
-		top = max(rect.top, top);
-		right = min(rect.right, right);
-		bottom = min(rect.bottom, bottom);
-		left = max(rect.left, left);
-	}
-	return {
-		width: right - left,
-		height: bottom - top,
-		x: left,
-		y: top
-	};
-}
-function getDimensions(element) {
-	const { width, height } = getCssDimensions(element);
-	return {
-		width,
-		height
-	};
-}
-function getRectRelativeToOffsetParent(element, offsetParent, strategy) {
-	const isOffsetParentAnElement = isHTMLElement(offsetParent);
-	const documentElement = getDocumentElement(offsetParent);
-	const isFixed = strategy === "fixed";
-	const rect = getBoundingClientRect(element, true, isFixed, offsetParent);
-	let scroll = {
-		scrollLeft: 0,
-		scrollTop: 0
-	};
-	const offsets = createCoords(0);
-	function setLeftRTLScrollbarOffset() {
-		offsets.x = getWindowScrollBarX(documentElement);
-	}
-	if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
-		if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) scroll = getNodeScroll(offsetParent);
-		if (isOffsetParentAnElement) {
-			const offsetRect = getBoundingClientRect(offsetParent, true, isFixed, offsetParent);
-			offsets.x = offsetRect.x + offsetParent.clientLeft;
-			offsets.y = offsetRect.y + offsetParent.clientTop;
-		} else if (documentElement) setLeftRTLScrollbarOffset();
-	}
-	if (isFixed && !isOffsetParentAnElement && documentElement) setLeftRTLScrollbarOffset();
-	const htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll) : createCoords(0);
-	return {
-		x: rect.left + scroll.scrollLeft - offsets.x - htmlOffset.x,
-		y: rect.top + scroll.scrollTop - offsets.y - htmlOffset.y,
-		width: rect.width,
-		height: rect.height
-	};
-}
-function isStaticPositioned(element) {
-	return getComputedStyle$1(element).position === "static";
-}
-function getTrueOffsetParent(element, polyfill) {
-	if (!isHTMLElement(element) || getComputedStyle$1(element).position === "fixed") return null;
-	if (polyfill) return polyfill(element);
-	let rawOffsetParent = element.offsetParent;
-	if (getDocumentElement(element) === rawOffsetParent) rawOffsetParent = rawOffsetParent.ownerDocument.body;
-	return rawOffsetParent;
-}
-function getOffsetParent(element, polyfill) {
-	const win = getWindow(element);
-	if (isTopLayer(element)) return win;
-	if (!isHTMLElement(element)) {
-		let svgOffsetParent = getParentNode(element);
-		while (svgOffsetParent && !isLastTraversableNode(svgOffsetParent)) {
-			if (isElement(svgOffsetParent) && !isStaticPositioned(svgOffsetParent)) return svgOffsetParent;
-			svgOffsetParent = getParentNode(svgOffsetParent);
-		}
-		return win;
-	}
-	let offsetParent = getTrueOffsetParent(element, polyfill);
-	while (offsetParent && isTableElement(offsetParent) && isStaticPositioned(offsetParent)) offsetParent = getTrueOffsetParent(offsetParent, polyfill);
-	if (offsetParent && isLastTraversableNode(offsetParent) && isStaticPositioned(offsetParent) && !isContainingBlock(offsetParent)) return win;
-	return offsetParent || getContainingBlock(element) || win;
-}
-var getElementRects = async function(data) {
-	const getOffsetParentFn = this.getOffsetParent || getOffsetParent;
-	const getDimensionsFn = this.getDimensions;
-	const floatingDimensions = await getDimensionsFn(data.floating);
-	return {
-		reference: getRectRelativeToOffsetParent(data.reference, await getOffsetParentFn(data.floating), data.strategy),
-		floating: {
-			x: 0,
-			y: 0,
-			width: floatingDimensions.width,
-			height: floatingDimensions.height
-		}
-	};
-};
-function isRTL(element) {
-	return getComputedStyle$1(element).direction === "rtl";
-}
-var platform = {
-	convertOffsetParentRelativeRectToViewportRelativeRect,
-	getDocumentElement,
-	getClippingRect,
-	getOffsetParent,
-	getElementRects,
-	getClientRects,
-	getDimensions,
-	getScale,
-	isElement,
-	isRTL
-};
-function rectsAreEqual(a, b) {
-	return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
-}
-function observeMove(element, onMove) {
-	let io = null;
-	let timeoutId;
-	const root = getDocumentElement(element);
-	function cleanup() {
-		var _io;
-		clearTimeout(timeoutId);
-		(_io = io) == null || _io.disconnect();
-		io = null;
-	}
-	function refresh(skip, threshold) {
-		if (skip === void 0) skip = false;
-		if (threshold === void 0) threshold = 1;
-		cleanup();
-		const elementRectForRootMargin = element.getBoundingClientRect();
-		const { left, top, width, height } = elementRectForRootMargin;
-		if (!skip) onMove();
-		if (!width || !height) return;
-		const insetTop = floor(top);
-		const insetRight = floor(root.clientWidth - (left + width));
-		const insetBottom = floor(root.clientHeight - (top + height));
-		const insetLeft = floor(left);
-		const options = {
-			rootMargin: -insetTop + "px " + -insetRight + "px " + -insetBottom + "px " + -insetLeft + "px",
-			threshold: max(0, min(1, threshold)) || 1
-		};
-		let isFirstUpdate = true;
-		function handleObserve(entries) {
-			const ratio = entries[0].intersectionRatio;
-			if (ratio !== threshold) {
-				if (!isFirstUpdate) return refresh();
-				if (!ratio) timeoutId = setTimeout(() => {
-					refresh(false, 1e-7);
-				}, 1e3);
-				else refresh(false, ratio);
-			}
-			if (ratio === 1 && !rectsAreEqual(elementRectForRootMargin, element.getBoundingClientRect())) refresh();
-			isFirstUpdate = false;
-		}
-		try {
-			io = new IntersectionObserver(handleObserve, {
-				...options,
-				root: root.ownerDocument
-			});
-		} catch (_e) {
-			io = new IntersectionObserver(handleObserve, options);
-		}
-		io.observe(element);
-	}
-	refresh(true);
-	return cleanup;
-}
-/**
-* Automatically updates the position of the floating element when necessary.
-* Should only be called when the floating element is mounted on the DOM or
-* visible on the screen.
-* @returns cleanup function that should be invoked when the floating element is
-* removed from the DOM or hidden from the screen.
-* @see https://floating-ui.com/docs/autoUpdate
-*/
-function autoUpdate(reference, floating, update, options) {
-	if (options === void 0) options = {};
-	const { ancestorScroll = true, ancestorResize = true, elementResize = typeof ResizeObserver === "function", layoutShift = typeof IntersectionObserver === "function", animationFrame = false } = options;
-	const referenceEl = unwrapElement(reference);
-	const ancestors = ancestorScroll || ancestorResize ? [...referenceEl ? getOverflowAncestors(referenceEl) : [], ...floating ? getOverflowAncestors(floating) : []] : [];
-	ancestors.forEach((ancestor) => {
-		ancestorScroll && ancestor.addEventListener("scroll", update, { passive: true });
-		ancestorResize && ancestor.addEventListener("resize", update);
-	});
-	const cleanupIo = referenceEl && layoutShift ? observeMove(referenceEl, update) : null;
-	let reobserveFrame = -1;
-	let resizeObserver = null;
-	if (elementResize) {
-		resizeObserver = new ResizeObserver((_ref) => {
-			let [firstEntry] = _ref;
-			if (firstEntry && firstEntry.target === referenceEl && resizeObserver && floating) {
-				resizeObserver.unobserve(floating);
-				cancelAnimationFrame(reobserveFrame);
-				reobserveFrame = requestAnimationFrame(() => {
-					var _resizeObserver;
-					(_resizeObserver = resizeObserver) == null || _resizeObserver.observe(floating);
-				});
-			}
-			update();
-		});
-		if (referenceEl && !animationFrame) resizeObserver.observe(referenceEl);
-		if (floating) resizeObserver.observe(floating);
-	}
-	let frameId;
-	let prevRefRect = animationFrame ? getBoundingClientRect(reference) : null;
-	if (animationFrame) frameLoop();
-	function frameLoop() {
-		const nextRefRect = getBoundingClientRect(reference);
-		if (prevRefRect && !rectsAreEqual(prevRefRect, nextRefRect)) update();
-		prevRefRect = nextRefRect;
-		frameId = requestAnimationFrame(frameLoop);
-	}
-	update();
-	return () => {
-		var _resizeObserver2;
-		ancestors.forEach((ancestor) => {
-			ancestorScroll && ancestor.removeEventListener("scroll", update);
-			ancestorResize && ancestor.removeEventListener("resize", update);
-		});
-		cleanupIo?.();
-		(_resizeObserver2 = resizeObserver) == null || _resizeObserver2.disconnect();
-		resizeObserver = null;
-		if (animationFrame) cancelAnimationFrame(frameId);
-	};
-}
-/**
-* Modifies the placement by translating the floating element along the
-* specified axes.
-* A number (shorthand for `mainAxis` or distance), or an axes configuration
-* object may be passed.
-* @see https://floating-ui.com/docs/offset
-*/
-var offset$1 = offset$2;
-/**
-* Optimizes the visibility of the floating element by shifting it in order to
-* keep it in view when it will overflow the clipping boundary.
-* @see https://floating-ui.com/docs/shift
-*/
-var shift$1 = shift$2;
-/**
-* Optimizes the visibility of the floating element by flipping the `placement`
-* in order to keep it in view when the preferred placement(s) will overflow the
-* clipping boundary. Alternative to `autoPlacement`.
-* @see https://floating-ui.com/docs/flip
-*/
-var flip$1 = flip$2;
-/**
-* Provides data that allows you to change the size of the floating element —
-* for instance, prevent it from overflowing the clipping boundary or match the
-* width of the reference element.
-* @see https://floating-ui.com/docs/size
-*/
-var size$1 = size$2;
-/**
-* Provides data to hide the floating element in applicable situations, such as
-* when it is not in the same clipping context as the reference element.
-* @see https://floating-ui.com/docs/hide
-*/
-var hide$1 = hide$2;
-/**
-* Provides data to position an inner element of the floating element so that it
-* appears centered to the reference element.
-* @see https://floating-ui.com/docs/arrow
-*/
-var arrow$2 = arrow$3;
-/**
-* Built-in `limiter` that will stop `shift()` at a certain point.
-*/
-var limitShift$1 = limitShift$2;
-/**
-* Computes the `x` and `y` coordinates that will place the floating element
-* next to a given reference element.
-*/
-var computePosition = (reference, floating, options) => {
-	const cache = /* @__PURE__ */ new Map();
-	const mergedOptions = {
-		platform,
-		...options
-	};
-	const platformWithCache = {
-		...mergedOptions.platform,
-		_c: cache
-	};
-	return computePosition$1(reference, floating, {
-		...mergedOptions,
-		platform: platformWithCache
-	});
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@floating-ui+react-dom@2.1.8_react-dom@19.1.5_react@19.1.5__react@19.1.5/node_modules/@floating-ui/react-dom/dist/floating-ui.react-dom.mjs
-var index = typeof document !== "undefined" ? import_react.useLayoutEffect : function noop() {};
-function deepEqual(a, b) {
-	if (a === b) return true;
-	if (typeof a !== typeof b) return false;
-	if (typeof a === "function" && a.toString() === b.toString()) return true;
-	let length;
-	let i;
-	let keys;
-	if (a && b && typeof a === "object") {
-		if (Array.isArray(a)) {
-			length = a.length;
-			if (length !== b.length) return false;
-			for (i = length; i-- !== 0;) if (!deepEqual(a[i], b[i])) return false;
-			return true;
-		}
-		keys = Object.keys(a);
-		length = keys.length;
-		if (length !== Object.keys(b).length) return false;
-		for (i = length; i-- !== 0;) if (!{}.hasOwnProperty.call(b, keys[i])) return false;
-		for (i = length; i-- !== 0;) {
-			const key = keys[i];
-			if (key === "_owner" && a.$$typeof) continue;
-			if (!deepEqual(a[key], b[key])) return false;
-		}
-		return true;
-	}
-	return a !== a && b !== b;
-}
-function getDPR(element) {
-	if (typeof window === "undefined") return 1;
-	return (element.ownerDocument.defaultView || window).devicePixelRatio || 1;
-}
-function roundByDPR(element, value) {
-	const dpr = getDPR(element);
-	return Math.round(value * dpr) / dpr;
-}
-function useLatestRef(value) {
-	const ref = import_react.useRef(value);
-	index(() => {
-		ref.current = value;
-	});
-	return ref;
-}
-/**
-* Provides data to position a floating element.
-* @see https://floating-ui.com/docs/useFloating
-*/
-function useFloating(options) {
-	if (options === void 0) options = {};
-	const { placement = "bottom", strategy = "absolute", middleware = [], platform, elements: { reference: externalReference, floating: externalFloating } = {}, transform = true, whileElementsMounted, open } = options;
-	const [data, setData] = import_react.useState({
-		x: 0,
-		y: 0,
-		strategy,
-		placement,
-		middlewareData: {},
-		isPositioned: false
-	});
-	const [latestMiddleware, setLatestMiddleware] = import_react.useState(middleware);
-	if (!deepEqual(latestMiddleware, middleware)) setLatestMiddleware(middleware);
-	const [_reference, _setReference] = import_react.useState(null);
-	const [_floating, _setFloating] = import_react.useState(null);
-	const setReference = import_react.useCallback((node) => {
-		if (node !== referenceRef.current) {
-			referenceRef.current = node;
-			_setReference(node);
-		}
-	}, []);
-	const setFloating = import_react.useCallback((node) => {
-		if (node !== floatingRef.current) {
-			floatingRef.current = node;
-			_setFloating(node);
-		}
-	}, []);
-	const referenceEl = externalReference || _reference;
-	const floatingEl = externalFloating || _floating;
-	const referenceRef = import_react.useRef(null);
-	const floatingRef = import_react.useRef(null);
-	const dataRef = import_react.useRef(data);
-	const hasWhileElementsMounted = whileElementsMounted != null;
-	const whileElementsMountedRef = useLatestRef(whileElementsMounted);
-	const platformRef = useLatestRef(platform);
-	const openRef = useLatestRef(open);
-	const update = import_react.useCallback(() => {
-		if (!referenceRef.current || !floatingRef.current) return;
-		const config = {
-			placement,
-			strategy,
-			middleware: latestMiddleware
-		};
-		if (platformRef.current) config.platform = platformRef.current;
-		computePosition(referenceRef.current, floatingRef.current, config).then((data) => {
-			const fullData = {
-				...data,
-				isPositioned: openRef.current !== false
-			};
-			if (isMountedRef.current && !deepEqual(dataRef.current, fullData)) {
-				dataRef.current = fullData;
-				import_react_dom.flushSync(() => {
-					setData(fullData);
-				});
-			}
-		});
-	}, [
-		latestMiddleware,
-		placement,
-		strategy,
-		platformRef,
-		openRef
-	]);
-	index(() => {
-		if (open === false && dataRef.current.isPositioned) {
-			dataRef.current.isPositioned = false;
-			setData((data) => ({
-				...data,
-				isPositioned: false
-			}));
-		}
-	}, [open]);
-	const isMountedRef = import_react.useRef(false);
-	index(() => {
-		isMountedRef.current = true;
-		return () => {
-			isMountedRef.current = false;
-		};
-	}, []);
-	index(() => {
-		if (referenceEl) referenceRef.current = referenceEl;
-		if (floatingEl) floatingRef.current = floatingEl;
-		if (referenceEl && floatingEl) {
-			if (whileElementsMountedRef.current) return whileElementsMountedRef.current(referenceEl, floatingEl, update);
-			update();
-		}
-	}, [
-		referenceEl,
-		floatingEl,
-		update,
-		whileElementsMountedRef,
-		hasWhileElementsMounted
-	]);
-	const refs = import_react.useMemo(() => ({
-		reference: referenceRef,
-		floating: floatingRef,
-		setReference,
-		setFloating
-	}), [setReference, setFloating]);
-	const elements = import_react.useMemo(() => ({
-		reference: referenceEl,
-		floating: floatingEl
-	}), [referenceEl, floatingEl]);
-	const floatingStyles = import_react.useMemo(() => {
-		const initialStyles = {
-			position: strategy,
-			left: 0,
-			top: 0
-		};
-		if (!elements.floating) return initialStyles;
-		const x = roundByDPR(elements.floating, data.x);
-		const y = roundByDPR(elements.floating, data.y);
-		if (transform) return {
-			...initialStyles,
-			transform: "translate(" + x + "px, " + y + "px)",
-			...getDPR(elements.floating) >= 1.5 && { willChange: "transform" }
-		};
-		return {
-			position: strategy,
-			left: x,
-			top: y
-		};
-	}, [
-		strategy,
-		transform,
-		elements.floating,
-		data.x,
-		data.y
-	]);
-	return import_react.useMemo(() => ({
-		...data,
-		update,
-		refs,
-		elements,
-		floatingStyles
-	}), [
-		data,
-		update,
-		refs,
-		elements,
-		floatingStyles
-	]);
-}
-/**
-* Provides data to position an inner element of the floating element so that it
-* appears centered to the reference element.
-* This wraps the core `arrow` middleware to allow React refs as the element.
-* @see https://floating-ui.com/docs/arrow
-*/
-var arrow$1 = (options) => {
-	function isRef(value) {
-		return {}.hasOwnProperty.call(value, "current");
-	}
-	return {
-		name: "arrow",
-		options,
-		fn(state) {
-			const { element, padding } = typeof options === "function" ? options(state) : options;
-			if (element && isRef(element)) {
-				if (element.current != null) return arrow$2({
-					element: element.current,
-					padding
-				}).fn(state);
-				return {};
-			}
-			if (element) return arrow$2({
-				element,
-				padding
-			}).fn(state);
-			return {};
-		}
-	};
-};
-/**
-* Modifies the placement by translating the floating element along the
-* specified axes.
-* A number (shorthand for `mainAxis` or distance), or an axes configuration
-* object may be passed.
-* @see https://floating-ui.com/docs/offset
-*/
-var offset = (options, deps) => {
-	const result = offset$1(options);
-	return {
-		name: result.name,
-		fn: result.fn,
-		options: [options, deps]
-	};
-};
-/**
-* Optimizes the visibility of the floating element by shifting it in order to
-* keep it in view when it will overflow the clipping boundary.
-* @see https://floating-ui.com/docs/shift
-*/
-var shift = (options, deps) => {
-	const result = shift$1(options);
-	return {
-		name: result.name,
-		fn: result.fn,
-		options: [options, deps]
-	};
-};
-/**
-* Built-in `limiter` that will stop `shift()` at a certain point.
-*/
-var limitShift = (options, deps) => {
-	return {
-		fn: limitShift$1(options).fn,
-		options: [options, deps]
-	};
-};
-/**
-* Optimizes the visibility of the floating element by flipping the `placement`
-* in order to keep it in view when the preferred placement(s) will overflow the
-* clipping boundary. Alternative to `autoPlacement`.
-* @see https://floating-ui.com/docs/flip
-*/
-var flip = (options, deps) => {
-	const result = flip$1(options);
-	return {
-		name: result.name,
-		fn: result.fn,
-		options: [options, deps]
-	};
-};
-/**
-* Provides data that allows you to change the size of the floating element —
-* for instance, prevent it from overflowing the clipping boundary or match the
-* width of the reference element.
-* @see https://floating-ui.com/docs/size
-*/
-var size = (options, deps) => {
-	const result = size$1(options);
-	return {
-		name: result.name,
-		fn: result.fn,
-		options: [options, deps]
-	};
-};
-/**
-* Provides data to hide the floating element in applicable situations, such as
-* when it is not in the same clipping context as the reference element.
-* @see https://floating-ui.com/docs/hide
-*/
-var hide = (options, deps) => {
-	const result = hide$1(options);
-	return {
-		name: result.name,
-		fn: result.fn,
-		options: [options, deps]
-	};
-};
-/**
-* Provides data to position an inner element of the floating element so that it
-* appears centered to the reference element.
-* This wraps the core `arrow` middleware to allow React refs as the element.
-* @see https://floating-ui.com/docs/arrow
-*/
-var arrow = (options, deps) => {
-	const result = arrow$1(options);
-	return {
-		name: result.name,
-		fn: result.fn,
-		options: [options, deps]
-	};
-};
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-arrow@1.1.7_@types+react-dom@19.1.11_@types+react@19.1.17__@types+react_e400ed2c4baa8f9b19a0cf32e66488f5/node_modules/@radix-ui/react-arrow/dist/index.mjs
-var NAME$1 = "Arrow";
-var Arrow$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { children, width = 10, height = 5, ...arrowProps } = props;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.svg, {
-		...arrowProps,
-		ref: forwardedRef,
-		width,
-		height,
-		viewBox: "0 0 30 10",
-		preserveAspectRatio: "none",
-		children: props.asChild ? children : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("polygon", { points: "0,0 30,0 15,10" })
-	});
-});
-Arrow$1.displayName = NAME$1;
-var Root$2 = Arrow$1;
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-size@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-size/dist/index.mjs
-function useSize(element) {
-	const [size, setSize] = import_react.useState(void 0);
-	useLayoutEffect2(() => {
-		if (element) {
-			setSize({
-				width: element.offsetWidth,
-				height: element.offsetHeight
-			});
-			const resizeObserver = new ResizeObserver((entries) => {
-				if (!Array.isArray(entries)) return;
-				if (!entries.length) return;
-				const entry = entries[0];
-				let width;
-				let height;
-				if ("borderBoxSize" in entry) {
-					const borderSizeEntry = entry["borderBoxSize"];
-					const borderSize = Array.isArray(borderSizeEntry) ? borderSizeEntry[0] : borderSizeEntry;
-					width = borderSize["inlineSize"];
-					height = borderSize["blockSize"];
-				} else {
-					width = element.offsetWidth;
-					height = element.offsetHeight;
-				}
-				setSize({
-					width,
-					height
-				});
-			});
-			resizeObserver.observe(element, { box: "border-box" });
-			return () => resizeObserver.unobserve(element);
-		} else setSize(void 0);
-	}, [element]);
-	return size;
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-popper@1.2.8_@types+react-dom@19.1.11_@types+react@19.1.17__@types+reac_51e1cc63cb3364d9942e5c32d7f34537/node_modules/@radix-ui/react-popper/dist/index.mjs
-var POPPER_NAME = "Popper";
-var [createPopperContext, createPopperScope] = createContextScope(POPPER_NAME);
-var [PopperProvider, usePopperContext] = createPopperContext(POPPER_NAME);
-var Popper = (props) => {
-	const { __scopePopper, children } = props;
-	const [anchor, setAnchor] = import_react.useState(null);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PopperProvider, {
-		scope: __scopePopper,
-		anchor,
-		onAnchorChange: setAnchor,
-		children
-	});
-};
-Popper.displayName = POPPER_NAME;
-var ANCHOR_NAME = "PopperAnchor";
-var PopperAnchor = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopePopper, virtualRef, ...anchorProps } = props;
-	const context = usePopperContext(ANCHOR_NAME, __scopePopper);
-	const ref = import_react.useRef(null);
-	const composedRefs = useComposedRefs(forwardedRef, ref);
-	const anchorRef = import_react.useRef(null);
-	import_react.useEffect(() => {
-		const previousAnchor = anchorRef.current;
-		anchorRef.current = virtualRef?.current || ref.current;
-		if (previousAnchor !== anchorRef.current) context.onAnchorChange(anchorRef.current);
-	});
-	return virtualRef ? null : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-		...anchorProps,
-		ref: composedRefs
-	});
-});
-PopperAnchor.displayName = ANCHOR_NAME;
-var CONTENT_NAME$2 = "PopperContent";
-var [PopperContentProvider, useContentContext] = createPopperContext(CONTENT_NAME$2);
-var PopperContent = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopePopper, side = "bottom", sideOffset = 0, align = "center", alignOffset = 0, arrowPadding = 0, avoidCollisions = true, collisionBoundary = [], collisionPadding: collisionPaddingProp = 0, sticky = "partial", hideWhenDetached = false, updatePositionStrategy = "optimized", onPlaced, ...contentProps } = props;
-	const context = usePopperContext(CONTENT_NAME$2, __scopePopper);
-	const [content, setContent] = import_react.useState(null);
-	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
-	const [arrow$4, setArrow] = import_react.useState(null);
-	const arrowSize = useSize(arrow$4);
-	const arrowWidth = arrowSize?.width ?? 0;
-	const arrowHeight = arrowSize?.height ?? 0;
-	const desiredPlacement = side + (align !== "center" ? "-" + align : "");
-	const collisionPadding = typeof collisionPaddingProp === "number" ? collisionPaddingProp : {
-		top: 0,
-		right: 0,
-		bottom: 0,
-		left: 0,
-		...collisionPaddingProp
-	};
-	const boundary = Array.isArray(collisionBoundary) ? collisionBoundary : [collisionBoundary];
-	const hasExplicitBoundaries = boundary.length > 0;
-	const detectOverflowOptions = {
-		padding: collisionPadding,
-		boundary: boundary.filter(isNotNull),
-		altBoundary: hasExplicitBoundaries
-	};
-	const { refs, floatingStyles, placement, isPositioned, middlewareData } = useFloating({
-		strategy: "fixed",
-		placement: desiredPlacement,
-		whileElementsMounted: (...args) => {
-			return autoUpdate(...args, { animationFrame: updatePositionStrategy === "always" });
-		},
-		elements: { reference: context.anchor },
-		middleware: [
-			offset({
-				mainAxis: sideOffset + arrowHeight,
-				alignmentAxis: alignOffset
-			}),
-			avoidCollisions && shift({
-				mainAxis: true,
-				crossAxis: false,
-				limiter: sticky === "partial" ? limitShift() : void 0,
-				...detectOverflowOptions
-			}),
-			avoidCollisions && flip({ ...detectOverflowOptions }),
-			size({
-				...detectOverflowOptions,
-				apply: ({ elements, rects, availableWidth, availableHeight }) => {
-					const { width: anchorWidth, height: anchorHeight } = rects.reference;
-					const contentStyle = elements.floating.style;
-					contentStyle.setProperty("--radix-popper-available-width", `${availableWidth}px`);
-					contentStyle.setProperty("--radix-popper-available-height", `${availableHeight}px`);
-					contentStyle.setProperty("--radix-popper-anchor-width", `${anchorWidth}px`);
-					contentStyle.setProperty("--radix-popper-anchor-height", `${anchorHeight}px`);
-				}
-			}),
-			arrow$4 && arrow({
-				element: arrow$4,
-				padding: arrowPadding
-			}),
-			transformOrigin({
-				arrowWidth,
-				arrowHeight
-			}),
-			hideWhenDetached && hide({
-				strategy: "referenceHidden",
-				...detectOverflowOptions
-			})
-		]
-	});
-	const [placedSide, placedAlign] = getSideAndAlignFromPlacement(placement);
-	const handlePlaced = useCallbackRef$1(onPlaced);
-	useLayoutEffect2(() => {
-		if (isPositioned) handlePlaced?.();
-	}, [isPositioned, handlePlaced]);
-	const arrowX = middlewareData.arrow?.x;
-	const arrowY = middlewareData.arrow?.y;
-	const cannotCenterArrow = middlewareData.arrow?.centerOffset !== 0;
-	const [contentZIndex, setContentZIndex] = import_react.useState();
-	useLayoutEffect2(() => {
-		if (content) setContentZIndex(window.getComputedStyle(content).zIndex);
-	}, [content]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-		ref: refs.setFloating,
-		"data-radix-popper-content-wrapper": "",
-		style: {
-			...floatingStyles,
-			transform: isPositioned ? floatingStyles.transform : "translate(0, -200%)",
-			minWidth: "max-content",
-			zIndex: contentZIndex,
-			["--radix-popper-transform-origin"]: [middlewareData.transformOrigin?.x, middlewareData.transformOrigin?.y].join(" "),
-			...middlewareData.hide?.referenceHidden && {
-				visibility: "hidden",
-				pointerEvents: "none"
-			}
-		},
-		dir: props.dir,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PopperContentProvider, {
-			scope: __scopePopper,
-			placedSide,
-			onArrowChange: setArrow,
-			arrowX,
-			arrowY,
-			shouldHideArrow: cannotCenterArrow,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-				"data-side": placedSide,
-				"data-align": placedAlign,
-				...contentProps,
-				ref: composedRefs,
-				style: {
-					...contentProps.style,
-					animation: !isPositioned ? "none" : void 0
-				}
-			})
-		})
-	});
-});
-PopperContent.displayName = CONTENT_NAME$2;
-var ARROW_NAME$1 = "PopperArrow";
-var OPPOSITE_SIDE = {
-	top: "bottom",
-	right: "left",
-	bottom: "top",
-	left: "right"
-};
-var PopperArrow = import_react.forwardRef(function PopperArrow2(props, forwardedRef) {
-	const { __scopePopper, ...arrowProps } = props;
-	const contentContext = useContentContext(ARROW_NAME$1, __scopePopper);
-	const baseSide = OPPOSITE_SIDE[contentContext.placedSide];
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-		ref: contentContext.onArrowChange,
-		style: {
-			position: "absolute",
-			left: contentContext.arrowX,
-			top: contentContext.arrowY,
-			[baseSide]: 0,
-			transformOrigin: {
-				top: "",
-				right: "0 0",
-				bottom: "center 0",
-				left: "100% 0"
-			}[contentContext.placedSide],
-			transform: {
-				top: "translateY(100%)",
-				right: "translateY(50%) rotate(90deg) translateX(-50%)",
-				bottom: `rotate(180deg)`,
-				left: "translateY(50%) rotate(-90deg) translateX(50%)"
-			}[contentContext.placedSide],
-			visibility: contentContext.shouldHideArrow ? "hidden" : void 0
-		},
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$2, {
-			...arrowProps,
-			ref: forwardedRef,
-			style: {
-				...arrowProps.style,
-				display: "block"
-			}
-		})
-	});
-});
-PopperArrow.displayName = ARROW_NAME$1;
-function isNotNull(value) {
-	return value !== null;
-}
-var transformOrigin = (options) => ({
-	name: "transformOrigin",
-	options,
-	fn(data) {
-		const { placement, rects, middlewareData } = data;
-		const isArrowHidden = middlewareData.arrow?.centerOffset !== 0;
-		const arrowWidth = isArrowHidden ? 0 : options.arrowWidth;
-		const arrowHeight = isArrowHidden ? 0 : options.arrowHeight;
-		const [placedSide, placedAlign] = getSideAndAlignFromPlacement(placement);
-		const noArrowAlign = {
-			start: "0%",
-			center: "50%",
-			end: "100%"
-		}[placedAlign];
-		const arrowXCenter = (middlewareData.arrow?.x ?? 0) + arrowWidth / 2;
-		const arrowYCenter = (middlewareData.arrow?.y ?? 0) + arrowHeight / 2;
-		let x = "";
-		let y = "";
-		if (placedSide === "bottom") {
-			x = isArrowHidden ? noArrowAlign : `${arrowXCenter}px`;
-			y = `${-arrowHeight}px`;
-		} else if (placedSide === "top") {
-			x = isArrowHidden ? noArrowAlign : `${arrowXCenter}px`;
-			y = `${rects.floating.height + arrowHeight}px`;
-		} else if (placedSide === "right") {
-			x = `${-arrowHeight}px`;
-			y = isArrowHidden ? noArrowAlign : `${arrowYCenter}px`;
-		} else if (placedSide === "left") {
-			x = `${rects.floating.width + arrowHeight}px`;
-			y = isArrowHidden ? noArrowAlign : `${arrowYCenter}px`;
-		}
-		return { data: {
-			x,
-			y
-		} };
-	}
-});
-function getSideAndAlignFromPlacement(placement) {
-	const [side, align = "center"] = placement.split("-");
-	return [side, align];
-}
-var Root2$2 = Popper;
-var Anchor = PopperAnchor;
-var Content$1 = PopperContent;
-var Arrow = PopperArrow;
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-use-previous@1.1.1_@types+react@19.1.17_react@19.1.5/node_modules/@radix-ui/react-use-previous/dist/index.mjs
-function usePrevious(value) {
-	const ref = import_react.useRef({
-		value,
-		previous: value
-	});
-	return import_react.useMemo(() => {
-		if (ref.current.value !== value) {
-			ref.current.previous = ref.current.value;
-			ref.current.value = value;
-		}
-		return ref.current.previous;
-	}, [value]);
-}
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-visually-hidden@1.2.3_@types+react-dom@19.1.11_@types+react@19.1.17__@t_2a2b88bd961f03d5fe7a951235142447/node_modules/@radix-ui/react-visually-hidden/dist/index.mjs
-var VISUALLY_HIDDEN_STYLES = Object.freeze({
-	position: "absolute",
-	border: 0,
-	width: 1,
-	height: 1,
-	padding: 0,
-	margin: -1,
-	overflow: "hidden",
-	clip: "rect(0, 0, 0, 0)",
-	whiteSpace: "nowrap",
-	wordWrap: "normal"
-});
-var NAME = "VisuallyHidden";
-var VisuallyHidden = import_react.forwardRef((props, forwardedRef) => {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
-		...props,
-		ref: forwardedRef,
-		style: {
-			...VISUALLY_HIDDEN_STYLES,
-			...props.style
-		}
-	});
-});
-VisuallyHidden.displayName = NAME;
-//#endregion
-//#region ../../../../../../opt/pnpm-templates/build_template/node_modules/.pnpm/@radix-ui+react-select@2.2.6_@types+react-dom@19.1.11_@types+react@19.1.17__@types+reac_cb58f6075c67cda862b2ccded649f0ec/node_modules/@radix-ui/react-select/dist/index.mjs
-var OPEN_KEYS = [
-	" ",
-	"Enter",
-	"ArrowUp",
-	"ArrowDown"
-];
-var SELECTION_KEYS = [" ", "Enter"];
-var SELECT_NAME = "Select";
-var [Collection$1, useCollection$1, createCollectionScope$1] = createCollection(SELECT_NAME);
-var [createSelectContext, createSelectScope] = createContextScope(SELECT_NAME, [createCollectionScope$1, createPopperScope]);
-var usePopperScope = createPopperScope();
-var [SelectProvider, useSelectContext] = createSelectContext(SELECT_NAME);
-var [SelectNativeOptionsProvider, useSelectNativeOptionsContext] = createSelectContext(SELECT_NAME);
-var Select$1 = (props) => {
-	const { __scopeSelect, children, open: openProp, defaultOpen, onOpenChange, value: valueProp, defaultValue, onValueChange, dir, name, autoComplete, disabled, required, form } = props;
-	const popperScope = usePopperScope(__scopeSelect);
-	const [trigger, setTrigger] = import_react.useState(null);
-	const [valueNode, setValueNode] = import_react.useState(null);
-	const [valueNodeHasChildren, setValueNodeHasChildren] = import_react.useState(false);
-	const direction = useDirection(dir);
-	const [open, setOpen] = useControllableState({
-		prop: openProp,
-		defaultProp: defaultOpen ?? false,
-		onChange: onOpenChange,
-		caller: SELECT_NAME
-	});
-	const [value, setValue] = useControllableState({
-		prop: valueProp,
-		defaultProp: defaultValue,
-		onChange: onValueChange,
-		caller: SELECT_NAME
-	});
-	const triggerPointerDownPosRef = import_react.useRef(null);
-	const isFormControl = trigger ? form || !!trigger.closest("form") : true;
-	const [nativeOptionsSet, setNativeOptionsSet] = import_react.useState(/* @__PURE__ */ new Set());
-	const nativeSelectKey = Array.from(nativeOptionsSet).map((option) => option.props.value).join(";");
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root2$2, {
-		...popperScope,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectProvider, {
-			required,
-			scope: __scopeSelect,
-			trigger,
-			onTriggerChange: setTrigger,
-			valueNode,
-			onValueNodeChange: setValueNode,
-			valueNodeHasChildren,
-			onValueNodeHasChildrenChange: setValueNodeHasChildren,
-			contentId: useId(),
-			value,
-			onValueChange: setValue,
-			open,
-			onOpenChange: setOpen,
-			dir: direction,
-			triggerPointerDownPosRef,
-			disabled,
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.Provider, {
-				scope: __scopeSelect,
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectNativeOptionsProvider, {
-					scope: props.__scopeSelect,
-					onNativeOptionAdd: import_react.useCallback((option) => {
-						setNativeOptionsSet((prev) => new Set(prev).add(option));
-					}, []),
-					onNativeOptionRemove: import_react.useCallback((option) => {
-						setNativeOptionsSet((prev) => {
-							const optionsSet = new Set(prev);
-							optionsSet.delete(option);
-							return optionsSet;
-						});
-					}, []),
-					children
-				})
-			}), isFormControl ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectBubbleInput, {
-				"aria-hidden": true,
-				required,
-				tabIndex: -1,
-				name,
-				autoComplete,
-				value,
-				onChange: (event) => setValue(event.target.value),
-				disabled,
-				form,
-				children: [value === void 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "" }) : null, Array.from(nativeOptionsSet)]
-			}, nativeSelectKey) : null]
-		})
-	});
-};
-Select$1.displayName = SELECT_NAME;
-var TRIGGER_NAME$2 = "SelectTrigger";
-var SelectTrigger$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, disabled = false, ...triggerProps } = props;
-	const popperScope = usePopperScope(__scopeSelect);
-	const context = useSelectContext(TRIGGER_NAME$2, __scopeSelect);
-	const isDisabled = context.disabled || disabled;
-	const composedRefs = useComposedRefs(forwardedRef, context.onTriggerChange);
-	const getItems = useCollection$1(__scopeSelect);
-	const pointerTypeRef = import_react.useRef("touch");
-	const [searchRef, handleTypeaheadSearch, resetTypeahead] = useTypeaheadSearch((search) => {
-		const enabledItems = getItems().filter((item) => !item.disabled);
-		const nextItem = findNextItem(enabledItems, search, enabledItems.find((item) => item.value === context.value));
-		if (nextItem !== void 0) context.onValueChange(nextItem.value);
-	});
-	const handleOpen = (pointerEvent) => {
-		if (!isDisabled) {
-			context.onOpenChange(true);
-			resetTypeahead();
-		}
-		if (pointerEvent) context.triggerPointerDownPosRef.current = {
-			x: Math.round(pointerEvent.pageX),
-			y: Math.round(pointerEvent.pageY)
-		};
-	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Anchor, {
-		asChild: true,
-		...popperScope,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.button, {
-			type: "button",
-			role: "combobox",
-			"aria-controls": context.contentId,
-			"aria-expanded": context.open,
-			"aria-required": context.required,
-			"aria-autocomplete": "none",
-			dir: context.dir,
-			"data-state": context.open ? "open" : "closed",
-			disabled: isDisabled,
-			"data-disabled": isDisabled ? "" : void 0,
-			"data-placeholder": shouldShowPlaceholder(context.value) ? "" : void 0,
-			...triggerProps,
-			ref: composedRefs,
-			onClick: composeEventHandlers(triggerProps.onClick, (event) => {
-				event.currentTarget.focus();
-				if (pointerTypeRef.current !== "mouse") handleOpen(event);
-			}),
-			onPointerDown: composeEventHandlers(triggerProps.onPointerDown, (event) => {
-				pointerTypeRef.current = event.pointerType;
-				const target = event.target;
-				if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId);
-				if (event.button === 0 && event.ctrlKey === false && event.pointerType === "mouse") {
-					handleOpen(event);
-					event.preventDefault();
-				}
-			}),
-			onKeyDown: composeEventHandlers(triggerProps.onKeyDown, (event) => {
-				const isTypingAhead = searchRef.current !== "";
-				if (!(event.ctrlKey || event.altKey || event.metaKey) && event.key.length === 1) handleTypeaheadSearch(event.key);
-				if (isTypingAhead && event.key === " ") return;
-				if (OPEN_KEYS.includes(event.key)) {
-					handleOpen();
-					event.preventDefault();
-				}
-			})
-		})
-	});
-});
-SelectTrigger$1.displayName = TRIGGER_NAME$2;
-var VALUE_NAME = "SelectValue";
-var SelectValue$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, className, style, children, placeholder = "", ...valueProps } = props;
-	const context = useSelectContext(VALUE_NAME, __scopeSelect);
-	const { onValueNodeHasChildrenChange } = context;
-	const hasChildren = children !== void 0;
-	const composedRefs = useComposedRefs(forwardedRef, context.onValueNodeChange);
-	useLayoutEffect2(() => {
-		onValueNodeHasChildrenChange(hasChildren);
-	}, [onValueNodeHasChildrenChange, hasChildren]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
-		...valueProps,
-		ref: composedRefs,
-		style: { pointerEvents: "none" },
-		children: shouldShowPlaceholder(context.value) ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children: placeholder }) : children
-	});
-});
-SelectValue$1.displayName = VALUE_NAME;
-var ICON_NAME = "SelectIcon";
-var SelectIcon = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, children, ...iconProps } = props;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
-		"aria-hidden": true,
-		...iconProps,
-		ref: forwardedRef,
-		children: children || "▼"
-	});
-});
-SelectIcon.displayName = ICON_NAME;
-var PORTAL_NAME = "SelectPortal";
-var SelectPortal = (props) => {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal$2, {
-		asChild: true,
-		...props
-	});
-};
-SelectPortal.displayName = PORTAL_NAME;
-var CONTENT_NAME$1 = "SelectContent";
-var SelectContent$1 = import_react.forwardRef((props, forwardedRef) => {
-	const context = useSelectContext(CONTENT_NAME$1, props.__scopeSelect);
-	const [fragment, setFragment] = import_react.useState();
-	useLayoutEffect2(() => {
-		setFragment(new DocumentFragment());
-	}, []);
-	if (!context.open) {
-		const frag = fragment;
-		return frag ? import_react_dom.createPortal(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContentProvider, {
-			scope: props.__scopeSelect,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.Slot, {
-				scope: props.__scopeSelect,
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { children: props.children })
-			})
-		}), frag) : null;
-	}
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContentImpl, {
-		...props,
-		ref: forwardedRef
-	});
-});
-SelectContent$1.displayName = CONTENT_NAME$1;
-var CONTENT_MARGIN = 10;
-var [SelectContentProvider, useSelectContentContext] = createSelectContext(CONTENT_NAME$1);
-var CONTENT_IMPL_NAME = "SelectContentImpl";
-var Slot = /* @__PURE__ */ createSlot("SelectContent.RemoveScroll");
-var SelectContentImpl = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, position = "item-aligned", onCloseAutoFocus, onEscapeKeyDown, onPointerDownOutside, side, sideOffset, align, alignOffset, arrowPadding, collisionBoundary, collisionPadding, sticky, hideWhenDetached, avoidCollisions, ...contentProps } = props;
-	const context = useSelectContext(CONTENT_NAME$1, __scopeSelect);
-	const [content, setContent] = import_react.useState(null);
-	const [viewport, setViewport] = import_react.useState(null);
-	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
-	const [selectedItem, setSelectedItem] = import_react.useState(null);
-	const [selectedItemText, setSelectedItemText] = import_react.useState(null);
-	const getItems = useCollection$1(__scopeSelect);
-	const [isPositioned, setIsPositioned] = import_react.useState(false);
-	const firstValidItemFoundRef = import_react.useRef(false);
-	import_react.useEffect(() => {
-		if (content) return hideOthers(content);
-	}, [content]);
-	useFocusGuards();
-	const focusFirst = import_react.useCallback((candidates) => {
-		const [firstItem, ...restItems] = getItems().map((item) => item.ref.current);
-		const [lastItem] = restItems.slice(-1);
-		const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
-		for (const candidate of candidates) {
-			if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
-			candidate?.scrollIntoView({ block: "nearest" });
-			if (candidate === firstItem && viewport) viewport.scrollTop = 0;
-			if (candidate === lastItem && viewport) viewport.scrollTop = viewport.scrollHeight;
-			candidate?.focus();
-			if (document.activeElement !== PREVIOUSLY_FOCUSED_ELEMENT) return;
-		}
-	}, [getItems, viewport]);
-	const focusSelectedItem = import_react.useCallback(() => focusFirst([selectedItem, content]), [
-		focusFirst,
-		selectedItem,
-		content
-	]);
-	import_react.useEffect(() => {
-		if (isPositioned) focusSelectedItem();
-	}, [isPositioned, focusSelectedItem]);
-	const { onOpenChange, triggerPointerDownPosRef } = context;
-	import_react.useEffect(() => {
-		if (content) {
-			let pointerMoveDelta = {
-				x: 0,
-				y: 0
-			};
-			const handlePointerMove = (event) => {
-				pointerMoveDelta = {
-					x: Math.abs(Math.round(event.pageX) - (triggerPointerDownPosRef.current?.x ?? 0)),
-					y: Math.abs(Math.round(event.pageY) - (triggerPointerDownPosRef.current?.y ?? 0))
-				};
-			};
-			const handlePointerUp = (event) => {
-				if (pointerMoveDelta.x <= 10 && pointerMoveDelta.y <= 10) event.preventDefault();
-				else if (!content.contains(event.target)) onOpenChange(false);
-				document.removeEventListener("pointermove", handlePointerMove);
-				triggerPointerDownPosRef.current = null;
-			};
-			if (triggerPointerDownPosRef.current !== null) {
-				document.addEventListener("pointermove", handlePointerMove);
-				document.addEventListener("pointerup", handlePointerUp, {
-					capture: true,
-					once: true
-				});
-			}
-			return () => {
-				document.removeEventListener("pointermove", handlePointerMove);
-				document.removeEventListener("pointerup", handlePointerUp, { capture: true });
-			};
-		}
-	}, [
-		content,
-		onOpenChange,
-		triggerPointerDownPosRef
-	]);
-	import_react.useEffect(() => {
-		const close = () => onOpenChange(false);
-		window.addEventListener("blur", close);
-		window.addEventListener("resize", close);
-		return () => {
-			window.removeEventListener("blur", close);
-			window.removeEventListener("resize", close);
-		};
-	}, [onOpenChange]);
-	const [searchRef, handleTypeaheadSearch] = useTypeaheadSearch((search) => {
-		const enabledItems = getItems().filter((item) => !item.disabled);
-		const nextItem = findNextItem(enabledItems, search, enabledItems.find((item) => item.ref.current === document.activeElement));
-		if (nextItem) setTimeout(() => nextItem.ref.current.focus());
-	});
-	const itemRefCallback = import_react.useCallback((node, value, disabled) => {
-		const isFirstValidItem = !firstValidItemFoundRef.current && !disabled;
-		if (context.value !== void 0 && context.value === value || isFirstValidItem) {
-			setSelectedItem(node);
-			if (isFirstValidItem) firstValidItemFoundRef.current = true;
-		}
-	}, [context.value]);
-	const handleItemLeave = import_react.useCallback(() => content?.focus(), [content]);
-	const itemTextRefCallback = import_react.useCallback((node, value, disabled) => {
-		const isFirstValidItem = !firstValidItemFoundRef.current && !disabled;
-		if (context.value !== void 0 && context.value === value || isFirstValidItem) setSelectedItemText(node);
-	}, [context.value]);
-	const SelectPosition = position === "popper" ? SelectPopperPosition : SelectItemAlignedPosition;
-	const popperContentProps = SelectPosition === SelectPopperPosition ? {
-		side,
-		sideOffset,
-		align,
-		alignOffset,
-		arrowPadding,
-		collisionBoundary,
-		collisionPadding,
-		sticky,
-		hideWhenDetached,
-		avoidCollisions
-	} : {};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContentProvider, {
-		scope: __scopeSelect,
-		content,
-		viewport,
-		onViewportChange: setViewport,
-		itemRefCallback,
-		selectedItem,
-		onItemLeave: handleItemLeave,
-		itemTextRefCallback,
-		focusSelectedItem,
-		selectedItemText,
-		position,
-		isPositioned,
-		searchRef,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ReactRemoveScroll, {
-			as: Slot,
-			allowPinchZoom: true,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FocusScope, {
-				asChild: true,
-				trapped: context.open,
-				onMountAutoFocus: (event) => {
-					event.preventDefault();
-				},
-				onUnmountAutoFocus: composeEventHandlers(onCloseAutoFocus, (event) => {
-					context.trigger?.focus({ preventScroll: true });
-					event.preventDefault();
-				}),
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DismissableLayer, {
-					asChild: true,
-					disableOutsidePointerEvents: true,
-					onEscapeKeyDown,
-					onPointerDownOutside,
-					onFocusOutside: (event) => event.preventDefault(),
-					onDismiss: () => context.onOpenChange(false),
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectPosition, {
-						role: "listbox",
-						id: context.contentId,
-						"data-state": context.open ? "open" : "closed",
-						dir: context.dir,
-						onContextMenu: (event) => event.preventDefault(),
-						...contentProps,
-						...popperContentProps,
-						onPlaced: () => setIsPositioned(true),
-						ref: composedRefs,
-						style: {
-							display: "flex",
-							flexDirection: "column",
-							outline: "none",
-							...contentProps.style
-						},
-						onKeyDown: composeEventHandlers(contentProps.onKeyDown, (event) => {
-							const isModifierKey = event.ctrlKey || event.altKey || event.metaKey;
-							if (event.key === "Tab") event.preventDefault();
-							if (!isModifierKey && event.key.length === 1) handleTypeaheadSearch(event.key);
-							if ([
-								"ArrowUp",
-								"ArrowDown",
-								"Home",
-								"End"
-							].includes(event.key)) {
-								let candidateNodes = getItems().filter((item) => !item.disabled).map((item) => item.ref.current);
-								if (["ArrowUp", "End"].includes(event.key)) candidateNodes = candidateNodes.slice().reverse();
-								if (["ArrowUp", "ArrowDown"].includes(event.key)) {
-									const currentElement = event.target;
-									const currentIndex = candidateNodes.indexOf(currentElement);
-									candidateNodes = candidateNodes.slice(currentIndex + 1);
-								}
-								setTimeout(() => focusFirst(candidateNodes));
-								event.preventDefault();
-							}
-						})
-					})
-				})
-			})
-		})
-	});
-});
-SelectContentImpl.displayName = CONTENT_IMPL_NAME;
-var ITEM_ALIGNED_POSITION_NAME = "SelectItemAlignedPosition";
-var SelectItemAlignedPosition = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, onPlaced, ...popperProps } = props;
-	const context = useSelectContext(CONTENT_NAME$1, __scopeSelect);
-	const contentContext = useSelectContentContext(CONTENT_NAME$1, __scopeSelect);
-	const [contentWrapper, setContentWrapper] = import_react.useState(null);
-	const [content, setContent] = import_react.useState(null);
-	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
-	const getItems = useCollection$1(__scopeSelect);
-	const shouldExpandOnScrollRef = import_react.useRef(false);
-	const shouldRepositionRef = import_react.useRef(true);
-	const { viewport, selectedItem, selectedItemText, focusSelectedItem } = contentContext;
-	const position = import_react.useCallback(() => {
-		if (context.trigger && context.valueNode && contentWrapper && content && viewport && selectedItem && selectedItemText) {
-			const triggerRect = context.trigger.getBoundingClientRect();
-			const contentRect = content.getBoundingClientRect();
-			const valueNodeRect = context.valueNode.getBoundingClientRect();
-			const itemTextRect = selectedItemText.getBoundingClientRect();
-			if (context.dir !== "rtl") {
-				const itemTextOffset = itemTextRect.left - contentRect.left;
-				const left = valueNodeRect.left - itemTextOffset;
-				const leftDelta = triggerRect.left - left;
-				const minContentWidth = triggerRect.width + leftDelta;
-				const contentWidth = Math.max(minContentWidth, contentRect.width);
-				const rightEdge = window.innerWidth - CONTENT_MARGIN;
-				const clampedLeft = clamp$1(left, [CONTENT_MARGIN, Math.max(CONTENT_MARGIN, rightEdge - contentWidth)]);
-				contentWrapper.style.minWidth = minContentWidth + "px";
-				contentWrapper.style.left = clampedLeft + "px";
-			} else {
-				const itemTextOffset = contentRect.right - itemTextRect.right;
-				const right = window.innerWidth - valueNodeRect.right - itemTextOffset;
-				const rightDelta = window.innerWidth - triggerRect.right - right;
-				const minContentWidth = triggerRect.width + rightDelta;
-				const contentWidth = Math.max(minContentWidth, contentRect.width);
-				const leftEdge = window.innerWidth - CONTENT_MARGIN;
-				const clampedRight = clamp$1(right, [CONTENT_MARGIN, Math.max(CONTENT_MARGIN, leftEdge - contentWidth)]);
-				contentWrapper.style.minWidth = minContentWidth + "px";
-				contentWrapper.style.right = clampedRight + "px";
-			}
-			const items = getItems();
-			const availableHeight = window.innerHeight - CONTENT_MARGIN * 2;
-			const itemsHeight = viewport.scrollHeight;
-			const contentStyles = window.getComputedStyle(content);
-			const contentBorderTopWidth = parseInt(contentStyles.borderTopWidth, 10);
-			const contentPaddingTop = parseInt(contentStyles.paddingTop, 10);
-			const contentBorderBottomWidth = parseInt(contentStyles.borderBottomWidth, 10);
-			const contentPaddingBottom = parseInt(contentStyles.paddingBottom, 10);
-			const fullContentHeight = contentBorderTopWidth + contentPaddingTop + itemsHeight + contentPaddingBottom + contentBorderBottomWidth;
-			const minContentHeight = Math.min(selectedItem.offsetHeight * 5, fullContentHeight);
-			const viewportStyles = window.getComputedStyle(viewport);
-			const viewportPaddingTop = parseInt(viewportStyles.paddingTop, 10);
-			const viewportPaddingBottom = parseInt(viewportStyles.paddingBottom, 10);
-			const topEdgeToTriggerMiddle = triggerRect.top + triggerRect.height / 2 - CONTENT_MARGIN;
-			const triggerMiddleToBottomEdge = availableHeight - topEdgeToTriggerMiddle;
-			const selectedItemHalfHeight = selectedItem.offsetHeight / 2;
-			const itemOffsetMiddle = selectedItem.offsetTop + selectedItemHalfHeight;
-			const contentTopToItemMiddle = contentBorderTopWidth + contentPaddingTop + itemOffsetMiddle;
-			const itemMiddleToContentBottom = fullContentHeight - contentTopToItemMiddle;
-			if (contentTopToItemMiddle <= topEdgeToTriggerMiddle) {
-				const isLastItem = items.length > 0 && selectedItem === items[items.length - 1].ref.current;
-				contentWrapper.style.bottom = "0px";
-				const viewportOffsetBottom = content.clientHeight - viewport.offsetTop - viewport.offsetHeight;
-				const height = contentTopToItemMiddle + Math.max(triggerMiddleToBottomEdge, selectedItemHalfHeight + (isLastItem ? viewportPaddingBottom : 0) + viewportOffsetBottom + contentBorderBottomWidth);
-				contentWrapper.style.height = height + "px";
-			} else {
-				const isFirstItem = items.length > 0 && selectedItem === items[0].ref.current;
-				contentWrapper.style.top = "0px";
-				const height = Math.max(topEdgeToTriggerMiddle, contentBorderTopWidth + viewport.offsetTop + (isFirstItem ? viewportPaddingTop : 0) + selectedItemHalfHeight) + itemMiddleToContentBottom;
-				contentWrapper.style.height = height + "px";
-				viewport.scrollTop = contentTopToItemMiddle - topEdgeToTriggerMiddle + viewport.offsetTop;
-			}
-			contentWrapper.style.margin = `${CONTENT_MARGIN}px 0`;
-			contentWrapper.style.minHeight = minContentHeight + "px";
-			contentWrapper.style.maxHeight = availableHeight + "px";
-			onPlaced?.();
-			requestAnimationFrame(() => shouldExpandOnScrollRef.current = true);
-		}
-	}, [
-		getItems,
-		context.trigger,
-		context.valueNode,
-		contentWrapper,
-		content,
-		viewport,
-		selectedItem,
-		selectedItemText,
-		context.dir,
-		onPlaced
-	]);
-	useLayoutEffect2(() => position(), [position]);
-	const [contentZIndex, setContentZIndex] = import_react.useState();
-	useLayoutEffect2(() => {
-		if (content) setContentZIndex(window.getComputedStyle(content).zIndex);
-	}, [content]);
-	const handleScrollButtonChange = import_react.useCallback((node) => {
-		if (node && shouldRepositionRef.current === true) {
-			position();
-			focusSelectedItem?.();
-			shouldRepositionRef.current = false;
-		}
-	}, [position, focusSelectedItem]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectViewportProvider, {
-		scope: __scopeSelect,
-		contentWrapper,
-		shouldExpandOnScrollRef,
-		onScrollButtonChange: handleScrollButtonChange,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-			ref: setContentWrapper,
-			style: {
-				display: "flex",
-				flexDirection: "column",
-				position: "fixed",
-				zIndex: contentZIndex
-			},
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-				...popperProps,
-				ref: composedRefs,
-				style: {
-					boxSizing: "border-box",
-					maxHeight: "100%",
-					...popperProps.style
-				}
-			})
-		})
-	});
-});
-SelectItemAlignedPosition.displayName = ITEM_ALIGNED_POSITION_NAME;
-var POPPER_POSITION_NAME = "SelectPopperPosition";
-var SelectPopperPosition = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, align = "start", collisionPadding = CONTENT_MARGIN, ...popperProps } = props;
-	const popperScope = usePopperScope(__scopeSelect);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Content$1, {
-		...popperScope,
-		...popperProps,
-		ref: forwardedRef,
-		align,
-		collisionPadding,
-		style: {
-			boxSizing: "border-box",
-			...popperProps.style,
-			"--radix-select-content-transform-origin": "var(--radix-popper-transform-origin)",
-			"--radix-select-content-available-width": "var(--radix-popper-available-width)",
-			"--radix-select-content-available-height": "var(--radix-popper-available-height)",
-			"--radix-select-trigger-width": "var(--radix-popper-anchor-width)",
-			"--radix-select-trigger-height": "var(--radix-popper-anchor-height)"
-		}
-	});
-});
-SelectPopperPosition.displayName = POPPER_POSITION_NAME;
-var [SelectViewportProvider, useSelectViewportContext] = createSelectContext(CONTENT_NAME$1, {});
-var VIEWPORT_NAME = "SelectViewport";
-var SelectViewport = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, nonce, ...viewportProps } = props;
-	const contentContext = useSelectContentContext(VIEWPORT_NAME, __scopeSelect);
-	const viewportContext = useSelectViewportContext(VIEWPORT_NAME, __scopeSelect);
-	const composedRefs = useComposedRefs(forwardedRef, contentContext.onViewportChange);
-	const prevScrollTopRef = import_react.useRef(0);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("style", {
-		dangerouslySetInnerHTML: { __html: `[data-radix-select-viewport]{scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;}[data-radix-select-viewport]::-webkit-scrollbar{display:none}` },
-		nonce
-	}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.Slot, {
-		scope: __scopeSelect,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-			"data-radix-select-viewport": "",
-			role: "presentation",
-			...viewportProps,
-			ref: composedRefs,
-			style: {
-				position: "relative",
-				flex: 1,
-				overflow: "hidden auto",
-				...viewportProps.style
-			},
-			onScroll: composeEventHandlers(viewportProps.onScroll, (event) => {
-				const viewport = event.currentTarget;
-				const { contentWrapper, shouldExpandOnScrollRef } = viewportContext;
-				if (shouldExpandOnScrollRef?.current && contentWrapper) {
-					const scrolledBy = Math.abs(prevScrollTopRef.current - viewport.scrollTop);
-					if (scrolledBy > 0) {
-						const availableHeight = window.innerHeight - CONTENT_MARGIN * 2;
-						const cssMinHeight = parseFloat(contentWrapper.style.minHeight);
-						const cssHeight = parseFloat(contentWrapper.style.height);
-						const prevHeight = Math.max(cssMinHeight, cssHeight);
-						if (prevHeight < availableHeight) {
-							const nextHeight = prevHeight + scrolledBy;
-							const clampedNextHeight = Math.min(availableHeight, nextHeight);
-							const heightDiff = nextHeight - clampedNextHeight;
-							contentWrapper.style.height = clampedNextHeight + "px";
-							if (contentWrapper.style.bottom === "0px") {
-								viewport.scrollTop = heightDiff > 0 ? heightDiff : 0;
-								contentWrapper.style.justifyContent = "flex-end";
-							}
-						}
-					}
-				}
-				prevScrollTopRef.current = viewport.scrollTop;
-			})
-		})
-	})] });
-});
-SelectViewport.displayName = VIEWPORT_NAME;
-var GROUP_NAME$1 = "SelectGroup";
-var [SelectGroupContextProvider, useSelectGroupContext] = createSelectContext(GROUP_NAME$1);
-var SelectGroup = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, ...groupProps } = props;
-	const groupId = useId();
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectGroupContextProvider, {
-		scope: __scopeSelect,
-		id: groupId,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-			role: "group",
-			"aria-labelledby": groupId,
-			...groupProps,
-			ref: forwardedRef
-		})
-	});
-});
-SelectGroup.displayName = GROUP_NAME$1;
-var LABEL_NAME = "SelectLabel";
-var SelectLabel = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, ...labelProps } = props;
-	const groupContext = useSelectGroupContext(LABEL_NAME, __scopeSelect);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-		id: groupContext.id,
-		...labelProps,
-		ref: forwardedRef
-	});
-});
-SelectLabel.displayName = LABEL_NAME;
-var ITEM_NAME$1 = "SelectItem";
-var [SelectItemContextProvider, useSelectItemContext] = createSelectContext(ITEM_NAME$1);
-var SelectItem$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, value, disabled = false, textValue: textValueProp, ...itemProps } = props;
-	const context = useSelectContext(ITEM_NAME$1, __scopeSelect);
-	const contentContext = useSelectContentContext(ITEM_NAME$1, __scopeSelect);
-	const isSelected = context.value === value;
-	const [textValue, setTextValue] = import_react.useState(textValueProp ?? "");
-	const [isFocused, setIsFocused] = import_react.useState(false);
-	const composedRefs = useComposedRefs(forwardedRef, (node) => contentContext.itemRefCallback?.(node, value, disabled));
-	const textId = useId();
-	const pointerTypeRef = import_react.useRef("touch");
-	const handleSelect = () => {
-		if (!disabled) {
-			context.onValueChange(value);
-			context.onOpenChange(false);
-		}
-	};
-	if (value === "") throw new Error("A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.");
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItemContextProvider, {
-		scope: __scopeSelect,
-		value,
-		disabled,
-		textId,
-		isSelected,
-		onItemTextChange: import_react.useCallback((node) => {
-			setTextValue((prevTextValue) => prevTextValue || (node?.textContent ?? "").trim());
-		}, []),
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.ItemSlot, {
-			scope: __scopeSelect,
-			value,
-			disabled,
-			textValue,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-				role: "option",
-				"aria-labelledby": textId,
-				"data-highlighted": isFocused ? "" : void 0,
-				"aria-selected": isSelected && isFocused,
-				"data-state": isSelected ? "checked" : "unchecked",
-				"aria-disabled": disabled || void 0,
-				"data-disabled": disabled ? "" : void 0,
-				tabIndex: disabled ? void 0 : -1,
-				...itemProps,
-				ref: composedRefs,
-				onFocus: composeEventHandlers(itemProps.onFocus, () => setIsFocused(true)),
-				onBlur: composeEventHandlers(itemProps.onBlur, () => setIsFocused(false)),
-				onClick: composeEventHandlers(itemProps.onClick, () => {
-					if (pointerTypeRef.current !== "mouse") handleSelect();
-				}),
-				onPointerUp: composeEventHandlers(itemProps.onPointerUp, () => {
-					if (pointerTypeRef.current === "mouse") handleSelect();
-				}),
-				onPointerDown: composeEventHandlers(itemProps.onPointerDown, (event) => {
-					pointerTypeRef.current = event.pointerType;
-				}),
-				onPointerMove: composeEventHandlers(itemProps.onPointerMove, (event) => {
-					pointerTypeRef.current = event.pointerType;
-					if (disabled) contentContext.onItemLeave?.();
-					else if (pointerTypeRef.current === "mouse") event.currentTarget.focus({ preventScroll: true });
-				}),
-				onPointerLeave: composeEventHandlers(itemProps.onPointerLeave, (event) => {
-					if (event.currentTarget === document.activeElement) contentContext.onItemLeave?.();
-				}),
-				onKeyDown: composeEventHandlers(itemProps.onKeyDown, (event) => {
-					if (contentContext.searchRef?.current !== "" && event.key === " ") return;
-					if (SELECTION_KEYS.includes(event.key)) handleSelect();
-					if (event.key === " ") event.preventDefault();
-				})
-			})
-		})
-	});
-});
-SelectItem$1.displayName = ITEM_NAME$1;
-var ITEM_TEXT_NAME = "SelectItemText";
-var SelectItemText = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, className, style, ...itemTextProps } = props;
-	const context = useSelectContext(ITEM_TEXT_NAME, __scopeSelect);
-	const contentContext = useSelectContentContext(ITEM_TEXT_NAME, __scopeSelect);
-	const itemContext = useSelectItemContext(ITEM_TEXT_NAME, __scopeSelect);
-	const nativeOptionsContext = useSelectNativeOptionsContext(ITEM_TEXT_NAME, __scopeSelect);
-	const [itemTextNode, setItemTextNode] = import_react.useState(null);
-	const composedRefs = useComposedRefs(forwardedRef, (node) => setItemTextNode(node), itemContext.onItemTextChange, (node) => contentContext.itemTextRefCallback?.(node, itemContext.value, itemContext.disabled));
-	const textContent = itemTextNode?.textContent;
-	const nativeOption = import_react.useMemo(() => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", {
-		value: itemContext.value,
-		disabled: itemContext.disabled,
-		children: textContent
-	}, itemContext.value), [
-		itemContext.disabled,
-		itemContext.value,
-		textContent
-	]);
-	const { onNativeOptionAdd, onNativeOptionRemove } = nativeOptionsContext;
-	useLayoutEffect2(() => {
-		onNativeOptionAdd(nativeOption);
-		return () => onNativeOptionRemove(nativeOption);
-	}, [
-		onNativeOptionAdd,
-		onNativeOptionRemove,
-		nativeOption
-	]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
-		id: itemContext.textId,
-		...itemTextProps,
-		ref: composedRefs
-	}), itemContext.isSelected && context.valueNode && !context.valueNodeHasChildren ? import_react_dom.createPortal(itemTextProps.children, context.valueNode) : null] });
-});
-SelectItemText.displayName = ITEM_TEXT_NAME;
-var ITEM_INDICATOR_NAME = "SelectItemIndicator";
-var SelectItemIndicator = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, ...itemIndicatorProps } = props;
-	return useSelectItemContext(ITEM_INDICATOR_NAME, __scopeSelect).isSelected ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
-		"aria-hidden": true,
-		...itemIndicatorProps,
-		ref: forwardedRef
-	}) : null;
-});
-SelectItemIndicator.displayName = ITEM_INDICATOR_NAME;
-var SCROLL_UP_BUTTON_NAME = "SelectScrollUpButton";
-var SelectScrollUpButton$1 = import_react.forwardRef((props, forwardedRef) => {
-	const contentContext = useSelectContentContext(SCROLL_UP_BUTTON_NAME, props.__scopeSelect);
-	const viewportContext = useSelectViewportContext(SCROLL_UP_BUTTON_NAME, props.__scopeSelect);
-	const [canScrollUp, setCanScrollUp] = import_react.useState(false);
-	const composedRefs = useComposedRefs(forwardedRef, viewportContext.onScrollButtonChange);
-	useLayoutEffect2(() => {
-		if (contentContext.viewport && contentContext.isPositioned) {
-			let handleScroll2 = function() {
-				const canScrollUp2 = viewport.scrollTop > 0;
-				setCanScrollUp(canScrollUp2);
-			};
-			const viewport = contentContext.viewport;
-			handleScroll2();
-			viewport.addEventListener("scroll", handleScroll2);
-			return () => viewport.removeEventListener("scroll", handleScroll2);
-		}
-	}, [contentContext.viewport, contentContext.isPositioned]);
-	return canScrollUp ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollButtonImpl, {
-		...props,
-		ref: composedRefs,
-		onAutoScroll: () => {
-			const { viewport, selectedItem } = contentContext;
-			if (viewport && selectedItem) viewport.scrollTop = viewport.scrollTop - selectedItem.offsetHeight;
-		}
-	}) : null;
-});
-SelectScrollUpButton$1.displayName = SCROLL_UP_BUTTON_NAME;
-var SCROLL_DOWN_BUTTON_NAME = "SelectScrollDownButton";
-var SelectScrollDownButton$1 = import_react.forwardRef((props, forwardedRef) => {
-	const contentContext = useSelectContentContext(SCROLL_DOWN_BUTTON_NAME, props.__scopeSelect);
-	const viewportContext = useSelectViewportContext(SCROLL_DOWN_BUTTON_NAME, props.__scopeSelect);
-	const [canScrollDown, setCanScrollDown] = import_react.useState(false);
-	const composedRefs = useComposedRefs(forwardedRef, viewportContext.onScrollButtonChange);
-	useLayoutEffect2(() => {
-		if (contentContext.viewport && contentContext.isPositioned) {
-			let handleScroll2 = function() {
-				const maxScroll = viewport.scrollHeight - viewport.clientHeight;
-				const canScrollDown2 = Math.ceil(viewport.scrollTop) < maxScroll;
-				setCanScrollDown(canScrollDown2);
-			};
-			const viewport = contentContext.viewport;
-			handleScroll2();
-			viewport.addEventListener("scroll", handleScroll2);
-			return () => viewport.removeEventListener("scroll", handleScroll2);
-		}
-	}, [contentContext.viewport, contentContext.isPositioned]);
-	return canScrollDown ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollButtonImpl, {
-		...props,
-		ref: composedRefs,
-		onAutoScroll: () => {
-			const { viewport, selectedItem } = contentContext;
-			if (viewport && selectedItem) viewport.scrollTop = viewport.scrollTop + selectedItem.offsetHeight;
-		}
-	}) : null;
-});
-SelectScrollDownButton$1.displayName = SCROLL_DOWN_BUTTON_NAME;
-var SelectScrollButtonImpl = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, onAutoScroll, ...scrollIndicatorProps } = props;
-	const contentContext = useSelectContentContext("SelectScrollButton", __scopeSelect);
-	const autoScrollTimerRef = import_react.useRef(null);
-	const getItems = useCollection$1(__scopeSelect);
-	const clearAutoScrollTimer = import_react.useCallback(() => {
-		if (autoScrollTimerRef.current !== null) {
-			window.clearInterval(autoScrollTimerRef.current);
-			autoScrollTimerRef.current = null;
-		}
-	}, []);
-	import_react.useEffect(() => {
-		return () => clearAutoScrollTimer();
-	}, [clearAutoScrollTimer]);
-	useLayoutEffect2(() => {
-		getItems().find((item) => item.ref.current === document.activeElement)?.ref.current?.scrollIntoView({ block: "nearest" });
-	}, [getItems]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-		"aria-hidden": true,
-		...scrollIndicatorProps,
-		ref: forwardedRef,
-		style: {
-			flexShrink: 0,
-			...scrollIndicatorProps.style
-		},
-		onPointerDown: composeEventHandlers(scrollIndicatorProps.onPointerDown, () => {
-			if (autoScrollTimerRef.current === null) autoScrollTimerRef.current = window.setInterval(onAutoScroll, 50);
-		}),
-		onPointerMove: composeEventHandlers(scrollIndicatorProps.onPointerMove, () => {
-			contentContext.onItemLeave?.();
-			if (autoScrollTimerRef.current === null) autoScrollTimerRef.current = window.setInterval(onAutoScroll, 50);
-		}),
-		onPointerLeave: composeEventHandlers(scrollIndicatorProps.onPointerLeave, () => {
-			clearAutoScrollTimer();
-		})
-	});
-});
-var SEPARATOR_NAME = "SelectSeparator";
-var SelectSeparator = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, ...separatorProps } = props;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
-		"aria-hidden": true,
-		...separatorProps,
-		ref: forwardedRef
-	});
-});
-SelectSeparator.displayName = SEPARATOR_NAME;
-var ARROW_NAME = "SelectArrow";
-var SelectArrow = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, ...arrowProps } = props;
-	const popperScope = usePopperScope(__scopeSelect);
-	const context = useSelectContext(ARROW_NAME, __scopeSelect);
-	const contentContext = useSelectContentContext(ARROW_NAME, __scopeSelect);
-	return context.open && contentContext.position === "popper" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Arrow, {
-		...popperScope,
-		...arrowProps,
-		ref: forwardedRef
-	}) : null;
-});
-SelectArrow.displayName = ARROW_NAME;
-var BUBBLE_INPUT_NAME$2 = "SelectBubbleInput";
-var SelectBubbleInput = import_react.forwardRef(({ __scopeSelect, value, ...props }, forwardedRef) => {
-	const ref = import_react.useRef(null);
-	const composedRefs = useComposedRefs(forwardedRef, ref);
-	const prevValue = usePrevious(value);
-	import_react.useEffect(() => {
-		const select = ref.current;
-		if (!select) return;
-		const selectProto = window.HTMLSelectElement.prototype;
-		const setValue = Object.getOwnPropertyDescriptor(selectProto, "value").set;
-		if (prevValue !== value && setValue) {
-			const event = new Event("change", { bubbles: true });
-			setValue.call(select, value);
-			select.dispatchEvent(event);
-		}
-	}, [prevValue, value]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.select, {
-		...props,
-		style: {
-			...VISUALLY_HIDDEN_STYLES,
-			...props.style
-		},
-		ref: composedRefs,
-		defaultValue: value
-	});
-});
-SelectBubbleInput.displayName = BUBBLE_INPUT_NAME$2;
-function shouldShowPlaceholder(value) {
-	return value === "" || value === void 0;
-}
-function useTypeaheadSearch(onSearchChange) {
-	const handleSearchChange = useCallbackRef$1(onSearchChange);
-	const searchRef = import_react.useRef("");
-	const timerRef = import_react.useRef(0);
-	const handleTypeaheadSearch = import_react.useCallback((key) => {
-		const search = searchRef.current + key;
-		handleSearchChange(search);
-		(function updateSearch(value) {
-			searchRef.current = value;
-			window.clearTimeout(timerRef.current);
-			if (value !== "") timerRef.current = window.setTimeout(() => updateSearch(""), 1e3);
-		})(search);
-	}, [handleSearchChange]);
-	const resetTypeahead = import_react.useCallback(() => {
-		searchRef.current = "";
-		window.clearTimeout(timerRef.current);
-	}, []);
-	import_react.useEffect(() => {
-		return () => window.clearTimeout(timerRef.current);
-	}, []);
-	return [
-		searchRef,
-		handleTypeaheadSearch,
-		resetTypeahead
-	];
-}
-function findNextItem(items, search, currentItem) {
-	const normalizedSearch = search.length > 1 && Array.from(search).every((char) => char === search[0]) ? search[0] : search;
-	const currentItemIndex = currentItem ? items.indexOf(currentItem) : -1;
-	let wrappedItems = wrapArray$1(items, Math.max(currentItemIndex, 0));
-	if (normalizedSearch.length === 1) wrappedItems = wrappedItems.filter((v) => v !== currentItem);
-	const nextItem = wrappedItems.find((item) => item.textValue.toLowerCase().startsWith(normalizedSearch.toLowerCase()));
-	return nextItem !== currentItem ? nextItem : void 0;
-}
-function wrapArray$1(array, startIndex) {
-	return array.map((_, index) => array[(startIndex + index) % array.length]);
-}
-var Root2$1 = Select$1;
-var Trigger$1 = SelectTrigger$1;
-var Value = SelectValue$1;
-var Icon = SelectIcon;
-var Portal = SelectPortal;
-var Content2 = SelectContent$1;
-var Viewport = SelectViewport;
-var Item$1 = SelectItem$1;
-var ItemText = SelectItemText;
-var ItemIndicator = SelectItemIndicator;
-var ScrollUpButton = SelectScrollUpButton$1;
-var ScrollDownButton = SelectScrollDownButton$1;
-//#endregion
-//#region src/components/ui/select.tsx
-function Select({ ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root2$1, {
-		"data-slot": "select",
-		...props
-	});
-}
-function SelectValue({ ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Value, {
-		"data-slot": "select-value",
-		...props
-	});
-}
-function SelectTrigger({ className, size = "default", children, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Trigger$1, {
-		"data-slot": "select-trigger",
-		"data-size": size,
-		className: cn("border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4", className),
-		...props,
-		children: [children, /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon, {
-			asChild: true,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, { className: "size-4 opacity-50" })
-		})]
-	});
-}
-function SelectContent({ className, children, position = "popper", ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Content2, {
-		"data-slot": "select-content",
-		className: cn("bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border shadow-md", position === "popper" && "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1", className),
-		position,
-		...props,
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollUpButton, {}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Viewport, {
-				className: cn("p-1", position === "popper" && "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)] scroll-my-1"),
-				children
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollDownButton, {})
-		]
-	}) });
-}
-function SelectItem({ className, children, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Item$1, {
-		"data-slot": "select-item",
-		className: cn("focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2", className),
-		...props,
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-			className: "absolute right-2 flex size-3.5 items-center justify-center",
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ItemIndicator, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { className: "size-4" }) })
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ItemText, { children })]
-	});
-}
-function SelectScrollUpButton({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScrollUpButton, {
-		"data-slot": "select-scroll-up-button",
-		className: cn("flex cursor-default items-center justify-center py-1", className),
-		...props,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronUp, { className: "size-4" })
-	});
-}
-function SelectScrollDownButton({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScrollDownButton, {
-		"data-slot": "select-scroll-down-button",
-		className: cn("flex cursor-default items-center justify-center py-1", className),
-		...props,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, { className: "size-4" })
-	});
-}
-//#endregion
-//#region src/lib/format.ts
-/**
-* A stored photo/signature reference is the raw uploaded bytes. Render it as a
-* data URL so an `<img>` can display it without a round trip to storage.
-* Returns null for an empty or missing reference.
-*/
-function refToDataUrl(ref, contentType = "image/png") {
-	if (!ref || ref.length === 0) return null;
-	let binary = "";
-	for (let i = 0; i < ref.length; i += 1) binary += String.fromCharCode(ref[i]);
-	return `data:${contentType};base64,${btoa(binary)}`;
-}
-/** Read a browser `File` into the raw bytes the backend stores as a ref. */
-async function fileToRef(file) {
-	return new Uint8Array(await file.arrayBuffer());
-}
-/** JPEG quality used when re-encoding an upload. */
-var UPLOAD_JPEG_QUALITY = .8;
-/**
-* How long to wait for an image to decode before falling back to the original
-* file. A real browser decodes a small image in a few milliseconds, so this is
-* only a safety net for an undecodable file; keeping it short means a submit
-* never stalls on an image the browser cannot read.
-*/
-var IMAGE_LOAD_TIMEOUT_MS = 500;
-/** Load a `File` into an `HTMLImageElement` for canvas re-encoding. */
-function loadImage(file) {
-	return new Promise((resolve, reject) => {
-		const url = URL.createObjectURL(file);
-		const image = new Image();
-		const timer = setTimeout(() => {
-			URL.revokeObjectURL(url);
-			reject(/* @__PURE__ */ new Error("Timed out reading the image"));
-		}, IMAGE_LOAD_TIMEOUT_MS);
-		image.onload = () => {
-			clearTimeout(timer);
-			URL.revokeObjectURL(url);
-			resolve(image);
-		};
-		image.onerror = () => {
-			clearTimeout(timer);
-			URL.revokeObjectURL(url);
-			reject(/* @__PURE__ */ new Error("Could not read the image"));
-		};
-		image.src = url;
-	});
-}
-/** Draw an image onto a canvas at a scaled size and read it back as a blob. */
-function encodeCanvas(image, width, height, quality) {
-	const canvas = document.createElement("canvas");
-	canvas.width = width;
-	canvas.height = height;
-	const ctx = canvas.getContext("2d");
-	if (!ctx) return Promise.resolve(null);
-	ctx.drawImage(image, 0, 0, width, height);
-	return new Promise((resolve) => {
-		canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
-	});
-}
-/**
-* Downscale a photo or signature to at most `MAX_UPLOAD_EDGE` on its longest
-* edge, re-encode it as JPEG at `UPLOAD_JPEG_QUALITY`, and step the quality
-* down until the result fits `MAX_UPLOAD_BYTES`. Falls back to the original
-* file when the browser cannot decode or re-encode it.
-*/
-async function resizeImageFile(file) {
-	let image;
-	try {
-		image = await loadImage(file);
-	} catch {
-		return file;
-	}
-	const longest = Math.max(image.naturalWidth, image.naturalHeight);
-	const scale = longest > 800 ? 800 / longest : 1;
-	const width = Math.max(1, Math.round(image.naturalWidth * scale));
-	const height = Math.max(1, Math.round(image.naturalHeight * scale));
-	let quality = UPLOAD_JPEG_QUALITY;
-	let blob = await encodeCanvas(image, width, height, quality);
-	while (blob && blob.size > 307200 && quality > .4) {
-		quality = Math.round((quality - .1) * 10) / 10;
-		blob = await encodeCanvas(image, width, height, quality);
-	}
-	if (!blob) return file;
-	const name = file.name.replace(/\.[^.]+$/, "") || "upload";
-	return new File([blob], `${name}.jpg`, { type: "image/jpeg" });
-}
-/** Motoko `Time.now()` nanoseconds -> JS Date. Returns null when invalid. */
-function timestampToDate(timestamp) {
-	const date = new Date(Number(timestamp / 1000000n));
-	return Number.isNaN(date.getTime()) ? null : date;
-}
-/**
-* Motoko `DateOnly` (nanoseconds at UTC midnight) -> JS Date. The returned Date
-* is the UTC instant of that calendar day, so its `getUTC*` accessors are the
-* intended calendar values regardless of the device time zone.
-*/
-function dateOnlyToDate(dateOnly) {
-	const date = new Date(Number(dateOnly / 1000000n));
-	return Number.isNaN(date.getTime()) ? null : date;
-}
-/**
-* Format a backend timestamp for display in the store's time zone; falls back
-* to an em dash. Pass `timeZone` (an IANA name such as `America/Chicago`) so a
-* schedule time reads the same on every device.
-*/
-function formatTimestamp(timestamp, timeZone) {
-	const date = timestampToDate(timestamp);
-	if (!date) return "—";
-	return date.toLocaleString(void 0, {
-		dateStyle: "medium",
-		timeStyle: "short",
-		timeZone
-	});
-}
-/**
-* Format a backend date-only value for display in UTC; falls back to an em
-* dash. A date-only value is a calendar day, so it must not shift with the
-* device time zone.
-*/
-function formatDateOnly(dateOnly) {
-	const date = dateOnlyToDate(dateOnly);
-	if (!date) return "—";
-	return date.toLocaleDateString(void 0, {
-		dateStyle: "medium",
-		timeZone: "UTC"
-	});
-}
-/** Convert a JS Date to a Motoko `Timestamp` (nanoseconds since epoch). */
-function dateToTimestamp(date) {
-	return BigInt(date.getTime()) * 1000000n;
-}
-/** Convert a JS Date to a Motoko `DateOnly` (nanoseconds at UTC midnight). */
-function dateToDateOnly(date) {
-	const utcMidnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-	return BigInt(utcMidnight) * 1000000n;
-}
-/**
-* Format a timestamp as a medium date in the store's time zone (e.g. for the
-* opening timeline). Falls back to an em dash when invalid.
-*/
-function formatTimestampMediumDate(timestamp, timeZone) {
-	const date = timestampToDate(timestamp);
-	if (!date) return "—";
-	return date.toLocaleDateString(void 0, {
-		dateStyle: "medium",
-		timeZone
-	});
-}
-/** Human label for a roadie status enum value. */
-function roadieStatusLabel(status) {
-	return {
-		hired: "Hired",
-		paperworkDone: "Paperwork done",
-		oriented: "Oriented",
-		inTraining: "In training",
-		certified: "Certified",
-		needsMoreTime: "Needs more time",
-		active: "Active",
-		archived: "Archived"
-	}[status] ?? status;
-}
-/** Human label for a role enum value. */
-function roleLabel(role) {
-	return {
-		admin: "Admin",
-		storeManager: "Store Manager",
-		trainingManager: "Training Manager",
-		leadership: "Leadership",
-		visitingManager: "Visiting Manager",
-		trainer: "Trainer",
-		kiosk: "Kiosk",
-		integration: "Integration"
-	}[role] ?? role;
-}
-/** Shorten a principal for display. */
-function shortPrincipal(principal) {
-	const text = principal.toText();
-	return text.length > 12 ? `${text.slice(0, 5)}…${text.slice(-4)}` : text;
-}
-//#endregion
 //#region src/components/admin/AccessPanel.tsx
 var ALL_ROLES = [
 	Role.admin,
@@ -51478,7 +53432,7 @@ function sameIds(a, b) {
 	const set = new Set(b.map((id) => id.toString()));
 	return a.every((id) => set.has(id));
 }
-function GrantRow({ grant, adminCount, timeZone }) {
+function GrantRow({ grant, adminCount, timeZone, canSeeContact, isAdmin }) {
 	const { t } = useI18n();
 	const c = useAdminCopy();
 	const { actor } = useActor(createActor);
@@ -51492,7 +53446,10 @@ function GrantRow({ grant, adminCount, timeZone }) {
 	const [stationIds, setStationIds] = (0, import_react.useState)(grant.trainerPositionIds.map((id) => id.toString()));
 	const [accessEnd, setAccessEnd] = (0, import_react.useState)(grant.accessEndsAt !== void 0 ? timestampToDateInput(grant.accessEndsAt, timeZone) : "");
 	const [confirm, setConfirm] = (0, import_react.useState)(null);
+	const [showId, setShowId] = (0, import_react.useState)(false);
 	const [error, setError] = (0, import_react.useState)(null);
+	const profile = grant.staffProfile;
+	const displayName = staffDisplayName(profile, t("profile.unnamed"));
 	const roleChanged = draftRole !== grant.role;
 	const stationsChanged = draftRole === Role.trainer && !sameIds(stationIds, grant.trainerPositionIds);
 	const demotingLastAdmin = isLastAdmin && draftRole !== Role.admin;
@@ -51564,7 +53521,7 @@ function GrantRow({ grant, adminCount, timeZone }) {
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 							className: "font-display text-sm font-semibold uppercase tracking-wide",
-							children: shortPrincipal(grant.principal)
+							children: displayName
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 							className: "text-xs text-muted-foreground",
@@ -51582,11 +53539,41 @@ function GrantRow({ grant, adminCount, timeZone }) {
 								" ",
 								grant.accessEndsAt !== void 0 ? formatTimestamp(grant.accessEndsAt, timeZone) : t("common.none")
 							]
+						}),
+						canSeeContact && profile && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "mt-1 break-words text-xs text-muted-foreground",
+							children: [profile.workPhone, profile.workEmail].filter((value) => !!value && value.trim() !== "").join(" · ")
+						}),
+						isAdmin && showId && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							"data-ocid": "admin.access.principal",
+							className: "mt-1 break-all font-mono text-xs text-muted-foreground",
+							children: [
+								t("profile.principal"),
+								": ",
+								grant.principal.toText()
+							]
 						})
 					]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 					className: "flex flex-wrap items-center gap-2",
 					children: [
+						isAdmin && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+							type: "button",
+							variant: "ghost",
+							size: "sm",
+							className: "touch-target",
+							"data-ocid": "admin.access.show_id.toggle",
+							"aria-pressed": showId,
+							title: t("profile.showId.hint"),
+							onClick: () => setShowId((current) => !current),
+							children: [showId ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EyeOff, {
+								className: "mr-2 h-4 w-4",
+								"aria-hidden": "true"
+							}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eye, {
+								className: "mr-2 h-4 w-4",
+								"aria-hidden": "true"
+							}), t("profile.showId")]
+						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
 							value: draftRole,
 							onValueChange: (value) => {
@@ -51863,6 +53850,10 @@ function KioskPinSection() {
 function AccessPanel() {
 	const { t } = useI18n();
 	const c = useAdminCopy();
+	const access = useAccessState();
+	const viewerRole = access.kind === "granted" ? access.grant.role : void 0;
+	const isAdmin = viewerRole === Role.admin;
+	const canSeeContact = viewerRole === Role.admin || viewerRole === Role.storeManager;
 	const grants = useAccessGrants();
 	const adminCount = useAdminCount();
 	const { data: storeInfo } = useStoreInfo();
@@ -51894,7 +53885,9 @@ function AccessPanel() {
 				children: grants.data?.map((grant) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GrantRow, {
 					grant,
 					adminCount: Number(adminCount.data ?? 0n),
-					timeZone: storeInfo?.timeZone
+					timeZone: storeInfo?.timeZone,
+					canSeeContact,
+					isAdmin
 				}, grant.principal.toText()))
 			})
 		]
@@ -51921,7 +53914,7 @@ var Switch$1 = import_react.forwardRef((props, forwardedRef) => {
 		scope: __scopeSwitch,
 		checked,
 		disabled,
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.button, {
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
 			type: "button",
 			role: "switch",
 			"aria-checked": checked,
@@ -51957,7 +53950,7 @@ var THUMB_NAME = "SwitchThumb";
 var SwitchThumb = import_react.forwardRef((props, forwardedRef) => {
 	const { __scopeSwitch, ...thumbProps } = props;
 	const context = useSwitchContext(THUMB_NAME, __scopeSwitch);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
 		"data-state": getState$1(context.checked),
 		"data-disabled": context.disabled ? "" : void 0,
 		...thumbProps,
@@ -51969,7 +53962,7 @@ var BUBBLE_INPUT_NAME$1 = "SwitchBubbleInput";
 var SwitchBubbleInput = import_react.forwardRef(({ __scopeSwitch, control, checked, bubbles = true, ...props }, forwardedRef) => {
 	const ref = import_react.useRef(null);
 	const composedRefs = useComposedRefs(ref, forwardedRef);
-	const prevChecked = usePrevious(checked);
+	const prevChecked = usePrevious$1(checked);
 	const controlSize = useSize(control);
 	import_react.useEffect(() => {
 		const input = ref.current;
@@ -52058,13 +54051,21 @@ function ChecklistEditor({ title, description, items, onChange, ocid }) {
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "flex items-start justify-between gap-3",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
-					className: "font-display text-sm font-semibold uppercase tracking-widest text-muted-foreground",
-					children: title
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "mt-0.5 text-xs text-muted-foreground",
-					children: description
-				})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+						className: "font-display text-sm font-semibold uppercase tracking-widest text-muted-foreground",
+						children: title
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "mt-0.5 text-xs text-muted-foreground",
+						children: description
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "mt-0.5 text-xs text-muted-foreground",
+						"data-ocid": `${ocid}.toggle_hint`,
+						children: c.checklistsToggleHint
+					})
+				] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
 					type: "button",
 					variant: "outline",
 					className: "touch-target shrink-0",
@@ -52443,13 +54444,29 @@ function toPosition(draft, openingBuildTo, afterOpeningBuildTo) {
 		crewManager: draft.crewManager.trim() ? draft.crewManager.trim() : void 0
 	};
 }
+var BUILD_TO_MAX = 999;
 /**
-* A build-to target shown as +1/−1 steppers only. Each tap saves a single
-* increment through `adjustBuildTo`, so the target is never typed as an
-* absolute value and every change is logged.
+* A build-to target shown as an editable number input flanked by +1/−1
+* steppers. The steppers save a single-unit delta; typing an absolute value
+* saves the difference from the current target on blur or Enter. Invalid
+* entries (non-integer, negative, or above 999) revert to the saved value.
 */
 function BuildToStepper({ label, value, disabled, onDelta, ocid }) {
 	const { t } = useI18n();
+	const [text, setText] = (0, import_react.useState)(String(value));
+	const focused = (0, import_react.useRef)(false);
+	(0, import_react.useEffect)(() => {
+		if (!focused.current) setText(String(value));
+	}, [value]);
+	const commit = () => {
+		const parsed = Number(text);
+		if (!(text.trim() !== "" && Number.isInteger(parsed) && parsed >= 0 && parsed <= BUILD_TO_MAX)) {
+			setText(String(value));
+			return;
+		}
+		if (parsed === value) return;
+		onDelta(BigInt(parsed - value));
+	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "flex items-center justify-between gap-2",
 		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
@@ -52472,9 +54489,29 @@ function BuildToStepper({ label, value, disabled, onDelta, ocid }) {
 						"aria-hidden": "true"
 					})
 				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-					className: "w-8 text-center font-display text-base font-bold tabular-nums",
-					children: value
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+					type: "text",
+					inputMode: "numeric",
+					pattern: "[0-9]*",
+					"aria-label": label,
+					"data-ocid": `${ocid}.input`,
+					className: "h-9 w-14 touch-target px-1 text-center font-display text-base font-bold tabular-nums",
+					value: text,
+					disabled,
+					onFocus: () => {
+						focused.current = true;
+					},
+					onChange: (event) => setText(event.target.value),
+					onBlur: () => {
+						focused.current = false;
+						commit();
+					},
+					onKeyDown: (event) => {
+						if (event.key === "Enter") {
+							event.preventDefault();
+							commit();
+						}
+					}
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 					type: "button",
@@ -53237,6 +55274,77 @@ function formatTimeOfDay(value) {
 }
 //#endregion
 //#region src/components/admin/StoreInfoPanel.tsx
+/** The longest edge, in pixels, an uploaded store logo is scaled to. */
+var MAX_LOGO_EDGE = 512;
+/** JPEG quality used when re-encoding a non-transparent logo upload. */
+var LOGO_JPEG_QUALITY = .85;
+/** How long to wait for a logo to decode before falling back to the original. */
+var LOGO_LOAD_TIMEOUT_MS = 500;
+/** Load a `File` into an `HTMLImageElement` for canvas re-encoding. */
+function loadLogoImage(file) {
+	return new Promise((resolve, reject) => {
+		const url = URL.createObjectURL(file);
+		const image = new Image();
+		const timer = setTimeout(() => {
+			URL.revokeObjectURL(url);
+			reject(/* @__PURE__ */ new Error("Timed out reading the logo"));
+		}, LOGO_LOAD_TIMEOUT_MS);
+		image.onload = () => {
+			clearTimeout(timer);
+			URL.revokeObjectURL(url);
+			resolve(image);
+		};
+		image.onerror = () => {
+			clearTimeout(timer);
+			URL.revokeObjectURL(url);
+			reject(/* @__PURE__ */ new Error("Could not read the logo"));
+		};
+		image.src = url;
+	});
+}
+/**
+* Downscale a store logo to at most `MAX_LOGO_EDGE` on its longest edge. PNG
+* input keeps a PNG output so transparency survives; other raster input is
+* re-encoded as JPEG. SVG (and any file the browser cannot decode) passes
+* through unchanged so vector logos stay crisp.
+*/
+async function resizeLogoFile(file) {
+	if (file.type === "image/svg+xml") return file;
+	let image;
+	try {
+		image = await loadLogoImage(file);
+	} catch {
+		return file;
+	}
+	const longest = Math.max(image.naturalWidth, image.naturalHeight);
+	const scale = longest > MAX_LOGO_EDGE ? MAX_LOGO_EDGE / longest : 1;
+	const width = Math.max(1, Math.round(image.naturalWidth * scale));
+	const height = Math.max(1, Math.round(image.naturalHeight * scale));
+	const keepPng = file.type === "image/png";
+	const canvas = document.createElement("canvas");
+	canvas.width = width;
+	canvas.height = height;
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return file;
+	ctx.drawImage(image, 0, 0, width, height);
+	const blob = await new Promise((resolve) => {
+		canvas.toBlob((result) => resolve(result), keepPng ? "image/png" : "image/jpeg", keepPng ? void 0 : LOGO_JPEG_QUALITY);
+	});
+	if (!blob) return file;
+	const name = file.name.replace(/\.[^.]+$/, "") || "logo";
+	return new File([blob], `${name}.${keepPng ? "png" : "jpg"}`, { type: blob.type });
+}
+/**
+* Detect the MIME type of stored logo bytes from their magic number so the
+* preview data URL matches the resized output (PNG keeps transparency, other
+* raster input is JPEG). Defaults to PNG for unrecognized bytes.
+*/
+function logoContentType(ref) {
+	if (ref.length >= 8 && ref[0] === 137 && ref[1] === 80) return "image/png";
+	if (ref.length >= 3 && ref[0] === 255 && ref[1] === 216) return "image/jpeg";
+	if (ref.length >= 12 && ref[0] === 82 && ref[1] === 73 && ref[2] === 70 && ref[3] === 70 && ref[8] === 87 && ref[9] === 69 && ref[10] === 66 && ref[11] === 80) return "image/webp";
+	return "image/png";
+}
 function toDraft(info) {
 	const opening = dateOnlyToDate(info.openingDate);
 	return {
@@ -53254,7 +55362,8 @@ function toDraft(info) {
 		leaderTalkName: info.leaderTalkName,
 		trainingGroupSize: info.trainingGroupSize.toString(),
 		leaderTalkSize: info.leaderTalkSize.toString(),
-		logo: info.logo
+		logo: info.logo,
+		secondaryLogo: info.secondaryLogo
 	};
 }
 function toStoreInfo(draft, base) {
@@ -53275,7 +55384,8 @@ function toStoreInfo(draft, base) {
 		leaderTalkName: draft.leaderTalkName.trim(),
 		trainingGroupSize: BigInt(Math.max(1, Number(draft.trainingGroupSize) || 1)),
 		leaderTalkSize: BigInt(Math.max(1, Number(draft.leaderTalkSize) || 1)),
-		logo: draft.logo
+		logo: draft.logo,
+		secondaryLogo: draft.secondaryLogo
 	};
 }
 function StoreInfoPanel() {
@@ -53285,6 +55395,7 @@ function StoreInfoPanel() {
 	const [draft, setDraft] = (0, import_react.useState)(null);
 	const [saved, setSaved] = (0, import_react.useState)(false);
 	const fileRef = (0, import_react.useRef)(null);
+	const secondaryFileRef = (0, import_react.useRef)(null);
 	(0, import_react.useEffect)(() => {
 		if (store.data && draft === null) setDraft(toDraft(store.data));
 	}, [store.data, draft]);
@@ -53314,7 +55425,11 @@ function StoreInfoPanel() {
 	};
 	const onLogoChange = (file) => {
 		if (!file) return;
-		fileToRef(file).then((ref) => set("logo", ref));
+		resizeLogoFile(file).then(fileToRef).then((ref) => set("logo", ref));
+	};
+	const onSecondaryLogoChange = (file) => {
+		if (!file) return;
+		resizeLogoFile(file).then(fileToRef).then((ref) => set("secondaryLogo", ref));
 	};
 	const onSubmit = (event) => {
 		event.preventDefault();
@@ -53334,7 +55449,7 @@ function StoreInfoPanel() {
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 						className: "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted",
 						children: draft.logo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-							src: refToDataUrl(draft.logo) ?? void 0,
+							src: refToDataUrl(draft.logo, logoContentType(draft.logo)) ?? void 0,
 							alt: c.storeLogoAlt,
 							className: "h-full w-full object-contain"
 						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ImagePlus, {
@@ -53370,6 +55485,51 @@ function StoreInfoPanel() {
 								"data-ocid": "admin.store.logo.remove_button",
 								onClick: () => set("logo", void 0),
 								children: c.storeLogoRemove
+							})
+						]
+					})]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex flex-col gap-4 sm:flex-row sm:items-center",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted",
+						children: draft.secondaryLogo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+							src: refToDataUrl(draft.secondaryLogo, logoContentType(draft.secondaryLogo)) ?? void 0,
+							alt: c.storeSecondaryLogoAlt,
+							className: "h-full w-full object-contain"
+						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ImagePlus, {
+							className: "h-7 w-7 text-muted-foreground",
+							"aria-hidden": "true"
+						})
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "flex flex-col gap-2",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+								ref: secondaryFileRef,
+								type: "file",
+								accept: "image/png,image/jpeg,image/webp,image/svg+xml",
+								className: "sr-only",
+								"data-ocid": "admin.store.secondary_logo.input",
+								onChange: (event) => onSecondaryLogoChange(event.target.files?.[0])
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+								type: "button",
+								variant: "outline",
+								className: "touch-target w-fit",
+								"data-ocid": "admin.store.secondary_logo.upload_button",
+								onClick: () => secondaryFileRef.current?.click(),
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ImagePlus, {
+									className: "mr-2 h-4 w-4",
+									"aria-hidden": "true"
+								}), c.storeSecondaryLogoUpload]
+							}),
+							draft.secondaryLogo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+								type: "button",
+								variant: "ghost",
+								className: "touch-target w-fit",
+								"data-ocid": "admin.store.secondary_logo.remove_button",
+								onClick: () => set("secondaryLogo", void 0),
+								children: c.storeSecondaryLogoRemove
 							})
 						]
 					})]
@@ -53604,11 +55764,168 @@ function StoreInfoPanel() {
 }
 //#endregion
 //#region src/components/admin/TemplatePanel.tsx
+var TEMPLATE_ACTION_COPY = {
+	en: {
+		download: "Download template",
+		downloading: "Preparing…",
+		downloadError: "We couldn't build the template file.",
+		loadTitle: "Load template",
+		loadDescription: "Replace this store's positions, schedule and checklists from a template file. Available only before any roadie exists.",
+		loadChoose: "Choose a .json template file",
+		loadParsing: "Reading template…",
+		loadInvalid: "That file isn't a valid store template.",
+		loadPreviewTitle: "Review before loading",
+		loadPreviewPositions: "Positions",
+		loadPreviewSchedule: "Schedule events",
+		loadPreviewOrientation: "Orientation items",
+		loadPreviewPaperwork: "Paperwork items",
+		loadPreviewLeaderTalk: "Leader talk",
+		loadConfirm: "Load template",
+		loadCancel: "Cancel",
+		loadLoading: "Loading…",
+		loadSuccess: "Template loaded. Positions, schedule and checklists replaced.",
+		loadError: "We couldn't load the template.",
+		loadRefused: "Cannot load a template once roadies exist."
+	},
+	es: {
+		download: "Descargar plantilla",
+		downloading: "Preparando…",
+		downloadError: "No pudimos generar el archivo de plantilla.",
+		loadTitle: "Cargar plantilla",
+		loadDescription: "Reemplaza los puestos, el calendario y las listas de esta tienda desde un archivo de plantilla. Solo disponible antes de que exista algún roadie.",
+		loadChoose: "Elige un archivo de plantilla .json",
+		loadParsing: "Leyendo plantilla…",
+		loadInvalid: "Ese archivo no es una plantilla de tienda válida.",
+		loadPreviewTitle: "Revisa antes de cargar",
+		loadPreviewPositions: "Puestos",
+		loadPreviewSchedule: "Eventos del calendario",
+		loadPreviewOrientation: "Elementos de orientación",
+		loadPreviewPaperwork: "Elementos de papeleo",
+		loadPreviewLeaderTalk: "Charla del líder",
+		loadConfirm: "Cargar plantilla",
+		loadCancel: "Cancelar",
+		loadLoading: "Cargando…",
+		loadSuccess: "Plantilla cargada. Se reemplazaron puestos, calendario y listas.",
+		loadError: "No pudimos cargar la plantilla.",
+		loadRefused: "No se puede cargar una plantilla cuando ya existen roadies."
+	}
+};
+function templateToJson(file) {
+	return JSON.stringify(file, (_key, value) => typeof value === "bigint" ? Number(value) : value, 2);
+}
+function isRecord(value) {
+	return typeof value === "object" && value !== null;
+}
+function toBigInt(value) {
+	if (typeof value === "number" && Number.isInteger(value) && value >= 0) return BigInt(value);
+	if (typeof value === "string" && /^\d+$/.test(value)) return BigInt(value);
+	return null;
+}
+function parseChecklistItems(value) {
+	if (!Array.isArray(value)) return null;
+	const items = [];
+	for (const raw of value) {
+		if (!isRecord(raw)) return null;
+		const id = toBigInt(raw.id);
+		if (id === null || typeof raw.text !== "string") return null;
+		items.push({
+			id,
+			text: raw.text,
+			requiresAlcoholCert: raw.requiresAlcoholCert === true,
+			minorOnly: raw.minorOnly === true
+		});
+	}
+	return items;
+}
+/**
+* Validate an uploaded JSON value into a `StoreTemplateFile`. Returns null when
+* the shape is not a store template, so the caller can show a clear error
+* instead of sending a malformed file to the backend.
+*/
+function parseTemplateFile(value) {
+	if (!isRecord(value)) return null;
+	const version = toBigInt(value.version);
+	const leaderTalkSize = toBigInt(value.leaderTalkSize);
+	const trainingGroupSize = toBigInt(value.trainingGroupSize);
+	if (version === null || leaderTalkSize === null || trainingGroupSize === null || typeof value.leaderTalkName !== "string") return null;
+	if (!Array.isArray(value.positions) || !Array.isArray(value.schedule)) return null;
+	const positions = [];
+	for (const raw of value.positions) {
+		if (!isRecord(raw)) return null;
+		const openingBuildTo = toBigInt(raw.openingBuildTo);
+		const afterOpeningBuildTo = toBigInt(raw.afterOpeningBuildTo);
+		const minimumAge = toBigInt(raw.minimumAge);
+		if (openingBuildTo === null || afterOpeningBuildTo === null || minimumAge === null || typeof raw.name !== "string" || typeof raw.code !== "string" || raw.house !== "foh" && raw.house !== "boh") return null;
+		positions.push({
+			name: raw.name,
+			code: raw.code,
+			house: raw.house === "boh" ? House.boh : House.foh,
+			openingBuildTo,
+			afterOpeningBuildTo,
+			minimumAge,
+			needsAlcoholCert: raw.needsAlcoholCert === true
+		});
+	}
+	const schedule = [];
+	for (const raw of value.schedule) {
+		if (!isRecord(raw)) return null;
+		const startOffsetDays = toBigInt(raw.startOffsetDays);
+		if (startOffsetDays === null || typeof raw.name !== "string" || typeof raw.kind !== "string") return null;
+		const endOffsetDays = raw.endOffsetDays === null || raw.endOffsetDays === void 0 ? void 0 : toBigInt(raw.endOffsetDays);
+		if (endOffsetDays === null) return null;
+		schedule.push({
+			kind: raw.kind,
+			name: raw.name,
+			startOffsetDays,
+			endOffsetDays
+		});
+	}
+	if (!isRecord(value.checklists)) return null;
+	const orientationUniform = parseChecklistItems(value.checklists.orientationUniform);
+	const paperwork = parseChecklistItems(value.checklists.paperwork);
+	if (orientationUniform === null || paperwork === null) return null;
+	return {
+		version,
+		leaderTalkName: value.leaderTalkName,
+		leaderTalkSize,
+		trainingGroupSize,
+		positions,
+		schedule,
+		checklists: {
+			orientationUniform,
+			paperwork
+		}
+	};
+}
+/** Trigger a browser download for a text file. */
+function downloadTextFile(filename, text) {
+	const blob = new Blob([text], { type: "application/json" });
+	const url = URL.createObjectURL(blob);
+	const anchor = document.createElement("a");
+	anchor.href = url;
+	anchor.download = filename;
+	anchor.rel = "noopener";
+	document.body.appendChild(anchor);
+	anchor.click();
+	anchor.remove();
+	URL.revokeObjectURL(url);
+}
 function TemplatePanel() {
 	const c = useAdminCopy();
+	const { locale } = useI18n();
+	const copy = TEMPLATE_ACTION_COPY[locale === "es" ? "es" : "en"];
+	const access = useAccessState();
+	const isAdmin = access.kind === "granted" && canAdmin(access.grant.role);
 	const save = useSaveStoreTemplate();
+	const download = useDownloadStoreTemplate();
+	const load = useLoadStoreTemplate();
 	const [name, setName] = (0, import_react.useState)("");
 	const [saved, setSaved] = (0, import_react.useState)(false);
+	const fileInputRef = (0, import_react.useRef)(null);
+	const [pendingFile, setPendingFile] = (0, import_react.useState)(null);
+	const [preview, setPreview] = (0, import_react.useState)(null);
+	const [loadError, setLoadError] = (0, import_react.useState)(null);
+	const [loadSuccess, setLoadSuccess] = (0, import_react.useState)(false);
 	const onSubmit = (event) => {
 		event.preventDefault();
 		const trimmed = name.trim();
@@ -53619,6 +55936,53 @@ function TemplatePanel() {
 			setName("");
 		} });
 	};
+	const onDownload = () => {
+		download.mutate(void 0, { onSuccess: (file) => {
+			downloadTextFile("store-template.json", templateToJson(file));
+		} });
+	};
+	const resetLoad = () => {
+		setPendingFile(null);
+		setPreview(null);
+		setLoadError(null);
+		if (fileInputRef.current) fileInputRef.current.value = "";
+	};
+	const onFileChange = async (event) => {
+		const file = event.target.files?.[0];
+		setLoadSuccess(false);
+		setLoadError(null);
+		setPreview(null);
+		setPendingFile(null);
+		if (!file) return;
+		try {
+			const text = await file.text();
+			const parsed = parseTemplateFile(JSON.parse(text));
+			if (!parsed) {
+				setLoadError(copy.loadInvalid);
+				return;
+			}
+			setPendingFile(parsed);
+			setPreview({
+				positionCount: BigInt(parsed.positions.length),
+				scheduleCount: BigInt(parsed.schedule.length),
+				orientationUniformCount: BigInt(parsed.checklists.orientationUniform.length),
+				paperworkCount: BigInt(parsed.checklists.paperwork.length),
+				leaderTalkName: parsed.leaderTalkName
+			});
+		} catch {
+			setLoadError(copy.loadInvalid);
+		}
+	};
+	const onConfirmLoad = () => {
+		if (!pendingFile) return;
+		setLoadError(null);
+		load.mutate(pendingFile, { onSuccess: (result) => {
+			if (result.__kind__ === "ok") {
+				setLoadSuccess(true);
+				resetLoad();
+			} else setLoadError(result.err === "Cannot load a template once roadies exist" ? copy.loadRefused : result.err);
+		} });
+	};
 	const includes = [
 		c.templateIncludesSchedule,
 		c.templateIncludesPositions,
@@ -53626,6 +55990,24 @@ function TemplatePanel() {
 		c.templateIncludesLeaderTalk,
 		c.templateIncludesNoPeople
 	];
+	const previewRows = preview ? [
+		{
+			label: copy.loadPreviewPositions,
+			value: preview.positionCount
+		},
+		{
+			label: copy.loadPreviewSchedule,
+			value: preview.scheduleCount
+		},
+		{
+			label: copy.loadPreviewOrientation,
+			value: preview.orientationUniformCount
+		},
+		{
+			label: copy.loadPreviewPaperwork,
+			value: preview.paperworkCount
+		}
+	] : [];
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AdminSection, {
 		title: c.templateTitle,
 		description: c.templateDescription,
@@ -53682,6 +56064,136 @@ function TemplatePanel() {
 				className: "mt-3 text-sm font-medium text-destructive",
 				"data-ocid": "admin.template.error_state",
 				children: c.templateSaveError
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "mt-6 border-t border-border pt-5",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+					type: "button",
+					variant: "outline",
+					className: "touch-target",
+					"data-ocid": "admin.template.download_button",
+					onClick: onDownload,
+					disabled: download.isPending,
+					children: [download.isPending ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
+						className: "mr-2 h-4 w-4 animate-spin",
+						"aria-hidden": "true"
+					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, {
+						className: "mr-2 h-4 w-4",
+						"aria-hidden": "true"
+					}), download.isPending ? copy.downloading : copy.download]
+				}), download.isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "mt-3 text-sm font-medium text-destructive",
+					"data-ocid": "admin.template.download_error_state",
+					children: copy.downloadError
+				})]
+			}),
+			isAdmin && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "mt-6 border-t border-border pt-5",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+						className: "font-display text-sm font-semibold uppercase tracking-wide text-foreground",
+						children: copy.loadTitle
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "mt-1 text-sm text-muted-foreground",
+						children: copy.loadDescription
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "mt-3",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {
+							htmlFor: "template-file",
+							className: "inline-flex cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-within:ring-2 focus-within:ring-ring",
+							"data-ocid": "admin.template.upload_button",
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Upload, {
+									className: "h-4 w-4",
+									"aria-hidden": "true"
+								}),
+								copy.loadChoose,
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+									ref: fileInputRef,
+									id: "template-file",
+									type: "file",
+									accept: ".json,application/json",
+									className: "sr-only",
+									"data-ocid": "admin.template.file_input",
+									onChange: onFileChange
+								})
+							]
+						})
+					}),
+					preview && pendingFile && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "mt-4 rounded-md border border-border bg-muted/40 p-4",
+						"data-ocid": "admin.template.preview_panel",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+								children: copy.loadPreviewTitle
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
+								className: "mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm",
+								children: [previewRows.map((row) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "flex items-center justify-between gap-2",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
+										className: "text-muted-foreground",
+										children: row.label
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
+										className: "font-mono font-semibold text-foreground",
+										children: row.value.toString()
+									})]
+								}, row.label)), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "col-span-2 flex items-center justify-between gap-2",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
+										className: "text-muted-foreground",
+										children: copy.loadPreviewLeaderTalk
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
+										className: "min-w-0 truncate font-semibold text-foreground",
+										children: preview.leaderTalkName
+									})]
+								})]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "mt-4 flex flex-wrap gap-2",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+									type: "button",
+									className: "touch-target",
+									"data-ocid": "admin.template.confirm_button",
+									onClick: onConfirmLoad,
+									disabled: load.isPending,
+									children: [load.isPending ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
+										className: "mr-2 h-4 w-4 animate-spin",
+										"aria-hidden": "true"
+									}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Upload, {
+										className: "mr-2 h-4 w-4",
+										"aria-hidden": "true"
+									}), load.isPending ? copy.loadLoading : copy.loadConfirm]
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+									type: "button",
+									variant: "outline",
+									className: "touch-target",
+									"data-ocid": "admin.template.cancel_button",
+									onClick: resetLoad,
+									disabled: load.isPending,
+									children: copy.loadCancel
+								})]
+							})
+						]
+					}),
+					loadError && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+						className: "mt-3 flex items-start gap-2 text-sm font-medium text-destructive",
+						"data-ocid": "admin.template.load_error_state",
+						role: "alert",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TriangleAlert, {
+							className: "mt-0.5 h-4 w-4 shrink-0",
+							"aria-hidden": "true"
+						}), loadError]
+					}),
+					loadSuccess && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "mt-3 text-sm font-medium text-accent",
+						"data-ocid": "admin.template.load_success_state",
+						children: copy.loadSuccess
+					})
+				]
 			})
 		]
 	});
@@ -54047,25 +56559,128 @@ function ApprovalRoleSelect({ id, value, onChange }) {
 }
 //#endregion
 //#region src/components/approvals/PendingApprovalCard.tsx
+/** Roles whose profile carries trainer stations and travel dates. */
+var TRAVEL_ROLES = [Role.trainer, Role.visitingManager];
+/** Roles allowed to see a staff member's work phone and email. */
+var CONTACT_ROLES = [Role.admin, Role.storeManager];
+/** A `YYYY-MM-DD` value for a date input, read in UTC. */
+function dateOnlyToInput(value) {
+	if (value === void 0) return "";
+	const date = dateOnlyToDate(value);
+	if (!date) return "";
+	return date.toISOString().slice(0, 10);
+}
+/** The role to pre-select: the requested role when an admin may grant it. */
+function initialRole(profile) {
+	if (!profile) return "";
+	return ASSIGNABLE_ROLES.includes(profile.requestedRole) ? profile.requestedRole : "";
+}
+/** One labelled profile value, hidden when it is blank. */
+function ProfileField({ label, value }) {
+	if (!value) return null;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "min-w-0",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
+			className: "text-xs uppercase tracking-wide text-muted-foreground",
+			children: label
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
+			className: "break-words text-sm text-foreground",
+			children: value
+		})]
+	});
+}
+/**
+* The submitted staff profile carried on a pending request: name, title, home
+* store, photo, and — for the roles that travel — the stations they train and
+* their arrival and departure dates. Work phone and email are shown only to
+* Admin and Store Manager, matching the roadie contact-info rule.
+*/
+function StaffProfileSummary({ profile, positions, canSeeContact }) {
+	const { t } = useI18n();
+	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(profile.photo), [profile.photo]);
+	const homeStore = [profile.homeStoreNumber, profile.homeStoreCity].filter((part) => part.trim() !== "").join(" · ");
+	const showsTravel = TRAVEL_ROLES.includes(profile.requestedRole);
+	const trainedPositions = profile.trainerPositionIds.map((id) => positions.find((position) => position.id === id)?.name).filter((name) => !!name).join(", ");
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		"data-ocid": "approvals.profile.summary",
+		className: "mt-3 flex flex-col gap-3 rounded-md border border-border bg-muted/30 p-3 sm:flex-row",
+		children: [photoUrl && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+			src: photoUrl,
+			alt: staffDisplayName(profile, t("profile.unnamed")),
+			"data-ocid": "approvals.profile.photo",
+			className: "h-16 w-16 shrink-0 rounded-full border-2 border-primary object-cover"
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
+			className: "grid flex-1 gap-2 sm:grid-cols-2",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+					label: t("profile.fullName"),
+					value: profile.fullName
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+					label: t("profile.preferredName"),
+					value: profile.preferredName ?? ""
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+					label: t("profile.title.label"),
+					value: profile.title
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+					label: t("profile.homeStoreNumber"),
+					value: homeStore
+				}),
+				canSeeContact && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+					label: t("profile.workPhone"),
+					value: profile.workPhone ?? ""
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+					label: t("profile.workEmail"),
+					value: profile.workEmail ?? ""
+				})] }),
+				showsTravel && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+						label: t("approvals.stations.label"),
+						value: trainedPositions
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+						label: t("profile.arrivalDate"),
+						value: profile.arrivalDate !== void 0 ? formatDateOnly(profile.arrivalDate) : ""
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+						label: t("profile.departureDate"),
+						value: profile.departureDate !== void 0 ? formatDateOnly(profile.departureDate) : ""
+					})
+				] })
+			]
+		})]
+	});
+}
 /**
 * One pending sign-in with the full approval form: role, trainer stations,
 * optional access end date, and an optional link to an existing roadie card.
+* The submitted staff profile is shown and its requested role, stations and
+* departure date pre-fill the form, all still editable by the admin.
 */
 function PendingApprovalCard({ user }) {
 	const { t } = useI18n();
+	const access = useAccessState();
+	const viewerRole = access.kind === "granted" ? access.grant.role : void 0;
+	const canSeeContact = !!viewerRole && CONTACT_ROLES.includes(viewerRole);
+	const isAdmin = viewerRole === Role.admin;
 	const { data: positions } = usePositions();
 	const { data: roadies } = useRoadies();
 	const { data: storeInfo } = useStoreInfo();
 	const approve = useApproveUser();
 	const timeZone = storeInfo?.timeZone || "America/Chicago";
-	const [role, setRole] = (0, import_react.useState)("");
-	const [stationIds, setStationIds] = (0, import_react.useState)([]);
-	const [accessEnd, setAccessEnd] = (0, import_react.useState)("");
+	const profile = user.staffProfile;
+	const [role, setRole] = (0, import_react.useState)(() => initialRole(profile));
+	const [stationIds, setStationIds] = (0, import_react.useState)(() => (profile?.trainerPositionIds ?? []).map((id) => id.toString()));
+	const [accessEnd, setAccessEnd] = (0, import_react.useState)(() => dateOnlyToInput(profile?.departureDate));
 	const [linkedRoadieId, setLinkedRoadieId] = (0, import_react.useState)("");
 	const [confirmOpen, setConfirmOpen] = (0, import_react.useState)(false);
+	const [showId, setShowId] = (0, import_react.useState)(false);
 	const [error, setError] = (0, import_react.useState)(null);
 	const principalText = user.principal.toText();
 	const needsStations = role === Role.trainer;
+	const displayName = staffDisplayName(profile, t("profile.unnamed"));
 	const submit = () => {
 		if (role === "") {
 			setError(t("approvals.role.required"));
@@ -54075,6 +56690,7 @@ function PendingApprovalCard({ user }) {
 		approve.mutate({
 			principal: user.principal,
 			role,
+			staffProfile: user.staffProfile,
 			trainerPositionIds: needsStations ? stationIds.map((id) => BigInt(id)) : [],
 			accessEndsAt: accessEnd ? dateToTimestamp(zonedWallTimeToDate(accessEnd, 23, 59, 59, timeZone)) : void 0,
 			linkedRoadieId: linkedRoadieId ? BigInt(linkedRoadieId) : void 0
@@ -54102,22 +56718,55 @@ function PendingApprovalCard({ user }) {
 		"data-ocid": "approvals.item",
 		className: "rounded-lg border border-border bg-card p-4 shadow-subtle",
 		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "flex flex-wrap items-center justify-between gap-2",
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 					className: "min-w-0",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-						className: "font-display text-sm font-semibold uppercase tracking-wide",
-						children: shortPrincipal(user.principal)
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-						className: "text-xs text-muted-foreground",
-						children: [
-							t("approvals.requestedAt"),
-							": ",
-							formatTimestamp(user.requestedAt)
-						]
-					})]
-				})
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "font-display text-sm font-semibold uppercase tracking-wide",
+							children: displayName
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							className: "text-xs text-muted-foreground",
+							children: [
+								t("approvals.requestedAt"),
+								": ",
+								formatTimestamp(user.requestedAt)
+							]
+						}),
+						isAdmin && showId && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							"data-ocid": "approvals.principal",
+							className: "mt-1 break-all font-mono text-xs text-muted-foreground",
+							children: [
+								t("profile.principal"),
+								": ",
+								principalText
+							]
+						})
+					]
+				}), isAdmin && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+					type: "button",
+					variant: "ghost",
+					size: "sm",
+					className: "touch-target",
+					"data-ocid": "approvals.show_id.toggle",
+					"aria-pressed": showId,
+					title: t("profile.showId.hint"),
+					onClick: () => setShowId((current) => !current),
+					children: [showId ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EyeOff, {
+						className: "mr-2 h-4 w-4",
+						"aria-hidden": "true"
+					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eye, {
+						className: "mr-2 h-4 w-4",
+						"aria-hidden": "true"
+					}), t("profile.showId")]
+				})]
+			}),
+			profile && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StaffProfileSummary, {
+				profile,
+				positions: positions ?? [],
+				canSeeContact
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "mt-4 grid gap-4 md:grid-cols-2",
@@ -54996,15 +57645,40 @@ function CountdownUnit({ value, label }) {
 		})]
 	});
 }
+/** localStorage key remembering whether the schedule is expanded on this device. */
+var SCHEDULE_STORAGE_KEY = "roadie-roster.dashboard.schedule-expanded";
+/** Read the remembered schedule state, defaulting to collapsed. */
+function readStoredExpanded() {
+	try {
+		return window.localStorage.getItem(SCHEDULE_STORAGE_KEY) === "true";
+	} catch {
+		return false;
+	}
+}
+/** Persist the schedule state, ignoring unavailable storage. */
+function storeExpanded(expanded) {
+	try {
+		window.localStorage.setItem(SCHEDULE_STORAGE_KEY, String(expanded));
+	} catch {}
+}
 /**
 * Countdown to opening day plus the opening timeline, with the phase the store
-* is currently in highlighted.
+* is currently in highlighted. The milestone list is collapsible; the flag,
+* label, opening date and countdown boxes always stay visible.
 */
 function OpeningTimeline({ events, openingDate }) {
 	const { t } = useDashboardCopy();
 	const { data: storeInfo } = useStoreInfo();
 	const timeZone = storeInfo?.timeZone;
 	const now = useNow();
+	const [expanded, setExpanded] = (0, import_react.useState)(readStoredExpanded);
+	const toggle = (0, import_react.useCallback)(() => {
+		setExpanded((current) => {
+			const next = !current;
+			storeExpanded(next);
+			return next;
+		});
+	}, []);
 	const ordered = (0, import_react.useMemo)(() => [...events].sort((a, b) => Number(a.start - b.start)).filter((event) => {
 		return timestampToDate(event.start) !== null;
 	}), [events]);
@@ -55016,97 +57690,149 @@ function OpeningTimeline({ events, openingDate }) {
 		}
 		return index;
 	}, [ordered, now]);
-	const openingMs = openingDate ? openingDate.getTime() - now : null;
+	const nextEvent = (0, import_react.useMemo)(() => {
+		for (const event of ordered) {
+			const date = timestampToDate(event.start);
+			if (date && date.getTime() > now) return event;
+		}
+		return null;
+	}, [ordered, now]);
+	const openingInstant = openingDate !== null ? dateOnlyToDate(openingDate) : null;
+	const openingMs = openingInstant ? openingInstant.getTime() - now : null;
 	const countdown = openingMs !== null ? splitCountdown(openingMs) : null;
+	const regionId = "dashboard.timeline.region";
+	const toggleLabel = expanded ? "Hide schedule" : "Show schedule";
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
 		"data-ocid": "dashboard.countdown.card",
 		className: "rounded-lg border-border py-5 shadow-subtle",
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
 			className: "space-y-5 px-5",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex items-center gap-3",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary",
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Flag, {
-							className: "h-5 w-5",
-							"aria-hidden": "true"
-						})
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-						className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-						children: t("dashboard.countdown.label")
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-						className: "font-display text-lg font-bold uppercase tracking-wide text-foreground",
-						children: openingDate ? openingDate.toLocaleDateString(void 0, {
-							dateStyle: "long",
-							timeZone: "UTC"
-						}) : t("dashboard.countdown.noDate")
-					})] })]
-				}), countdown ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex items-center gap-2",
-					"data-ocid": "dashboard.countdown.timer",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CountdownUnit, {
-							value: countdown.days,
-							label: t("dashboard.countdown.days")
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CountdownUnit, {
-							value: countdown.hours,
-							label: t("dashboard.countdown.hours")
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CountdownUnit, {
-							value: countdown.minutes,
-							label: t("dashboard.countdown.minutes")
-						})
-					]
-				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "text-sm text-muted-foreground",
-					children: t("dashboard.countdown.noDate")
-				})]
-			}), ordered.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", {
-				className: "relative space-y-1 border-l border-border pl-5",
-				"data-ocid": "dashboard.timeline.list",
-				children: ordered.map((event, index) => {
-					const isCurrent = index === currentIndex;
-					const isPast = index < currentIndex;
-					return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
-						"data-ocid": `dashboard.timeline.item.${index + 1}`,
-						className: "relative py-2",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+					type: "button",
+					onClick: toggle,
+					"aria-expanded": expanded,
+					"aria-controls": regionId,
+					"data-ocid": "dashboard.countdown.header_toggle",
+					className: "flex w-full flex-col gap-4 rounded-md text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:flex-row sm:items-center sm:justify-between",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "flex items-center gap-3",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							"aria-hidden": "true",
-							className: cn("absolute -left-[26px] top-3.5 h-3 w-3 rounded-full border-2", isCurrent ? "border-primary bg-primary" : isPast ? "border-accent bg-accent" : "border-border bg-card")
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: cn("flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md px-3 py-2", isCurrent && "bg-primary/5 ring-1 ring-primary/30"),
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "min-w-0",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-									className: cn("truncate font-display text-sm font-semibold uppercase tracking-wide", isCurrent ? "text-primary" : "text-foreground"),
-									children: event.name
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-									className: "text-xs text-muted-foreground",
-									children: eventKindLabel(event.kind)
-								})]
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "flex items-center gap-2",
-								children: [isCurrent && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-									className: "rounded-full bg-primary px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-widest text-primary-foreground",
-									children: t("dashboard.timeline.now")
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-									className: "flex items-center gap-1.5 text-xs text-muted-foreground",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CalendarClock, {
-										className: "h-3.5 w-3.5",
-										"aria-hidden": "true"
-									}), formatTimestampMediumDate(event.start, timeZone)]
-								})]
-							})]
-						})]
-					}, event.id.toString());
+							className: "flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Flag, {
+								className: "h-5 w-5",
+								"aria-hidden": "true"
+							})
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+							children: t("dashboard.countdown.label")
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "font-display text-lg font-bold uppercase tracking-wide text-foreground",
+							children: openingDate !== null ? formatDateOnlyLong(openingDate) : t("dashboard.countdown.noDate")
+						})] })]
+					}), countdown ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "flex items-center gap-2",
+						"data-ocid": "dashboard.countdown.timer",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CountdownUnit, {
+								value: countdown.days,
+								label: t("dashboard.countdown.days")
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CountdownUnit, {
+								value: countdown.hours,
+								label: t("dashboard.countdown.hours")
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CountdownUnit, {
+								value: countdown.minutes,
+								label: t("dashboard.countdown.minutes")
+							})
+						]
+					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-sm text-muted-foreground",
+						children: t("dashboard.countdown.noDate")
+					})]
+				}),
+				!expanded && nextEvent && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+					className: "text-sm text-muted-foreground",
+					"data-ocid": "dashboard.timeline.next",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-display text-xs font-semibold uppercase tracking-widest text-primary",
+							children: "Next:"
+						}),
+						" ",
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-medium text-foreground",
+							children: nextEvent.name
+						}),
+						" · ",
+						formatTimestampMediumDate(nextEvent.start, timeZone)
+					]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					id: regionId,
+					"data-ocid": "dashboard.timeline.region",
+					className: cn("grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none", expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"),
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "overflow-hidden",
+						children: ordered.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", {
+							className: "relative space-y-1 border-l border-border pl-5",
+							"data-ocid": "dashboard.timeline.list",
+							children: ordered.map((event, index) => {
+								const isCurrent = index === currentIndex;
+								const isPast = index < currentIndex;
+								return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+									"data-ocid": `dashboard.timeline.item.${index + 1}`,
+									className: "relative py-2",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										"aria-hidden": "true",
+										className: cn("absolute -left-[26px] top-3.5 h-3 w-3 rounded-full border-2", isCurrent ? "border-primary bg-primary" : isPast ? "border-accent bg-accent" : "border-border bg-card")
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+										className: cn("flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md px-3 py-2", isCurrent && "bg-primary/5 ring-1 ring-primary/30"),
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+											className: "min-w-0",
+											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+												className: cn("truncate font-display text-sm font-semibold uppercase tracking-wide", isCurrent ? "text-primary" : "text-foreground"),
+												children: event.name
+											}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+												className: "text-xs text-muted-foreground",
+												children: eventKindLabel(event.kind)
+											})]
+										}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+											className: "flex items-center gap-2",
+											children: [isCurrent && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+												className: "rounded-full bg-primary px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-widest text-primary-foreground",
+												children: t("dashboard.timeline.now")
+											}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+												className: "flex items-center gap-1.5 text-xs text-muted-foreground",
+												children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CalendarClock, {
+													className: "h-3.5 w-3.5",
+													"aria-hidden": "true"
+												}), formatTimestampMediumDate(event.start, timeZone)]
+											})]
+										})]
+									})]
+								}, event.id.toString());
+							})
+						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "text-sm text-muted-foreground",
+							children: t("dashboard.timeline.empty")
+						})
+					})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+					type: "button",
+					onClick: toggle,
+					"aria-expanded": expanded,
+					"aria-controls": regionId,
+					"data-ocid": "dashboard.timeline.toggle",
+					className: "touch-target flex w-full items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-4 py-3 font-display text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+					children: [toggleLabel, /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, {
+						"aria-hidden": "true",
+						className: cn("h-4 w-4 transition-transform duration-300 ease-out motion-reduce:transition-none", expanded && "rotate-180")
+					})]
 				})
-			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-sm text-muted-foreground",
-				children: t("dashboard.timeline.empty")
-			})]
+			]
 		})
 	});
 }
@@ -55459,6 +58185,52 @@ function PositionRosterDialog({ position, open, onOpenChange, canRehire }) {
 }
 //#endregion
 //#region src/pages/Dashboard.tsx
+/**
+* The dashboard hero banner: a navy panel with the red-and-white flag stripe,
+* the store's secondary logo at about 96px on phones and 120px from the small
+* breakpoint up, and the store name and opening date beside it. On phones the
+* logo is centered above the name and date; from the small breakpoint up it
+* sits on the left alongside them. When no secondary logo has been uploaded the
+* banner shows just the name and date, with no star fallback.
+*/
+function DashboardHero({ storeInfo }) {
+	const storeName = storeInfo?.locationName || storeInfo?.appName || "";
+	const openingDate = storeInfo ? formatDateOnly(storeInfo.openingDate) : null;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		"data-ocid": "dashboard.hero",
+		className: "overflow-hidden rounded-lg bg-secondary text-secondary-foreground shadow-subtle",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "flex flex-col items-center gap-4 px-5 py-6 text-center sm:flex-row sm:items-center sm:gap-6 sm:px-8 sm:py-7 sm:text-left",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, {
+				variant: "secondary",
+				className: "h-24 shrink-0 sm:h-[120px]",
+				title: storeName || "Roadie store"
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "min-w-0",
+				children: [storeName && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+					className: "font-display text-2xl font-bold uppercase leading-tight tracking-wide text-white md:text-3xl",
+					children: storeName
+				}), !!openingDate && openingDate !== "—" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+					className: "mt-1 text-sm text-white/80 md:text-base",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-display uppercase tracking-wider text-white/60",
+							children: "Opening"
+						}),
+						" ",
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-medium text-white",
+							children: openingDate
+						})
+					]
+				})]
+			})]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			className: "stripe-flag",
+			"aria-hidden": "true"
+		})]
+	});
+}
 function DashboardPage() {
 	const { t } = useDashboardCopy();
 	const access = useAccessState();
@@ -55479,7 +58251,6 @@ function DashboardPage() {
 	const [adjustMode, setAdjustMode] = (0, import_react.useState)(false);
 	const [selected, setSelected] = (0, import_react.useState)(null);
 	const [rosterOpen, setRosterOpen] = (0, import_react.useState)(false);
-	const openingDate = storeInfo ? dateOnlyToDate(storeInfo.openingDate) : null;
 	const openRoster = (position) => {
 		setSelected(position);
 		setRosterOpen(true);
@@ -55488,6 +58259,7 @@ function DashboardPage() {
 		className: "space-y-6",
 		"data-ocid": "dashboard.page",
 		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DashboardHero, { storeInfo: storeInfo ?? null }),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
 				title: t("dashboard.title"),
 				subtitle: t("dashboard.subtitle"),
@@ -55512,7 +58284,7 @@ function DashboardPage() {
 			data && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(OpeningTimeline, {
 					events: schedule ?? [],
-					openingDate
+					openingDate: storeInfo?.openingDate ?? null
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KpiTiles, {
 					hired: data.hired,
@@ -88534,7 +91306,7 @@ function groupHeaders(variant) {
 		"Name"
 	];
 	if (variant === "full") headers.push("Phone", "Email", "Emergency contact name", "Emergency contact phone", "Date of birth");
-	headers.push("Onboarding complete", "Policies & procedures", "Alcohol cert", "Food handlers", "Availability Wed-Tue AM", "Availability Wed-Tue PM");
+	headers.push("Onboarding complete", "Policies & procedures", "Alcohol cert", "Food handlers", "Availability Wed-Tue AM", "Availability Wed-Tue PM", "Favorite team", "Favorite candy/snack", "Favorite drink", "Favorite color");
 	return headers;
 }
 function groupRow(row, variant) {
@@ -88545,7 +91317,7 @@ function groupRow(row, variant) {
 		row.name
 	];
 	if (variant === "full") cells.push(row.phone ?? "", row.email ?? "", row.emergencyContactName ?? "", row.emergencyContactPhone ?? "", row.dateOfBirth !== void 0 ? formatDateOnly(row.dateOfBirth) : "");
-	cells.push(yesNo(row.onboardingComplete), yesNo(row.policiesComplete), yesNo(row.alcoholCert), yesNo(row.foodHandlers), shiftDays(row, Shift.am), shiftDays(row, Shift.pm));
+	cells.push(yesNo(row.onboardingComplete), yesNo(row.policiesComplete), yesNo(row.alcoholCert), yesNo(row.foodHandlers), shiftDays(row, Shift.am), shiftDays(row, Shift.pm), row.favoriteTeam ?? "", row.favoriteSnack ?? "", row.favoriteDrink ?? "", row.favoriteColor ?? "");
 	return cells;
 }
 /** Build the "Staff Pars and Overview" worksheet. */
@@ -88635,7 +91407,7 @@ async function exportWorkbookToBlob(data, variant) {
 	return new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 }
 /** Whether the current device is an iPhone or iPad (incl. iPadOS desktop UA). */
-function isIosDevice() {
+function isIosDevice$1() {
 	if (typeof navigator === "undefined") return false;
 	const ua = navigator.userAgent;
 	const iOS = /iPad|iPhone|iPod/.test(ua);
@@ -88650,7 +91422,7 @@ function isIosDevice() {
 */
 async function downloadExport(data, variant, filename) {
 	const blob = await exportWorkbookToBlob(data, variant);
-	if (isIosDevice()) {
+	if (isIosDevice$1()) {
 		const file = new File([blob], filename, { type: blob.type });
 		if (typeof navigator !== "undefined" && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) try {
 			await navigator.share({
@@ -88668,7 +91440,7 @@ async function downloadExport(data, variant, filename) {
 	document.body.appendChild(anchor);
 	anchor.click();
 	anchor.remove();
-	if (isIosDevice()) window.setTimeout(() => URL.revokeObjectURL(url), 6e4);
+	if (isIosDevice$1()) window.setTimeout(() => URL.revokeObjectURL(url), 6e4);
 	else URL.revokeObjectURL(url);
 }
 //#endregion
@@ -88829,6 +91601,481 @@ function ExportPage() {
 	});
 }
 //#endregion
+//#region src/lib/giftBags.ts
+/** The shopping-list sheet name. */
+var SHOPPING_SHEET = "Shopping list";
+/** The labels sheet name. */
+var LABELS_SHEET = "Labels";
+/**
+* The order the shopping-list categories are written in, matching the page's
+* display order: candy/snack, drink, sports team, color, shirt size, hat size.
+*/
+var SHOPPING_CATEGORY_ORDER = [
+	GiftBagCategory.candySnack,
+	GiftBagCategory.drink,
+	GiftBagCategory.sportsTeam,
+	GiftBagCategory.color,
+	GiftBagCategory.shirtSize,
+	GiftBagCategory.hatSize
+];
+/** The label columns, in the order they appear on the Avery 5163 label. */
+var LABEL_FIELDS = [
+	{
+		key: "name",
+		header: "Name"
+	},
+	{
+		key: "positionName",
+		header: "Position"
+	},
+	{
+		key: "candySnack",
+		header: "Candy or snack"
+	},
+	{
+		key: "drink",
+		header: "Drink"
+	},
+	{
+		key: "sportsTeam",
+		header: "Sports team"
+	},
+	{
+		key: "color",
+		header: "Color"
+	},
+	{
+		key: "shirtSize",
+		header: "Shirt size"
+	},
+	{
+		key: "hatSize",
+		header: "Hat size"
+	}
+];
+/** A group's answers sorted by count, highest first, then alphabetically. */
+function sortAnswers(group) {
+	return group.answers.map((entry) => ({
+		answer: entry.answer,
+		count: Number(entry.count)
+	})).sort((a, b) => b.count - a.count || a.answer.localeCompare(b.answer));
+}
+/** The group for a category, or undefined when the backend omitted it. */
+function groupForCategory(groups, category) {
+	return groups.find((group) => group.category === category);
+}
+/** The label value for a field, or an empty string when absent. */
+function labelValue(label, key) {
+	const value = label[key];
+	return typeof value === "string" ? value : "";
+}
+/** Build the two-sheet Gift Bags workbook: shopping list + labels. */
+function buildGiftBagsWorkbook(data) {
+	const workbook = new import_exceljs_min.default.Workbook();
+	workbook.creator = "Roadie";
+	workbook.created = /* @__PURE__ */ new Date();
+	const shopping = workbook.addWorksheet(SHOPPING_SHEET);
+	shopping.columns = [
+		{
+			header: "Category",
+			key: "category",
+			width: 22
+		},
+		{
+			header: "Answer",
+			key: "answer",
+			width: 32
+		},
+		{
+			header: "Count",
+			key: "count",
+			width: 10
+		}
+	];
+	for (const category of SHOPPING_CATEGORY_ORDER) {
+		const group = groupForCategory(data.groups, category);
+		if (!group) continue;
+		for (const entry of sortAnswers(group)) shopping.addRow({
+			category,
+			answer: entry.answer,
+			count: entry.count
+		});
+		shopping.addRow({
+			category,
+			answer: "No answer",
+			count: Number(group.noAnswer)
+		});
+	}
+	shopping.getRow(1).font = { bold: true };
+	shopping.views = [{
+		state: "frozen",
+		ySplit: 1
+	}];
+	const labels = workbook.addWorksheet(LABELS_SHEET);
+	labels.columns = LABEL_FIELDS.map((field) => ({
+		header: field.header,
+		key: field.key,
+		width: field.key === "name" ? 24 : 18
+	}));
+	for (const label of data.labels) labels.addRow(Object.fromEntries(LABEL_FIELDS.map((field) => [field.key, labelValue(label, field.key)])));
+	labels.getRow(1).font = { bold: true };
+	labels.views = [{
+		state: "frozen",
+		ySplit: 1
+	}];
+	return workbook;
+}
+/** Serialize the Gift Bags workbook to an .xlsx Blob. */
+async function giftBagsWorkbookToBlob(data) {
+	const buffer = await buildGiftBagsWorkbook(data).xlsx.writeBuffer();
+	return new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+/** Whether the current device is an iPhone or iPad (incl. iPadOS desktop UA). */
+function isIosDevice() {
+	if (typeof navigator === "undefined") return false;
+	const ua = navigator.userAgent;
+	const iOS = /iPad|iPhone|iPod/.test(ua);
+	const iPadOs = ua.includes("Macintosh") && navigator.maxTouchPoints > 1;
+	return iOS || iPadOs;
+}
+/**
+* Build the Gift Bags workbook and trigger a browser download, reusing the
+* same iOS-aware delivery as the roster export.
+*/
+async function downloadGiftBags(data, filename) {
+	const blob = await giftBagsWorkbookToBlob(data);
+	if (isIosDevice()) {
+		const file = new File([blob], filename, { type: blob.type });
+		if (typeof navigator !== "undefined" && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) try {
+			await navigator.share({
+				files: [file],
+				title: filename
+			});
+			return;
+		} catch {}
+	}
+	const url = URL.createObjectURL(blob);
+	const anchor = document.createElement("a");
+	anchor.href = url;
+	anchor.download = filename;
+	anchor.rel = "noopener";
+	document.body.appendChild(anchor);
+	anchor.click();
+	anchor.remove();
+	if (isIosDevice()) window.setTimeout(() => URL.revokeObjectURL(url), 6e4);
+	else URL.revokeObjectURL(url);
+}
+//#endregion
+//#region src/pages/GiftBags.tsx
+/** The copy key for each shopping-list category. */
+var CATEGORY_LABEL_KEY = {
+	candySnack: "giftBags.category.candySnack",
+	drink: "giftBags.category.drink",
+	sportsTeam: "giftBags.category.sportsTeam",
+	color: "giftBags.category.color",
+	shirtSize: "giftBags.category.shirtSize",
+	hatSize: "giftBags.category.hatSize"
+};
+/** Read the Gift Bags shopping list and labels for the selected filter. */
+function useGiftBags(filter) {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["giftBags", JSON.stringify(filter)],
+		queryFn: async () => {
+			if (!actor) return {
+				groups: [],
+				labels: []
+			};
+			return actor.getGiftBags(filter);
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+/** One category's answer-to-count table, sorted highest count first. */
+function ShoppingListTable({ category, group }) {
+	const { t } = useI18n();
+	const rows = group ? sortAnswers(group) : [];
+	const noAnswer = group ? Number(group.noAnswer) : 0;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		"data-ocid": `gift_bags.shopping.${category}`,
+		className: "rounded-lg border border-border bg-card p-4 shadow-subtle",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+			className: "font-display text-base font-bold uppercase tracking-wide text-foreground",
+			children: t(CATEGORY_LABEL_KEY[category])
+		}), rows.length === 0 && noAnswer === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+			className: "mt-2 text-sm text-muted-foreground",
+			children: t("giftBags.empty")
+		}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("table", {
+			className: "mt-3 w-full border-collapse text-sm",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("thead", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", {
+				className: "border-b border-border text-left",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
+					className: "py-1.5 pr-2 font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+					children: t("giftBags.section.shoppingList")
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
+					className: "py-1.5 pl-2 text-right font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+					children: "Count"
+				})]
+			}) }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tbody", { children: [rows.map((row) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", {
+				"data-ocid": `gift_bags.shopping.${category}.row`,
+				className: "border-b border-border/60 last:border-0",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+					className: "py-1.5 pr-2 text-foreground",
+					children: row.answer
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+					className: "py-1.5 pl-2 text-right font-mono tabular-nums text-foreground",
+					children: row.count
+				})]
+			}, row.answer)), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", {
+				"data-ocid": `gift_bags.shopping.${category}.no_answer`,
+				className: "border-t border-border",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+					className: "py-1.5 pr-2 italic text-muted-foreground",
+					children: t("giftBags.noAnswer")
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+					className: "py-1.5 pl-2 text-right font-mono tabular-nums text-muted-foreground",
+					children: noAnswer
+				})]
+			})] })]
+		})]
+	});
+}
+/** One printable Avery 5163 label (2in x 4in). */
+function BagLabel({ label }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		"data-ocid": "gift_bags.label.item",
+		className: "avery-label flex flex-col justify-center",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "truncate font-display text-[15px] font-bold uppercase leading-tight",
+				children: label.name
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "truncate text-[11px] uppercase tracking-wide",
+				children: label.positionName
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dl", {
+				className: "mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] leading-snug",
+				children: LABEL_FIELDS.filter((field) => field.key !== "name" && field.key !== "positionName").map((field) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex min-w-0 gap-1",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dt", {
+						className: "shrink-0 font-semibold",
+						children: [field.header, ":"]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
+						className: "min-w-0 truncate",
+						children: labelValue(label, field.key) || "—"
+					})]
+				}, field.key))
+			})
+		]
+	});
+}
+function GiftBagsPage() {
+	const { t } = useI18n();
+	const positions = usePositions();
+	const [choice, setChoice] = (0, import_react.useState)("all");
+	const [positionId, setPositionId] = (0, import_react.useState)(void 0);
+	const [isDownloading, setIsDownloading] = (0, import_react.useState)(false);
+	const [downloadError, setDownloadError] = (0, import_react.useState)(false);
+	const giftBags = useGiftBags((0, import_react.useMemo)(() => {
+		if (choice === "foh") return {
+			__kind__: "foh",
+			foh: null
+		};
+		if (choice === "boh") return {
+			__kind__: "boh",
+			boh: null
+		};
+		if (choice === "roadies") return {
+			__kind__: "roadies",
+			roadies: null
+		};
+		if (choice === "leaders") return {
+			__kind__: "leaders",
+			leaders: null
+		};
+		if (choice === "position" && positionId !== void 0) return {
+			__kind__: "position",
+			position: positionId
+		};
+		return {
+			__kind__: "all",
+			all: null
+		};
+	}, [choice, positionId]));
+	const data = giftBags.data;
+	const labels = data?.labels ?? [];
+	const groups = data?.groups ?? [];
+	const filterOptions = [
+		{
+			value: "all",
+			label: t("giftBags.filter.all")
+		},
+		{
+			value: "foh",
+			label: t("giftBags.filter.foh")
+		},
+		{
+			value: "boh",
+			label: t("giftBags.filter.boh")
+		},
+		{
+			value: "roadies",
+			label: t("giftBags.filter.roadies")
+		},
+		{
+			value: "leaders",
+			label: t("giftBags.filter.leaders")
+		},
+		{
+			value: "position",
+			label: t("giftBags.filter.position")
+		}
+	];
+	async function handleDownload() {
+		if (!data) return;
+		setIsDownloading(true);
+		setDownloadError(false);
+		try {
+			await downloadGiftBags(data, "roadie-gift-bags.xlsx");
+		} catch {
+			setDownloadError(true);
+		} finally {
+			setIsDownloading(false);
+		}
+	}
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-6",
+		"data-ocid": "gift_bags.page",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "print-hide",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
+						title: t("giftBags.title"),
+						subtitle: t("giftBags.subtitle"),
+						action: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+							type: "button",
+							variant: "outline",
+							className: "touch-target",
+							"data-ocid": "gift_bags.print_button",
+							disabled: labels.length === 0,
+							onClick: () => window.print(),
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, {
+								className: "mr-2 h-4 w-4",
+								"aria-hidden": "true"
+							}), t("giftBags.action.print")]
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+							type: "button",
+							className: "touch-target",
+							"data-ocid": "gift_bags.download_button",
+							disabled: !data || isDownloading,
+							onClick: () => void handleDownload(),
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, {
+								className: "mr-2 h-4 w-4",
+								"aria-hidden": "true"
+							}), isDownloading ? t("common.loading") : t("giftBags.action.download")]
+						})] })
+					}),
+					downloadError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						"data-ocid": "gift_bags.download_error",
+						className: "mt-3 text-sm text-destructive",
+						children: t("giftBags.error")
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "mt-5 flex flex-col gap-3 rounded-lg border border-border bg-card p-4 shadow-subtle sm:flex-row sm:items-end",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "space-y-1.5",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+								htmlFor: "gift-bags-filter",
+								children: t("giftBags.filter.label")
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+								value: choice,
+								onValueChange: (value) => setChoice(value),
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+									id: "gift-bags-filter",
+									"data-ocid": "gift_bags.filter.select",
+									className: "touch-target w-full sm:w-56",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, {})
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: filterOptions.map((option) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+									value: option.value,
+									"data-ocid": `gift_bags.filter.${option.value}`,
+									children: option.label
+								}, option.value)) })]
+							})]
+						}), choice === "position" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "space-y-1.5",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+								htmlFor: "gift-bags-position",
+								children: t("giftBags.filter.position")
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+								value: positionId?.toString() ?? "",
+								onValueChange: (value) => setPositionId(BigInt(value)),
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+									id: "gift-bags-position",
+									"data-ocid": "gift_bags.filter.position_select",
+									className: "touch-target w-full sm:w-56",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("giftBags.filter.positionPlaceholder") })
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: (positions.data ?? []).map((position) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+									value: position.id.toString(),
+									"data-ocid": "gift_bags.filter.position_option",
+									children: position.name
+								}, position.id.toString())) })]
+							})]
+						})]
+					})
+				]
+			}),
+			giftBags.isLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, {
+				label: t("giftBags.loading"),
+				ocid: "gift_bags.loading_state"
+			}),
+			giftBags.isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
+				message: t("giftBags.error"),
+				onRetry: () => void giftBags.refetch(),
+				ocid: "gift_bags.error_state"
+			}),
+			data && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+				"data-ocid": "gift_bags.shopping.section",
+				className: "space-y-4",
+				"aria-labelledby": "gift-bags-shopping-heading",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+					id: "gift-bags-shopping-heading",
+					className: "font-display text-xl font-bold uppercase tracking-wide text-foreground",
+					children: t("giftBags.section.shoppingList")
+				}), groups.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, {
+					title: t("giftBags.empty"),
+					ocid: "gift_bags.shopping.empty_state"
+				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "grid gap-4 md:grid-cols-2 xl:grid-cols-3",
+					children: SHOPPING_CATEGORY_ORDER.map((category) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShoppingListTable, {
+						category,
+						group: groupForCategory(groups, category)
+					}, category))
+				})]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+				"data-ocid": "gift_bags.labels.section",
+				className: "space-y-4",
+				"aria-labelledby": "gift-bags-labels-heading",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+					id: "gift-bags-labels-heading",
+					className: "font-display text-xl font-bold uppercase tracking-wide text-foreground print-hide",
+					children: t("giftBags.section.labels")
+				}), labels.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, {
+					title: t("giftBags.labels.empty"),
+					ocid: "gift_bags.labels.empty_state"
+				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "print-area overflow-x-auto",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "avery-sheet",
+						children: labels.map((label, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BagLabel, { label }, `${label.roadieId.toString()}-${label.name}-${label.positionName}-${index}`))
+					})
+				})]
+			})] })
+		]
+	});
+}
+//#endregion
 //#region src/components/kiosk/copy.ts
 /**
 * Kiosk-scoped copy. The shared dictionary in `lib/copy.ts` is owned by the
@@ -88887,9 +92134,15 @@ var kioskCopy = {
 		"field.shiftsWantedHint": "How many shifts would you like each week?",
 		"field.weekdayLunch": "Available for weekday lunch shifts?",
 		"field.weekdayLunchHint": "Lunch shifts run during the day, Monday to Friday.",
-		"field.hobbies": "Hobbies",
-		"field.favoriteMovie": "Favorite movie",
-		"field.favoriteSnack": "Favorite snack",
+		"field.hobbies": "What do you do on your day off?",
+		"field.favoriteSnack": "Favorite candy or snack (brand)",
+		"field.favoriteSnackPlaceholder": "e.g. Snickers, Hot Cheetos",
+		"field.favoriteTeam": "Favorite sports team",
+		"field.favoriteTeamPlaceholder": "e.g. LSU Tigers, Saints",
+		"field.favoriteDrink": "Favorite drink",
+		"field.favoriteDrinkPlaceholder": "Soda, energy drink, or coffee order",
+		"field.favoriteColor": "Favorite color",
+		"field.favoriteColorPlaceholder": "e.g. Navy blue",
 		"field.funFact": "Fun fact",
 		"field.goalHere": "Your goal here",
 		"field.selectPlaceholder": "Select…",
@@ -89018,9 +92271,15 @@ var kioskCopy = {
 		"field.shiftsWantedHint": "¿Cuántos turnos quieres cada semana?",
 		"field.weekdayLunch": "¿Disponible para turnos de almuerzo?",
 		"field.weekdayLunchHint": "Los turnos de almuerzo son de día, de lunes a viernes.",
-		"field.hobbies": "Pasatiempos",
-		"field.favoriteMovie": "Película favorita",
-		"field.favoriteSnack": "Snack favorito",
+		"field.hobbies": "¿Qué haces en tu día libre?",
+		"field.favoriteSnack": "Dulce o snack favorito (marca)",
+		"field.favoriteSnackPlaceholder": "ej. Snickers, Hot Cheetos",
+		"field.favoriteTeam": "Equipo deportivo favorito",
+		"field.favoriteTeamPlaceholder": "ej. LSU Tigers, Saints",
+		"field.favoriteDrink": "Bebida favorita",
+		"field.favoriteDrinkPlaceholder": "Refresco, bebida energética o tu café",
+		"field.favoriteColor": "Color favorito",
+		"field.favoriteColorPlaceholder": "ej. Azul marino",
 		"field.funFact": "Dato curioso",
 		"field.goalHere": "Tu meta aquí",
 		"field.selectPlaceholder": "Selecciona…",
@@ -89357,15 +92616,6 @@ function KioskContactStep({ value, onChange, errors }) {
 	});
 }
 //#endregion
-//#region src/components/ui/textarea.tsx
-function Textarea({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("textarea", {
-		"data-slot": "textarea",
-		className: cn("border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm", className),
-		...props
-	});
-}
-//#endregion
 //#region src/components/kiosk/KioskDetailsStep.tsx
 var EMPTY_DETAILS = {
 	name: "",
@@ -89374,6 +92624,9 @@ var EMPTY_DETAILS = {
 	hobbies: "",
 	favoriteMovie: "",
 	favoriteSnack: "",
+	favoriteTeam: "",
+	favoriteDrink: "",
+	favoriteColor: "",
 	funFact: "",
 	goalHere: "",
 	positionAppliedFor: "",
@@ -89582,27 +92835,55 @@ function KioskDetailsStep({ value, onChange, errors }) {
 						})
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskField, {
-						id: "kiosk-movie",
-						label: t("field.favoriteMovie"),
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
-							id: "kiosk-movie",
-							"data-ocid": "kiosk.favorite_movie.textarea",
-							value: value.favoriteMovie,
-							rows: 2,
-							autoComplete: "off",
-							onChange: (e) => set("favoriteMovie", e.target.value)
-						})
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskField, {
 						id: "kiosk-snack",
 						label: t("field.favoriteSnack"),
 						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
 							id: "kiosk-snack",
 							"data-ocid": "kiosk.favorite_snack.textarea",
 							value: value.favoriteSnack,
+							placeholder: t("field.favoriteSnackPlaceholder"),
 							rows: 2,
 							autoComplete: "off",
 							onChange: (e) => set("favoriteSnack", e.target.value)
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskField, {
+						id: "kiosk-team",
+						label: t("field.favoriteTeam"),
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
+							id: "kiosk-team",
+							"data-ocid": "kiosk.favorite_team.textarea",
+							value: value.favoriteTeam,
+							placeholder: t("field.favoriteTeamPlaceholder"),
+							rows: 2,
+							autoComplete: "off",
+							onChange: (e) => set("favoriteTeam", e.target.value)
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskField, {
+						id: "kiosk-drink",
+						label: t("field.favoriteDrink"),
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
+							id: "kiosk-drink",
+							"data-ocid": "kiosk.favorite_drink.textarea",
+							value: value.favoriteDrink,
+							placeholder: t("field.favoriteDrinkPlaceholder"),
+							rows: 2,
+							autoComplete: "off",
+							onChange: (e) => set("favoriteDrink", e.target.value)
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskField, {
+						id: "kiosk-color",
+						label: t("field.favoriteColor"),
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
+							id: "kiosk-color",
+							"data-ocid": "kiosk.favorite_color.textarea",
+							value: value.favoriteColor,
+							placeholder: t("field.favoriteColorPlaceholder"),
+							rows: 2,
+							autoComplete: "off",
+							onChange: (e) => set("favoriteColor", e.target.value)
 						})
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskField, {
@@ -90157,12 +93438,20 @@ function KioskReviewStep({ details, contact, availability, hasPhoto, hasSignatur
 			value: details.hobbies || t("common.none")
 		},
 		{
-			label: t("field.favoriteMovie"),
-			value: details.favoriteMovie || t("common.none")
-		},
-		{
 			label: t("field.favoriteSnack"),
 			value: details.favoriteSnack || t("common.none")
+		},
+		{
+			label: t("field.favoriteTeam"),
+			value: details.favoriteTeam || t("common.none")
+		},
+		{
+			label: t("field.favoriteDrink"),
+			value: details.favoriteDrink || t("common.none")
+		},
+		{
+			label: t("field.favoriteColor"),
+			value: details.favoriteColor || t("common.none")
 		},
 		{
 			label: t("field.funFact"),
@@ -90435,94 +93724,6 @@ function KioskSuccess({ onReset }) {
 	});
 }
 //#endregion
-//#region src/components/kiosk/KioskWelcome.tsx
-var HIGHLIGHTS = [
-	{
-		icon: UserRound,
-		key: "welcome.point1"
-	},
-	{
-		icon: Camera,
-		key: "welcome.point2"
-	},
-	{
-		icon: Clock,
-		key: "welcome.point3"
-	},
-	{
-		icon: PenLine,
-		key: "welcome.point4"
-	}
-];
-/** The kiosk landing screen: language switch and a single start action. */
-function KioskWelcome({ onStart }) {
-	const { locale, setLocale } = useI18n();
-	const t = useKioskCopy();
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "mx-auto flex w-full max-w-2xl flex-col items-center gap-8 py-6 text-center",
-		"data-ocid": "kiosk.welcome",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("fieldset", {
-				className: "flex items-center gap-1 rounded-full border border-border bg-card p-1",
-				"aria-label": t("lang.label"),
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("legend", {
-					className: "sr-only",
-					children: t("lang.label")
-				}), ["en", "es"].map((code) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-					type: "button",
-					"data-ocid": `kiosk.lang.${code}`,
-					"aria-pressed": locale === code,
-					onClick: () => setLocale(code),
-					className: cn("touch-target rounded-full px-5 font-display text-sm font-semibold uppercase tracking-wider transition-colors", locale === code ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"),
-					children: code === "en" ? "English" : "Español"
-				}, code))]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, { className: "h-20 w-20" }),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "space-y-3",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
-					className: "font-display text-4xl font-bold uppercase tracking-tight text-foreground md:text-5xl",
-					children: t("welcome.title")
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "mx-auto max-w-xl text-base text-muted-foreground md:text-lg",
-					children: t("welcome.body")
-				})]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
-				className: "grid w-full gap-3 text-left sm:grid-cols-2",
-				children: HIGHLIGHTS.map(({ icon: Icon, key }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
-					className: "flex items-start gap-3 rounded-lg border border-border bg-card p-4 shadow-subtle",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground",
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon, {
-							className: "h-4 w-4",
-							"aria-hidden": "true"
-						})
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "text-sm text-foreground",
-						children: t(key)
-					})]
-				}, key))
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-				type: "button",
-				size: "lg",
-				"data-ocid": "kiosk.start_button",
-				onClick: onStart,
-				className: "touch-target h-14 w-full max-w-sm rounded-full px-8 font-display text-base font-semibold uppercase tracking-wider",
-				children: [t("welcome.start"), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRight, {
-					className: "h-5 w-5",
-					"aria-hidden": "true"
-				})]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "max-w-md text-xs text-muted-foreground",
-				children: t("welcome.privacy")
-			})
-		]
-	});
-}
-//#endregion
 //#region src/pages/Kiosk.tsx
 var STEP_KEYS = [
 	"step.photo",
@@ -90571,6 +93772,9 @@ function toProfile(details) {
 		hobbies: details.hobbies.trim() || void 0,
 		favoriteMovie: details.favoriteMovie.trim() || void 0,
 		favoriteSnack: details.favoriteSnack.trim() || void 0,
+		favoriteTeam: details.favoriteTeam.trim() || void 0,
+		favoriteDrink: details.favoriteDrink.trim() || void 0,
+		favoriteColor: details.favoriteColor.trim() || void 0,
 		funFact: details.funFact.trim() || void 0,
 		goalHere: details.goalHere.trim() || void 0,
 		positionAppliedFor: details.positionAppliedFor.trim() || void 0,
@@ -90599,6 +93803,95 @@ function toContactSet(contact, availability) {
 		availability: slots,
 		availabilityResignPending: false
 	};
+}
+var WELCOME_HIGHLIGHTS = [
+	{
+		icon: UserRound,
+		key: "welcome.point1"
+	},
+	{
+		icon: Camera,
+		key: "welcome.point2"
+	},
+	{
+		icon: Clock,
+		key: "welcome.point3"
+	},
+	{
+		icon: PenLine,
+		key: "welcome.point4"
+	}
+];
+/**
+* The kiosk landing screen: a large centered store logo as the main element
+* above the welcome text, a language switch and a single start action.
+*/
+function KioskWelcomeScreen({ onStart }) {
+	const { locale, setLocale } = useI18n();
+	const t = useKioskCopy();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "mx-auto flex w-full max-w-2xl flex-col items-center gap-8 py-6 text-center",
+		"data-ocid": "kiosk.welcome",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("fieldset", {
+				className: "flex items-center gap-1 rounded-full border border-border bg-card p-1",
+				"aria-label": t("lang.label"),
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("legend", {
+					className: "sr-only",
+					children: t("lang.label")
+				}), ["en", "es"].map((code) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					type: "button",
+					"data-ocid": `kiosk.lang.${code}`,
+					"aria-pressed": locale === code,
+					onClick: () => setLocale(code),
+					className: cn("touch-target rounded-full px-5 font-display text-sm font-semibold uppercase tracking-wider transition-colors", locale === code ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"),
+					children: code === "en" ? "English" : "Español"
+				}, code))]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, { className: "h-40 w-auto max-w-full md:h-[200px]" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "space-y-3",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+					className: "font-display text-4xl font-bold uppercase tracking-tight text-foreground md:text-5xl",
+					children: t("welcome.title")
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "mx-auto max-w-xl text-base text-muted-foreground md:text-lg",
+					children: t("welcome.body")
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
+				className: "grid w-full gap-3 text-left sm:grid-cols-2",
+				children: WELCOME_HIGHLIGHTS.map(({ icon: Icon, key }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+					className: "flex items-start gap-3 rounded-lg border border-border bg-card p-4 shadow-subtle",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: "mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon, {
+							className: "h-4 w-4",
+							"aria-hidden": "true"
+						})
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: "text-sm text-foreground",
+						children: t(key)
+					})]
+				}, key))
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+				type: "button",
+				size: "lg",
+				"data-ocid": "kiosk.start_button",
+				onClick: onStart,
+				className: "touch-target h-14 w-full max-w-sm rounded-full px-8 font-display text-base font-semibold uppercase tracking-wider",
+				children: [t("welcome.start"), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRight, {
+					className: "h-5 w-5",
+					"aria-hidden": "true"
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "max-w-md text-xs text-muted-foreground",
+				children: t("welcome.privacy")
+			})
+		]
+	});
 }
 /** The kiosk self-service sign-up flow. */
 function KioskPage() {
@@ -90729,7 +94022,7 @@ function KioskPage() {
 	const clearSignature = (0, import_react.useCallback)(() => setSignature(null), []);
 	if (phase === "welcome") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		"data-ocid": "kiosk.page",
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskWelcome, { onStart: () => setPhase("form") })
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskWelcomeScreen, { onStart: () => setPhase("form") })
 	});
 	if (phase === "success") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		"data-ocid": "kiosk.page",
@@ -90828,231 +94121,715 @@ function KioskPage() {
 	});
 }
 //#endregion
-//#region src/components/roadie/RoadiePhoto.tsx
-/**
-* A roadie's photo, read on demand by id. The photo bytes are fetched once per
-* roadie (React Query caches them under the id) and converted to a displayable
-* data URL once per roadie, memoized so a re-render does not re-read the bytes.
-* A roadie with no stored photo shows the placeholder icon, never a broken
-* image.
-*/
-function RoadiePhoto({ id, name, className, iconClassName, ocid }) {
-	const { data: photo } = useRoadiePhoto(id);
-	const src = (0, import_react.useMemo)(() => refToDataUrl(photo), [photo]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-		"data-ocid": ocid,
-		className: cn("flex items-center justify-center overflow-hidden rounded-full border-2 border-primary bg-muted", className),
-		children: src ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-			src,
-			alt: name,
-			className: "h-full w-full object-cover"
-		}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Image$1, {
-			className: cn("h-6 w-6 text-muted-foreground", iconClassName),
-			"aria-hidden": "true"
-		})
-	});
-}
-//#endregion
 //#region src/components/roadie/FlipCard.tsx
-function statusTone$1(status) {
-	if (status === RoadieStatus.archived) return "muted";
-	if (status === RoadieStatus.needsMoreTime) return "pending";
-	return "hired";
+/** The roadie's initials for the no-photo placeholder, at most two letters. */
+function initialsOf(name) {
+	const parts = name.trim().split(/\s+/).filter(Boolean);
+	if (parts.length === 0) return "?";
+	if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+	return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 /**
-* Format the non-sensitive "MM-DD" birthday as a date-only value in UTC, e.g.
-* "Mar 14". The value is a calendar month and day with no year, so it is
-* anchored to a fixed UTC date and formatted in UTC to keep the same calendar
-* day on every device. Returns null for a missing or malformed value.
+* The inline SVG store seal that replaces the uploaded logo in the card's top
+* banner. A red disc with a cream ring carries the store number and three white
+* stars, matching the reference card. The store number is the accessible name,
+* so assistive tech reads the seal as the store number rather than as an image.
 */
-function formatBirthdayMonthDay(monthDay) {
-	if (!monthDay) return null;
-	const match = /^(\d{2})-(\d{2})$/.exec(monthDay);
-	if (!match) return null;
-	const month = Number(match[1]);
-	const day = Number(match[2]);
-	if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-	const date = new Date(Date.UTC(2e3, month - 1, day));
-	if (Number.isNaN(date.getTime())) return null;
-	return date.toLocaleDateString(void 0, {
-		month: "short",
-		day: "numeric",
-		timeZone: "UTC"
+function StoreSeal({ storeNumber }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", {
+		viewBox: "0 0 64 64",
+		role: "img",
+		"aria-label": storeNumber,
+		className: "seal",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("title", { children: storeNumber }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+				cx: "32",
+				cy: "32",
+				r: "31",
+				fill: "#b22234"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", {
+				cx: "32",
+				cy: "32",
+				r: "27",
+				fill: "none",
+				stroke: "#f4efe3",
+				strokeWidth: "2"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("text", {
+				x: "32",
+				y: "30",
+				textAnchor: "middle",
+				dominantBaseline: "middle",
+				fill: "#f4efe3",
+				fontFamily: "\"Archivo Black\", sans-serif",
+				fontSize: "20",
+				children: storeNumber
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("g", {
+				fill: "#f4efe3",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M32 40.5l1.6 3.2 3.5.5-2.55 2.5.6 3.5-3.15-1.65-3.15 1.65.6-3.5-2.55-2.5 3.5-.5z" }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M22 42l1.1 2.2 2.4.35-1.75 1.7.4 2.4-2.15-1.15-2.15 1.15.4-2.4-1.75-1.7 2.4-.35z" }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M42 42l1.1 2.2 2.4.35-1.75 1.7.4 2.4-2.15-1.15-2.15 1.15.4-2.4-1.75-1.7 2.4-.35z" })
+				]
+			})
+		]
 	});
 }
-function BackField({ label, value }) {
+/**
+* The sixteen scattered stars on the front face, positioned per the spec: a
+* three-and-three top row, three down each side, and two in each bottom corner.
+*/
+var STARS = [
+	{
+		left: "3%",
+		top: "2.5%"
+	},
+	{
+		left: "12%",
+		top: "2.5%",
+		size: "4cqw"
+	},
+	{
+		left: "21%",
+		top: "2.5%"
+	},
+	{
+		right: "3%",
+		top: "2.5%"
+	},
+	{
+		right: "12%",
+		top: "2.5%",
+		size: "4cqw"
+	},
+	{
+		right: "21%",
+		top: "2.5%"
+	},
+	{
+		left: "1.5%",
+		top: "30%",
+		size: "3.6cqw"
+	},
+	{
+		left: "1.5%",
+		top: "38%",
+		size: "3.6cqw"
+	},
+	{
+		left: "1.5%",
+		top: "46%",
+		size: "3.6cqw"
+	},
+	{
+		right: "1.5%",
+		top: "30%",
+		size: "3.6cqw"
+	},
+	{
+		right: "1.5%",
+		top: "38%",
+		size: "3.6cqw"
+	},
+	{
+		right: "1.5%",
+		top: "46%",
+		size: "3.6cqw"
+	},
+	{
+		left: "3%",
+		bottom: "2.5%",
+		size: "4.6cqw"
+	},
+	{
+		left: "11%",
+		bottom: "2.5%",
+		size: "3.6cqw"
+	},
+	{
+		right: "3%",
+		bottom: "2.5%",
+		size: "4.6cqw"
+	},
+	{
+		right: "11%",
+		bottom: "2.5%",
+		size: "3.6cqw"
+	}
+];
+/** One row of the back-face profile table. */
+function ProfileRow({ label, value }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "min-w-0",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
-			className: "font-display text-[11px] font-semibold uppercase tracking-widest text-muted-foreground",
-			children: label
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
-			className: "mt-0.5 break-words text-sm text-foreground",
-			children: value
-		})]
+		className: "row",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: label }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: value })]
 	});
 }
+/** The tier ribbon label and variant class for a leader role. */
+function leaderTier(role) {
+	switch (role) {
+		case Role.trainer: return {
+			variant: "gold",
+			labelKey: "roadie.card.tier.gold"
+		};
+		case Role.trainingManager: return {
+			variant: "plat",
+			labelKey: "roadie.card.tier.plat.training"
+		};
+		case Role.visitingManager: return {
+			variant: "plat",
+			labelKey: "roadie.card.tier.plat.visiting"
+		};
+		case Role.leadership: return {
+			variant: "legend",
+			labelKey: "roadie.card.tier.legend.leadership"
+		};
+		case Role.storeManager: return {
+			variant: "plat",
+			labelKey: "roadie.card.tier.plat"
+		};
+		default: return {
+			variant: "legend",
+			labelKey: "roadie.card.tier.legend"
+		};
+	}
+}
+/** The plate font size for a name, shrinking long names without truncation. */
+function plateFontSize(name) {
+	if (name.length > 18) return "6.2cqw";
+	if (name.length > 14) return "7.5cqw";
+}
 /**
-* The roadie card. Front shows the photo, name, position, crew, position code,
-* logo and the opening-team line. Back shows the personal details, status
-* badges and the Minor badge when the roadie is under 18. The birthday and the
-* Minor badge come from the roadie's non-sensitive `birthdayMonthDay` and
-* `isMinor` fields, never from the contact set.
+* The collectible trading card. It renders a roadie or a leader on the same
+* front and back faces, flip, store seal and stars. The front shows the TLC
+* banner, the inline store seal, the tier ribbon, the shield photo window, the
+* nameplate, the position/title pills and the footer. The back shows the
+* two-line name with a headshot, the About Me table (every non-empty field plus
+* the home store and, for a trainer, the travel dates), the MY GOAL ticket and
+* the footer.
+*
+* The card never renders the contact set: phone, email and date of birth are
+* deliberately absent. The Minor badge comes from the roadie's non-sensitive
+* `isMinor` field.
 */
-function FlipCard({ roadie, position, secondPosition, crossTrainedPosition, crew }) {
+function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPosition, crew, trainerPositions }) {
 	const { t } = useI18n();
 	const [flipped, setFlipped] = (0, import_react.useState)(false);
-	const name = roadie.profile.preferredName || roadie.profile.name;
-	const birthday = formatBirthdayMonthDay(roadie.birthdayMonthDay);
-	const isMinor = roadie.isMinor;
-	const none = t("roadie.field.none");
+	const { data: storeInfo } = useStoreInfo();
+	const { data: photo } = useRoadiePhoto(roadie?.id);
+	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(photo), [photo]);
+	const isLeader = !!leader;
+	const leaderProfile = leader?.staffProfile;
+	const roadieProfile = roadie?.profile;
+	const name = isLeader ? leaderProfile?.preferredName?.trim() || leaderProfile?.fullName?.trim() || "" : roadieProfile?.preferredName?.trim() || roadieProfile?.name?.trim() || "";
+	const nameParts = name.trim().split(/\s+/).filter(Boolean);
+	const firstName = nameParts[0] ?? name;
+	const lastName = nameParts.slice(1).join(" ");
+	const initials = initialsOf(name);
+	const isMinor = roadie?.isMinor ?? false;
+	const about = isLeader ? leaderProfile : roadieProfile;
+	const homeStoreNumber = leaderProfile?.homeStoreNumber ?? "";
+	const homeStoreCity = leaderProfile?.homeStoreCity ?? "";
+	const storeCity = storeInfo?.locationName;
+	const storeNumber = storeInfo?.storeNumber;
+	const openingDate = storeInfo?.openingDate !== void 0 ? formatDateOnly(storeInfo.openingDate) : null;
+	const hireTimestamp = roadie?.hireDate ?? roadie?.hiredAt;
+	const hireDate = hireTimestamp !== void 0 ? formatTimestampDateOnly(hireTimestamp) : null;
+	const isTrainer = leader?.role === Role.trainer;
+	const tier = leader ? leaderTier(leader.role) : {
+		variant: "roadie",
+		labelKey: "roadie.card.tier.roadie"
+	};
+	const mainPill = isLeader ? leader?.title || t("roadie.field.none") : position?.name ?? t("roadie.field.none");
+	const stationNames = (trainerPositions ?? []).map((station) => station.name).filter(Boolean);
+	const stationsPill = isTrainer ? stationNames.join(" · ") : "";
+	const secondPill = crossTrainedPosition ?? secondPosition;
+	const arrival = leader?.arrivalDate ? formatDateOnlyMonthDay(leader.arrivalDate) : null;
+	const departure = leader?.departureDate ? formatDateOnlyMonthDay(leader.departureDate) : null;
+	const trainerFooter = isTrainer && (arrival || departure) ? `${t("roadie.card.from")} #${homeStoreNumber} ${homeStoreCity} ★ ${arrival ?? "—"} – ${departure ?? "—"}` : null;
+	const openingTeamFooter = `${t("roadie.card.openingTeam")} ★ ${storeNumber ? `#${storeNumber} ` : ""}${storeCity ?? t("roadie.field.none")}`;
+	const leaderFooter = trainerFooter ?? openingTeamFooter;
+	const roadieBackFooter = `${storeNumber ? `#${storeNumber} ` : ""}${t("roadie.card.openingCrew").toUpperCase()}${openingDate ? ` · ${openingDate.toUpperCase()}` : ""}`;
+	const profileRows = [
+		{
+			label: t("roadie.field.hometown"),
+			value: about?.hometown
+		},
+		{
+			label: t("roadie.field.crew"),
+			value: crew?.name
+		},
+		{
+			label: t("roadie.field.dayOff"),
+			value: about?.hobbies
+		},
+		{
+			label: t("roadie.field.favoriteTeam"),
+			value: about?.favoriteTeam
+		},
+		{
+			label: t("roadie.field.favoriteSnack"),
+			value: about?.favoriteSnack
+		},
+		{
+			label: t("roadie.field.favoriteDrink"),
+			value: about?.favoriteDrink
+		},
+		{
+			label: t("roadie.field.favoriteColor"),
+			value: about?.favoriteColor
+		},
+		{
+			label: t("roadie.field.funFact"),
+			value: about?.funFact
+		},
+		{
+			label: t("roadie.field.hiredAt"),
+			value: hireDate
+		}
+	].filter((row) => !!row.value);
+	const toggle = () => setFlipped((value) => !value);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-3",
 		"data-ocid": "roadie.flip_card",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-			className: cn("relative w-full [perspective:1600px]", flipped ? "min-h-[26rem]" : "min-h-[24rem]"),
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+			type: "button",
+			className: cn("rc", tier.variant, flipped && "flipped"),
+			tabIndex: 0,
+			"aria-label": flipped ? t("roadie.action.flipBack") : t("roadie.action.showBack"),
+			onClick: toggle,
+			onKeyDown: (event) => {
+				if (event.key === "Enter" || event.key === " ") {
+					event.preventDefault();
+					toggle();
+				}
+			},
 			children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: cn("relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] motion-reduce:transition-none", flipped && "[transform:rotateY(180deg)]"),
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "rc-inner",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "rc-face",
 					"aria-hidden": flipped,
-					className: cn("absolute inset-0 flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-subtle [backface-visibility:hidden]", flipped && "pointer-events-none"),
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex items-center justify-between gap-3 bg-secondary px-4 py-3 text-secondary-foreground",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, { className: "h-9 w-9" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "font-display text-xs font-semibold uppercase tracking-widest",
-							children: t("roadie.openingTeam")
-						})]
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex flex-1 flex-col items-center gap-4 p-6 text-center",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "frame",
 						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadiePhoto, {
-								id: roadie.id,
-								name,
-								ocid: "roadie.card.photo",
-								className: "h-40 w-40 border-4",
-								iconClassName: "h-12 w-12"
-							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "min-w-0",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
-									className: "break-words font-display text-2xl font-bold uppercase tracking-tight text-foreground",
-									children: name
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-									className: "mt-1 text-sm text-muted-foreground",
-									children: position?.name ?? none
-								})]
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
-								className: "grid w-full grid-cols-2 gap-3 text-left",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.crew"),
-									value: crew?.name ?? none
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.positionCode"),
-									value: position?.code ?? none
+								className: "f-top",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+									className: "wordmark",
+									children: t("roadie.card.tlc")
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+									className: "cap",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreSeal, { storeNumber: storeNumber ?? "" })
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "mt-auto flex flex-wrap items-center justify-center gap-2",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
-									tone: statusTone$1(roadie.status),
-									children: roadieStatusLabel(roadie.status)
-								}), isMinor && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
-									tone: "pending",
-									ocid: "roadie.minor_badge",
-									children: t("roadie.minor")
-								})]
+								className: "f-stage",
+								children: [
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: cn("tier", tier.variant),
+										children: t(tier.labelKey)
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+										className: "stars",
+										"aria-hidden": "true",
+										children: STARS.map((star, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+											style: {
+												left: star.left,
+												right: star.right,
+												top: star.top,
+												bottom: star.bottom,
+												fontSize: star.size
+											},
+											children: "★"
+										}, index))
+									}),
+									isMinor && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "tag minor",
+										"data-ocid": "roadie.minor_badge",
+										children: "MINOR"
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+										className: "shield",
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "cream" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+											className: "ph",
+											"data-ocid": "roadie.card.photo",
+											style: photoUrl ? { backgroundImage: `url(${photoUrl})` } : void 0,
+											children: photoUrl ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+												src: photoUrl,
+												alt: name,
+												className: "h-full w-full object-cover"
+											}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+												className: "flex h-full w-full items-center justify-center text-[16cqw] text-[#f4efe3]",
+												style: { fontFamily: "\"Archivo Black\", sans-serif" },
+												children: initials
+											})
+										})]
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+										className: "plate",
+										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("b", {
+											style: plateFontSize(name) ? { fontSize: plateFontSize(name) } : void 0,
+											children: name
+										})
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+										className: "pills",
+										children: [
+											/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+												className: "pill",
+												children: mainPill
+											}),
+											stationsPill && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+												className: "pill sm",
+												children: stationsPill
+											}),
+											!isLeader && secondPill && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+												className: "pill sm",
+												children: secondPill.name
+											})
+										]
+									})
+								]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								className: "f-foot",
+								children: isLeader ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: leaderFooter }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [
+										t("roadie.card.roadieSince"),
+										" ",
+										hireDate
+									] }),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "star",
+										children: "★"
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: storeCity ?? t("roadie.field.none") })
+								] })
 							})
 						]
-					})]
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					})
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "rc-face rc-back",
 					"aria-hidden": !flipped,
-					className: cn("absolute inset-0 flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-subtle [backface-visibility:hidden] [transform:rotateY(180deg)]", !flipped && "pointer-events-none"),
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex items-center justify-between gap-3 bg-secondary px-4 py-3 text-secondary-foreground",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "font-display text-xs font-semibold uppercase tracking-widest",
-							children: t("roadie.section.card")
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, { className: "h-8 w-8" })]
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex-1 space-y-4 overflow-y-auto p-5",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex flex-wrap items-center gap-2",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
-								tone: statusTone$1(roadie.status),
-								children: roadieStatusLabel(roadie.status)
-							}), isMinor && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
-								tone: "pending",
-								ocid: "roadie.minor_badge",
-								children: t("roadie.minor")
-							})]
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
-							className: "grid grid-cols-1 gap-4 sm:grid-cols-2",
-							children: [
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.preferredName"),
-									value: roadie.profile.preferredName ?? none
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.hometown"),
-									value: roadie.profile.hometown ?? none
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.hobbies"),
-									value: roadie.profile.hobbies ?? none
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.favoriteMovie"),
-									value: roadie.profile.favoriteMovie ?? none
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.favoriteSnack"),
-									value: roadie.profile.favoriteSnack ?? none
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.funFact"),
-									value: roadie.profile.funFact ?? none
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.goalHere"),
-									value: roadie.profile.goalHere ?? none
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.birthday"),
-									value: birthday ?? none
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.orientation"),
-									value: roadie.orientationEventId !== void 0 ? `#${roadie.orientationEventId.toString()}` : none
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.crossTrained"),
-									value: crossTrainedPosition?.name ?? none
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.secondPosition"),
-									value: secondPosition?.name ?? none
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BackField, {
-									label: t("roadie.field.weekdayLunchShort"),
-									value: roadie.profile.weekdayLunch === void 0 ? none : roadie.profile.weekdayLunch ? t("common.yes") : t("common.no")
-								})
-							]
-						})]
-					})]
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "frame",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "b-top",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h2", {
+									className: "b-name",
+									children: [firstName, lastName ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("br", {}), lastName] }) : null]
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+									className: "b-head",
+									"data-ocid": "roadie.card.headshot",
+									style: photoUrl ? { backgroundImage: `url(${photoUrl})` } : void 0
+								})]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "b-body",
+								children: [
+									profileRows.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+										className: cn("tbl", profileRows.length > 7 && "dense"),
+										children: profileRows.map((row) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileRow, {
+											label: row.label,
+											value: row.value ?? ""
+										}, row.label))
+									}),
+									isLeader && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+										className: "tbl",
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileRow, {
+											label: t("roadie.card.homeStore"),
+											value: `#${homeStoreNumber} ${homeStoreCity}`.trim()
+										}), isTrainer && (arrival || departure) && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileRow, {
+											label: t("roadie.card.here"),
+											value: `${arrival ?? "—"} – ${departure ?? "—"}`
+										})]
+									}),
+									about?.goalHere && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+										className: "quote",
+										children: [
+											/* @__PURE__ */ (0, import_jsx_runtime.jsx)("small", { children: t("roadie.card.goal") }),
+											"“",
+											about.goalHere,
+											"”"
+										]
+									})
+								]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								className: "b-foot",
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: isLeader ? leaderFooter : roadieBackFooter })
+							})
+						]
+					})
 				})]
 			})
 		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
 			type: "button",
 			variant: "outline",
-			className: "touch-target w-full",
+			className: "touch-target mx-auto flex w-full max-w-[420px]",
 			"data-ocid": "roadie.flip_button",
 			"aria-pressed": flipped,
-			onClick: () => setFlipped((value) => !value),
+			onClick: toggle,
 			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RotateCcw, {
 				className: "mr-2 h-4 w-4",
 				"aria-hidden": "true"
 			}), flipped ? t("roadie.action.flipBack") : t("roadie.action.flip")]
+		})]
+	});
+}
+//#endregion
+//#region src/pages/LeaderCard.tsx
+/**
+* A single leader's full flip card. The leader is looked up from the leaders
+* roster by the route's principal, so the page reads the same list the grid
+* does. A trainer's stations are resolved from the position list and passed to
+* the shared card, which renders the tier ribbon, title pill, station pill,
+* footers and About Me back table.
+*/
+function LeaderCardPage() {
+	const { t } = useI18n();
+	const { leaderId } = useParams({ from: "/leaders/$leaderId" });
+	const { data: leaders, isLoading, isError, refetch } = useLeaders(true);
+	const { data: positions } = usePositions();
+	const leader = (0, import_react.useMemo)(() => (leaders ?? []).find((item) => item.principal.toString() === leaderId), [leaders, leaderId]);
+	const trainerPositions = (0, import_react.useMemo)(() => {
+		if (!leader) return [];
+		const ids = new Set(leader.trainerPositionIds.map((id) => id.toString()));
+		return (positions ?? []).filter((position) => ids.has(position.id.toString()));
+	}, [leader, positions]);
+	const cardLeader = (0, import_react.useMemo)(() => leader ? {
+		...leader,
+		role: leader.staffProfile?.requestedRole ?? leader.role
+	} : void 0, [leader]);
+	const backButton = /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+		asChild: true,
+		variant: "ghost",
+		className: "touch-target -ml-2",
+		"data-ocid": "leaders.card.back_button",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
+			to: "/leaders",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowLeft, {
+				className: "mr-2 h-4 w-4",
+				"aria-hidden": "true"
+			}), t("leaders.card.back")]
+		})
+	});
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-6",
+		"data-ocid": "leaders.card.page",
+		children: [
+			backButton,
+			isLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("leaders.card.loading") }),
+			isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
+				message: t("leaders.card.error"),
+				onRetry: () => void refetch()
+			}),
+			!isLoading && !isError && !leader && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: t("leaders.card.notFound") }),
+			leader && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
+				title: staffDisplayName(leader.staffProfile, t("profile.unnamed")),
+				subtitle: leader.title?.trim() || t("leaders.card.title")
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FlipCard, {
+				leader: cardLeader,
+				trainerPositions
+			})] })
+		]
+	});
+}
+//#endregion
+//#region src/pages/Leaders.tsx
+var TIERS = [
+	{
+		key: "legend",
+		headingKey: "leaders.section.legend"
+	},
+	{
+		key: "plat",
+		headingKey: "leaders.section.plat"
+	},
+	{
+		key: "gold",
+		headingKey: "leaders.section.gold"
+	}
+];
+/**
+* The role that decides a leader's tier: the role they stated on their staff
+* profile, falling back to their access-grant role. The store owner is
+* bootstrapped as an Admin, so their grant role alone would show them as a
+* Market Partner even when they told us they are a Store Manager.
+*/
+function tierRole(leader) {
+	return leader.staffProfile?.requestedRole ?? leader.role;
+}
+/**
+* The tier a leader belongs to. Trainers are Gold; managers (store, training
+* and visiting) are Platinum; leadership and market partners are Legend. Any
+* other readable role falls back to Legend so no leader is ever dropped.
+*/
+function tierOf(leader) {
+	switch (tierRole(leader)) {
+		case Role.trainer: return "gold";
+		case Role.storeManager:
+		case Role.trainingManager:
+		case Role.visitingManager: return "plat";
+		default: return "legend";
+	}
+}
+/** The tier ribbon label key for a leader, matching the card ribbon. */
+function tierLabelKey(leader) {
+	switch (tierRole(leader)) {
+		case Role.trainer: return "roadie.card.tier.gold";
+		case Role.trainingManager: return "roadie.card.tier.plat.training";
+		case Role.visitingManager: return "roadie.card.tier.plat.visiting";
+		case Role.leadership: return "roadie.card.tier.legend.leadership";
+		case Role.storeManager: return "roadie.card.tier.plat";
+		default: return "roadie.card.tier.legend";
+	}
+}
+/** One leader card in the grid, linking to the full flip card. */
+function LeaderTile({ leader }) {
+	const { t } = useI18n();
+	const name = staffDisplayName(leader.staffProfile, t("profile.unnamed"));
+	const title = leader.title?.trim() || t("roadie.field.none");
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", {
+		"data-ocid": "leaders.item",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
+			to: "/leaders/$leaderId",
+			params: { leaderId: leader.principal.toString() },
+			"data-ocid": "leaders.item.link",
+			className: "group flex h-full flex-col gap-3 rounded-lg border border-border bg-card p-4 shadow-subtle transition-smooth hover:-translate-y-0.5 hover:shadow-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					className: "inline-flex w-fit items-center rounded-full bg-primary px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-wider text-primary-foreground",
+					"data-ocid": "leaders.item.tier",
+					children: t(tierLabelKey(leader))
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "min-w-0 flex-1",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "truncate font-display text-lg font-semibold uppercase tracking-wide text-foreground",
+						children: name
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "mt-0.5 truncate text-sm text-muted-foreground",
+						children: title
+					})]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+					className: "flex items-center gap-1 font-display text-xs font-semibold uppercase tracking-wider text-primary",
+					children: [t("leaders.viewCard"), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, {
+						className: "h-4 w-4 transition-transform group-hover:translate-x-0.5",
+						"aria-hidden": "true"
+					})]
+				})
+			]
+		})
+	});
+}
+function LeadersPage() {
+	const { t } = useI18n();
+	const { data: leaders, isLoading, isError, refetch } = useLeaders(true);
+	const grouped = (0, import_react.useMemo)(() => {
+		const groups = {
+			legend: [],
+			plat: [],
+			gold: []
+		};
+		for (const leader of leaders ?? []) groups[tierOf(leader)].push(leader);
+		return groups;
+	}, [leaders]);
+	const total = leaders?.length ?? 0;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-8",
+		"data-ocid": "leaders.page",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
+				title: t("leaders.title"),
+				subtitle: t("leaders.subtitle")
+			}),
+			isLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("leaders.loading") }),
+			isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
+				message: t("leaders.error"),
+				onRetry: () => void refetch()
+			}),
+			!isLoading && !isError && total === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: t("leaders.empty") }),
+			!isLoading && !isError && TIERS.map((tier) => {
+				const members = grouped[tier.key];
+				if (members.length === 0) return null;
+				return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+					"data-ocid": `leaders.section.${tier.key}`,
+					"aria-labelledby": `leaders-heading-${tier.key}`,
+					className: "space-y-4",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "flex items-center gap-3",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+								id: `leaders-heading-${tier.key}`,
+								className: "font-display text-xl font-bold uppercase tracking-wide text-foreground",
+								children: t(tier.headingKey)
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "h-px flex-1 bg-border",
+								"aria-hidden": "true"
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "text-sm text-muted-foreground",
+								children: members.length
+							})
+						]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
+						className: "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3",
+						"data-ocid": `leaders.list.${tier.key}`,
+						children: members.map((leader) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LeaderTile, { leader }, leader.principal.toString()))
+					})]
+				}, tier.key);
+			})
+		]
+	});
+}
+//#endregion
+//#region src/pages/MyProfile.tsx
+/**
+* The signed-in user's own profile page. It reuses the shared
+* `StaffProfileForm` and saves through `updateMyStaffProfile`, so a user can
+* keep their name, title and contact details up to date after approval. The
+* grant is already loaded by the access gate, so the form is seeded from it
+* without an extra read.
+*/
+function MyProfilePage() {
+	const { t } = useI18n();
+	const access = useAccessState();
+	const updateProfile = useUpdateMyStaffProfile();
+	const [saved, setSaved] = (0, import_react.useState)(false);
+	const grant = access.kind === "granted" ? access.grant : void 0;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-6",
+		"data-ocid": "my_profile.page",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
+			title: t("profile.editTitle"),
+			subtitle: t("profile.editDescription")
+		}), !grant ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, {
+			label: t("common.loading"),
+			ocid: "my_profile.loading_state"
+		}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+			"data-ocid": "my_profile.card",
+			className: "rounded-lg border border-border bg-card p-5 shadow-subtle md:p-6",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StaffProfileForm, {
+				initialProfile: grant.staffProfile,
+				submitLabel: t("profile.submit"),
+				pending: updateProfile.isPending,
+				error: updateProfile.isError ? t("profile.error") : null,
+				ocidPrefix: "my_profile",
+				onSubmit: (profile) => updateProfile.mutate(profile, { onSuccess: () => setSaved(true) })
+			}), saved && !updateProfile.isPending && !updateProfile.isError && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("output", {
+				"data-ocid": "my_profile.success_state",
+				className: "mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CircleCheck, {
+					className: "h-4 w-4",
+					"aria-hidden": "true"
+				}), t("profile.saved")]
+			})]
 		})]
 	});
 }
@@ -91326,7 +95103,7 @@ var CheckboxTrigger = import_react.forwardRef(({ __scopeCheckbox, onKeyDown, onC
 			return () => form.removeEventListener("reset", reset);
 		}
 	}, [control, setChecked]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.button, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
 		type: "button",
 		role: "checkbox",
 		"aria-checked": isIndeterminate(checked) ? "mixed" : checked,
@@ -91376,7 +95153,7 @@ var CheckboxIndicator = import_react.forwardRef((props, forwardedRef) => {
 	const context = useCheckboxContext(INDICATOR_NAME, __scopeCheckbox);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
 		present: forceMount || isIndeterminate(context.checked) || context.checked === true,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
 			"data-state": getState(context.checked),
 			"data-disabled": context.disabled ? "" : void 0,
 			...indicatorProps,
@@ -91393,7 +95170,7 @@ var BUBBLE_INPUT_NAME = "CheckboxBubbleInput";
 var CheckboxBubbleInput = import_react.forwardRef(({ __scopeCheckbox, ...props }, forwardedRef) => {
 	const { control, hasConsumerStoppedPropagationRef, checked, defaultChecked, required, disabled, name, value, form, bubbleInput, setBubbleInput } = useCheckboxContext(BUBBLE_INPUT_NAME, __scopeCheckbox);
 	const composedRefs = useComposedRefs(forwardedRef, setBubbleInput);
-	const prevChecked = usePrevious(checked);
+	const prevChecked = usePrevious$1(checked);
 	const controlSize = useSize(control);
 	import_react.useEffect(() => {
 		const input = bubbleInput;
@@ -91414,7 +95191,7 @@ var CheckboxBubbleInput = import_react.forwardRef(({ __scopeCheckbox, ...props }
 		hasConsumerStoppedPropagationRef
 	]);
 	const defaultCheckedRef = import_react.useRef(isIndeterminate(checked) ? false : checked);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.input, {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.input, {
 		type: "checkbox",
 		"aria-hidden": true,
 		defaultChecked: defaultChecked ?? defaultCheckedRef.current,
@@ -92033,6 +95810,18 @@ function EditDetailsDialog({ roadie, open, onOpenChange }) {
 							labelKey: "roadie.field.favoriteSnack"
 						},
 						{
+							key: "favoriteTeam",
+							labelKey: "roadie.field.favoriteTeam"
+						},
+						{
+							key: "favoriteDrink",
+							labelKey: "roadie.field.favoriteDrink"
+						},
+						{
+							key: "favoriteColor",
+							labelKey: "roadie.field.favoriteColor"
+						},
+						{
 							key: "funFact",
 							labelKey: "roadie.field.funFact"
 						},
@@ -92509,7 +96298,7 @@ var RovingFocusGroupImpl = import_react.forwardRef((props, forwardedRef) => {
 		onItemShiftTab: import_react.useCallback(() => setIsTabbingBackOut(true), []),
 		onFocusableItemAdd: import_react.useCallback(() => setFocusableItemsCount((prevCount) => prevCount + 1), []),
 		onFocusableItemRemove: import_react.useCallback(() => setFocusableItemsCount((prevCount) => prevCount - 1), []),
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
 			tabIndex: isTabbingBackOut || focusableItemsCount === 0 ? -1 : 0,
 			"data-orientation": orientation,
 			...groupProps,
@@ -92565,7 +96354,7 @@ var RovingFocusGroupItem = import_react.forwardRef((props, forwardedRef) => {
 		id,
 		focusable,
 		active,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.span, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
 			tabIndex: isCurrentTabStop ? 0 : -1,
 			"data-orientation": context.orientation,
 			...itemProps,
@@ -92659,7 +96448,7 @@ var Tabs$1 = import_react.forwardRef((props, forwardedRef) => {
 		orientation,
 		dir: direction,
 		activationMode,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
 			dir: direction,
 			"data-orientation": orientation,
 			...tabsProps,
@@ -92679,7 +96468,7 @@ var TabsList$1 = import_react.forwardRef((props, forwardedRef) => {
 		orientation: context.orientation,
 		dir: context.dir,
 		loop,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
 			role: "tablist",
 			"aria-orientation": context.orientation,
 			...listProps,
@@ -92701,7 +96490,7 @@ var TabsTrigger$1 = import_react.forwardRef((props, forwardedRef) => {
 		...rovingFocusGroupScope,
 		focusable: !disabled,
 		active: isSelected,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.button, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
 			type: "button",
 			role: "tab",
 			"aria-selected": isSelected,
@@ -92741,7 +96530,7 @@ var TabsContent$1 = import_react.forwardRef((props, forwardedRef) => {
 	}, []);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
 		present: forceMount || isSelected,
-		children: ({ present }) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive$1.div, {
+		children: ({ present }) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
 			"data-state": isSelected ? "active" : "inactive",
 			"data-orientation": context.orientation,
 			role: "tabpanel",
@@ -92954,6 +96743,31 @@ function RoadieCardPage() {
 			})
 		}),
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadieCardContent, {})
+	});
+}
+//#endregion
+//#region src/components/roadie/RoadiePhoto.tsx
+/**
+* A roadie's photo, read on demand by id. The photo bytes are fetched once per
+* roadie (React Query caches them under the id) and converted to a displayable
+* data URL once per roadie, memoized so a re-render does not re-read the bytes.
+* A roadie with no stored photo shows the placeholder icon, never a broken
+* image.
+*/
+function RoadiePhoto({ id, name, className, iconClassName, ocid, fallback }) {
+	const { data: photo } = useRoadiePhoto(id);
+	const src = (0, import_react.useMemo)(() => refToDataUrl(photo), [photo]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+		"data-ocid": ocid,
+		className: cn("flex items-center justify-center overflow-hidden rounded-full border-2 border-primary bg-muted", className),
+		children: src ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+			src,
+			alt: name,
+			className: "h-full w-full object-cover"
+		}) : fallback ?? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Image$1, {
+			className: cn("h-6 w-6 text-muted-foreground", iconClassName),
+			"aria-hidden": "true"
+		})
 	});
 }
 //#endregion
@@ -93344,6 +97158,30 @@ function GuardedExport() {
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ExportPage, {})
 	});
 }
+/** The Gift Bags surface, blocked for roles that cannot use it. */
+function GuardedGiftBags() {
+	const role = useRole();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RouteGuard, {
+		allowed: canGiftBags(role),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GiftBagsPage, {})
+	});
+}
+/** The Leaders surface, blocked for roles that cannot use it. */
+function GuardedLeaders() {
+	const role = useRole();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RouteGuard, {
+		allowed: canLeaders(role),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LeadersPage, {})
+	});
+}
+/** A single leader card, blocked for roles that cannot read leaders. */
+function GuardedLeaderCard() {
+	const role = useRole();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RouteGuard, {
+		allowed: canLeaders(role),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LeaderCardPage, {})
+	});
+}
 var indexRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/",
@@ -93363,6 +97201,11 @@ var rosterRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/roster",
 	component: RosterPage
+});
+var myProfileRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/my-profile",
+	component: MyProfilePage
 });
 var roadieRoute = createRoute({
 	getParentRoute: () => rootRoute,
@@ -93389,16 +97232,35 @@ var exportRoute = createRoute({
 	path: "/export",
 	component: GuardedExport
 });
+var giftBagsRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/gift-bags",
+	component: GuardedGiftBags
+});
+var leadersRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/leaders",
+	component: GuardedLeaders
+});
+var leaderCardRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/leaders/$leaderId",
+	component: GuardedLeaderCard
+});
 var router = createRouter({ routeTree: rootRoute.addChildren([
 	indexRoute,
 	todayRoute,
 	dashboardRoute,
 	rosterRoute,
+	myProfileRoute,
 	roadieRoute,
 	approvalsRoute,
 	adminRoute,
 	kioskRoute,
-	exportRoute
+	exportRoute,
+	giftBagsRoute,
+	leadersRoute,
+	leaderCardRoute
 ]) });
 function App() {
 	const [locale, setLocale] = (0, import_react.useState)("en");

@@ -16,6 +16,9 @@ export interface AdminCopy {
   storeLogoAlt: string;
   storeLogoUpload: string;
   storeLogoRemove: string;
+  storeSecondaryLogoAlt: string;
+  storeSecondaryLogoUpload: string;
+  storeSecondaryLogoRemove: string;
   storeAppName: string;
   storeStoreNumber: string;
   storeLocationName: string;
@@ -91,6 +94,7 @@ export interface AdminCopy {
   checklistsItemText: string;
   checklistsRequiresAlcoholCert: string;
   checklistsMinorOnly: string;
+  checklistsToggleHint: string;
   checklistsOrientationUniform: string;
   checklistsOrientationUniformHint: string;
   checklistsPaperwork: string;
@@ -160,6 +164,9 @@ const en: AdminCopy = {
   storeLogoAlt: "Store logo",
   storeLogoUpload: "Upload logo",
   storeLogoRemove: "Remove logo",
+  storeSecondaryLogoAlt: "Secondary logo",
+  storeSecondaryLogoUpload: "Upload secondary logo",
+  storeSecondaryLogoRemove: "Remove secondary logo",
   storeAppName: "App name",
   storeStoreNumber: "Store number",
   storeLocationName: "Location",
@@ -246,8 +253,9 @@ const en: AdminCopy = {
   checklistsAddItem: "Add item",
   checklistsRemoveItem: "Remove item",
   checklistsItemText: "Item text",
-  checklistsRequiresAlcoholCert: "Alcohol cert",
-  checklistsMinorOnly: "Under 18 only",
+  checklistsRequiresAlcoholCert: "Only alcohol positions",
+  checklistsMinorOnly: "Only under 18",
+  checklistsToggleHint: "Leave both off if the item applies to everyone.",
   checklistsOrientationUniform: "Orientation uniform",
   checklistsOrientationUniformHint: "What every roadie brings to orientation.",
   checklistsPaperwork: "Paperwork",
@@ -320,6 +328,9 @@ const es: AdminCopy = {
   storeLogoAlt: "Logotipo de la tienda",
   storeLogoUpload: "Subir logotipo",
   storeLogoRemove: "Quitar logotipo",
+  storeSecondaryLogoAlt: "Logotipo secundario",
+  storeSecondaryLogoUpload: "Subir logotipo secundario",
+  storeSecondaryLogoRemove: "Quitar logotipo secundario",
   storeAppName: "Nombre de la app",
   storeStoreNumber: "Número de tienda",
   storeLocationName: "Ubicación",
@@ -406,8 +417,10 @@ const es: AdminCopy = {
   checklistsAddItem: "Añadir artículo",
   checklistsRemoveItem: "Quitar artículo",
   checklistsItemText: "Texto del artículo",
-  checklistsRequiresAlcoholCert: "Cert. alcohol",
+  checklistsRequiresAlcoholCert: "Solo puestos con alcohol",
   checklistsMinorOnly: "Solo menores de 18",
+  checklistsToggleHint:
+    "Deja ambos desactivados si el artículo aplica a todos.",
   checklistsOrientationUniform: "Uniforme de orientación",
   checklistsOrientationUniformHint: "Lo que cada roadie trae a la orientación.",
   checklistsPaperwork: "Papeleo",

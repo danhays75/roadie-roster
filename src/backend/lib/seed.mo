@@ -126,7 +126,7 @@ module {
       { id = 1; text = "Policies & procedures"; requiresAlcoholCert = false; minorOnly = false },
       { id = 2; text = "Food handler card"; requiresAlcoholCert = false; minorOnly = false },
       { id = 3; text = "Alcohol cert"; requiresAlcoholCert = true; minorOnly = false },
-      { id = 4; text = "Minor work permit"; requiresAlcoholCert = false; minorOnly = true },
+      { id = 4; text = "LA employment certificate (LWC confirmation received)"; requiresAlcoholCert = false; minorOnly = true },
     ];
   };
 
@@ -147,6 +147,7 @@ module {
       trainingGroupSize = 5;
       leaderTalkSize = 10;
       logo = null;
+      secondaryLogo = null;
     };
   };
 

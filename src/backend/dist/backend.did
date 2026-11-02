@@ -66,6 +66,51 @@ type TrainerNote =
 type Timestamp = int;
 type TimeZone = text;
 type TimeOfDay = nat;
+type TemplateScheduleEvent = 
+ record {
+   endOffsetDays: opt int;
+   kind: EventKind;
+   name: text;
+   startOffsetDays: int;
+ };
+type TemplatePreview = 
+ record {
+   leaderTalkName: text;
+   orientationUniformCount: nat;
+   paperworkCount: nat;
+   positionCount: nat;
+   scheduleCount: nat;
+ };
+type TemplatePosition = 
+ record {
+   afterOpeningBuildTo: nat;
+   code: text;
+   house: House;
+   minimumAge: nat;
+   name: text;
+   needsAlcoholCert: bool;
+   openingBuildTo: nat;
+ };
+type TemplateLoadResult = 
+ variant {
+   err: text;
+   ok: TemplatePreview;
+ };
+type StoreTemplateFile = 
+ record {
+   checklists: Checklists;
+   leaderTalkName: text;
+   leaderTalkSize: nat;
+   positions: vec TemplatePosition;
+   schedule: vec TemplateScheduleEvent;
+   trainingGroupSize: nat;
+   version: nat;
+ };
+type StoreLogos = 
+ record {
+   logo: opt PhotoRef;
+   secondaryLogo: opt PhotoRef;
+ };
 type StoreInfo = 
  record {
    address: text;
@@ -79,10 +124,36 @@ type StoreInfo =
    openingDate: DateOnly;
    pmShiftEnd: TimeOfDay;
    pmShiftStart: TimeOfDay;
+   secondaryLogo: opt PhotoRef;
    storeNumber: text;
    storePhone: Phone;
    timeZone: TimeZone;
    trainingGroupSize: nat;
+ };
+type StaffProfile = 
+ record {
+   arrivalDate: opt DateOnly;
+   departureDate: opt DateOnly;
+   favoriteColor: opt text;
+   favoriteDrink: opt text;
+   favoriteSnack: opt text;
+   favoriteTeam: opt text;
+   fullName: PersonName;
+   funFact: opt text;
+   goalHere: opt text;
+   hatSize: opt HatSize;
+   hobbies: opt text;
+   homeStoreCity: text;
+   homeStoreNumber: text;
+   hometown: opt text;
+   photo: opt PhotoRef;
+   preferredName: opt text;
+   requestedRole: Role;
+   shirtSize: opt ShirtSize;
+   title: text;
+   trainerPositionIds: vec PositionId;
+   workEmail: opt Email;
+   workPhone: opt Phone;
  };
 type SignupSubmission = 
  record {
@@ -153,8 +224,11 @@ type RoadieStatus =
  };
 type RoadieProfile = 
  record {
+   favoriteColor: opt text;
+   favoriteDrink: opt text;
    favoriteMovie: opt text;
    favoriteSnack: opt text;
+   favoriteTeam: opt text;
    funFact: opt text;
    goalHere: opt text;
    hatSize: opt HatSize;
@@ -177,6 +251,7 @@ type Roadie =
    corporateEmployeeId: opt text;
    crewId: opt CrewId;
    crossTrainedPositionId: opt PositionId;
+   hireDate: opt Timestamp;
    hiredAt: Timestamp;
    id: RoadieId;
    isMinor: bool;
@@ -228,6 +303,7 @@ type PendingUser =
  record {
    "principal": principal;
    requestedAt: Timestamp;
+   staffProfile: opt StaffProfile;
  };
 type OverviewRow = 
  record {
@@ -253,12 +329,69 @@ type LeaderTalk =
    id: LeaderTalkId;
    name: text;
  };
+type LeaderSummary = 
+ record {
+   arrivalDate: opt DateOnly;
+   departureDate: opt DateOnly;
+   "principal": principal;
+   role: Role;
+   staffProfile: opt StaffProfile;
+   title: text;
+   trainerPositionIds: vec PositionId;
+ };
 type House = 
  variant {
    boh;
    foh;
  };
 type HatSize = text;
+type GiftBagsData = 
+ record {
+   groups: vec GiftBagGroup;
+   labels: vec GiftBagLabel;
+ };
+type GiftBagLabel = 
+ record {
+   candySnack: opt text;
+   color: opt text;
+   drink: opt text;
+   hatSize: opt text;
+   house: House;
+   name: text;
+   positionName: text;
+   roadieId: RoadieId;
+   shirtSize: opt text;
+   sportsTeam: opt text;
+ };
+type GiftBagGroup = 
+ record {
+   answers: vec GiftBagAnswerCount;
+   category: GiftBagCategory;
+   noAnswer: nat;
+ };
+type GiftBagFilter = 
+ variant {
+   all;
+   boh;
+   foh;
+   leaders;
+   position: PositionId;
+   roadies;
+ };
+type GiftBagCategory = 
+ variant {
+   candySnack;
+   color;
+   drink;
+   hatSize;
+   shirtSize;
+   sportsTeam;
+ };
+type GiftBagAnswerCount = 
+ record {
+   answer: text;
+   count: nat;
+ };
 type FinalSignOff = 
  record {
    futureTrainer: bool;
@@ -280,6 +413,10 @@ type ExportRow =
    email: opt Email;
    emergencyContactName: opt text;
    emergencyContactPhone: opt Phone;
+   favoriteColor: opt text;
+   favoriteDrink: opt text;
+   favoriteSnack: opt text;
+   favoriteTeam: opt text;
    foodHandlers: bool;
    name: text;
    onboardingComplete: bool;
@@ -430,6 +567,7 @@ type ApprovalRequest =
    linkedRoadieId: opt RoadieId;
    "principal": principal;
    role: Role;
+   staffProfile: opt StaffProfile;
    trainerPositionIds: vec PositionId;
  };
 type ApprovalDecision = 
@@ -456,6 +594,7 @@ type AccessGrant =
    linkedRoadieId: opt RoadieId;
    "principal": principal;
    role: Role;
+   staffProfile: opt StaffProfile;
    trainerPositionIds: vec PositionId;
  };
 service : {
@@ -522,6 +661,8 @@ service : {
   deletePosition: (id: PositionId) -> ();
   /// Delete a schedule event (Admin only).
   deleteScheduleEvent: (id: EventId) -> ();
+  /// Build the downloadable store template file (Admin only).
+  downloadStoreTemplate: () -> (StoreTemplateFile) query;
   /// Re-seed the store when it has no positions yet. Idempotent; returns true
   /// when a seed was applied, false when the store already had positions.
   ensureSeeded: () -> (bool);
@@ -547,6 +688,10 @@ service : {
       showedAtOrientation: opt nat;
       stillNeeded: nat;
     }) query;
+  /// Build the Gift Bags shopping list and printable labels for the selected
+  /// filter, across active (non-archived) roadies only. Visible to Admin, Store
+  /// Manager and Training Manager. Never includes phone, email or date of birth.
+  getGiftBags: (filter: GiftBagFilter) -> (GiftBagsData) query;
   /// Read the caller's own access grant. Returns null until an Admin has
   /// approved the caller, so the frontend keeps showing the waiting screen.
   getMyAccess: () -> (opt AccessGrant) query;
@@ -569,6 +714,9 @@ service : {
   getSignupPhoto: (id: SignupId) -> (opt PhotoRef) query;
   /// Read the store configuration.
   getStoreInfo: () -> (StoreInfo) query;
+  /// Read both store logos (main and secondary). Any caller, including Kiosk
+  /// and unregistered users.
+  getStoreLogo: () -> (StoreLogos) query;
   /// Read a training group with its unassigned and off-shift lists.
   getTrainingGroup: (id: TrainingGroupId) -> (opt TrainingGroupView) query;
   /// True when an Admin has set a kiosk PIN.
@@ -586,6 +734,10 @@ service : {
   listChangeLog: () -> (vec ChangeLogEntry) query;
   /// List crews.
   listCrews: () -> (vec Crew) query;
+  /// List the leaders shown on the Leaders page: the manager, trainer and
+  /// leadership roles. Readable by every role except Kiosk and Integration.
+  /// Never carries phone or email.
+  listLeaders: () -> (vec LeaderSummary) query;
   /// List pending sign-up submissions (Admin/Store Manager only).
   listPendingSignups: () -> (vec SignupSubmission) query;
   /// List pending access requests (Admin only).
@@ -602,6 +754,9 @@ service : {
   /// Integration sees nothing, and a trainer sees notes only for roadies in
   /// their assigned stations.
   listTrainerNotes: (roadieId: RoadieId) -> (vec TrainerNote) query;
+  /// Load a store template file, replacing positions, schedule and checklists
+  /// (Admin only). Refuses when any roadie exists.
+  loadStoreTemplate: (file: StoreTemplateFile) -> (TemplateLoadResult);
   /// Record attendance for a roadie (Admin/Store Manager only).
   recordAttendance: ("record": AttendanceRecord) -> ();
   /// Record a final sign-off for a roadie (Admin/Store Manager only).
@@ -628,6 +783,9 @@ service : {
   /// Submit a new sign-up from the kiosk (Kiosk, Store Manager or Admin only).
   submitSignup: (profile: RoadieProfile, photo: opt PhotoRef, signature:
    opt SignatureRef, contactSet: ContactSet) -> (SignupId);
+  /// Store the signed-in caller's staff profile on their pending request. The
+  /// caller must already have a pending request (created by `requestAccess`).
+  submitStaffProfile: (profile: StaffProfile) -> ();
   /// Update a user's access end date (Admin only).
   updateAccessEnd: ("principal": principal, accessEndsAt: opt Timestamp) ->
    ();
@@ -635,6 +793,8 @@ service : {
   updateChecklists: (value: Checklists) -> ();
   /// Update a roadie's contact set (Admin/Store Manager only).
   updateContactSet: (id: RoadieId, contactSet: ContactSet) -> ();
+  /// Update the signed-in caller's own staff profile on their access grant.
+  updateMyStaffProfile: (profile: StaffProfile) -> ();
   /// Update the orientation check-off for a roadie (Admin/Store Manager only).
   updateOrientationCheckoff: (checkoff: OrientationCheckoff) -> ();
   /// Update a position (Admin only).

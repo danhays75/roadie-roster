@@ -4,6 +4,8 @@ import {
   type Checklists,
   type DuplicateMatch,
   type EventId,
+  type LeaderSummary,
+  type PhotoRef,
   type Position,
   type PositionId,
   type RetentionSettings,
@@ -13,7 +15,10 @@ import {
   type SignatureRef,
   type SignupId,
   type SignupSubmission,
+  type StaffProfile,
   type StoreInfo,
+  type StoreLogos,
+  type StoreTemplateFile,
   type Timestamp,
   createActor,
 } from "@/backend";
@@ -314,6 +319,51 @@ export function useSetKioskPin() {
 }
 
 /* ---------------------------------------------------------------------------
+   Staff profile
+--------------------------------------------------------------------------- */
+
+/**
+ * Store the caller's staff profile on their pending access request. Used by the
+ * post-sign-in profile form before an Admin approves the caller. The backend
+ * traps when the caller has no pending request, so callers only invoke this
+ * while the access state is pending.
+ */
+export function useSubmitStaffProfile() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (profile: StaffProfile) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.submitStaffProfile(profile);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["myAccess"] });
+      void queryClient.invalidateQueries({ queryKey: ["pendingUsers"] });
+    },
+  });
+}
+
+/**
+ * Update the caller's own staff profile on their access grant. Existing users
+ * approved before profiles existed use this to fill theirs in without losing
+ * access. The backend traps when the caller has no grant.
+ */
+export function useUpdateMyStaffProfile() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (profile: StaffProfile) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.updateMyStaffProfile(profile);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["myAccess"] });
+      void queryClient.invalidateQueries({ queryKey: ["accessGrants"] });
+    },
+  });
+}
+
+/* ---------------------------------------------------------------------------
    Store & schedule
 --------------------------------------------------------------------------- */
 
@@ -327,6 +377,76 @@ export function useStoreInfo() {
     },
     enabled: !!actor && !isFetching,
   });
+}
+
+/** The store's two uploaded logos, each absent when not set. */
+export interface StoreLogoPair {
+  logo: PhotoRef | null;
+  secondaryLogo: PhotoRef | null;
+}
+
+const NO_STORE_LOGOS: StoreLogoPair = { logo: null, secondaryLogo: null };
+
+/** Coerce one optional logo field to `PhotoRef | null`. */
+function toPhotoRef(value: unknown): PhotoRef | null {
+  return value instanceof Uint8Array ? value : null;
+}
+
+/**
+ * Normalize the public `getStoreLogo` result. The current binding returns a
+ * `StoreLogos` record with both logos; an older actor (or a test mock) may
+ * return a bare `PhotoRef` for the main logo, which is treated as `logo` with
+ * no secondary logo.
+ */
+function normalizeStoreLogos(value: unknown): StoreLogoPair {
+  if (value instanceof Uint8Array) {
+    return { logo: value, secondaryLogo: null };
+  }
+  if (typeof value === "object" && value !== null) {
+    const record = value as StoreLogos;
+    return {
+      logo: toPhotoRef(record.logo),
+      secondaryLogo: toPhotoRef(record.secondaryLogo),
+    };
+  }
+  return NO_STORE_LOGOS;
+}
+
+/**
+ * The store's uploaded logo bytes, read from the public `getStoreLogo`
+ * endpoint. Both the main logo and the secondary logo are exposed so callers
+ * can render either. The bytes never change for a given store, so the read is
+ * cached indefinitely. Older actors (and test mocks) may not expose
+ * `getStoreLogo`; the hook then resolves to both logos absent so callers fall
+ * back to the built-in star instead of surfacing an error.
+ */
+export function useStoreLogo() {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["storeLogo"],
+    queryFn: async (): Promise<StoreLogoPair> => {
+      if (!actor) return NO_STORE_LOGOS;
+      const readLogo = readOptionalStoreLogo(actor);
+      if (!readLogo) return NO_STORE_LOGOS;
+      return normalizeStoreLogos(await readLogo());
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+}
+
+/**
+ * Narrow an actor to its optional `getStoreLogo` read. The generated bindings
+ * do not declare the method, so it is looked up structurally and only invoked
+ * when the running actor actually exposes it.
+ */
+function readOptionalStoreLogo(
+  actor: unknown,
+): (() => Promise<unknown>) | null {
+  if (typeof actor !== "object" || actor === null) return null;
+  const candidate = (actor as { getStoreLogo?: unknown }).getStoreLogo;
+  if (typeof candidate !== "function") return null;
+  return () => (candidate as () => Promise<unknown>).call(actor);
 }
 
 export function usePositions() {
@@ -363,6 +483,7 @@ export function useUpdateStoreInfo() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["storeInfo"] });
+      void queryClient.invalidateQueries({ queryKey: ["storeLogo"] });
     },
   });
 }
@@ -516,6 +637,46 @@ export function useSaveStoreTemplate() {
   });
 }
 
+/**
+ * Download the current store configuration as a template file. This is a
+ * mutation rather than a query so the build runs only when an Admin taps
+ * Download, never on page load. The caller passes the returned file to the
+ * download handler.
+ */
+export function useDownloadStoreTemplate() {
+  const { actor } = useActor(createActor);
+  return useMutation({
+    mutationFn: async (): Promise<StoreTemplateFile> => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.downloadStoreTemplate();
+    },
+  });
+}
+
+/**
+ * Load a store template file (Admin only). The backend validates the file and
+ * refuses once any roadie exists; on success it replaces positions, schedule
+ * and checklists, so the affected reads are invalidated.
+ */
+export function useLoadStoreTemplate() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: StoreTemplateFile) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.loadStoreTemplate(file);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["positions"] });
+      void queryClient.invalidateQueries({ queryKey: ["schedule"] });
+      void queryClient.invalidateQueries({ queryKey: ["checklists"] });
+      void queryClient.invalidateQueries({ queryKey: ["storeInfo"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
 /* ---------------------------------------------------------------------------
    Roadies
 --------------------------------------------------------------------------- */
@@ -561,6 +722,24 @@ export function useRoadiePhoto(id: RoadieId | undefined) {
     },
     enabled: !!actor && !isFetching && id !== undefined,
     staleTime: Number.POSITIVE_INFINITY,
+  });
+}
+
+/**
+ * The leaders roster: managers, trainers and market partners with their staff
+ * profile, title and travel dates. Readable by every role except Kiosk and
+ * Integration, so callers pass `enabled` (typically `canLeaders(role)`) to
+ * avoid a trapping read for those roles.
+ */
+export function useLeaders(enabled = true) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["leaders"],
+    queryFn: async (): Promise<LeaderSummary[]> => {
+      if (!actor) return [];
+      return actor.listLeaders();
+    },
+    enabled: enabled && !!actor && !isFetching,
   });
 }
 

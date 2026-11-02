@@ -18,12 +18,15 @@ export function RoadiePhoto({
   className,
   iconClassName,
   ocid,
+  fallback,
 }: {
   id: RoadieId;
   name: string;
   className?: string;
   iconClassName?: string;
   ocid?: string;
+  /** Shown instead of the default icon when the roadie has no photo. */
+  fallback?: React.ReactNode;
 }) {
   const { data: photo } = useRoadiePhoto(id);
   const src = useMemo(() => refToDataUrl(photo), [photo]);
@@ -39,10 +42,12 @@ export function RoadiePhoto({
       {src ? (
         <img src={src} alt={name} className="h-full w-full object-cover" />
       ) : (
-        <ImageIcon
-          className={cn("h-6 w-6 text-muted-foreground", iconClassName)}
-          aria-hidden="true"
-        />
+        (fallback ?? (
+          <ImageIcon
+            className={cn("h-6 w-6 text-muted-foreground", iconClassName)}
+            aria-hidden="true"
+          />
+        ))
       )}
     </span>
   );

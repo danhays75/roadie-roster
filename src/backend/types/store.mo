@@ -18,6 +18,14 @@ module {
     trainingGroupSize : Nat;
     leaderTalkSize : Nat;
     logo : ?Common.PhotoRef;
+    secondaryLogo : ?Common.PhotoRef;
+  };
+
+  /// The two store logos returned by the public logo query. Both are optional;
+  /// an absent logo is `null`.
+  public type StoreLogos = {
+    logo : ?Common.PhotoRef;
+    secondaryLogo : ?Common.PhotoRef;
   };
 
   /// A position (station) with its build-to targets and requirements.
@@ -93,5 +101,57 @@ module {
     positions : [Position];
     checklists : Checklists;
     leaderTalkName : Text;
+  };
+
+  /// A position inside an exported/imported store template file. Carries only
+  /// the fields the template needs; no people data.
+  public type TemplatePosition = {
+    name : Text;
+    house : Common.House;
+    code : Text;
+    openingBuildTo : Nat;
+    afterOpeningBuildTo : Nat;
+    minimumAge : Nat;
+    needsAlcoholCert : Bool;
+  };
+
+  /// A schedule event inside a template file, expressed as whole days relative
+  /// to the store's opening date (negative = before opening). `endOffsetDays`
+  /// is null when the event has no end.
+  public type TemplateScheduleEvent = {
+    kind : EventKind;
+    name : Text;
+    startOffsetDays : Int;
+    endOffsetDays : ?Int;
+  };
+
+  /// The downloadable/loadable store template file. Carries a version number,
+  /// the schedule as days relative to opening, positions, checklists and the
+  /// leader talk name and sizes. It deliberately carries no people data, logos,
+  /// store number, city or opening date.
+  public type StoreTemplateFile = {
+    version : Nat;
+    schedule : [TemplateScheduleEvent];
+    positions : [TemplatePosition];
+    checklists : Checklists;
+    leaderTalkName : Text;
+    leaderTalkSize : Nat;
+    trainingGroupSize : Nat;
+  };
+
+  /// A preview of what a template load would replace, shown before confirming.
+  public type TemplatePreview = {
+    positionCount : Nat;
+    scheduleCount : Nat;
+    orientationUniformCount : Nat;
+    paperworkCount : Nat;
+    leaderTalkName : Text;
+  };
+
+  /// The outcome of loading a template. `#ok` carries the preview that was
+  /// applied; `#err` explains why the load was refused.
+  public type TemplateLoadResult = {
+    #ok : TemplatePreview;
+    #err : Text;
   };
 };

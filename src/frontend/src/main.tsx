@@ -1,3 +1,6 @@
+import "@fontsource/archivo-black/400.css";
+import "@fontsource/oswald/600.css";
+import "@fontsource/oswald/700.css";
 import { InternetIdentityProvider } from "@caffeineai/core-infrastructure";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ReactDOM from "react-dom/client";

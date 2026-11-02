@@ -1,251 +1,474 @@
-import type { Crew, Position, Roadie } from "@/backend";
-import { RoadieStatus } from "@/backend";
-import { StatusBadge } from "@/components/StatusBadge";
-import { StoreLogo } from "@/components/StoreLogo";
-import { RoadiePhoto } from "@/components/roadie/RoadiePhoto";
+import {
+  type Crew,
+  type LeaderSummary,
+  type Position,
+  type Roadie,
+  Role,
+} from "@/backend";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/hooks/useI18n";
-import { roadieStatusLabel } from "@/lib/format";
+import { useRoadiePhoto, useStoreInfo } from "@/hooks/useQueries";
+import {
+  formatDateOnly,
+  formatDateOnlyMonthDay,
+  formatTimestampDateOnly,
+  refToDataUrl,
+} from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import "./roadieCard.css";
 
-function statusTone(status: RoadieStatus) {
-  if (status === RoadieStatus.archived) return "muted" as const;
-  if (status === RoadieStatus.needsMoreTime) return "pending" as const;
-  return "hired" as const;
+/** The roadie's initials for the no-photo placeholder, at most two letters. */
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
 /**
- * Format the non-sensitive "MM-DD" birthday as a date-only value in UTC, e.g.
- * "Mar 14". The value is a calendar month and day with no year, so it is
- * anchored to a fixed UTC date and formatted in UTC to keep the same calendar
- * day on every device. Returns null for a missing or malformed value.
+ * The inline SVG store seal that replaces the uploaded logo in the card's top
+ * banner. A red disc with a cream ring carries the store number and three white
+ * stars, matching the reference card. The store number is the accessible name,
+ * so assistive tech reads the seal as the store number rather than as an image.
  */
-function formatBirthdayMonthDay(monthDay: string | undefined): string | null {
-  if (!monthDay) return null;
-  const match = /^(\d{2})-(\d{2})$/.exec(monthDay);
-  if (!match) return null;
-  const month = Number(match[1]);
-  const day = Number(match[2]);
-  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-  const date = new Date(Date.UTC(2000, month - 1, day));
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-}
-
-function BackField({ label, value }: { label: string; value: string }) {
+function StoreSeal({ storeNumber }: { storeNumber: string }) {
   return (
-    <div className="min-w-0">
-      <dt className="font-display text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        {label}
-      </dt>
-      <dd className="mt-0.5 break-words text-sm text-foreground">{value}</dd>
-    </div>
+    <svg
+      viewBox="0 0 64 64"
+      role="img"
+      aria-label={storeNumber}
+      className="seal"
+    >
+      <title>{storeNumber}</title>
+      <circle cx="32" cy="32" r="31" fill="#b22234" />
+      <circle
+        cx="32"
+        cy="32"
+        r="27"
+        fill="none"
+        stroke="#f4efe3"
+        strokeWidth="2"
+      />
+      <text
+        x="32"
+        y="30"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill="#f4efe3"
+        fontFamily='"Archivo Black", sans-serif'
+        fontSize="20"
+      >
+        {storeNumber}
+      </text>
+      <g fill="#f4efe3">
+        <path d="M32 40.5l1.6 3.2 3.5.5-2.55 2.5.6 3.5-3.15-1.65-3.15 1.65.6-3.5-2.55-2.5 3.5-.5z" />
+        <path d="M22 42l1.1 2.2 2.4.35-1.75 1.7.4 2.4-2.15-1.15-2.15 1.15.4-2.4-1.75-1.7 2.4-.35z" />
+        <path d="M42 42l1.1 2.2 2.4.35-1.75 1.7.4 2.4-2.15-1.15-2.15 1.15.4-2.4-1.75-1.7 2.4-.35z" />
+      </g>
+    </svg>
   );
 }
 
 /**
- * The roadie card. Front shows the photo, name, position, crew, position code,
- * logo and the opening-team line. Back shows the personal details, status
- * badges and the Minor badge when the roadie is under 18. The birthday and the
- * Minor badge come from the roadie's non-sensitive `birthdayMonthDay` and
- * `isMinor` fields, never from the contact set.
+ * The sixteen scattered stars on the front face, positioned per the spec: a
+ * three-and-three top row, three down each side, and two in each bottom corner.
+ */
+const STARS: {
+  left?: string;
+  right?: string;
+  top?: string;
+  bottom?: string;
+  size?: string;
+}[] = [
+  // Top row: left 3% / 12% / 21%, right 3% / 12% / 21%, all at top 2.5%.
+  { left: "3%", top: "2.5%" },
+  { left: "12%", top: "2.5%", size: "4cqw" },
+  { left: "21%", top: "2.5%" },
+  { right: "3%", top: "2.5%" },
+  { right: "12%", top: "2.5%", size: "4cqw" },
+  { right: "21%", top: "2.5%" },
+  // Left and right sides at top 30% / 38% / 46%.
+  { left: "1.5%", top: "30%", size: "3.6cqw" },
+  { left: "1.5%", top: "38%", size: "3.6cqw" },
+  { left: "1.5%", top: "46%", size: "3.6cqw" },
+  { right: "1.5%", top: "30%", size: "3.6cqw" },
+  { right: "1.5%", top: "38%", size: "3.6cqw" },
+  { right: "1.5%", top: "46%", size: "3.6cqw" },
+  // Bottom corners: 3% and 11% on each side at bottom 2.5%.
+  { left: "3%", bottom: "2.5%", size: "4.6cqw" },
+  { left: "11%", bottom: "2.5%", size: "3.6cqw" },
+  { right: "3%", bottom: "2.5%", size: "4.6cqw" },
+  { right: "11%", bottom: "2.5%", size: "3.6cqw" },
+];
+
+/** One row of the back-face profile table. */
+function ProfileRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="row">
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}
+
+/** The tier ribbon label and variant class for a leader role. */
+function leaderTier(role: Role): { variant: string; labelKey: string } {
+  switch (role) {
+    case Role.trainer:
+      return { variant: "gold", labelKey: "roadie.card.tier.gold" };
+    case Role.trainingManager:
+      return { variant: "plat", labelKey: "roadie.card.tier.plat.training" };
+    case Role.visitingManager:
+      return { variant: "plat", labelKey: "roadie.card.tier.plat.visiting" };
+    case Role.leadership:
+      return {
+        variant: "legend",
+        labelKey: "roadie.card.tier.legend.leadership",
+      };
+    case Role.storeManager:
+      return { variant: "plat", labelKey: "roadie.card.tier.plat" };
+    default:
+      return { variant: "legend", labelKey: "roadie.card.tier.legend" };
+  }
+}
+
+/** The plate font size for a name, shrinking long names without truncation. */
+function plateFontSize(name: string): string | undefined {
+  if (name.length > 18) return "6.2cqw";
+  if (name.length > 14) return "7.5cqw";
+  return undefined;
+}
+
+/**
+ * The collectible trading card. It renders a roadie or a leader on the same
+ * front and back faces, flip, store seal and stars. The front shows the TLC
+ * banner, the inline store seal, the tier ribbon, the shield photo window, the
+ * nameplate, the position/title pills and the footer. The back shows the
+ * two-line name with a headshot, the About Me table (every non-empty field plus
+ * the home store and, for a trainer, the travel dates), the MY GOAL ticket and
+ * the footer.
+ *
+ * The card never renders the contact set: phone, email and date of birth are
+ * deliberately absent. The Minor badge comes from the roadie's non-sensitive
+ * `isMinor` field.
  */
 export function FlipCard({
   roadie,
+  leader,
   position,
   secondPosition,
   crossTrainedPosition,
   crew,
+  trainerPositions,
 }: {
-  roadie: Roadie;
-  position: Position | undefined;
-  secondPosition: Position | undefined;
-  crossTrainedPosition: Position | undefined;
-  crew: Crew | undefined;
+  roadie?: Roadie;
+  leader?: LeaderSummary;
+  position?: Position;
+  secondPosition?: Position;
+  crossTrainedPosition?: Position;
+  crew?: Crew;
+  trainerPositions?: Position[];
 }) {
   const { t } = useI18n();
   const [flipped, setFlipped] = useState(false);
-  const name = roadie.profile.preferredName || roadie.profile.name;
-  const birthday = formatBirthdayMonthDay(roadie.birthdayMonthDay);
-  const isMinor = roadie.isMinor;
-  const none = t("roadie.field.none");
+  const { data: storeInfo } = useStoreInfo();
+  const { data: photo } = useRoadiePhoto(roadie?.id);
+
+  const photoUrl = useMemo(() => refToDataUrl(photo), [photo]);
+
+  const isLeader = !!leader;
+  const leaderProfile = leader?.staffProfile;
+  const roadieProfile = roadie?.profile;
+  const name = isLeader
+    ? leaderProfile?.preferredName?.trim() ||
+      leaderProfile?.fullName?.trim() ||
+      ""
+    : roadieProfile?.preferredName?.trim() || roadieProfile?.name?.trim() || "";
+  const nameParts = name.trim().split(/\s+/).filter(Boolean);
+  const firstName = nameParts[0] ?? name;
+  const lastName = nameParts.slice(1).join(" ");
+  const initials = initialsOf(name);
+  const isMinor = roadie?.isMinor ?? false;
+
+  // The About Me answers shared by both profile shapes.
+  const about = isLeader ? leaderProfile : roadieProfile;
+  const homeStoreNumber = leaderProfile?.homeStoreNumber ?? "";
+  const homeStoreCity = leaderProfile?.homeStoreCity ?? "";
+
+  const storeCity = storeInfo?.locationName;
+  const storeNumber = storeInfo?.storeNumber;
+  // The opening date is a date-only value (a calendar day), so it is formatted
+  // in UTC and never shifts with the device or store time zone.
+  const openingDate =
+    storeInfo?.openingDate !== undefined
+      ? formatDateOnly(storeInfo.openingDate)
+      : null;
+
+  // The hire date is the roadie's own hireDate, falling back to the record's
+  // hiredAt so the footer is never blank. It is a date-only value, so it is
+  // formatted as its UTC calendar day rather than in the store time zone.
+  const hireTimestamp = roadie?.hireDate ?? roadie?.hiredAt;
+  const hireDate =
+    hireTimestamp !== undefined ? formatTimestampDateOnly(hireTimestamp) : null;
+
+  const isTrainer = leader?.role === Role.trainer;
+  const tier = leader
+    ? leaderTier(leader.role)
+    : { variant: "roadie", labelKey: "roadie.card.tier.roadie" };
+
+  // The front main pill: a leader's title, or the roadie's main position.
+  const mainPill = isLeader
+    ? leader?.title || t("roadie.field.none")
+    : (position?.name ?? t("roadie.field.none"));
+
+  // Trainers list the stations they train in a small pill, joined by " · ".
+  const stationNames = (trainerPositions ?? [])
+    .map((station) => station.name)
+    .filter(Boolean);
+  const stationsPill = isTrainer ? stationNames.join(" · ") : "";
+
+  // The roadie's second pill: a cross-trained or second position.
+  const secondPill = crossTrainedPosition ?? secondPosition;
+
+  // The front footer: a trainer's travel range, or the opening-team line.
+  const arrival = leader?.arrivalDate
+    ? formatDateOnlyMonthDay(leader.arrivalDate)
+    : null;
+  const departure = leader?.departureDate
+    ? formatDateOnlyMonthDay(leader.departureDate)
+    : null;
+  const trainerFooter =
+    isTrainer && (arrival || departure)
+      ? `${t("roadie.card.from")} #${homeStoreNumber} ${homeStoreCity} ★ ${
+          arrival ?? "—"
+        } – ${departure ?? "—"}`
+      : null;
+  const openingTeamFooter = `${t("roadie.card.openingTeam")} ★ ${
+    storeNumber ? `#${storeNumber} ` : ""
+  }${storeCity ?? t("roadie.field.none")}`;
+
+  // A leader keeps the new footers; a roadie keeps the original front
+  // "Roadie since" line and the back opening-crew line with the opening date.
+  const leaderFooter = trainerFooter ?? openingTeamFooter;
+  const roadieBackFooter = `${storeNumber ? `#${storeNumber} ` : ""}${t(
+    "roadie.card.openingCrew",
+  ).toUpperCase()}${openingDate ? ` · ${openingDate.toUpperCase()}` : ""}`;
+
+  const profileRows = [
+    { label: t("roadie.field.hometown"), value: about?.hometown },
+    { label: t("roadie.field.crew"), value: crew?.name },
+    { label: t("roadie.field.dayOff"), value: about?.hobbies },
+    { label: t("roadie.field.favoriteTeam"), value: about?.favoriteTeam },
+    { label: t("roadie.field.favoriteSnack"), value: about?.favoriteSnack },
+    { label: t("roadie.field.favoriteDrink"), value: about?.favoriteDrink },
+    { label: t("roadie.field.favoriteColor"), value: about?.favoriteColor },
+    { label: t("roadie.field.funFact"), value: about?.funFact },
+    { label: t("roadie.field.hiredAt"), value: hireDate },
+  ].filter((row) => !!row.value);
+
+  const toggle = () => setFlipped((value) => !value);
 
   return (
     <div className="space-y-3" data-ocid="roadie.flip_card">
-      <div
-        className={cn(
-          "relative w-full [perspective:1600px]",
-          flipped ? "min-h-[26rem]" : "min-h-[24rem]",
-        )}
+      <button
+        type="button"
+        className={cn("rc", tier.variant, flipped && "flipped")}
+        tabIndex={0}
+        aria-label={
+          flipped ? t("roadie.action.flipBack") : t("roadie.action.showBack")
+        }
+        onClick={toggle}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            toggle();
+          }
+        }}
       >
-        <div
-          className={cn(
-            "relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] motion-reduce:transition-none",
-            flipped && "[transform:rotateY(180deg)]",
-          )}
-        >
-          {/* Front */}
-          <div
-            aria-hidden={flipped}
-            className={cn(
-              "absolute inset-0 flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-subtle [backface-visibility:hidden]",
-              flipped && "pointer-events-none",
-            )}
-          >
-            <div className="flex items-center justify-between gap-3 bg-secondary px-4 py-3 text-secondary-foreground">
-              <StoreLogo className="h-9 w-9" />
-              <span className="font-display text-xs font-semibold uppercase tracking-widest">
-                {t("roadie.openingTeam")}
-              </span>
-            </div>
-
-            <div className="flex flex-1 flex-col items-center gap-4 p-6 text-center">
-              <RoadiePhoto
-                id={roadie.id}
-                name={name}
-                ocid="roadie.card.photo"
-                className="h-40 w-40 border-4"
-                iconClassName="h-12 w-12"
-              />
-
-              <div className="min-w-0">
-                <h2 className="break-words font-display text-2xl font-bold uppercase tracking-tight text-foreground">
-                  {name}
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {position?.name ?? none}
-                </p>
+        <div className="rc-inner">
+          {/* FRONT */}
+          <div className="rc-face" aria-hidden={flipped}>
+            <div className="frame">
+              <div className="f-top">
+                <div className="wordmark">{t("roadie.card.tlc")}</div>
+                <div className="cap">
+                  <StoreSeal storeNumber={storeNumber ?? ""} />
+                </div>
               </div>
 
-              <dl className="grid w-full grid-cols-2 gap-3 text-left">
-                <BackField
-                  label={t("roadie.field.crew")}
-                  value={crew?.name ?? none}
-                />
-                <BackField
-                  label={t("roadie.positionCode")}
-                  value={position?.code ?? none}
-                />
-              </dl>
+              <div className="f-stage">
+                <span className={cn("tier", tier.variant)}>
+                  {t(tier.labelKey)}
+                </span>
 
-              <div className="mt-auto flex flex-wrap items-center justify-center gap-2">
-                <StatusBadge tone={statusTone(roadie.status)}>
-                  {roadieStatusLabel(roadie.status)}
-                </StatusBadge>
+                <div className="stars" aria-hidden="true">
+                  {STARS.map((star, index) => (
+                    <span
+                      // biome-ignore lint/suspicious/noArrayIndexKey: fixed decorative star set
+                      key={index}
+                      style={{
+                        left: star.left,
+                        right: star.right,
+                        top: star.top,
+                        bottom: star.bottom,
+                        fontSize: star.size,
+                      }}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+
                 {isMinor && (
-                  <StatusBadge tone="pending" ocid="roadie.minor_badge">
-                    {t("roadie.minor")}
-                  </StatusBadge>
+                  <span className="tag minor" data-ocid="roadie.minor_badge">
+                    MINOR
+                  </span>
+                )}
+
+                <div className="shield">
+                  <div className="cream" />
+                  <div
+                    className="ph"
+                    data-ocid="roadie.card.photo"
+                    style={
+                      photoUrl
+                        ? { backgroundImage: `url(${photoUrl})` }
+                        : undefined
+                    }
+                  >
+                    {photoUrl ? (
+                      <img
+                        src={photoUrl}
+                        alt={name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span
+                        className="flex h-full w-full items-center justify-center text-[16cqw] text-[#f4efe3]"
+                        style={{ fontFamily: '"Archivo Black", sans-serif' }}
+                      >
+                        {initials}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="plate">
+                  <b
+                    style={
+                      plateFontSize(name)
+                        ? { fontSize: plateFontSize(name) }
+                        : undefined
+                    }
+                  >
+                    {name}
+                  </b>
+                </div>
+
+                <div className="pills">
+                  <span className="pill">{mainPill}</span>
+                  {stationsPill && (
+                    <span className="pill sm">{stationsPill}</span>
+                  )}
+                  {!isLeader && secondPill && (
+                    <span className="pill sm">{secondPill.name}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="f-foot">
+                {isLeader ? (
+                  <span>{leaderFooter}</span>
+                ) : (
+                  <>
+                    <span>
+                      {t("roadie.card.roadieSince")} {hireDate}
+                    </span>
+                    <span className="star">★</span>
+                    <span>{storeCity ?? t("roadie.field.none")}</span>
+                  </>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Back */}
-          <div
-            aria-hidden={!flipped}
-            className={cn(
-              "absolute inset-0 flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-subtle [backface-visibility:hidden] [transform:rotateY(180deg)]",
-              !flipped && "pointer-events-none",
-            )}
-          >
-            <div className="flex items-center justify-between gap-3 bg-secondary px-4 py-3 text-secondary-foreground">
-              <span className="font-display text-xs font-semibold uppercase tracking-widest">
-                {t("roadie.section.card")}
-              </span>
-              <StoreLogo className="h-8 w-8" />
-            </div>
+          {/* BACK */}
+          <div className="rc-face rc-back" aria-hidden={!flipped}>
+            <div className="frame">
+              <div className="b-top">
+                <h2 className="b-name">
+                  {firstName}
+                  {lastName ? (
+                    <>
+                      <br />
+                      {lastName}
+                    </>
+                  ) : null}
+                </h2>
+                <div
+                  className="b-head"
+                  data-ocid="roadie.card.headshot"
+                  style={
+                    photoUrl
+                      ? { backgroundImage: `url(${photoUrl})` }
+                      : undefined
+                  }
+                />
+              </div>
 
-            <div className="flex-1 space-y-4 overflow-y-auto p-5">
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge tone={statusTone(roadie.status)}>
-                  {roadieStatusLabel(roadie.status)}
-                </StatusBadge>
-                {isMinor && (
-                  <StatusBadge tone="pending" ocid="roadie.minor_badge">
-                    {t("roadie.minor")}
-                  </StatusBadge>
+              <div className="b-body">
+                {profileRows.length > 0 && (
+                  <div className={cn("tbl", profileRows.length > 7 && "dense")}>
+                    {profileRows.map((row) => (
+                      <ProfileRow
+                        key={row.label}
+                        label={row.label}
+                        value={row.value ?? ""}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {isLeader && (
+                  <div className="tbl">
+                    <ProfileRow
+                      label={t("roadie.card.homeStore")}
+                      value={`#${homeStoreNumber} ${homeStoreCity}`.trim()}
+                    />
+                    {isTrainer && (arrival || departure) && (
+                      <ProfileRow
+                        label={t("roadie.card.here")}
+                        value={`${arrival ?? "—"} – ${departure ?? "—"}`}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {about?.goalHere && (
+                  <div className="quote">
+                    <small>{t("roadie.card.goal")}</small>
+                    &ldquo;{about.goalHere}&rdquo;
+                  </div>
                 )}
               </div>
 
-              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <BackField
-                  label={t("roadie.field.preferredName")}
-                  value={roadie.profile.preferredName ?? none}
-                />
-                <BackField
-                  label={t("roadie.field.hometown")}
-                  value={roadie.profile.hometown ?? none}
-                />
-                <BackField
-                  label={t("roadie.field.hobbies")}
-                  value={roadie.profile.hobbies ?? none}
-                />
-                <BackField
-                  label={t("roadie.field.favoriteMovie")}
-                  value={roadie.profile.favoriteMovie ?? none}
-                />
-                <BackField
-                  label={t("roadie.field.favoriteSnack")}
-                  value={roadie.profile.favoriteSnack ?? none}
-                />
-                <BackField
-                  label={t("roadie.field.funFact")}
-                  value={roadie.profile.funFact ?? none}
-                />
-                <BackField
-                  label={t("roadie.field.goalHere")}
-                  value={roadie.profile.goalHere ?? none}
-                />
-                <BackField
-                  label={t("roadie.field.birthday")}
-                  value={birthday ?? none}
-                />
-                <BackField
-                  label={t("roadie.field.orientation")}
-                  value={
-                    roadie.orientationEventId !== undefined
-                      ? `#${roadie.orientationEventId.toString()}`
-                      : none
-                  }
-                />
-                <BackField
-                  label={t("roadie.field.crossTrained")}
-                  value={crossTrainedPosition?.name ?? none}
-                />
-                <BackField
-                  label={t("roadie.field.secondPosition")}
-                  value={secondPosition?.name ?? none}
-                />
-                <BackField
-                  label={t("roadie.field.weekdayLunchShort")}
-                  value={
-                    roadie.profile.weekdayLunch === undefined
-                      ? none
-                      : roadie.profile.weekdayLunch
-                        ? t("common.yes")
-                        : t("common.no")
-                  }
-                />
-              </dl>
+              <div className="b-foot">
+                <span>{isLeader ? leaderFooter : roadieBackFooter}</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </button>
 
       <Button
         type="button"
         variant="outline"
-        className="touch-target w-full"
+        className="touch-target mx-auto flex w-full max-w-[420px]"
         data-ocid="roadie.flip_button"
         aria-pressed={flipped}
-        onClick={() => setFlipped((value) => !value)}
+        onClick={toggle}
       >
         <RotateCcw className="mr-2 h-4 w-4" aria-hidden="true" />
         {flipped ? t("roadie.action.flipBack") : t("roadie.action.flip")}

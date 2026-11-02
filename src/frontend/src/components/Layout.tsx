@@ -85,15 +85,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-background">
       <header className="sticky top-0 z-40 bg-secondary text-secondary-foreground">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6 md:py-4">
           <Link
             to="/dashboard"
             data-ocid="header.home_link"
             className="flex min-w-0 items-center gap-3"
           >
-            <StoreLogo className="h-10 w-10" />
+            <StoreLogo className="h-14 w-14 md:h-[72px] md:w-[72px]" />
             <span className="min-w-0">
-              <span className="block font-display text-xl font-bold uppercase leading-none tracking-wide">
+              <span className="block font-display text-xl font-bold uppercase leading-none tracking-wide md:text-2xl">
                 {t("app.name")}
               </span>
               <span className="mt-0.5 block truncate text-xs text-white/70">

@@ -74,6 +74,12 @@ function ChecklistEditor({
             {title}
           </h3>
           <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+          <p
+            className="mt-0.5 text-xs text-muted-foreground"
+            data-ocid={`${ocid}.toggle_hint`}
+          >
+            {c.checklistsToggleHint}
+          </p>
         </div>
         <Button
           type="button"

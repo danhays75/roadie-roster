@@ -26,11 +26,33 @@ export const EXPORT_ROLES: Role[] = [
 /** Roles allowed to edit a roadie's details or change their position. */
 export const EDIT_ROADIE_ROLES: Role[] = [Role.admin, Role.storeManager];
 
+/** Roles allowed to see the Gift Bags surface. */
+export const GIFT_BAGS_ROLES: Role[] = [
+  Role.admin,
+  Role.storeManager,
+  Role.trainingManager,
+];
+
+/**
+ * Roles allowed to see the Leaders surface. Every readable role except Kiosk
+ * and Integration, which have no roster read access.
+ */
+export const LEADERS_ROLES: Role[] = [
+  Role.admin,
+  Role.storeManager,
+  Role.trainingManager,
+  Role.trainer,
+  Role.visitingManager,
+  Role.leadership,
+];
+
 /** The full navigation model; each item declares which roles may see it. */
 export const NAV_ITEMS: NavItem[] = [
   { labelKey: "nav.today", to: "/today", allowedRoles: [] },
   { labelKey: "nav.dashboard", to: "/dashboard", allowedRoles: [] },
   { labelKey: "nav.roster", to: "/roster", allowedRoles: [] },
+  { labelKey: "nav.myProfile", to: "/my-profile", allowedRoles: [] },
+  { labelKey: "nav.leaders", to: "/leaders", allowedRoles: LEADERS_ROLES },
   {
     labelKey: "nav.approvals",
     to: "/approvals",
@@ -40,6 +62,11 @@ export const NAV_ITEMS: NavItem[] = [
   { labelKey: "nav.admin", to: "/admin", allowedRoles: ADMIN_ROLES },
   { labelKey: "nav.kiosk", to: "/kiosk", allowedRoles: KIOSK_ROLES },
   { labelKey: "nav.export", to: "/export", allowedRoles: EXPORT_ROLES },
+  {
+    labelKey: "nav.giftBags",
+    to: "/gift-bags",
+    allowedRoles: GIFT_BAGS_ROLES,
+  },
 ];
 
 /** Resolve the caller's access state from the backend grant. */
@@ -92,4 +119,14 @@ export function canExport(role: Role | undefined): boolean {
 /** Whether the given role may edit a roadie's details or position. */
 export function canEditRoadie(role: Role | undefined): boolean {
   return !!role && EDIT_ROADIE_ROLES.includes(role);
+}
+
+/** Whether the given role may open the Gift Bags surface. */
+export function canGiftBags(role: Role | undefined): boolean {
+  return !!role && GIFT_BAGS_ROLES.includes(role);
+}
+
+/** Whether the given role may open the Leaders surface. */
+export function canLeaders(role: Role | undefined): boolean {
+  return !!role && LEADERS_ROLES.includes(role);
 }

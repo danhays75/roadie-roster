@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAccessState } from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
 import {
   useAccessGrants,
@@ -37,11 +38,11 @@ import {
   dateToDateOnly,
   formatTimestamp,
   roleLabel,
-  shortPrincipal,
+  staffDisplayName,
   timestampToDate,
 } from "@/lib/format";
 import { useActor } from "@caffeineai/core-infrastructure";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 const ALL_ROLES: Role[] = [
@@ -79,10 +80,14 @@ function GrantRow({
   grant,
   adminCount,
   timeZone,
+  canSeeContact,
+  isAdmin,
 }: {
   grant: AccessGrant;
   adminCount: number;
   timeZone: string | undefined;
+  canSeeContact: boolean;
+  isAdmin: boolean;
 }) {
   const { t } = useI18n();
   const c = useAdminCopy();
@@ -105,7 +110,11 @@ function GrantRow({
       : "",
   );
   const [confirm, setConfirm] = useState<"role" | "remove" | null>(null);
+  const [showId, setShowId] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const profile = grant.staffProfile;
+  const displayName = staffDisplayName(profile, t("profile.unnamed"));
 
   const roleChanged = draftRole !== grant.role;
   const stationsChanged =
@@ -200,7 +209,7 @@ function GrantRow({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="font-display text-sm font-semibold uppercase tracking-wide">
-            {shortPrincipal(grant.principal)}
+            {displayName}
           </p>
           <p className="text-xs text-muted-foreground">
             {t("admin.access.approvedAt")}: {formatTimestamp(grant.approvedAt)}
@@ -211,9 +220,43 @@ function GrantRow({
               ? formatTimestamp(grant.accessEndsAt, timeZone)
               : t("common.none")}
           </p>
+          {canSeeContact && profile && (
+            <p className="mt-1 break-words text-xs text-muted-foreground">
+              {[profile.workPhone, profile.workEmail]
+                .filter((value) => !!value && value.trim() !== "")
+                .join(" · ")}
+            </p>
+          )}
+          {isAdmin && showId && (
+            <p
+              data-ocid="admin.access.principal"
+              className="mt-1 break-all font-mono text-xs text-muted-foreground"
+            >
+              {t("profile.principal")}: {grant.principal.toText()}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {isAdmin && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="touch-target"
+              data-ocid="admin.access.show_id.toggle"
+              aria-pressed={showId}
+              title={t("profile.showId.hint")}
+              onClick={() => setShowId((current) => !current)}
+            >
+              {showId ? (
+                <EyeOff className="mr-2 h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Eye className="mr-2 h-4 w-4" aria-hidden="true" />
+              )}
+              {t("profile.showId")}
+            </Button>
+          )}
           <Select
             value={draftRole}
             onValueChange={(value) => {
@@ -530,6 +573,11 @@ function KioskPinSection() {
 export function AccessPanel() {
   const { t } = useI18n();
   const c = useAdminCopy();
+  const access = useAccessState();
+  const viewerRole = access.kind === "granted" ? access.grant.role : undefined;
+  const isAdmin = viewerRole === Role.admin;
+  const canSeeContact =
+    viewerRole === Role.admin || viewerRole === Role.storeManager;
   const grants = useAccessGrants();
   const adminCount = useAdminCount();
   const { data: storeInfo } = useStoreInfo();
@@ -569,6 +617,8 @@ export function AccessPanel() {
               grant={grant}
               adminCount={Number(adminCount.data ?? 0n)}
               timeZone={storeInfo?.timeZone}
+              canSeeContact={canSeeContact}
+              isAdmin={isAdmin}
             />
           ))}
         </ul>

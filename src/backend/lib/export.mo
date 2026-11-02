@@ -132,6 +132,10 @@ module {
       shirtSize = roadie.profile.shirtSize;
       weekdayLunch = roadie.profile.weekdayLunch;
       name = roadie.profile.name;
+      favoriteTeam = roadie.profile.favoriteTeam;
+      favoriteSnack = roadie.profile.favoriteSnack;
+      favoriteDrink = roadie.profile.favoriteDrink;
+      favoriteColor = roadie.profile.favoriteColor;
       phone = if (includeContactSet) { switch (contact) { case (?cs) { ?cs.phone }; case null { null } } } else { null };
       email = if (includeContactSet) { switch (contact) { case (?cs) { ?cs.email }; case null { null } } } else { null };
       emergencyContactName = if (includeContactSet) { switch (contact) { case (?cs) { ?cs.emergencyContactName }; case null { null } } } else { null };

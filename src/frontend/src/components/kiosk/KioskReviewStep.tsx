@@ -71,12 +71,20 @@ export function KioskReviewStep({
       value: details.hobbies || t("common.none"),
     },
     {
-      label: t("field.favoriteMovie"),
-      value: details.favoriteMovie || t("common.none"),
-    },
-    {
       label: t("field.favoriteSnack"),
       value: details.favoriteSnack || t("common.none"),
+    },
+    {
+      label: t("field.favoriteTeam"),
+      value: details.favoriteTeam || t("common.none"),
+    },
+    {
+      label: t("field.favoriteDrink"),
+      value: details.favoriteDrink || t("common.none"),
+    },
+    {
+      label: t("field.favoriteColor"),
+      value: details.favoriteColor || t("common.none"),
     },
     {
       label: t("field.funFact"),

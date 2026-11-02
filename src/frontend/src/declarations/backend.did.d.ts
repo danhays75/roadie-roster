@@ -16,6 +16,7 @@ export interface AccessGrant {
   'approvedAt' : Timestamp,
   'approvedBy' : Principal,
   'role' : Role,
+  'staffProfile' : [] | [StaffProfile],
   'trainerPositionIds' : Array<PositionId>,
   'accessEndsAt' : [] | [Timestamp],
 }
@@ -37,6 +38,7 @@ export interface ApprovalRequest {
   'principal' : Principal,
   'linkedRoadieId' : [] | [RoadieId],
   'role' : Role,
+  'staffProfile' : [] | [StaffProfile],
   'trainerPositionIds' : Array<PositionId>,
   'accessEndsAt' : [] | [Timestamp],
 }
@@ -140,19 +142,23 @@ export interface ExportData {
 }
 export interface ExportRow {
   'dateHired' : [] | [DateOnly],
+  'favoriteSnack' : [] | [string],
   'dateOfBirth' : [] | [DateOnly],
   'availabilityByDay' : Array<[Weekday, Array<Shift>]>,
   'name' : string,
   'onboardingComplete' : boolean,
+  'favoriteTeam' : [] | [string],
   'email' : [] | [Email],
   'availability' : Array<Shift>,
   'foodHandlers' : boolean,
+  'favoriteDrink' : [] | [string],
   'shirtSize' : [] | [string],
   'emergencyContactPhone' : [] | [Phone],
   'emergencyContactName' : [] | [string],
   'policiesComplete' : boolean,
   'phone' : [] | [Phone],
   'alcoholCert' : boolean,
+  'favoriteColor' : [] | [string],
   'weekdayLunch' : [] | [boolean],
 }
 export interface FinalSignOff {
@@ -162,9 +168,52 @@ export interface FinalSignOff {
   'outcome' : SignOffOutcome,
   'futureTrainer' : boolean,
 }
+export interface GiftBagAnswerCount { 'count' : bigint, 'answer' : string }
+export type GiftBagCategory = { 'color' : null } |
+  { 'candySnack' : null } |
+  { 'shirtSize' : null } |
+  { 'hatSize' : null } |
+  { 'sportsTeam' : null } |
+  { 'drink' : null };
+export type GiftBagFilter = { 'all' : null } |
+  { 'boh' : null } |
+  { 'foh' : null } |
+  { 'roadies' : null } |
+  { 'leaders' : null } |
+  { 'position' : PositionId };
+export interface GiftBagGroup {
+  'noAnswer' : bigint,
+  'answers' : Array<GiftBagAnswerCount>,
+  'category' : GiftBagCategory,
+}
+export interface GiftBagLabel {
+  'roadieId' : RoadieId,
+  'house' : House,
+  'name' : string,
+  'color' : [] | [string],
+  'positionName' : string,
+  'candySnack' : [] | [string],
+  'shirtSize' : [] | [string],
+  'hatSize' : [] | [string],
+  'sportsTeam' : [] | [string],
+  'drink' : [] | [string],
+}
+export interface GiftBagsData {
+  'groups' : Array<GiftBagGroup>,
+  'labels' : Array<GiftBagLabel>,
+}
 export type HatSize = string;
 export type House = { 'boh' : null } |
   { 'foh' : null };
+export interface LeaderSummary {
+  'title' : string,
+  'principal' : Principal,
+  'arrivalDate' : [] | [DateOnly],
+  'departureDate' : [] | [DateOnly],
+  'role' : Role,
+  'staffProfile' : [] | [StaffProfile],
+  'trainerPositionIds' : Array<PositionId>,
+}
 export interface LeaderTalk {
   'id' : LeaderTalkId,
   'day' : DateOnly,
@@ -188,6 +237,7 @@ export interface OverviewRow {
 }
 export interface PendingUser {
   'principal' : Principal,
+  'staffProfile' : [] | [StaffProfile],
   'requestedAt' : Timestamp,
 }
 export type PersonName = string;
@@ -222,6 +272,7 @@ export interface Roadie {
   'orientationEventId' : [] | [EventId],
   'mainPositionId' : PositionId,
   'crossTrainedPositionId' : [] | [PositionId],
+  'hireDate' : [] | [Timestamp],
   'corporateEmployeeId' : [] | [string],
   'contactSet' : [] | [ContactSet],
   'crewId' : [] | [CrewId],
@@ -243,6 +294,8 @@ export interface RoadieProfile {
   'goalHere' : [] | [string],
   'name' : PersonName,
   'hometown' : [] | [string],
+  'favoriteTeam' : [] | [string],
+  'favoriteDrink' : [] | [string],
   'preferredName' : [] | [string],
   'shirtSize' : [] | [ShirtSize],
   'hatSize' : [] | [HatSize],
@@ -250,6 +303,7 @@ export interface RoadieProfile {
   'favoriteMovie' : [] | [string],
   'funFact' : [] | [string],
   'hobbies' : [] | [string],
+  'favoriteColor' : [] | [string],
   'weekdayLunch' : [] | [boolean],
 }
 export type RoadieStatus = { 'active' : null } |
@@ -301,6 +355,30 @@ export interface SignupSubmission {
   'photo' : [] | [PhotoRef],
   'profile' : RoadieProfile,
 }
+export interface StaffProfile {
+  'title' : string,
+  'arrivalDate' : [] | [DateOnly],
+  'workEmail' : [] | [Email],
+  'favoriteSnack' : [] | [string],
+  'departureDate' : [] | [DateOnly],
+  'goalHere' : [] | [string],
+  'hometown' : [] | [string],
+  'fullName' : PersonName,
+  'favoriteTeam' : [] | [string],
+  'workPhone' : [] | [Phone],
+  'favoriteDrink' : [] | [string],
+  'trainerPositionIds' : Array<PositionId>,
+  'preferredName' : [] | [string],
+  'shirtSize' : [] | [ShirtSize],
+  'homeStoreNumber' : string,
+  'hatSize' : [] | [HatSize],
+  'requestedRole' : Role,
+  'photo' : [] | [PhotoRef],
+  'homeStoreCity' : string,
+  'funFact' : [] | [string],
+  'hobbies' : [] | [string],
+  'favoriteColor' : [] | [string],
+}
 export interface StoreInfo {
   'amShiftEnd' : TimeOfDay,
   'pmShiftStart' : TimeOfDay,
@@ -314,9 +392,47 @@ export interface StoreInfo {
   'pmShiftEnd' : TimeOfDay,
   'trainingGroupSize' : bigint,
   'address' : string,
+  'secondaryLogo' : [] | [PhotoRef],
   'locationName' : string,
   'timeZone' : TimeZone,
   'storePhone' : Phone,
+}
+export interface StoreLogos {
+  'logo' : [] | [PhotoRef],
+  'secondaryLogo' : [] | [PhotoRef],
+}
+export interface StoreTemplateFile {
+  'leaderTalkName' : string,
+  'leaderTalkSize' : bigint,
+  'version' : bigint,
+  'trainingGroupSize' : bigint,
+  'schedule' : Array<TemplateScheduleEvent>,
+  'positions' : Array<TemplatePosition>,
+  'checklists' : Checklists,
+}
+export type TemplateLoadResult = { 'ok' : TemplatePreview } |
+  { 'err' : string };
+export interface TemplatePosition {
+  'openingBuildTo' : bigint,
+  'house' : House,
+  'afterOpeningBuildTo' : bigint,
+  'minimumAge' : bigint,
+  'code' : string,
+  'name' : string,
+  'needsAlcoholCert' : boolean,
+}
+export interface TemplatePreview {
+  'leaderTalkName' : string,
+  'scheduleCount' : bigint,
+  'orientationUniformCount' : bigint,
+  'positionCount' : bigint,
+  'paperworkCount' : bigint,
+}
+export interface TemplateScheduleEvent {
+  'kind' : EventKind,
+  'name' : string,
+  'endOffsetDays' : [] | [bigint],
+  'startOffsetDays' : bigint,
 }
 export type TimeOfDay = bigint;
 export type TimeZone = string;
@@ -489,6 +605,10 @@ export interface _SERVICE {
    */
   'deleteScheduleEvent' : ActorMethod<[EventId], undefined>,
   /**
+   * / Build the downloadable store template file (Admin only).
+   */
+  'downloadStoreTemplate' : ActorMethod<[], StoreTemplateFile>,
+  /**
    * / Re-seed the store when it has no positions yet. Idempotent; returns true
    * / when a seed was applied, false when the store already had positions.
    */
@@ -527,6 +647,12 @@ export interface _SERVICE {
       'buildToTotal' : bigint,
     }
   >,
+  /**
+   * / Build the Gift Bags shopping list and printable labels for the selected
+   * / filter, across active (non-archived) roadies only. Visible to Admin, Store
+   * / Manager and Training Manager. Never includes phone, email or date of birth.
+   */
+  'getGiftBags' : ActorMethod<[GiftBagFilter], GiftBagsData>,
   /**
    * / Read the caller's own access grant. Returns null until an Admin has
    * / approved the caller, so the frontend keeps showing the waiting screen.
@@ -570,6 +696,11 @@ export interface _SERVICE {
    */
   'getStoreInfo' : ActorMethod<[], StoreInfo>,
   /**
+   * / Read both store logos (main and secondary). Any caller, including Kiosk
+   * / and unregistered users.
+   */
+  'getStoreLogo' : ActorMethod<[], StoreLogos>,
+  /**
    * / Read a training group with its unassigned and off-shift lists.
    */
   'getTrainingGroup' : ActorMethod<[TrainingGroupId], [] | [TrainingGroupView]>,
@@ -603,6 +734,12 @@ export interface _SERVICE {
    */
   'listCrews' : ActorMethod<[], Array<Crew>>,
   /**
+   * / List the leaders shown on the Leaders page: the manager, trainer and
+   * / leadership roles. Readable by every role except Kiosk and Integration.
+   * / Never carries phone or email.
+   */
+  'listLeaders' : ActorMethod<[], Array<LeaderSummary>>,
+  /**
    * / List pending sign-up submissions (Admin/Store Manager only).
    */
   'listPendingSignups' : ActorMethod<[], Array<SignupSubmission>>,
@@ -632,6 +769,11 @@ export interface _SERVICE {
    * / their assigned stations.
    */
   'listTrainerNotes' : ActorMethod<[RoadieId], Array<TrainerNote>>,
+  /**
+   * / Load a store template file, replacing positions, schedule and checklists
+   * / (Admin only). Refuses when any roadie exists.
+   */
+  'loadStoreTemplate' : ActorMethod<[StoreTemplateFile], TemplateLoadResult>,
   /**
    * / Record attendance for a roadie (Admin/Store Manager only).
    */
@@ -686,6 +828,11 @@ export interface _SERVICE {
     SignupId
   >,
   /**
+   * / Store the signed-in caller's staff profile on their pending request. The
+   * / caller must already have a pending request (created by `requestAccess`).
+   */
+  'submitStaffProfile' : ActorMethod<[StaffProfile], undefined>,
+  /**
    * / Update a user's access end date (Admin only).
    */
   'updateAccessEnd' : ActorMethod<[Principal, [] | [Timestamp]], undefined>,
@@ -697,6 +844,10 @@ export interface _SERVICE {
    * / Update a roadie's contact set (Admin/Store Manager only).
    */
   'updateContactSet' : ActorMethod<[RoadieId, ContactSet], undefined>,
+  /**
+   * / Update the signed-in caller's own staff profile on their access grant.
+   */
+  'updateMyStaffProfile' : ActorMethod<[StaffProfile], undefined>,
   /**
    * / Update the orientation check-off for a roadie (Admin/Store Manager only).
    */

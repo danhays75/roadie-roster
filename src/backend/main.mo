@@ -26,6 +26,7 @@ import SignupApi "mixins/signup-api";
 import AccessApi "mixins/access-api";
 import Phase23Api "mixins/phase23-api";
 import ExportApi "mixins/export-api";
+import GiftBagsApi "mixins/giftbags-api";
 import KioskApi "mixins/kiosk-api";
 import SeedApi "mixins/seed-api";
 import ApiDocMixin "mixins/api-doc";
@@ -113,6 +114,7 @@ actor {
     counters,
   );
   include ExportApi(accessGrants, roadies, positions, orientationCheckoffs, changeLog, counters);
+  include GiftBagsApi(accessGrants, roadies, positions);
   include KioskApi(accessGrants, kioskPin);
 
   // --- Idempotent runtime re-seed ---
@@ -166,6 +168,9 @@ actor {
             hobbies = null;
             favoriteMovie = null;
             favoriteSnack = null;
+            favoriteTeam = null;
+            favoriteDrink = null;
+            favoriteColor = null;
             funFact = null;
             goalHere = null;
             positionAppliedFor = null;
@@ -189,6 +194,7 @@ actor {
           archivedReason = null;
           archivedAt = null;
           hiredAt = 0;
+          hireDate = null;
           signedBy = null;
         })
         .payload("id", func r = r.id)
@@ -250,6 +256,9 @@ actor {
             hobbies = null;
             favoriteMovie = null;
             favoriteSnack = null;
+            favoriteTeam = null;
+            favoriteDrink = null;
+            favoriteColor = null;
             funFact = null;
             goalHere = null;
             positionAppliedFor = null;
@@ -295,6 +304,7 @@ actor {
           accessEndsAt = null;
           trainerPositionIds = [];
           linkedRoadieId = null;
+          staffProfile = null;
         })
         .payload("principal", func g = g.principal)
         .payload("role", func g = switch g.role {
@@ -366,7 +376,7 @@ actor {
         .controllerOnly()
         .build(),
       pendingUsers.toEntityManual("pendingUser", "PendingUser", "principal")
-        .sample({ principal = Principal.fromText("aaaaa-aa"); requestedAt = 0 })
+        .sample({ principal = Principal.fromText("aaaaa-aa"); requestedAt = 0; staffProfile = null })
         .payload("principal", func u = u.principal)
         .payload("requestedAt", func u = u.requestedAt)
         .controllerOnly()

@@ -67,6 +67,10 @@ function groupHeaders(variant: ExportVariant): string[] {
     "Food handlers",
     "Availability Wed-Tue AM",
     "Availability Wed-Tue PM",
+    "Favorite team",
+    "Favorite candy/snack",
+    "Favorite drink",
+    "Favorite color",
   );
   return headers;
 }
@@ -94,6 +98,10 @@ function groupRow(row: ExportRow, variant: ExportVariant): string[] {
     yesNo(row.foodHandlers),
     shiftDays(row, ShiftEnum.am),
     shiftDays(row, ShiftEnum.pm),
+    row.favoriteTeam ?? "",
+    row.favoriteSnack ?? "",
+    row.favoriteDrink ?? "",
+    row.favoriteColor ?? "",
   );
   return cells;
 }

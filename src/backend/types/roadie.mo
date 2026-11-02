@@ -54,6 +54,9 @@ module {
     hobbies : ?Text;
     favoriteMovie : ?Text;
     favoriteSnack : ?Text;
+    favoriteTeam : ?Text;
+    favoriteDrink : ?Text;
+    favoriteColor : ?Text;
     funFact : ?Text;
     goalHere : ?Text;
     positionAppliedFor : ?Text;
@@ -84,6 +87,7 @@ module {
     archivedReason : ?ArchiveReason;
     archivedAt : ?Common.Timestamp;
     hiredAt : Common.Timestamp;
+    hireDate : ?Common.Timestamp;
     signedBy : ?Principal;
   };
 

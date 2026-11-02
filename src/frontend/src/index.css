@@ -172,4 +172,202 @@
     min-height: 44px;
     min-width: 44px;
   }
+
+  /* Collectible trading-card foil shell: a rainbow holographic/iridescent
+     border (light blue, pink and lavender sheen) with a deep drop shadow. */
+  .card-foil {
+    background-image: linear-gradient(
+      135deg,
+      oklch(0.9 0.09 235) 0%,
+      oklch(0.93 0.07 300) 16%,
+      oklch(0.95 0.06 340) 32%,
+      oklch(0.94 0.05 275) 48%,
+      oklch(0.9 0.08 210) 64%,
+      oklch(0.94 0.07 320) 80%,
+      oklch(0.91 0.08 250) 100%
+    );
+    box-shadow: 0 24px 48px -18px oklch(0.28 0.07 258.5 / 0.6), 0 10px 22px
+      -12px oklch(0.28 0.07 258.5 / 0.45);
+  }
+
+  /* The slow shine sweep that travels across the foil on hover/tap. */
+  .card-foil-shine {
+    background-image: linear-gradient(
+      115deg,
+      transparent 30%,
+      oklch(1 0 0 / 0.55) 48%,
+      oklch(0.85 0.08 300 / 0.35) 52%,
+      transparent 70%
+    );
+    background-size: 250% 100%;
+    background-position: 130% 0;
+    opacity: 0;
+    transition: background-position 0.9s ease, opacity 0.3s ease;
+  }
+  .group:hover .card-foil-shine,
+  .group:focus-visible .card-foil-shine,
+  .group[data-flipped="true"] .card-foil-shine {
+    background-position: -30% 0;
+    opacity: 1;
+  }
+
+  /* Shield/pentagon photo window: flat bottom, angled top corners. */
+  .card-shield {
+    clip-path: polygon(0% 22%, 22% 0%, 78% 0%, 100% 22%, 100% 100%, 0% 100%);
+  }
+
+  /* Arched cathedral photo window: a rounded arch top with a flat bottom. */
+  .card-arch {
+    border-radius: 9999px 9999px 0 0;
+  }
+
+  /* Red-and-white horizontal stripes running down the card's side edges. */
+  .card-side-stripes {
+    background-image: repeating-linear-gradient(
+      180deg,
+      oklch(0.4726 0.1832 25.3) 0 10px,
+      oklch(1 0 0) 10px 20px
+    );
+  }
+
+  /* Scalloped bottle-cap edge for the round badge. */
+  .card-bottlecap {
+    clip-path: polygon(
+      50% 0%,
+      61% 4%,
+      72% 2%,
+      80% 10%,
+      90% 12%,
+      95% 22%,
+      100% 32%,
+      98% 43%,
+      100% 54%,
+      96% 64%,
+      98% 75%,
+      90% 82%,
+      86% 92%,
+      75% 94%,
+      65% 100%,
+      54% 97%,
+      43% 100%,
+      33% 95%,
+      22% 96%,
+      14% 88%,
+      5% 84%,
+      3% 73%,
+      0% 62%,
+      2% 51%,
+      0% 40%,
+      4% 30%,
+      2% 19%,
+      11% 12%,
+      16% 3%,
+      27% 4%,
+      38% 0%
+    );
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-foil-shine {
+      transition: none;
+    }
+    .group:hover .card-foil-shine,
+    .group:focus-visible .card-foil-shine,
+    .group[data-flipped="true"] .card-foil-shine {
+      background-position: 130% 0;
+      opacity: 0;
+    }
+  }
+
+  /* -------------------------------------------------------------------------
+     Avery 5163 label grid: 2in x 4in labels, 2 across, 5 down (10 per page).
+     The grid is a fixed 8.5in x 11in sheet so the browser print preview maps
+     each label to its physical position.
+  ------------------------------------------------------------------------- */
+  .avery-sheet {
+    width: 8.5in;
+    min-height: 11in;
+    display: grid;
+    grid-template-columns: repeat(2, 4in);
+    grid-auto-rows: 2in;
+    justify-content: center;
+    align-content: start;
+    margin: 0 auto;
+    background: white;
+  }
+  .avery-label {
+    width: 4in;
+    height: 2in;
+    box-sizing: border-box;
+    padding: 0.14in 0.18in;
+    overflow: hidden;
+    color: black;
+    background: white;
+    border: 1px dashed oklch(0.8 0.01 92);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Print: hide the app chrome and print the labels black on white. Only the
+   element marked .print-area is shown; everything else is removed from flow.
+--------------------------------------------------------------------------- */
+@media print {
+  @page {
+    size: letter;
+    margin: 0.5in;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Hide the whole document, then reveal only the label sheet. Using
+     visibility (not display) keeps the nested print area in flow so its
+     absolute positioning still resolves against the page. */
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+
+  /* The app chrome never prints. */
+  header,
+  footer,
+  nav,
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Lift the label sheet to the top-left of the page. */
+  .print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    overflow: visible !important;
+  }
+
+  .avery-sheet {
+    width: auto;
+    min-height: 0;
+    grid-template-columns: repeat(2, 4in);
+    grid-auto-rows: 2in;
+    justify-content: flex-start;
+    margin: 0;
+  }
+
+  .avery-label {
+    border: none;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-hide {
+    display: none !important;
+  }
 }

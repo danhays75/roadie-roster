@@ -2,6 +2,7 @@ import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
+import Char "mo:core/Char";
 import AccessControl "mo:caffeineai-authorization/access-control";
 import Common "../types/common";
 import Access "../types/access";
@@ -45,8 +46,36 @@ module {
       accessEndsAt = null;
       trainerPositionIds = [];
       linkedRoadieId = null;
+      staffProfile = null;
     });
     true;
+  };
+
+  /// Store the signed-in caller's staff profile on their pending request. The
+  /// caller must already have a pending request (created by `requestAccess`).
+  /// Calling it again replaces the stored profile. A caller who already holds an
+  /// access grant is not pending, so this traps; they use `updateMyStaffProfile`.
+  public func submitStaffProfile(
+    pendingUsers : Map.Map<Principal, Access.PendingUser>,
+    caller : Principal,
+    profile : Access.StaffProfile,
+  ) : () {
+    let pending = pendingUsers.get(caller)
+      ?? Runtime.trap("No pending request for this principal");
+    pendingUsers.add(caller, { pending with staffProfile = ?profile });
+  };
+
+  /// Update the signed-in caller's own staff profile on their access grant.
+  /// Existing users who were approved before profiles existed can fill theirs in
+  /// here without losing their access. Traps when the caller has no grant.
+  public func updateMyStaffProfile(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    caller : Principal,
+    profile : Access.StaffProfile,
+  ) : () {
+    let grant = accessGrants.get(caller)
+      ?? Runtime.trap("Access grant not found");
+    accessGrants.add(caller, { grant with staffProfile = ?profile });
   };
 
   /// List pending access requests (Admin only).
@@ -66,6 +95,84 @@ module {
   ) : [Access.AccessGrant] {
     Auth.requireAdmin(accessGrants, caller);
     accessGrants.values().toArray();
+  };
+
+  /// List the leaders shown on the Leaders page: the manager, trainer and
+  /// leadership roles (Admin, Store Manager, Training Manager, Visiting
+  /// Manager, Trainer, Leadership). Readable by every role except Kiosk and
+  /// Integration. Never carries phone or email: the returned staff profile has
+  /// its work phone and work email cleared.
+  public func listLeaders(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    caller : Principal,
+  ) : [Access.LeaderSummary] {
+    let role = Auth.requireReadable(accessGrants, caller);
+    if (role == #integration) {
+      Runtime.trap("Access denied: Integration role may only read the Shareable export");
+    };
+    accessGrants.values().filter(func(g) = isLeaderRole(g.role)).map(func(g) {
+      {
+        principal = g.principal;
+        role = g.role;
+        title = leaderTitle(g);
+        staffProfile = switch (g.staffProfile) {
+          case (?p) { ?redactProfile(p) };
+          case null { null };
+        };
+        trainerPositionIds = g.trainerPositionIds;
+        arrivalDate = switch (g.staffProfile) {
+          case (?p) { p.arrivalDate };
+          case null { null };
+        };
+        departureDate = switch (g.staffProfile) {
+          case (?p) { p.departureDate };
+          case null { null };
+        };
+      };
+    }).toArray();
+  };
+
+  /// Internal: true when a role is shown on the Leaders page.
+  func isLeaderRole(role : Common.Role) : Bool {
+    switch (role) {
+      case (#admin) { true };
+      case (#storeManager) { true };
+      case (#trainingManager) { true };
+      case (#visitingManager) { true };
+      case (#trainer) { true };
+      case (#leadership) { true };
+      case (_) { false };
+    };
+  };
+
+  /// Internal: the leader's display title, falling back to a role label.
+  func leaderTitle(grant : Access.AccessGrant) : Text {
+    switch (grant.staffProfile) {
+      case (?p) {
+        let trimmed = p.title.trim(#predicate(func(c : Char) : Bool { c.isWhitespace() }));
+        if (trimmed.size() > 0) { trimmed } else { roleLabel(grant.role) };
+      };
+      case null { roleLabel(grant.role) };
+    };
+  };
+
+  /// Internal: a human label for a leader role.
+  func roleLabel(role : Common.Role) : Text {
+    switch (role) {
+      case (#admin) { "Admin" };
+      case (#storeManager) { "Store Manager" };
+      case (#trainingManager) { "Training Manager" };
+      case (#visitingManager) { "Visiting Manager" };
+      case (#trainer) { "NSO Trainer" };
+      case (#leadership) { "Leadership" };
+      case (_) { "" };
+    };
+  };
+
+  /// Internal: strip contact information from a staff profile before it leaves
+  /// the backend. Phone and email are never shown on a leader card.
+  func redactProfile(profile : Access.StaffProfile) : Access.StaffProfile {
+    { profile with workPhone = null; workEmail = null };
   };
 
   /// Approve a pending user with a role and options (Admin only). An Admin
@@ -95,6 +202,7 @@ module {
       accessEndsAt;
       trainerPositionIds = request.trainerPositionIds;
       linkedRoadieId = request.linkedRoadieId;
+      staffProfile = request.staffProfile;
     });
   };
 

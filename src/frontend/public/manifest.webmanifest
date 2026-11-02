@@ -1,6 +1,6 @@
 {
-  "name": "Roadie — Restaurant Crew Hiring",
-  "short_name": "Roadie",
+  "name": "Roadie Roster",
+  "short_name": "Roadie Roster",
   "description": "Hiring roster and onboarding pipeline for the store crew.",
   "start_url": "/",
   "scope": "/",

@@ -21,8 +21,19 @@ mixin (
     if (pendingUsers.containsKey(caller)) {
       return true;
     };
-    pendingUsers.add(caller, { principal = caller; requestedAt = Time.now() });
+    pendingUsers.add(caller, { principal = caller; requestedAt = Time.now(); staffProfile = null });
     false;
+  };
+
+  /// Store the signed-in caller's staff profile on their pending request. The
+  /// caller must already have a pending request (created by `requestAccess`).
+  public shared ({ caller }) func submitStaffProfile(profile : Access.StaffProfile) : async () {
+    AccessLib.submitStaffProfile(pendingUsers, caller, profile);
+  };
+
+  /// Update the signed-in caller's own staff profile on their access grant.
+  public shared ({ caller }) func updateMyStaffProfile(profile : Access.StaffProfile) : async () {
+    AccessLib.updateMyStaffProfile(accessGrants, caller, profile);
   };
 
   /// Bootstrap the first app Admin from the platform's shared authorization
@@ -48,6 +59,13 @@ mixin (
   /// List all access grants (Admin only).
   public query ({ caller }) func listAccessGrants() : async [Access.AccessGrant] {
     AccessLib.listAccessGrants(accessGrants, caller);
+  };
+
+  /// List the leaders shown on the Leaders page: the manager, trainer and
+  /// leadership roles. Readable by every role except Kiosk and Integration.
+  /// Never carries phone or email.
+  public query ({ caller }) func listLeaders() : async [Access.LeaderSummary] {
+    AccessLib.listLeaders(accessGrants, caller);
   };
 
   /// Approve a pending user (Admin only).

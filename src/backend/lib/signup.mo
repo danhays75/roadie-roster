@@ -25,7 +25,7 @@ module {
   let maxContactLength : Nat = 320;
 
   /// The store's default time zone when none is configured.
-  let defaultTimeZone : Common.TimeZone = "America/Chicago";
+  let _defaultTimeZone : Common.TimeZone = "America/Chicago";
 
   /// Submit a new sign-up from the kiosk. Callable by Kiosk, Store Manager or
   /// Admin; every text field is length-capped.
@@ -199,6 +199,7 @@ module {
       archivedReason = null;
       archivedAt = null;
       hiredAt = now;
+      hireDate = ?submission.submittedAt;
       signedBy = ?caller;
     });
     signups.add(id, { submission with status = #approved(roadieId) });
@@ -231,6 +232,9 @@ module {
       hobbies = capOpt(profile.hobbies, maxTextLength);
       favoriteMovie = capOpt(profile.favoriteMovie, maxTextLength);
       favoriteSnack = capOpt(profile.favoriteSnack, maxTextLength);
+      favoriteTeam = capOpt(profile.favoriteTeam, maxTextLength);
+      favoriteDrink = capOpt(profile.favoriteDrink, maxTextLength);
+      favoriteColor = capOpt(profile.favoriteColor, maxTextLength);
       funFact = capOpt(profile.funFact, maxTextLength);
       goalHere = capOpt(profile.goalHere, maxTextLength);
       positionAppliedFor = capOpt(profile.positionAppliedFor, maxTextLength);

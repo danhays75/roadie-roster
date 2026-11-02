@@ -26,6 +26,12 @@ mixin (
     StoreLib.getStoreInfo(accessGrants, storeInfo, caller);
   };
 
+  /// Read both store logos (main and secondary). Any caller, including Kiosk
+  /// and unregistered users.
+  public query func getStoreLogo() : async Store.StoreLogos {
+    StoreLib.getStoreLogo(storeInfo);
+  };
+
   /// Update the store configuration (Admin only).
   public shared ({ caller }) func updateStoreInfo(info : Store.StoreInfo) : async () {
     StoreLib.updateStoreInfo(accessGrants, storeInfo, changeLog, counters, caller, info);
@@ -103,5 +109,16 @@ mixin (
   /// Save the current store configuration as a template (Admin only).
   public shared ({ caller }) func saveStoreTemplate(name : Text) : async () {
     StoreLib.saveStoreTemplate(accessGrants, storeInfo, positions, schedule, checklists, storeTemplates, changeLog, counters, caller, name);
+  };
+
+  /// Build the downloadable store template file (Admin only).
+  public query ({ caller }) func downloadStoreTemplate() : async Store.StoreTemplateFile {
+    StoreLib.downloadStoreTemplate(accessGrants, storeInfo, positions, schedule, checklists, caller);
+  };
+
+  /// Load a store template file, replacing positions, schedule and checklists
+  /// (Admin only). Refuses when any roadie exists.
+  public shared ({ caller }) func loadStoreTemplate(file : Store.StoreTemplateFile) : async Store.TemplateLoadResult {
+    StoreLib.loadStoreTemplate(accessGrants, storeInfo, positions, schedule, checklists, roadies, changeLog, counters, caller, file);
   };
 };

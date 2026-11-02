@@ -1,20 +1,17 @@
 {
-  "overview": "A hiring and roster management app for a retail store, with kiosk sign-up, approvals, scheduling, training and exports.",
+  "overview": "Roadie Roster is a store opening team manager for roadies and leaders, with collectible trading cards, rosters, gift bags and exports.",
   "features": [
-    "Kiosk sign-up with photo and signature capture",
-    "Manager approvals and role-based access",
-    "Roster, positions and build-to planning",
-    "Scheduling, checklists and training notes",
-    "Shareable and full Excel exports",
-    "Installable PWA with store branding"
+    "Leader profiles with the same About Me fields as roadies",
+    "Collectible leader cards with tier ribbons and gold, platinum and legend variants",
+    "A Leaders page grouping cards by tier",
+    "Gift bag lists, labels and Excel downloads filtered by roadies, leaders or all"
   ],
   "category": "productivity",
   "tags": [
-    "hiring",
-    "roster",
+    "team-management",
     "retail",
-    "scheduling",
-    "pwa"
+    "trading-cards",
+    "roster"
   ],
-  "last_updated": "2026-11-01T20:34:34.083Z"
+  "last_updated": "2026-11-02T05:18:18.132Z"
 }

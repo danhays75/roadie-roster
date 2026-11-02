@@ -1,4 +1,10 @@
-import type { DateOnly, PhotoRef, SignatureRef, Timestamp } from "@/backend";
+import type {
+  DateOnly,
+  PhotoRef,
+  SignatureRef,
+  StaffProfile,
+  Timestamp,
+} from "@/backend";
 
 /**
  * A stored photo/signature reference is the raw uploaded bytes. Render it as a
@@ -155,6 +161,31 @@ export function formatDateOnly(dateOnly: DateOnly): string {
   });
 }
 
+/**
+ * Format a backend date-only value as a long date in UTC (e.g. "February 8,
+ * 2027"); falls back to an em dash. Used where a calendar day is shown in full,
+ * such as the opening-day countdown, and must not shift with the device zone.
+ */
+export function formatDateOnlyLong(dateOnly: DateOnly): string {
+  const date = dateOnlyToDate(dateOnly);
+  if (!date) return "—";
+  return date.toLocaleDateString(undefined, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  });
+}
+
+/**
+ * Format a timestamp that represents a calendar day (e.g. a hire date) as a
+ * date-only value in UTC, so it reads the same on every device. Delegates to
+ * `formatDateOnly` after reducing the instant to its UTC calendar day.
+ */
+export function formatTimestampDateOnly(timestamp: Timestamp): string {
+  const date = timestampToDate(timestamp);
+  if (!date) return "—";
+  return formatDateOnly(dateToDateOnly(date));
+}
+
 /** Convert a JS Date to a Motoko `Timestamp` (nanoseconds since epoch). */
 export function dateToTimestamp(date: Date): Timestamp {
   return BigInt(date.getTime()) * 1_000_000n;
@@ -216,6 +247,25 @@ export function formatTimestampMediumDate(
   });
 }
 
+/**
+ * Format a timestamp as a short month, day and year (e.g. "Jan 30, 2027") in
+ * the store's time zone, so the roadie card's hire date reads the same on every
+ * device. Falls back to an em dash when invalid.
+ */
+export function formatTimestampMonthDayYear(
+  timestamp: Timestamp,
+  timeZone?: string,
+): string {
+  const date = timestampToDate(timestamp);
+  if (!date) return "—";
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone,
+  });
+}
+
 /** Human label for a roadie status enum value. */
 export function roadieStatusLabel(status: string): string {
   const labels: Record<string, string> = {
@@ -250,4 +300,22 @@ export function roleLabel(role: string): string {
 export function shortPrincipal(principal: { toText(): string }): string {
   const text = principal.toText();
   return text.length > 12 ? `${text.slice(0, 5)}…${text.slice(-4)}` : text;
+}
+
+/**
+ * Render a staff member's display name and title from their staff profile.
+ * Prefers the preferred name over the full name, and appends the title when
+ * present. Falls back to `fallback` (the localized "Unnamed user" copy) when no
+ * profile exists or it carries no name, so a user approved before profiles
+ * existed still renders a readable label.
+ */
+export function staffDisplayName(
+  profile: StaffProfile | undefined | null,
+  fallback = "Unnamed user",
+): string {
+  if (!profile) return fallback;
+  const name = profile.preferredName?.trim() || profile.fullName?.trim();
+  if (!name) return fallback;
+  const title = profile.title?.trim();
+  return title ? `${name} · ${title}` : name;
 }

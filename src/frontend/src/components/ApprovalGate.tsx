@@ -1,14 +1,20 @@
 import { createActor } from "@/backend";
 import { SignOutButton } from "@/components/InternetIdentity";
+import { StaffProfileForm } from "@/components/StaffProfileForm";
 import { LoadingState } from "@/components/States";
 import { StoreLogo } from "@/components/StoreLogo";
 import { Button } from "@/components/ui/button";
 import { useAccessState } from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
-import { useBootstrapAdmin, useRequestAccess } from "@/hooks/useQueries";
+import {
+  useBootstrapAdmin,
+  useRequestAccess,
+  useSubmitStaffProfile,
+  useUpdateMyStaffProfile,
+} from "@/hooks/useQueries";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { Clock, ShieldAlert } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * The access gate. Anyone who signs in without an access grant lands here until
@@ -27,11 +33,20 @@ export function ApprovalGate({ children }: { children?: React.ReactNode }) {
   const access = useAccessState();
   const requestAccess = useRequestAccess();
   const bootstrapAdmin = useBootstrapAdmin();
+  const submitProfile = useSubmitStaffProfile();
+  const updateProfile = useUpdateMyStaffProfile();
   const { actor } = useActor(createActor);
   const requested = useRef(false);
   const bootstrapped = useRef(false);
   const bootstrapAttempts = useRef(0);
   const requestAttempts = useRef(0);
+  // A pending caller has no readable profile, so the gate tracks whether the
+  // profile form was completed in this session. Once it is, the caller goes
+  // straight to the waiting screen.
+  const [profileSubmitted, setProfileSubmitted] = useState(false);
+  // An already-approved caller whose grant carries no profile fills it in on
+  // this sign-in without losing access; once saved they continue into the app.
+  const [grantProfileSaved, setGrantProfileSaved] = useState(false);
 
   // Persist the first platform admin's app grant. Safe for every signed-in
   // caller: the backend only acts while no app Admin exists and the caller is
@@ -63,6 +78,46 @@ export function ApprovalGate({ children }: { children?: React.ReactNode }) {
   }, [actor, access.kind, requestAccess]);
 
   if (access.kind === "granted") {
+    // An approved caller whose grant has no staff profile fills it in on this
+    // sign-in. They keep their access: the form saves through
+    // `updateMyStaffProfile` and the app chrome renders once it is saved.
+    if (!access.grant.staffProfile && !grantProfileSaved) {
+      return (
+        <section
+          data-ocid="gate.profile_state"
+          className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-5 px-6 py-10"
+        >
+          <div className="text-center">
+            <StoreLogo className="mx-auto h-20 w-20" />
+            <h1 className="mt-4 font-display text-3xl font-bold uppercase tracking-tight">
+              {t("profile.title")}
+            </h1>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+              {t("profile.description")}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-5 shadow-subtle">
+            <StaffProfileForm
+              submitLabel={t("profile.continue")}
+              pending={updateProfile.isPending}
+              error={updateProfile.isError ? t("profile.error") : null}
+              onSubmit={(profile) =>
+                updateProfile.mutate(profile, {
+                  onSuccess: () => setGrantProfileSaved(true),
+                })
+              }
+            />
+          </div>
+          <div className="flex justify-center">
+            <SignOutButton
+              label={t("gate.signOut")}
+              ocid="gate.sign_out_button"
+              className="touch-target rounded-md border border-input bg-card px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-muted"
+            />
+          </div>
+        </section>
+      );
+    }
     return <>{children}</>;
   }
 
@@ -118,12 +173,54 @@ export function ApprovalGate({ children }: { children?: React.ReactNode }) {
     );
   }
 
+  // A pending caller who has not yet supplied a profile sees the profile form
+  // before the waiting screen. The form is only shown once the access request
+  // has settled, because `submitStaffProfile` traps without a pending request.
+  const requestSettled = requestAccess.isSuccess || requested.current;
+  if (access.kind === "pending" && requestSettled && !profileSubmitted) {
+    return (
+      <section
+        data-ocid="gate.profile_state"
+        className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-5 px-6 py-10"
+      >
+        <div className="text-center">
+          <StoreLogo className="mx-auto h-20 w-20" />
+          <h1 className="mt-4 font-display text-3xl font-bold uppercase tracking-tight">
+            {t("profile.title")}
+          </h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            {t("profile.description")}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-5 shadow-subtle">
+          <StaffProfileForm
+            submitLabel={t("profile.continue")}
+            pending={submitProfile.isPending}
+            error={submitProfile.isError ? t("profile.error") : null}
+            onSubmit={(profile) =>
+              submitProfile.mutate(profile, {
+                onSuccess: () => setProfileSubmitted(true),
+              })
+            }
+          />
+        </div>
+        <div className="flex justify-center">
+          <SignOutButton
+            label={t("gate.signOut")}
+            ocid="gate.sign_out_button"
+            className="touch-target rounded-md border border-input bg-card px-4 py-2 font-display text-sm font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-muted"
+          />
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       data-ocid="gate.pending_state"
       className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-6 text-center"
     >
-      <StoreLogo className="h-16 w-16" />
+      <StoreLogo className="h-32 w-32" />
       <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 font-display text-xs font-semibold uppercase tracking-widest text-primary">
         <Clock className="h-3.5 w-3.5" aria-hidden="true" />
         {t("gate.pending.title")}
