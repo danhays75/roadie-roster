@@ -345,6 +345,10 @@ export const AccessGrant = IDL.Record({
   'trainerPositionIds' : IDL.Vec(PositionId),
   'accessEndsAt' : IDL.Opt(Timestamp),
 });
+export const PendingRequestSummary = IDL.Record({
+  'hasProfile' : IDL.Bool,
+  'requestedAt' : Timestamp,
+});
 export const OrientationCheckoff = IDL.Record({
   'hatsCount' : IDL.Nat,
   'roadieId' : RoadieId,
@@ -609,6 +613,11 @@ export const idlService = IDL.Service({
     ),
   'getGiftBags' : IDL.Func([GiftBagFilter], [GiftBagsData], ['query']),
   'getMyAccess' : IDL.Func([], [IDL.Opt(AccessGrant)], ['query']),
+  'getMyPendingRequest' : IDL.Func(
+      [],
+      [IDL.Opt(PendingRequestSummary)],
+      ['query'],
+    ),
   'getOrientationCheckoff' : IDL.Func(
       [RoadieId],
       [IDL.Opt(OrientationCheckoff)],
@@ -1031,6 +1040,10 @@ export const idlFactory = ({ IDL }) => {
     'trainerPositionIds' : IDL.Vec(PositionId),
     'accessEndsAt' : IDL.Opt(Timestamp),
   });
+  const PendingRequestSummary = IDL.Record({
+    'hasProfile' : IDL.Bool,
+    'requestedAt' : Timestamp,
+  });
   const OrientationCheckoff = IDL.Record({
     'hatsCount' : IDL.Nat,
     'roadieId' : RoadieId,
@@ -1299,6 +1312,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getGiftBags' : IDL.Func([GiftBagFilter], [GiftBagsData], ['query']),
     'getMyAccess' : IDL.Func([], [IDL.Opt(AccessGrant)], ['query']),
+    'getMyPendingRequest' : IDL.Func(
+        [],
+        [IDL.Opt(PendingRequestSummary)],
+        ['query'],
+      ),
     'getOrientationCheckoff' : IDL.Func(
         [RoadieId],
         [IDL.Opt(OrientationCheckoff)],

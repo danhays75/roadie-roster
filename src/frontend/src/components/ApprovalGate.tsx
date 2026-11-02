@@ -4,7 +4,7 @@ import { StaffProfileForm } from "@/components/StaffProfileForm";
 import { LoadingState } from "@/components/States";
 import { StoreLogo } from "@/components/StoreLogo";
 import { Button } from "@/components/ui/button";
-import { useAccessState } from "@/hooks/useAccess";
+import { canLeaders, useAccessState } from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
 import {
   useBootstrapAdmin,
@@ -13,8 +13,53 @@ import {
   useUpdateMyStaffProfile,
 } from "@/hooks/useQueries";
 import { useActor } from "@caffeineai/core-infrastructure";
+import { useQuery } from "@tanstack/react-query";
 import { Clock, ShieldAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
+/**
+ * Narrow an actor to its optional `getMyPendingRequest` read. Older actors and
+ * test mocks may not expose the method, so it is looked up structurally and
+ * only invoked when the running actor actually provides it.
+ */
+function readOptionalPendingRequest(
+  actor: unknown,
+): (() => Promise<{ requestedAt: bigint; hasProfile: boolean } | null>) | null {
+  if (typeof actor !== "object" || actor === null) return null;
+  const candidate = (actor as { getMyPendingRequest?: unknown })
+    .getMyPendingRequest;
+  if (typeof candidate !== "function") return null;
+  return () =>
+    (
+      candidate as () => Promise<{
+        requestedAt: bigint;
+        hasProfile: boolean;
+      } | null>
+    ).call(actor);
+}
+
+/**
+ * The caller's own pending access request. Returns null when the caller has no
+ * pending request, or when the running actor does not expose the read (older
+ * actors and test mocks), so the gate falls back to showing the profile form.
+ * `hasProfile` is true once the caller has submitted a staff profile on their
+ * pending request, which lets a reload skip the form and go straight to the
+ * waiting screen.
+ */
+function useMyPendingRequest() {
+  const { actor, isFetching } = useActor(createActor);
+  const enabled = !!actor && !isFetching;
+  return useQuery({
+    queryKey: ["myPendingRequest"],
+    queryFn: async () => {
+      if (!actor) return null;
+      const read = readOptionalPendingRequest(actor);
+      if (!read) return null;
+      return read();
+    },
+    enabled,
+  });
+}
 
 /**
  * The access gate. Anyone who signs in without an access grant lands here until
@@ -35,6 +80,7 @@ export function ApprovalGate({ children }: { children?: React.ReactNode }) {
   const bootstrapAdmin = useBootstrapAdmin();
   const submitProfile = useSubmitStaffProfile();
   const updateProfile = useUpdateMyStaffProfile();
+  const pendingRequest = useMyPendingRequest();
   const { actor } = useActor(createActor);
   const requested = useRef(false);
   const bootstrapped = useRef(false);
@@ -78,10 +124,14 @@ export function ApprovalGate({ children }: { children?: React.ReactNode }) {
   }, [actor, access.kind, requestAccess]);
 
   if (access.kind === "granted") {
-    // An approved caller whose grant has no staff profile fills it in on this
-    // sign-in. They keep their access: the form saves through
-    // `updateMyStaffProfile` and the app chrome renders once it is saved.
-    if (!access.grant.staffProfile && !grantProfileSaved) {
+    // Only leader roles fill in a staff profile. A granted kiosk or integration
+    // user has no profile to give, so they go straight into the app (the kiosk
+    // welcome screen with its PIN sign-out) instead of seeing the form.
+    const needsProfile =
+      !access.grant.staffProfile &&
+      !grantProfileSaved &&
+      canLeaders(access.grant.role);
+    if (needsProfile) {
       return (
         <section
           data-ocid="gate.profile_state"
@@ -176,8 +226,16 @@ export function ApprovalGate({ children }: { children?: React.ReactNode }) {
   // A pending caller who has not yet supplied a profile sees the profile form
   // before the waiting screen. The form is only shown once the access request
   // has settled, because `submitStaffProfile` traps without a pending request.
+  // A caller whose pending request already carries a profile (for example after
+  // a reload) skips the form and goes straight to the waiting screen.
   const requestSettled = requestAccess.isSuccess || requested.current;
-  if (access.kind === "pending" && requestSettled && !profileSubmitted) {
+  const alreadyHasProfile = pendingRequest.data?.hasProfile === true;
+  if (
+    access.kind === "pending" &&
+    requestSettled &&
+    !profileSubmitted &&
+    !alreadyHasProfile
+  ) {
     return (
       <section
         data-ocid="gate.profile_state"

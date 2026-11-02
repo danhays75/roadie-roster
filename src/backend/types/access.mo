@@ -64,6 +64,15 @@ module {
     staffProfile : ?StaffProfile;
   };
 
+  /// A summary of the caller's own pending access request, used by the
+  /// approval gate to decide whether to show the profile form or the waiting
+  /// screen. `hasProfile` is true once the caller has submitted a staff
+  /// profile on their pending request.
+  public type PendingRequestSummary = {
+    requestedAt : Common.Timestamp;
+    hasProfile : Bool;
+  };
+
   /// The payload an admin supplies when approving a user.
   public type ApprovalRequest = {
     principal : Principal;

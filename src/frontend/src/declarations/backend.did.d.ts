@@ -235,6 +235,10 @@ export interface OverviewRow {
   'positionName' : string,
   'totalPar' : bigint,
 }
+export interface PendingRequestSummary {
+  'hasProfile' : boolean,
+  'requestedAt' : Timestamp,
+}
 export interface PendingUser {
   'principal' : Principal,
   'staffProfile' : [] | [StaffProfile],
@@ -658,6 +662,12 @@ export interface _SERVICE {
    * / approved the caller, so the frontend keeps showing the waiting screen.
    */
   'getMyAccess' : ActorMethod<[], [] | [AccessGrant]>,
+  /**
+   * / Read the caller's own pending access request, if any. Returns null when
+   * / the caller has no pending entry; otherwise the requestedAt of that pending
+   * / entry and hasProfile = true when a staff profile has been submitted.
+   */
+  'getMyPendingRequest' : ActorMethod<[], [] | [PendingRequestSummary]>,
   /**
    * / Read the orientation check-off for a roadie (Admin/Store Manager only).
    */

@@ -305,6 +305,11 @@ type PendingUser =
    requestedAt: Timestamp;
    staffProfile: opt StaffProfile;
  };
+type PendingRequestSummary = 
+ record {
+   hasProfile: bool;
+   requestedAt: Timestamp;
+ };
 type OverviewRow = 
  record {
    hired: nat;
@@ -695,6 +700,10 @@ service : {
   /// Read the caller's own access grant. Returns null until an Admin has
   /// approved the caller, so the frontend keeps showing the waiting screen.
   getMyAccess: () -> (opt AccessGrant) query;
+  /// Read the caller's own pending access request, if any. Returns null when
+  /// the caller has no pending entry; otherwise the requestedAt of that pending
+  /// entry and hasProfile = true when a staff profile has been submitted.
+  getMyPendingRequest: () -> (opt PendingRequestSummary) query;
   /// Read the orientation check-off for a roadie (Admin/Store Manager only).
   getOrientationCheckoff: (roadieId: RoadieId) ->
    (opt OrientationCheckoff) query;

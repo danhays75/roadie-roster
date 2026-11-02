@@ -51,6 +51,32 @@ export function useMyAccess() {
 }
 
 /**
+ * The caller's own pending access request, if any. Returns null when the
+ * caller has no pending entry; otherwise the requestedAt of that pending entry
+ * and hasProfile = true when a staff profile has been submitted. Polls like
+ * `useMyAccess` so a pending caller's state stays current without a reload.
+ */
+export function useMyPendingRequest() {
+  const { actor, isFetching } = useActor(createActor);
+  const enabled = !!actor && !isFetching;
+  const query = useQuery({
+    queryKey: ["myPendingRequest"],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getMyPendingRequest();
+    },
+    enabled,
+    // Poll so a pending caller's request state stays current without a reload.
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: false,
+  });
+  // A disabled query reports `isLoading: false`, so expose whether the read has
+  // actually been able to run. Callers treat "not ready" as loading rather than
+  // as a resolved absent state.
+  return { ...query, isReady: enabled };
+}
+
+/**
  * The pending sign-in queue. Only admins may read it, so callers pass
  * `enabled` (typically `canApprove(role)`) to avoid a trapping read for every
  * other role.

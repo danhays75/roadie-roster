@@ -34,7 +34,7 @@
     "connector-tmdb": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "7a5829c3e9188ad7d91f9907ce61c9a3e55bf9dbc3a0191eda2116230dbcd70f"
+      "computedHash": "404a43e3c2fe543bfa2b390e66630b835328b11c09772efd5bc1bbf5f6bb997d"
     },
     "connector-twilio": {
       "source": "caffeinelabs/skills",
@@ -54,7 +54,7 @@
     "extension-authorization": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "cbc2a7654c3f21e12b1a48882c6d8acac83239f66981249d2017b6ca816d7f7f"
+      "computedHash": "dd77d00f22899a239041ca8de18d8eaacbd7fe9909bf0b8449f0728315560208"
     },
     "extension-camera": {
       "source": "caffeinelabs/skills",
@@ -109,7 +109,7 @@
     "extension-invite-links": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "2fc152a5bd12be9cdf7279d396656d3914ea97bb3e5bc09e7e1ee33bde170019"
+      "computedHash": "a135343aae1b532f186e4900501b210d97c384bea4ec5ffb37d3a1daa89d28f6"
     },
     "extension-object-storage": {
       "source": "caffeinelabs/skills",
@@ -149,7 +149,7 @@
     "extension-user-approval": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "b3a02addce836fb00ddc93db8bc302b75d914d9ef24eb33533838a983f1dd741"
+      "computedHash": "6e8bc6b05618aea637b77090373353219fdac37e56219c810f0c490b70215222"
     },
     "migrating-motoko-actors": {
       "source": "caffeinelabs/skills",

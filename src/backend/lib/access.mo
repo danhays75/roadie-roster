@@ -51,6 +51,27 @@ module {
     true;
   };
 
+  /// Read the caller's own pending access request, if any. Returns null when
+  /// the caller has no entry in `pendingUsers`; otherwise the requestedAt of
+  /// that pending entry and hasProfile = true when a staff profile is present.
+  public func getMyPendingRequest(
+    pendingUsers : Map.Map<Principal, Access.PendingUser>,
+    caller : Principal,
+  ) : ?Access.PendingRequestSummary {
+    switch (pendingUsers.get(caller)) {
+      case (?pending) {
+        ?{
+          requestedAt = pending.requestedAt;
+          hasProfile = switch (pending.staffProfile) {
+            case (?_) { true };
+            case null { false };
+          };
+        };
+      };
+      case null { null };
+    };
+  };
+
   /// Store the signed-in caller's staff profile on their pending request. The
   /// caller must already have a pending request (created by `requestAccess`).
   /// Calling it again replaces the stored profile. A caller who already holds an

@@ -51,6 +51,13 @@ mixin (
     AccessLib.getMyAccess(accessGrants, caller);
   };
 
+  /// Read the caller's own pending access request, if any. Returns null when
+  /// the caller has no pending entry; otherwise the requestedAt of that pending
+  /// entry and hasProfile = true when a staff profile has been submitted.
+  public query ({ caller }) func getMyPendingRequest() : async ?Access.PendingRequestSummary {
+    AccessLib.getMyPendingRequest(pendingUsers, caller);
+  };
+
   /// List pending access requests (Admin only).
   public query ({ caller }) func listPendingUsers() : async [Access.PendingUser] {
     AccessLib.listPendingUsers(accessGrants, pendingUsers, caller);

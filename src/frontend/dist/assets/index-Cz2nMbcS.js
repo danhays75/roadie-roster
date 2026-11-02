@@ -33420,6 +33420,10 @@ var AccessGrant = Record({
 	"trainerPositionIds": Vec(PositionId),
 	"accessEndsAt": Opt(Timestamp)
 });
+var PendingRequestSummary = Record({
+	"hasProfile": Bool,
+	"requestedAt": Timestamp
+});
 var OrientationCheckoff = Record({
 	"hatsCount": Nat,
 	"roadieId": RoadieId,
@@ -33661,6 +33665,7 @@ Service({
 	})], ["query"]),
 	"getGiftBags": Func([GiftBagFilter], [GiftBagsData], ["query"]),
 	"getMyAccess": Func([], [Opt(AccessGrant)], ["query"]),
+	"getMyPendingRequest": Func([], [Opt(PendingRequestSummary)], ["query"]),
 	"getOrientationCheckoff": Func([RoadieId], [Opt(OrientationCheckoff)], ["query"]),
 	"getPhoto": Func([RoadieId], [Opt(PhotoRef)], ["query"]),
 	"getRetentionSettings": Func([], [RetentionSettings], ["query"]),
@@ -34070,6 +34075,10 @@ var idlFactory = ({ IDL }) => {
 		"trainerPositionIds": IDL.Vec(PositionId),
 		"accessEndsAt": IDL.Opt(Timestamp)
 	});
+	const PendingRequestSummary = IDL.Record({
+		"hasProfile": IDL.Bool,
+		"requestedAt": Timestamp
+	});
 	const OrientationCheckoff = IDL.Record({
 		"hatsCount": IDL.Nat,
 		"roadieId": RoadieId,
@@ -34315,6 +34324,7 @@ var idlFactory = ({ IDL }) => {
 		})], ["query"]),
 		"getGiftBags": IDL.Func([GiftBagFilter], [GiftBagsData], ["query"]),
 		"getMyAccess": IDL.Func([], [IDL.Opt(AccessGrant)], ["query"]),
+		"getMyPendingRequest": IDL.Func([], [IDL.Opt(PendingRequestSummary)], ["query"]),
 		"getOrientationCheckoff": IDL.Func([RoadieId], [IDL.Opt(OrientationCheckoff)], ["query"]),
 		"getPhoto": IDL.Func([RoadieId], [IDL.Opt(PhotoRef)], ["query"]),
 		"getRetentionSettings": IDL.Func([], [RetentionSettings], ["query"]),
@@ -34873,17 +34883,30 @@ var Backend = class {
 			return from_candid_opt_n95(this._uploadFile, this._downloadFile, result);
 		}
 	}
-	async getOrientationCheckoff(arg0) {
+	async getMyPendingRequest() {
 		if (this.processError) try {
-			const result = await this.actor.getOrientationCheckoff(arg0);
+			const result = await this.actor.getMyPendingRequest();
 			return from_candid_opt_n106(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
-			const result = await this.actor.getOrientationCheckoff(arg0);
+			const result = await this.actor.getMyPendingRequest();
 			return from_candid_opt_n106(this._uploadFile, this._downloadFile, result);
+		}
+	}
+	async getOrientationCheckoff(arg0) {
+		if (this.processError) try {
+			const result = await this.actor.getOrientationCheckoff(arg0);
+			return from_candid_opt_n107(this._uploadFile, this._downloadFile, result);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else {
+			const result = await this.actor.getOrientationCheckoff(arg0);
+			return from_candid_opt_n107(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getPhoto(arg0) {
@@ -34911,14 +34934,14 @@ var Backend = class {
 	async getRoadie(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getRoadie(arg0);
-			return from_candid_opt_n107(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n108(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getRoadie(arg0);
-			return from_candid_opt_n107(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n108(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getRosterSummary() {
@@ -34933,14 +34956,14 @@ var Backend = class {
 	async getSignup(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getSignup(arg0);
-			return from_candid_opt_n120(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n121(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getSignup(arg0);
-			return from_candid_opt_n120(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n121(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getSignupPhoto(arg0) {
@@ -34959,40 +34982,40 @@ var Backend = class {
 	async getStoreInfo() {
 		if (this.processError) try {
 			const result = await this.actor.getStoreInfo();
-			return from_candid_StoreInfo_n125(this._uploadFile, this._downloadFile, result);
+			return from_candid_StoreInfo_n126(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getStoreInfo();
-			return from_candid_StoreInfo_n125(this._uploadFile, this._downloadFile, result);
+			return from_candid_StoreInfo_n126(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getStoreLogo() {
 		if (this.processError) try {
 			const result = await this.actor.getStoreLogo();
-			return from_candid_StoreLogos_n127(this._uploadFile, this._downloadFile, result);
+			return from_candid_StoreLogos_n128(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getStoreLogo();
-			return from_candid_StoreLogos_n127(this._uploadFile, this._downloadFile, result);
+			return from_candid_StoreLogos_n128(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async getTrainingGroup(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.getTrainingGroup(arg0);
-			return from_candid_opt_n129(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n130(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.getTrainingGroup(arg0);
-			return from_candid_opt_n129(this._uploadFile, this._downloadFile, result);
+			return from_candid_opt_n130(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async hasKioskPin() {
@@ -35025,14 +35048,14 @@ var Backend = class {
 	async listAccessGrants() {
 		if (this.processError) try {
 			const result = await this.actor.listAccessGrants();
-			return from_candid_vec_n134(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n135(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listAccessGrants();
-			return from_candid_vec_n134(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n135(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listAlerts() {
@@ -35047,27 +35070,27 @@ var Backend = class {
 	async listAttendanceForEvent(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.listAttendanceForEvent(arg0);
-			return from_candid_vec_n135(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n136(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listAttendanceForEvent(arg0);
-			return from_candid_vec_n135(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n136(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listChangeLog() {
 		if (this.processError) try {
 			const result = await this.actor.listChangeLog();
-			return from_candid_vec_n140(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n141(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listChangeLog();
-			return from_candid_vec_n140(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n141(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listCrews() {
@@ -35082,40 +35105,40 @@ var Backend = class {
 	async listLeaders() {
 		if (this.processError) try {
 			const result = await this.actor.listLeaders();
-			return from_candid_vec_n143(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n144(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listLeaders();
-			return from_candid_vec_n143(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n144(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listPendingSignups() {
 		if (this.processError) try {
 			const result = await this.actor.listPendingSignups();
-			return from_candid_vec_n146(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n147(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listPendingSignups();
-			return from_candid_vec_n146(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n147(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listPendingUsers() {
 		if (this.processError) try {
 			const result = await this.actor.listPendingUsers();
-			return from_candid_vec_n147(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n148(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listPendingUsers();
-			return from_candid_vec_n147(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n148(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listPositions() {
@@ -35134,94 +35157,94 @@ var Backend = class {
 	async listRoadies() {
 		if (this.processError) try {
 			const result = await this.actor.listRoadies();
-			return from_candid_vec_n150(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n151(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listRoadies();
-			return from_candid_vec_n150(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n151(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listRosterForPosition(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.listRosterForPosition(arg0);
-			return from_candid_vec_n150(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n151(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listRosterForPosition(arg0);
-			return from_candid_vec_n150(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n151(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listSchedule() {
 		if (this.processError) try {
 			const result = await this.actor.listSchedule();
-			return from_candid_vec_n151(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n152(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listSchedule();
-			return from_candid_vec_n151(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n152(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listTrainerNotes(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.listTrainerNotes(arg0);
-			return from_candid_vec_n155(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n156(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listTrainerNotes(arg0);
-			return from_candid_vec_n155(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n156(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async loadStoreTemplate(arg0) {
 		if (this.processError) try {
-			const result = await this.actor.loadStoreTemplate(to_candid_StoreTemplateFile_n158(this._uploadFile, this._downloadFile, arg0));
-			return from_candid_TemplateLoadResult_n166(this._uploadFile, this._downloadFile, result);
+			const result = await this.actor.loadStoreTemplate(to_candid_StoreTemplateFile_n159(this._uploadFile, this._downloadFile, arg0));
+			return from_candid_TemplateLoadResult_n167(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
-			const result = await this.actor.loadStoreTemplate(to_candid_StoreTemplateFile_n158(this._uploadFile, this._downloadFile, arg0));
-			return from_candid_TemplateLoadResult_n166(this._uploadFile, this._downloadFile, result);
+			const result = await this.actor.loadStoreTemplate(to_candid_StoreTemplateFile_n159(this._uploadFile, this._downloadFile, arg0));
+			return from_candid_TemplateLoadResult_n167(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async recordAttendance(arg0) {
 		if (this.processError) try {
-			return await this.actor.recordAttendance(to_candid_AttendanceRecord_n168(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.recordAttendance(to_candid_AttendanceRecord_n169(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.recordAttendance(to_candid_AttendanceRecord_n168(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.recordAttendance(to_candid_AttendanceRecord_n169(this._uploadFile, this._downloadFile, arg0));
 	}
 	async recordFinalSignOff(arg0) {
 		if (this.processError) try {
-			return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n171(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n172(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n171(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n172(this._uploadFile, this._downloadFile, arg0));
 	}
 	async rehireRoadie(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.rehireRoadie(arg0, to_candid_opt_n175(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.rehireRoadie(arg0, to_candid_opt_n176(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.rehireRoadie(arg0, to_candid_opt_n175(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.rehireRoadie(arg0, to_candid_opt_n176(this._uploadFile, this._downloadFile, arg1));
 	}
 	async rejectSignup(arg0) {
 		if (this.processError) try {
@@ -35297,12 +35320,12 @@ var Backend = class {
 	}
 	async submitSignup(arg0, arg1, arg2, arg3) {
 		if (this.processError) try {
-			return await this.actor.submitSignup(to_candid_RoadieProfile_n176(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n178(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n179(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n180(this._uploadFile, this._downloadFile, arg3));
+			return await this.actor.submitSignup(to_candid_RoadieProfile_n177(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n179(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n180(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n181(this._uploadFile, this._downloadFile, arg3));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.submitSignup(to_candid_RoadieProfile_n176(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n178(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n179(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n180(this._uploadFile, this._downloadFile, arg3));
+		else return await this.actor.submitSignup(to_candid_RoadieProfile_n177(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n179(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n180(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n181(this._uploadFile, this._downloadFile, arg3));
 	}
 	async submitStaffProfile(arg0) {
 		if (this.processError) try {
@@ -35315,12 +35338,12 @@ var Backend = class {
 	}
 	async updateAccessEnd(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateAccessEnd(arg0, to_candid_opt_n186(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateAccessEnd(arg0, to_candid_opt_n187(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateAccessEnd(arg0, to_candid_opt_n186(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateAccessEnd(arg0, to_candid_opt_n187(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateChecklists(arg0) {
 		if (this.processError) try {
@@ -35333,12 +35356,12 @@ var Backend = class {
 	}
 	async updateContactSet(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n180(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n181(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n180(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n181(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateMyStaffProfile(arg0) {
 		if (this.processError) try {
@@ -35378,21 +35401,21 @@ var Backend = class {
 	}
 	async updateRoadieDetails(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n176(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n177(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n176(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n177(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateRoadieStatus(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n187(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n188(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n187(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n188(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateScheduleEvent(arg0) {
 		if (this.processError) try {
@@ -35405,12 +35428,12 @@ var Backend = class {
 	}
 	async updateStoreInfo(arg0) {
 		if (this.processError) try {
-			return await this.actor.updateStoreInfo(to_candid_StoreInfo_n188(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.updateStoreInfo(to_candid_StoreInfo_n189(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateStoreInfo(to_candid_StoreInfo_n188(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.updateStoreInfo(to_candid_StoreInfo_n189(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateTrainerNote(arg0) {
 		if (this.processError) try {
@@ -35452,13 +35475,13 @@ var Backend = class {
 function from_candid_AccessGrant_n96(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n97(_uploadFile, _downloadFile, value);
 }
-function from_candid_ArchiveReason_n116(_uploadFile, _downloadFile, value) {
-	return from_candid_variant_n117(_uploadFile, _downloadFile, value);
+function from_candid_ArchiveReason_n117(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n118(_uploadFile, _downloadFile, value);
 }
-function from_candid_AttendanceRecord_n136(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n137(_uploadFile, _downloadFile, value);
+function from_candid_AttendanceRecord_n137(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n138(_uploadFile, _downloadFile, value);
 }
-function from_candid_AttendanceState_n139(_uploadFile, _downloadFile, value) {
+function from_candid_AttendanceState_n140(_uploadFile, _downloadFile, value) {
 	return "present" in value ? "present" : "late" in value ? "late" : "absent" in value ? "absent" : value;
 }
 function from_candid_AvailabilitySlot_n78(_uploadFile, _downloadFile, value) {
@@ -35467,8 +35490,8 @@ function from_candid_AvailabilitySlot_n78(_uploadFile, _downloadFile, value) {
 function from_candid_Cell_n66(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n67(_uploadFile, _downloadFile, value);
 }
-function from_candid_ChangeLogEntry_n141(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n142(_uploadFile, _downloadFile, value);
+function from_candid_ChangeLogEntry_n142(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n143(_uploadFile, _downloadFile, value);
 }
 function from_candid_ContactSet_n72(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n73(_uploadFile, _downloadFile, value);
@@ -35500,11 +35523,11 @@ function from_candid_GiftBagsData_n86(_uploadFile, _downloadFile, value) {
 function from_candid_House_n61(_uploadFile, _downloadFile, value) {
 	return "boh" in value ? "boh" : "foh" in value ? "foh" : value;
 }
-function from_candid_LeaderSummary_n144(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n145(_uploadFile, _downloadFile, value);
+function from_candid_LeaderSummary_n145(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n146(_uploadFile, _downloadFile, value);
 }
-function from_candid_PendingUser_n148(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n149(_uploadFile, _downloadFile, value);
+function from_candid_PendingUser_n149(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n150(_uploadFile, _downloadFile, value);
 }
 function from_candid_Position_n82(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n83(_uploadFile, _downloadFile, value);
@@ -35515,44 +35538,44 @@ function from_candid_Result__1_n8(_uploadFile, _downloadFile, value) {
 function from_candid_Result_n62(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n63(_uploadFile, _downloadFile, value);
 }
-function from_candid_RoadieProfile_n118(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n119(_uploadFile, _downloadFile, value);
+function from_candid_RoadieProfile_n119(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n120(_uploadFile, _downloadFile, value);
 }
-function from_candid_RoadieStatus_n110(_uploadFile, _downloadFile, value) {
+function from_candid_RoadieStatus_n111(_uploadFile, _downloadFile, value) {
 	return "active" in value ? "active" : "hired" in value ? "hired" : "inTraining" in value ? "inTraining" : "paperworkDone" in value ? "paperworkDone" : "oriented" in value ? "oriented" : "certified" in value ? "certified" : "needsMoreTime" in value ? "needsMoreTime" : "archived" in value ? "archived" : value;
 }
-function from_candid_Roadie_n108(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n109(_uploadFile, _downloadFile, value);
+function from_candid_Roadie_n109(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n110(_uploadFile, _downloadFile, value);
 }
 function from_candid_Role_n99(_uploadFile, _downloadFile, value) {
 	return "integration" in value ? "integration" : "admin" in value ? "admin" : "trainingManager" in value ? "trainingManager" : "trainer" in value ? "trainer" : "leadership" in value ? "leadership" : "visitingManager" in value ? "visitingManager" : "storeManager" in value ? "storeManager" : "kiosk" in value ? "kiosk" : value;
 }
-function from_candid_ScheduleEvent_n152(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n153(_uploadFile, _downloadFile, value);
+function from_candid_ScheduleEvent_n153(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n154(_uploadFile, _downloadFile, value);
 }
 function from_candid_Shift_n38(_uploadFile, _downloadFile, value) {
 	return "am" in value ? "am" : "pm" in value ? "pm" : value;
 }
-function from_candid_SignupStatus_n123(_uploadFile, _downloadFile, value) {
-	return from_candid_variant_n124(_uploadFile, _downloadFile, value);
+function from_candid_SignupStatus_n124(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n125(_uploadFile, _downloadFile, value);
 }
-function from_candid_SignupSubmission_n121(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n122(_uploadFile, _downloadFile, value);
+function from_candid_SignupSubmission_n122(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n123(_uploadFile, _downloadFile, value);
 }
 function from_candid_StaffProfile_n101(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n102(_uploadFile, _downloadFile, value);
 }
-function from_candid_StoreInfo_n125(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n126(_uploadFile, _downloadFile, value);
+function from_candid_StoreInfo_n126(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n127(_uploadFile, _downloadFile, value);
 }
-function from_candid_StoreLogos_n127(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n128(_uploadFile, _downloadFile, value);
+function from_candid_StoreLogos_n128(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n129(_uploadFile, _downloadFile, value);
 }
 function from_candid_StoreTemplateFile_n51(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n52(_uploadFile, _downloadFile, value);
 }
-function from_candid_TemplateLoadResult_n166(_uploadFile, _downloadFile, value) {
-	return from_candid_variant_n167(_uploadFile, _downloadFile, value);
+function from_candid_TemplateLoadResult_n167(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n168(_uploadFile, _downloadFile, value);
 }
 function from_candid_TemplatePosition_n59(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n60(_uploadFile, _downloadFile, value);
@@ -35560,14 +35583,14 @@ function from_candid_TemplatePosition_n59(_uploadFile, _downloadFile, value) {
 function from_candid_TemplateScheduleEvent_n54(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n55(_uploadFile, _downloadFile, value);
 }
-function from_candid_TrainerNote_n156(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n157(_uploadFile, _downloadFile, value);
+function from_candid_TrainerNote_n157(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n158(_uploadFile, _downloadFile, value);
 }
-function from_candid_TrainingGroupView_n130(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n131(_uploadFile, _downloadFile, value);
+function from_candid_TrainingGroupView_n131(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n132(_uploadFile, _downloadFile, value);
 }
-function from_candid_TrainingGroup_n132(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n133(_uploadFile, _downloadFile, value);
+function from_candid_TrainingGroup_n133(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n134(_uploadFile, _downloadFile, value);
 }
 function from_candid_UserRole_n70(_uploadFile, _downloadFile, value) {
 	return "admin" in value ? "admin" : "user" in value ? "user" : "guest" in value ? "guest" : value;
@@ -35597,33 +35620,36 @@ function from_candid_opt_n106(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n107(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_Roadie_n108(_uploadFile, _downloadFile, value[0]);
-}
-function from_candid_opt_n111(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n108(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_Roadie_n109(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n112(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n113(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_ContactSet_n72(_uploadFile, _downloadFile, value[0]);
-}
-function from_candid_opt_n114(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
+function from_candid_opt_n114(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_ContactSet_n72(_uploadFile, _downloadFile, value[0]);
+}
 function from_candid_opt_n115(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_ArchiveReason_n116(_uploadFile, _downloadFile, value[0]);
+	return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n120(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_SignupSubmission_n121(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n116(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_ArchiveReason_n117(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n129(_uploadFile, _downloadFile, value) {
-	return value.length === 0 ? null : from_candid_TrainingGroupView_n130(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n121(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_SignupSubmission_n122(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n138(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n130(_uploadFile, _downloadFile, value) {
+	return value.length === 0 ? null : from_candid_TrainingGroupView_n131(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n139(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : from_candid_Shift_n38(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n154(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n155(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n32(_uploadFile, _downloadFile, value) {
@@ -35688,30 +35714,30 @@ function from_candid_record_n102(_uploadFile, _downloadFile, value) {
 		favoriteColor: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteColor))
 	};
 }
-function from_candid_record_n109(_uploadFile, _downloadFile, value) {
+function from_candid_record_n110(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
-		status: from_candid_RoadieStatus_n110(_uploadFile, _downloadFile, value.status),
-		orientationEventId: record_opt_to_undefined(from_candid_opt_n111(_uploadFile, _downloadFile, value.orientationEventId)),
+		status: from_candid_RoadieStatus_n111(_uploadFile, _downloadFile, value.status),
+		orientationEventId: record_opt_to_undefined(from_candid_opt_n112(_uploadFile, _downloadFile, value.orientationEventId)),
 		mainPositionId: value.mainPositionId,
-		crossTrainedPositionId: record_opt_to_undefined(from_candid_opt_n112(_uploadFile, _downloadFile, value.crossTrainedPositionId)),
+		crossTrainedPositionId: record_opt_to_undefined(from_candid_opt_n113(_uploadFile, _downloadFile, value.crossTrainedPositionId)),
 		hireDate: record_opt_to_undefined(from_candid_opt_n74(_uploadFile, _downloadFile, value.hireDate)),
 		corporateEmployeeId: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.corporateEmployeeId)),
-		contactSet: record_opt_to_undefined(from_candid_opt_n113(_uploadFile, _downloadFile, value.contactSet)),
-		crewId: record_opt_to_undefined(from_candid_opt_n114(_uploadFile, _downloadFile, value.crewId)),
+		contactSet: record_opt_to_undefined(from_candid_opt_n114(_uploadFile, _downloadFile, value.contactSet)),
+		crewId: record_opt_to_undefined(from_candid_opt_n115(_uploadFile, _downloadFile, value.crewId)),
 		signedBy: record_opt_to_undefined(from_candid_opt_n75(_uploadFile, _downloadFile, value.signedBy)),
 		birthdayMonthDay: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.birthdayMonthDay)),
 		isMinor: value.isMinor,
-		archivedReason: record_opt_to_undefined(from_candid_opt_n115(_uploadFile, _downloadFile, value.archivedReason)),
+		archivedReason: record_opt_to_undefined(from_candid_opt_n116(_uploadFile, _downloadFile, value.archivedReason)),
 		photo: record_opt_to_undefined(from_candid_opt_n105(_uploadFile, _downloadFile, value.photo)),
 		hiredAt: value.hiredAt,
-		secondPositionId: record_opt_to_undefined(from_candid_opt_n112(_uploadFile, _downloadFile, value.secondPositionId)),
-		profile: from_candid_RoadieProfile_n118(_uploadFile, _downloadFile, value.profile),
+		secondPositionId: record_opt_to_undefined(from_candid_opt_n113(_uploadFile, _downloadFile, value.secondPositionId)),
+		profile: from_candid_RoadieProfile_n119(_uploadFile, _downloadFile, value.profile),
 		startDate: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.startDate)),
 		archivedAt: record_opt_to_undefined(from_candid_opt_n74(_uploadFile, _downloadFile, value.archivedAt))
 	};
 }
-function from_candid_record_n119(_uploadFile, _downloadFile, value) {
+function from_candid_record_n120(_uploadFile, _downloadFile, value) {
 	return {
 		favoriteSnack: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteSnack)),
 		positionAppliedFor: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.positionAppliedFor)),
@@ -35731,18 +35757,18 @@ function from_candid_record_n119(_uploadFile, _downloadFile, value) {
 		weekdayLunch: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.weekdayLunch))
 	};
 }
-function from_candid_record_n122(_uploadFile, _downloadFile, value) {
+function from_candid_record_n123(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
-		status: from_candid_SignupStatus_n123(_uploadFile, _downloadFile, value.status),
+		status: from_candid_SignupStatus_n124(_uploadFile, _downloadFile, value.status),
 		signature: record_opt_to_undefined(from_candid_opt_n76(_uploadFile, _downloadFile, value.signature)),
 		contactSet: from_candid_ContactSet_n72(_uploadFile, _downloadFile, value.contactSet),
 		submittedAt: value.submittedAt,
 		photo: record_opt_to_undefined(from_candid_opt_n105(_uploadFile, _downloadFile, value.photo)),
-		profile: from_candid_RoadieProfile_n118(_uploadFile, _downloadFile, value.profile)
+		profile: from_candid_RoadieProfile_n119(_uploadFile, _downloadFile, value.profile)
 	};
 }
-function from_candid_record_n126(_uploadFile, _downloadFile, value) {
+function from_candid_record_n127(_uploadFile, _downloadFile, value) {
 	return {
 		amShiftEnd: value.amShiftEnd,
 		pmShiftStart: value.pmShiftStart,
@@ -35762,20 +35788,20 @@ function from_candid_record_n126(_uploadFile, _downloadFile, value) {
 		storePhone: value.storePhone
 	};
 }
-function from_candid_record_n128(_uploadFile, _downloadFile, value) {
+function from_candid_record_n129(_uploadFile, _downloadFile, value) {
 	return {
 		logo: record_opt_to_undefined(from_candid_opt_n105(_uploadFile, _downloadFile, value.logo)),
 		secondaryLogo: record_opt_to_undefined(from_candid_opt_n105(_uploadFile, _downloadFile, value.secondaryLogo))
 	};
 }
-function from_candid_record_n131(_uploadFile, _downloadFile, value) {
+function from_candid_record_n132(_uploadFile, _downloadFile, value) {
 	return {
 		offThisShift: value.offThisShift,
 		unassigned: value.unassigned,
-		group: from_candid_TrainingGroup_n132(_uploadFile, _downloadFile, value.group)
+		group: from_candid_TrainingGroup_n133(_uploadFile, _downloadFile, value.group)
 	};
 }
-function from_candid_record_n133(_uploadFile, _downloadFile, value) {
+function from_candid_record_n134(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		day: value.day,
@@ -35785,17 +35811,17 @@ function from_candid_record_n133(_uploadFile, _downloadFile, value) {
 		shift: from_candid_Shift_n38(_uploadFile, _downloadFile, value.shift)
 	};
 }
-function from_candid_record_n137(_uploadFile, _downloadFile, value) {
+function from_candid_record_n138(_uploadFile, _downloadFile, value) {
 	return {
-		eventId: record_opt_to_undefined(from_candid_opt_n111(_uploadFile, _downloadFile, value.eventId)),
+		eventId: record_opt_to_undefined(from_candid_opt_n112(_uploadFile, _downloadFile, value.eventId)),
 		roadieId: value.roadieId,
 		recordedAt: value.recordedAt,
 		recordedBy: value.recordedBy,
-		shift: record_opt_to_undefined(from_candid_opt_n138(_uploadFile, _downloadFile, value.shift)),
-		state: from_candid_AttendanceState_n139(_uploadFile, _downloadFile, value.state)
+		shift: record_opt_to_undefined(from_candid_opt_n139(_uploadFile, _downloadFile, value.shift)),
+		state: from_candid_AttendanceState_n140(_uploadFile, _downloadFile, value.state)
 	};
 }
-function from_candid_record_n142(_uploadFile, _downloadFile, value) {
+function from_candid_record_n143(_uploadFile, _downloadFile, value) {
 	return {
 		at: value.at,
 		by: value.by,
@@ -35806,7 +35832,7 @@ function from_candid_record_n142(_uploadFile, _downloadFile, value) {
 		subjectRoadieId: record_opt_to_undefined(from_candid_opt_n98(_uploadFile, _downloadFile, value.subjectRoadieId))
 	};
 }
-function from_candid_record_n145(_uploadFile, _downloadFile, value) {
+function from_candid_record_n146(_uploadFile, _downloadFile, value) {
 	return {
 		title: value.title,
 		principal: value.principal,
@@ -35817,23 +35843,23 @@ function from_candid_record_n145(_uploadFile, _downloadFile, value) {
 		trainerPositionIds: value.trainerPositionIds
 	};
 }
-function from_candid_record_n149(_uploadFile, _downloadFile, value) {
+function from_candid_record_n150(_uploadFile, _downloadFile, value) {
 	return {
 		principal: value.principal,
 		staffProfile: record_opt_to_undefined(from_candid_opt_n100(_uploadFile, _downloadFile, value.staffProfile)),
 		requestedAt: value.requestedAt
 	};
 }
-function from_candid_record_n153(_uploadFile, _downloadFile, value) {
+function from_candid_record_n154(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
-		end: record_opt_to_undefined(from_candid_opt_n154(_uploadFile, _downloadFile, value.end)),
+		end: record_opt_to_undefined(from_candid_opt_n155(_uploadFile, _downloadFile, value.end)),
 		kind: from_candid_EventKind_n56(_uploadFile, _downloadFile, value.kind),
 		name: value.name,
 		start: value.start
 	};
 }
-function from_candid_record_n157(_uploadFile, _downloadFile, value) {
+function from_candid_record_n158(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		day: value.day,
@@ -36057,7 +36083,7 @@ function from_candid_variant_n11(_uploadFile, _downloadFile, value) {
 		FrontendOriginMismatch: value.FrontendOriginMismatch
 	} : value;
 }
-function from_candid_variant_n117(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n118(_uploadFile, _downloadFile, value) {
 	return "noShow" in value ? {
 		__kind__: "noShow",
 		noShow: value.noShow
@@ -36075,7 +36101,7 @@ function from_candid_variant_n117(_uploadFile, _downloadFile, value) {
 		tookAnotherJob: value.tookAnotherJob
 	} : value;
 }
-function from_candid_variant_n124(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n125(_uploadFile, _downloadFile, value) {
 	return "pending" in value ? {
 		__kind__: "pending",
 		pending: value.pending
@@ -36087,7 +36113,7 @@ function from_candid_variant_n124(_uploadFile, _downloadFile, value) {
 		rejected: value.rejected
 	} : value;
 }
-function from_candid_variant_n167(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n168(_uploadFile, _downloadFile, value) {
 	return "ok" in value ? {
 		__kind__: "ok",
 		ok: value.ok
@@ -36126,32 +36152,32 @@ function from_candid_variant_n9(_uploadFile, _downloadFile, value) {
 		err: from_candid_Error_n10(_uploadFile, _downloadFile, value.err)
 	} : value;
 }
-function from_candid_vec_n134(_uploadFile, _downloadFile, value) {
+function from_candid_vec_n135(_uploadFile, _downloadFile, value) {
 	return value.map((x) => from_candid_AccessGrant_n96(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n135(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_AttendanceRecord_n136(_uploadFile, _downloadFile, x));
+function from_candid_vec_n136(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_AttendanceRecord_n137(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n140(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_ChangeLogEntry_n141(_uploadFile, _downloadFile, x));
+function from_candid_vec_n141(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_ChangeLogEntry_n142(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n143(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_LeaderSummary_n144(_uploadFile, _downloadFile, x));
-}
-function from_candid_vec_n146(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_SignupSubmission_n121(_uploadFile, _downloadFile, x));
+function from_candid_vec_n144(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_LeaderSummary_n145(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n147(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_PendingUser_n148(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_SignupSubmission_n122(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n150(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_Roadie_n108(_uploadFile, _downloadFile, x));
+function from_candid_vec_n148(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_PendingUser_n149(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n151(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_ScheduleEvent_n152(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_Roadie_n109(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n155(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_TrainerNote_n156(_uploadFile, _downloadFile, x));
+function from_candid_vec_n152(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_ScheduleEvent_n153(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n156(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_TrainerNote_n157(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n27(_uploadFile, _downloadFile, value) {
 	return value.map((x) => from_candid_tuple_n28(_uploadFile, _downloadFile, x));
@@ -36201,23 +36227,23 @@ function to_candid_ApprovalRequest_n17(_uploadFile, _downloadFile, value) {
 function to_candid_ArchiveReason_n22(_uploadFile, _downloadFile, value) {
 	return to_candid_variant_n23(_uploadFile, _downloadFile, value);
 }
-function to_candid_AttendanceRecord_n168(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n169(_uploadFile, _downloadFile, value);
+function to_candid_AttendanceRecord_n169(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n170(_uploadFile, _downloadFile, value);
 }
-function to_candid_AttendanceState_n170(_uploadFile, _downloadFile, value) {
+function to_candid_AttendanceState_n171(_uploadFile, _downloadFile, value) {
 	return value == "present" ? { present: null } : value == "late" ? { late: null } : value == "absent" ? { absent: null } : value;
 }
-function to_candid_AvailabilitySlot_n183(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n184(_uploadFile, _downloadFile, value);
+function to_candid_AvailabilitySlot_n184(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n185(_uploadFile, _downloadFile, value);
 }
-function to_candid_ContactSet_n180(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n181(_uploadFile, _downloadFile, value);
+function to_candid_ContactSet_n181(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n182(_uploadFile, _downloadFile, value);
 }
 function to_candid_EventKind_n48(_uploadFile, _downloadFile, value) {
 	return value == "other" ? { other: null } : value == "signOff" ? { signOff: null } : value == "deadline" ? { deadline: null } : value == "friendsAndFamily" ? { friendsAndFamily: null } : value == "openingDay" ? { openingDay: null } : value == "trainingDay" ? { trainingDay: null } : value == "orientation" ? { orientation: null } : value;
 }
-function to_candid_FinalSignOff_n171(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n172(_uploadFile, _downloadFile, value);
+function to_candid_FinalSignOff_n172(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n173(_uploadFile, _downloadFile, value);
 }
 function to_candid_GiftBagFilter_n84(_uploadFile, _downloadFile, value) {
 	return to_candid_variant_n85(_uploadFile, _downloadFile, value);
@@ -36228,10 +36254,10 @@ function to_candid_House_n45(_uploadFile, _downloadFile, value) {
 function to_candid_Position_n43(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n44(_uploadFile, _downloadFile, value);
 }
-function to_candid_RoadieProfile_n176(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n177(_uploadFile, _downloadFile, value);
+function to_candid_RoadieProfile_n177(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n178(_uploadFile, _downloadFile, value);
 }
-function to_candid_RoadieStatus_n187(_uploadFile, _downloadFile, value) {
+function to_candid_RoadieStatus_n188(_uploadFile, _downloadFile, value) {
 	return value == "active" ? { active: null } : value == "hired" ? { hired: null } : value == "inTraining" ? { inTraining: null } : value == "paperworkDone" ? { paperworkDone: null } : value == "oriented" ? { oriented: null } : value == "certified" ? { certified: null } : value == "needsMoreTime" ? { needsMoreTime: null } : value == "archived" ? { archived: null } : value;
 }
 function to_candid_Role_n19(_uploadFile, _downloadFile, value) {
@@ -36243,23 +36269,23 @@ function to_candid_ScheduleEvent_n46(_uploadFile, _downloadFile, value) {
 function to_candid_Shift_n14(_uploadFile, _downloadFile, value) {
 	return value == "am" ? { am: null } : value == "pm" ? { pm: null } : value;
 }
-function to_candid_SignOffOutcome_n173(_uploadFile, _downloadFile, value) {
-	return to_candid_variant_n174(_uploadFile, _downloadFile, value);
+function to_candid_SignOffOutcome_n174(_uploadFile, _downloadFile, value) {
+	return to_candid_variant_n175(_uploadFile, _downloadFile, value);
 }
 function to_candid_StaffProfile_n20(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n21(_uploadFile, _downloadFile, value);
 }
-function to_candid_StoreInfo_n188(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n189(_uploadFile, _downloadFile, value);
+function to_candid_StoreInfo_n189(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n190(_uploadFile, _downloadFile, value);
 }
-function to_candid_StoreTemplateFile_n158(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n159(_uploadFile, _downloadFile, value);
+function to_candid_StoreTemplateFile_n159(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n160(_uploadFile, _downloadFile, value);
 }
-function to_candid_TemplatePosition_n164(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n165(_uploadFile, _downloadFile, value);
+function to_candid_TemplatePosition_n165(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n166(_uploadFile, _downloadFile, value);
 }
-function to_candid_TemplateScheduleEvent_n161(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n162(_uploadFile, _downloadFile, value);
+function to_candid_TemplateScheduleEvent_n162(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n163(_uploadFile, _downloadFile, value);
 }
 function to_candid_TrainerNote_n12(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n13(_uploadFile, _downloadFile, value);
@@ -36270,7 +36296,7 @@ function to_candid_TrainingGroup_n49(_uploadFile, _downloadFile, value) {
 function to_candid_UserRole_n24(_uploadFile, _downloadFile, value) {
 	return value == "admin" ? { admin: null } : value == "user" ? { user: null } : value == "guest" ? { guest: null } : value;
 }
-function to_candid_Weekday_n185(_uploadFile, _downloadFile, value) {
+function to_candid_Weekday_n186(_uploadFile, _downloadFile, value) {
 	return value == "fri" ? { fri: null } : value == "mon" ? { mon: null } : value == "sat" ? { sat: null } : value == "sun" ? { sun: null } : value == "thu" ? { thu: null } : value == "tue" ? { tue: null } : value == "wed" ? { wed: null } : value;
 }
 function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value) {
@@ -36279,16 +36305,16 @@ function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _dow
 function to_candid_opt_n1(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value));
 }
-function to_candid_opt_n175(_uploadFile, _downloadFile, value) {
-	return value === null ? candid_none() : candid_some(value);
-}
-function to_candid_opt_n178(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n176(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
 function to_candid_opt_n179(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n186(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n180(_uploadFile, _downloadFile, value) {
+	return value === null ? candid_none() : candid_some(value);
+}
+function to_candid_opt_n187(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
 function to_candid_opt_n41(_uploadFile, _downloadFile, value) {
@@ -36309,17 +36335,6 @@ function to_candid_record_n13(_uploadFile, _downloadFile, value) {
 		workOn: value.workOn
 	};
 }
-function to_candid_record_n159(_uploadFile, _downloadFile, value) {
-	return {
-		leaderTalkName: value.leaderTalkName,
-		leaderTalkSize: value.leaderTalkSize,
-		version: value.version,
-		trainingGroupSize: value.trainingGroupSize,
-		schedule: to_candid_vec_n160(_uploadFile, _downloadFile, value.schedule),
-		positions: to_candid_vec_n163(_uploadFile, _downloadFile, value.positions),
-		checklists: value.checklists
-	};
-}
 function to_candid_record_n16(_uploadFile, _downloadFile, value) {
 	return {
 		orientationEventId: value.orientationEventId ? candid_some(value.orientationEventId) : candid_none(),
@@ -36329,7 +36344,18 @@ function to_candid_record_n16(_uploadFile, _downloadFile, value) {
 		startDate: value.startDate ? candid_some(value.startDate) : candid_none()
 	};
 }
-function to_candid_record_n162(_uploadFile, _downloadFile, value) {
+function to_candid_record_n160(_uploadFile, _downloadFile, value) {
+	return {
+		leaderTalkName: value.leaderTalkName,
+		leaderTalkSize: value.leaderTalkSize,
+		version: value.version,
+		trainingGroupSize: value.trainingGroupSize,
+		schedule: to_candid_vec_n161(_uploadFile, _downloadFile, value.schedule),
+		positions: to_candid_vec_n164(_uploadFile, _downloadFile, value.positions),
+		checklists: value.checklists
+	};
+}
+function to_candid_record_n163(_uploadFile, _downloadFile, value) {
 	return {
 		kind: to_candid_EventKind_n48(_uploadFile, _downloadFile, value.kind),
 		name: value.name,
@@ -36337,7 +36363,7 @@ function to_candid_record_n162(_uploadFile, _downloadFile, value) {
 		startOffsetDays: value.startOffsetDays
 	};
 }
-function to_candid_record_n165(_uploadFile, _downloadFile, value) {
+function to_candid_record_n166(_uploadFile, _downloadFile, value) {
 	return {
 		openingBuildTo: value.openingBuildTo,
 		house: to_candid_House_n45(_uploadFile, _downloadFile, value.house),
@@ -36348,26 +36374,26 @@ function to_candid_record_n165(_uploadFile, _downloadFile, value) {
 		needsAlcoholCert: value.needsAlcoholCert
 	};
 }
-function to_candid_record_n169(_uploadFile, _downloadFile, value) {
+function to_candid_record_n170(_uploadFile, _downloadFile, value) {
 	return {
 		eventId: value.eventId ? candid_some(value.eventId) : candid_none(),
 		roadieId: value.roadieId,
 		recordedAt: value.recordedAt,
 		recordedBy: value.recordedBy,
 		shift: value.shift ? candid_some(to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)) : candid_none(),
-		state: to_candid_AttendanceState_n170(_uploadFile, _downloadFile, value.state)
+		state: to_candid_AttendanceState_n171(_uploadFile, _downloadFile, value.state)
 	};
 }
-function to_candid_record_n172(_uploadFile, _downloadFile, value) {
+function to_candid_record_n173(_uploadFile, _downloadFile, value) {
 	return {
 		roadieId: value.roadieId,
 		signedAt: value.signedAt,
 		signedBy: value.signedBy,
-		outcome: to_candid_SignOffOutcome_n173(_uploadFile, _downloadFile, value.outcome),
+		outcome: to_candid_SignOffOutcome_n174(_uploadFile, _downloadFile, value.outcome),
 		futureTrainer: value.futureTrainer
 	};
 }
-function to_candid_record_n177(_uploadFile, _downloadFile, value) {
+function to_candid_record_n178(_uploadFile, _downloadFile, value) {
 	return {
 		favoriteSnack: value.favoriteSnack ? candid_some(value.favoriteSnack) : candid_none(),
 		positionAppliedFor: value.positionAppliedFor ? candid_some(value.positionAppliedFor) : candid_none(),
@@ -36397,7 +36423,7 @@ function to_candid_record_n18(_uploadFile, _downloadFile, value) {
 		accessEndsAt: value.accessEndsAt ? candid_some(value.accessEndsAt) : candid_none()
 	};
 }
-function to_candid_record_n181(_uploadFile, _downloadFile, value) {
+function to_candid_record_n182(_uploadFile, _downloadFile, value) {
 	return {
 		managerSignedAt: value.managerSignedAt ? candid_some(value.managerSignedAt) : candid_none(),
 		managerSignedBy: value.managerSignedBy ? candid_some(value.managerSignedBy) : candid_none(),
@@ -36405,7 +36431,7 @@ function to_candid_record_n181(_uploadFile, _downloadFile, value) {
 		dateOfBirth: value.dateOfBirth,
 		email: value.email,
 		availabilitySignature: value.availabilitySignature ? candid_some(value.availabilitySignature) : candid_none(),
-		availability: to_candid_vec_n182(_uploadFile, _downloadFile, value.availability),
+		availability: to_candid_vec_n183(_uploadFile, _downloadFile, value.availability),
 		availabilityResignPending: value.availabilityResignPending,
 		emergencyContactPhone: value.emergencyContactPhone,
 		emergencyContactName: value.emergencyContactName,
@@ -36413,13 +36439,13 @@ function to_candid_record_n181(_uploadFile, _downloadFile, value) {
 		managerSignature: value.managerSignature ? candid_some(value.managerSignature) : candid_none()
 	};
 }
-function to_candid_record_n184(_uploadFile, _downloadFile, value) {
+function to_candid_record_n185(_uploadFile, _downloadFile, value) {
 	return {
-		day: to_candid_Weekday_n185(_uploadFile, _downloadFile, value.day),
+		day: to_candid_Weekday_n186(_uploadFile, _downloadFile, value.day),
 		shift: to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)
 	};
 }
-function to_candid_record_n189(_uploadFile, _downloadFile, value) {
+function to_candid_record_n190(_uploadFile, _downloadFile, value) {
 	return {
 		amShiftEnd: value.amShiftEnd,
 		pmShiftStart: value.pmShiftStart,
@@ -36502,7 +36528,7 @@ function to_candid_record_n50(_uploadFile, _downloadFile, value) {
 		shift: to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)
 	};
 }
-function to_candid_variant_n174(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n175(_uploadFile, _downloadFile, value) {
 	return value.__kind__ === "certified" ? { certified: value.certified } : value.__kind__ === "needsMoreTime" ? { needsMoreTime: value.needsMoreTime } : value;
 }
 function to_candid_variant_n23(_uploadFile, _downloadFile, value) {
@@ -36511,14 +36537,14 @@ function to_candid_variant_n23(_uploadFile, _downloadFile, value) {
 function to_candid_variant_n85(_uploadFile, _downloadFile, value) {
 	return value.__kind__ === "all" ? { all: value.all } : value.__kind__ === "boh" ? { boh: value.boh } : value.__kind__ === "foh" ? { foh: value.foh } : value.__kind__ === "roadies" ? { roadies: value.roadies } : value.__kind__ === "leaders" ? { leaders: value.leaders } : value.__kind__ === "position" ? { position: value.position } : value;
 }
-function to_candid_vec_n160(_uploadFile, _downloadFile, value) {
-	return value.map((x) => to_candid_TemplateScheduleEvent_n161(_uploadFile, _downloadFile, x));
+function to_candid_vec_n161(_uploadFile, _downloadFile, value) {
+	return value.map((x) => to_candid_TemplateScheduleEvent_n162(_uploadFile, _downloadFile, x));
 }
-function to_candid_vec_n163(_uploadFile, _downloadFile, value) {
-	return value.map((x) => to_candid_TemplatePosition_n164(_uploadFile, _downloadFile, x));
+function to_candid_vec_n164(_uploadFile, _downloadFile, value) {
+	return value.map((x) => to_candid_TemplatePosition_n165(_uploadFile, _downloadFile, x));
 }
-function to_candid_vec_n182(_uploadFile, _downloadFile, value) {
-	return value.map((x) => to_candid_AvailabilitySlot_n183(_uploadFile, _downloadFile, x));
+function to_candid_vec_n183(_uploadFile, _downloadFile, value) {
+	return value.map((x) => to_candid_AvailabilitySlot_n184(_uploadFile, _downloadFile, x));
 }
 function createActor(canisterId, _uploadFile, _downloadFile, options = {}) {
 	const agent = options.agent || HttpAgent.createSync({ ...options.agentOptions });
@@ -47079,18 +47105,24 @@ function staffDisplayName(profile, fallback = "Unnamed user") {
 //#region src/components/StaffProfileForm.tsx
 /**
 * The roles a staff member may request on their profile. The list is the
-* accepted set: Store Manager, Training Manager, NSO Trainer, Visiting Manager
-* and Market Partner/Leadership.
+* accepted set: Store Manager, Training Manager, NSO Trainer, Visiting Manager,
+* Market Partner/Leadership and Store tablet (kiosk).
 */
 var ROLE_OPTIONS = [
 	Role.storeManager,
 	Role.trainingManager,
 	Role.trainer,
 	Role.visitingManager,
-	Role.leadership
+	Role.leadership,
+	Role.kiosk
 ];
 /** Roles that must supply the positions they train and their travel dates. */
 var TRAVEL_ROLES$1 = [Role.trainer, Role.visitingManager];
+/**
+* The Store tablet (kiosk) role skips the rest of the form: no other fields are
+* shown or validated, and submitting sends a pending request with this role.
+*/
+var KIOSK_ROLE = Role.kiosk;
 /** Shirt sizes offered on the About Me section, matching the kiosk. */
 var SHIRT_SIZES$1 = [
 	"XS",
@@ -47209,6 +47241,7 @@ function StaffProfileForm({ initialProfile, submitLabel, pending, error, onSubmi
 		}));
 	};
 	const travels = draft.requestedRole !== "" && TRAVEL_ROLES$1.includes(draft.requestedRole);
+	const isKiosk = draft.requestedRole === KIOSK_ROLE;
 	const handlePhoto = async (file) => {
 		if (!file) return;
 		setPhotoBusy(true);
@@ -47221,25 +47254,27 @@ function StaffProfileForm({ initialProfile, submitLabel, pending, error, onSubmi
 	};
 	const submit = (event) => {
 		event.preventDefault();
-		if (!draft.fullName.trim()) {
-			setValidation(t("profile.fullName.required"));
-			return;
-		}
-		if (!draft.title.trim()) {
-			setValidation(t("profile.title.required"));
-			return;
-		}
 		if (draft.requestedRole === "") {
 			setValidation(t("profile.role.required"));
 			return;
 		}
-		if (!draft.homeStoreNumber.trim()) {
-			setValidation(t("profile.homeStoreNumber.required"));
-			return;
-		}
-		if (!draft.homeStoreCity.trim()) {
-			setValidation(t("profile.homeStoreCity.required"));
-			return;
+		if (!isKiosk) {
+			if (!draft.fullName.trim()) {
+				setValidation(t("profile.fullName.required"));
+				return;
+			}
+			if (!draft.title.trim()) {
+				setValidation(t("profile.title.required"));
+				return;
+			}
+			if (!draft.homeStoreNumber.trim()) {
+				setValidation(t("profile.homeStoreNumber.required"));
+				return;
+			}
+			if (!draft.homeStoreCity.trim()) {
+				setValidation(t("profile.homeStoreCity.required"));
+				return;
+			}
 		}
 		setValidation(null);
 		onSubmit(toProfile$1(draft));
@@ -47251,360 +47286,362 @@ function StaffProfileForm({ initialProfile, submitLabel, pending, error, onSubmi
 		"data-ocid": `${ocidPrefix}.form`,
 		className: "flex flex-col gap-4",
 		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "flex flex-col items-center gap-3 sm:flex-row sm:items-start",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					className: "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted",
-					children: photoPreview ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-						src: photoPreview,
-						alt: t("profile.photo.alt"),
-						"data-ocid": `${ocidPrefix}.photo.preview`,
-						className: "h-full w-full object-cover"
-					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Upload, {
-						className: "h-6 w-6 text-muted-foreground",
-						"aria-hidden": "true"
-					})
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex flex-col gap-2",
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+				label: t("profile.role.label"),
+				htmlFor: `${ocidPrefix}-role`,
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+					value: draft.requestedRole,
+					onValueChange: (value) => set("requestedRole", value),
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+						id: `${ocidPrefix}-role`,
+						"data-ocid": `${ocidPrefix}.role.select`,
+						className: "touch-target w-full",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("profile.role.placeholder") })
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: ROLE_OPTIONS.map((role) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+						value: role,
+						children: t(`profile.role.${role}`)
+					}, role)) })]
+				})
+			}),
+			!isKiosk && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex flex-col items-center gap-3 sm:flex-row sm:items-start",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted",
+						children: photoPreview ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+							src: photoPreview,
+							alt: t("profile.photo.alt"),
+							"data-ocid": `${ocidPrefix}.photo.preview`,
+							className: "h-full w-full object-cover"
+						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Upload, {
+							className: "h-6 w-6 text-muted-foreground",
+							"aria-hidden": "true"
+						})
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "flex flex-col gap-2",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+								ref: fileInputRef,
+								type: "file",
+								accept: "image/*",
+								className: "hidden",
+								"data-ocid": `${ocidPrefix}.photo.input`,
+								onChange: (event) => void handlePhoto(event.target.files?.[0])
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "flex flex-wrap gap-2",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+									type: "button",
+									variant: "outline",
+									className: "touch-target",
+									"data-ocid": `${ocidPrefix}.photo.upload_button`,
+									disabled: photoBusy,
+									onClick: () => fileInputRef.current?.click(),
+									children: [photoBusy && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
+										className: "mr-2 h-4 w-4 animate-spin",
+										"aria-hidden": "true"
+									}), draft.photo ? t("profile.photo.change") : t("profile.photo.add")]
+								}), draft.photo && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+									type: "button",
+									variant: "ghost",
+									className: "touch-target text-destructive hover:text-destructive",
+									"data-ocid": `${ocidPrefix}.photo.remove_button`,
+									onClick: () => set("photo", null),
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, {
+										className: "mr-2 h-4 w-4",
+										"aria-hidden": "true"
+									}), t("profile.photo.remove")]
+								})]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "text-xs text-muted-foreground",
+								children: t("profile.photo.hint")
+							})
+						]
+					})]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "grid gap-4 sm:grid-cols-2",
 					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-							ref: fileInputRef,
-							type: "file",
-							accept: "image/*",
-							className: "hidden",
-							"data-ocid": `${ocidPrefix}.photo.input`,
-							onChange: (event) => void handlePhoto(event.target.files?.[0])
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex flex-wrap gap-2",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-								type: "button",
-								variant: "outline",
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+							label: t("profile.fullName"),
+							htmlFor: `${ocidPrefix}-full-name`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								id: `${ocidPrefix}-full-name`,
+								value: draft.fullName,
+								"data-ocid": `${ocidPrefix}.full_name.input`,
 								className: "touch-target",
-								"data-ocid": `${ocidPrefix}.photo.upload_button`,
-								disabled: photoBusy,
-								onClick: () => fileInputRef.current?.click(),
-								children: [photoBusy && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
-									className: "mr-2 h-4 w-4 animate-spin",
-									"aria-hidden": "true"
-								}), draft.photo ? t("profile.photo.change") : t("profile.photo.add")]
-							}), draft.photo && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-								type: "button",
-								variant: "ghost",
-								className: "touch-target text-destructive hover:text-destructive",
-								"data-ocid": `${ocidPrefix}.photo.remove_button`,
-								onClick: () => set("photo", null),
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, {
-									className: "mr-2 h-4 w-4",
-									"aria-hidden": "true"
-								}), t("profile.photo.remove")]
-							})]
+								placeholder: t("profile.fullName.placeholder"),
+								onChange: (event) => set("fullName", event.target.value)
+							})
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+							label: t("profile.preferredName"),
+							htmlFor: `${ocidPrefix}-preferred-name`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								id: `${ocidPrefix}-preferred-name`,
+								value: draft.preferredName,
+								"data-ocid": `${ocidPrefix}.preferred_name.input`,
+								className: "touch-target",
+								placeholder: t("profile.preferredName.placeholder"),
+								onChange: (event) => set("preferredName", event.target.value)
+							})
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+							label: t("profile.title.label"),
+							htmlFor: `${ocidPrefix}-title`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								id: `${ocidPrefix}-title`,
+								value: draft.title,
+								"data-ocid": `${ocidPrefix}.title.input`,
+								className: "touch-target",
+								placeholder: t("profile.title.placeholder"),
+								onChange: (event) => set("title", event.target.value)
+							})
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+							label: t("profile.homeStoreNumber"),
+							htmlFor: `${ocidPrefix}-store-number`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								id: `${ocidPrefix}-store-number`,
+								value: draft.homeStoreNumber,
+								"data-ocid": `${ocidPrefix}.home_store_number.input`,
+								className: "touch-target",
+								placeholder: t("profile.homeStoreNumber.placeholder"),
+								onChange: (event) => set("homeStoreNumber", event.target.value)
+							})
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+							label: t("profile.homeStoreCity"),
+							htmlFor: `${ocidPrefix}-store-city`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								id: `${ocidPrefix}-store-city`,
+								value: draft.homeStoreCity,
+								"data-ocid": `${ocidPrefix}.home_store_city.input`,
+								className: "touch-target",
+								placeholder: t("profile.homeStoreCity.placeholder"),
+								onChange: (event) => set("homeStoreCity", event.target.value)
+							})
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+							label: t("profile.workPhone"),
+							htmlFor: `${ocidPrefix}-work-phone`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								id: `${ocidPrefix}-work-phone`,
+								type: "tel",
+								value: draft.workPhone,
+								"data-ocid": `${ocidPrefix}.work_phone.input`,
+								className: "touch-target",
+								placeholder: t("profile.workPhone.placeholder"),
+								onChange: (event) => set("workPhone", event.target.value)
+							})
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+							label: t("profile.workEmail"),
+							htmlFor: `${ocidPrefix}-work-email`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								id: `${ocidPrefix}-work-email`,
+								type: "email",
+								value: draft.workEmail,
+								"data-ocid": `${ocidPrefix}.work_email.input`,
+								className: "touch-target",
+								placeholder: t("profile.workEmail.placeholder"),
+								onChange: (event) => set("workEmail", event.target.value)
+							})
+						})
+					]
+				}),
+				travels && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex flex-col gap-4 rounded-md border border-border bg-muted/30 p-4",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrainerStationsPicker, {
+						positions: positions ?? [],
+						selectedIds: draft.trainerPositionIds,
+						onChange: (next) => set("trainerPositionIds", next)
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "grid gap-4 sm:grid-cols-2",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+							label: t("profile.arrivalDate"),
+							htmlFor: `${ocidPrefix}-arrival`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								id: `${ocidPrefix}-arrival`,
+								type: "date",
+								value: draft.arrivalDate,
+								"data-ocid": `${ocidPrefix}.arrival_date.input`,
+								className: "touch-target",
+								onChange: (event) => set("arrivalDate", event.target.value)
+							})
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+							label: t("profile.departureDate"),
+							htmlFor: `${ocidPrefix}-departure`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								id: `${ocidPrefix}-departure`,
+								type: "date",
+								value: draft.departureDate,
+								"data-ocid": `${ocidPrefix}.departure_date.input`,
+								className: "touch-target",
+								onChange: (event) => set("departureDate", event.target.value)
+							})
+						})]
+					})]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-xs text-muted-foreground",
+					children: t("profile.contactHint")
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("fieldset", {
+					"data-ocid": `${ocidPrefix}.about_me.section`,
+					className: "flex flex-col gap-4 rounded-md border border-border bg-muted/30 p-4",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("legend", {
+							className: "px-1 font-display text-sm font-semibold uppercase tracking-wide text-foreground",
+							children: t("profile.aboutMe")
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 							className: "text-xs text-muted-foreground",
-							children: t("profile.photo.hint")
+							children: t("profile.aboutMe.hint")
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "grid gap-4 sm:grid-cols-2",
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+									label: t("profile.hometown"),
+									htmlFor: `${ocidPrefix}-hometown`,
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+										id: `${ocidPrefix}-hometown`,
+										value: draft.hometown,
+										maxLength: ABOUT_ME_MAX,
+										"data-ocid": `${ocidPrefix}.hometown.input`,
+										className: "touch-target",
+										onChange: (event) => set("hometown", event.target.value)
+									})
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+									label: t("profile.favoriteTeam"),
+									htmlFor: `${ocidPrefix}-favorite-team`,
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+										id: `${ocidPrefix}-favorite-team`,
+										value: draft.favoriteTeam,
+										maxLength: ABOUT_ME_MAX,
+										"data-ocid": `${ocidPrefix}.favorite_team.input`,
+										className: "touch-target",
+										placeholder: t("profile.favoriteTeam.placeholder"),
+										onChange: (event) => set("favoriteTeam", event.target.value)
+									})
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+									label: t("profile.favoriteSnack"),
+									htmlFor: `${ocidPrefix}-favorite-snack`,
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+										id: `${ocidPrefix}-favorite-snack`,
+										value: draft.favoriteSnack,
+										maxLength: ABOUT_ME_MAX,
+										"data-ocid": `${ocidPrefix}.favorite_snack.input`,
+										className: "touch-target",
+										placeholder: t("profile.favoriteSnack.placeholder"),
+										onChange: (event) => set("favoriteSnack", event.target.value)
+									})
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+									label: t("profile.favoriteDrink"),
+									htmlFor: `${ocidPrefix}-favorite-drink`,
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+										id: `${ocidPrefix}-favorite-drink`,
+										value: draft.favoriteDrink,
+										maxLength: ABOUT_ME_MAX,
+										"data-ocid": `${ocidPrefix}.favorite_drink.input`,
+										className: "touch-target",
+										placeholder: t("profile.favoriteDrink.placeholder"),
+										onChange: (event) => set("favoriteDrink", event.target.value)
+									})
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+									label: t("profile.favoriteColor"),
+									htmlFor: `${ocidPrefix}-favorite-color`,
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+										id: `${ocidPrefix}-favorite-color`,
+										value: draft.favoriteColor,
+										maxLength: ABOUT_ME_MAX,
+										"data-ocid": `${ocidPrefix}.favorite_color.input`,
+										className: "touch-target",
+										placeholder: t("profile.favoriteColor.placeholder"),
+										onChange: (event) => set("favoriteColor", event.target.value)
+									})
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+									label: t("profile.shirtSize"),
+									htmlFor: `${ocidPrefix}-shirt-size`,
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+										value: draft.shirtSize || void 0,
+										onValueChange: (value) => set("shirtSize", value),
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+											id: `${ocidPrefix}-shirt-size`,
+											"data-ocid": `${ocidPrefix}.shirt_size.select`,
+											className: "touch-target w-full",
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("profile.selectPlaceholder") })
+										}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: SHIRT_SIZES$1.map((size) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+											value: size,
+											children: size
+										}, size)) })]
+									})
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+									label: t("profile.hatSize"),
+									htmlFor: `${ocidPrefix}-hat-size`,
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+										value: draft.hatSize || void 0,
+										onValueChange: (value) => set("hatSize", value),
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+											id: `${ocidPrefix}-hat-size`,
+											"data-ocid": `${ocidPrefix}.hat_size.select`,
+											className: "touch-target w-full",
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("profile.selectPlaceholder") })
+										}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: HAT_SIZES$1.map((size) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+											value: size.value,
+											children: t(size.key)
+										}, size.value)) })]
+									})
+								})
+							]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+							label: t("profile.hobbies"),
+							htmlFor: `${ocidPrefix}-hobbies`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
+								id: `${ocidPrefix}-hobbies`,
+								value: draft.hobbies,
+								maxLength: ABOUT_ME_MAX,
+								rows: 2,
+								"data-ocid": `${ocidPrefix}.hobbies.textarea`,
+								onChange: (event) => set("hobbies", event.target.value)
+							})
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+							label: t("profile.funFact"),
+							htmlFor: `${ocidPrefix}-fun-fact`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
+								id: `${ocidPrefix}-fun-fact`,
+								value: draft.funFact,
+								maxLength: ABOUT_ME_MAX,
+								rows: 2,
+								"data-ocid": `${ocidPrefix}.fun_fact.textarea`,
+								onChange: (event) => set("funFact", event.target.value)
+							})
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+							label: t("profile.goalHere"),
+							htmlFor: `${ocidPrefix}-goal-here`,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
+								id: `${ocidPrefix}-goal-here`,
+								value: draft.goalHere,
+								maxLength: ABOUT_ME_MAX,
+								rows: 3,
+								"data-ocid": `${ocidPrefix}.goal_here.textarea`,
+								onChange: (event) => set("goalHere", event.target.value)
+							})
 						})
 					]
-				})]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "grid gap-4 sm:grid-cols-2",
-				children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.fullName"),
-						htmlFor: `${ocidPrefix}-full-name`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							id: `${ocidPrefix}-full-name`,
-							value: draft.fullName,
-							"data-ocid": `${ocidPrefix}.full_name.input`,
-							className: "touch-target",
-							placeholder: t("profile.fullName.placeholder"),
-							onChange: (event) => set("fullName", event.target.value)
-						})
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.preferredName"),
-						htmlFor: `${ocidPrefix}-preferred-name`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							id: `${ocidPrefix}-preferred-name`,
-							value: draft.preferredName,
-							"data-ocid": `${ocidPrefix}.preferred_name.input`,
-							className: "touch-target",
-							placeholder: t("profile.preferredName.placeholder"),
-							onChange: (event) => set("preferredName", event.target.value)
-						})
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.title.label"),
-						htmlFor: `${ocidPrefix}-title`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							id: `${ocidPrefix}-title`,
-							value: draft.title,
-							"data-ocid": `${ocidPrefix}.title.input`,
-							className: "touch-target",
-							placeholder: t("profile.title.placeholder"),
-							onChange: (event) => set("title", event.target.value)
-						})
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.role.label"),
-						htmlFor: `${ocidPrefix}-role`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-							value: draft.requestedRole,
-							onValueChange: (value) => set("requestedRole", value),
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
-								id: `${ocidPrefix}-role`,
-								"data-ocid": `${ocidPrefix}.role.select`,
-								className: "touch-target w-full",
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("profile.role.placeholder") })
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: ROLE_OPTIONS.map((role) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-								value: role,
-								children: t(`profile.role.${role}`)
-							}, role)) })]
-						})
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.homeStoreNumber"),
-						htmlFor: `${ocidPrefix}-store-number`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							id: `${ocidPrefix}-store-number`,
-							value: draft.homeStoreNumber,
-							"data-ocid": `${ocidPrefix}.home_store_number.input`,
-							className: "touch-target",
-							placeholder: t("profile.homeStoreNumber.placeholder"),
-							onChange: (event) => set("homeStoreNumber", event.target.value)
-						})
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.homeStoreCity"),
-						htmlFor: `${ocidPrefix}-store-city`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							id: `${ocidPrefix}-store-city`,
-							value: draft.homeStoreCity,
-							"data-ocid": `${ocidPrefix}.home_store_city.input`,
-							className: "touch-target",
-							placeholder: t("profile.homeStoreCity.placeholder"),
-							onChange: (event) => set("homeStoreCity", event.target.value)
-						})
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.workPhone"),
-						htmlFor: `${ocidPrefix}-work-phone`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							id: `${ocidPrefix}-work-phone`,
-							type: "tel",
-							value: draft.workPhone,
-							"data-ocid": `${ocidPrefix}.work_phone.input`,
-							className: "touch-target",
-							placeholder: t("profile.workPhone.placeholder"),
-							onChange: (event) => set("workPhone", event.target.value)
-						})
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.workEmail"),
-						htmlFor: `${ocidPrefix}-work-email`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							id: `${ocidPrefix}-work-email`,
-							type: "email",
-							value: draft.workEmail,
-							"data-ocid": `${ocidPrefix}.work_email.input`,
-							className: "touch-target",
-							placeholder: t("profile.workEmail.placeholder"),
-							onChange: (event) => set("workEmail", event.target.value)
-						})
-					})
-				]
-			}),
-			travels && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "flex flex-col gap-4 rounded-md border border-border bg-muted/30 p-4",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrainerStationsPicker, {
-					positions: positions ?? [],
-					selectedIds: draft.trainerPositionIds,
-					onChange: (next) => set("trainerPositionIds", next)
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "grid gap-4 sm:grid-cols-2",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.arrivalDate"),
-						htmlFor: `${ocidPrefix}-arrival`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							id: `${ocidPrefix}-arrival`,
-							type: "date",
-							value: draft.arrivalDate,
-							"data-ocid": `${ocidPrefix}.arrival_date.input`,
-							className: "touch-target",
-							onChange: (event) => set("arrivalDate", event.target.value)
-						})
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.departureDate"),
-						htmlFor: `${ocidPrefix}-departure`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							id: `${ocidPrefix}-departure`,
-							type: "date",
-							value: draft.departureDate,
-							"data-ocid": `${ocidPrefix}.departure_date.input`,
-							className: "touch-target",
-							onChange: (event) => set("departureDate", event.target.value)
-						})
-					})]
-				})]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-xs text-muted-foreground",
-				children: t("profile.contactHint")
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("fieldset", {
-				"data-ocid": `${ocidPrefix}.about_me.section`,
-				className: "flex flex-col gap-4 rounded-md border border-border bg-muted/30 p-4",
-				children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("legend", {
-						className: "px-1 font-display text-sm font-semibold uppercase tracking-wide text-foreground",
-						children: t("profile.aboutMe")
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-						className: "text-xs text-muted-foreground",
-						children: t("profile.aboutMe.hint")
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "grid gap-4 sm:grid-cols-2",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-								label: t("profile.hometown"),
-								htmlFor: `${ocidPrefix}-hometown`,
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-									id: `${ocidPrefix}-hometown`,
-									value: draft.hometown,
-									maxLength: ABOUT_ME_MAX,
-									"data-ocid": `${ocidPrefix}.hometown.input`,
-									className: "touch-target",
-									onChange: (event) => set("hometown", event.target.value)
-								})
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-								label: t("profile.favoriteTeam"),
-								htmlFor: `${ocidPrefix}-favorite-team`,
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-									id: `${ocidPrefix}-favorite-team`,
-									value: draft.favoriteTeam,
-									maxLength: ABOUT_ME_MAX,
-									"data-ocid": `${ocidPrefix}.favorite_team.input`,
-									className: "touch-target",
-									placeholder: t("profile.favoriteTeam.placeholder"),
-									onChange: (event) => set("favoriteTeam", event.target.value)
-								})
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-								label: t("profile.favoriteSnack"),
-								htmlFor: `${ocidPrefix}-favorite-snack`,
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-									id: `${ocidPrefix}-favorite-snack`,
-									value: draft.favoriteSnack,
-									maxLength: ABOUT_ME_MAX,
-									"data-ocid": `${ocidPrefix}.favorite_snack.input`,
-									className: "touch-target",
-									placeholder: t("profile.favoriteSnack.placeholder"),
-									onChange: (event) => set("favoriteSnack", event.target.value)
-								})
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-								label: t("profile.favoriteDrink"),
-								htmlFor: `${ocidPrefix}-favorite-drink`,
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-									id: `${ocidPrefix}-favorite-drink`,
-									value: draft.favoriteDrink,
-									maxLength: ABOUT_ME_MAX,
-									"data-ocid": `${ocidPrefix}.favorite_drink.input`,
-									className: "touch-target",
-									placeholder: t("profile.favoriteDrink.placeholder"),
-									onChange: (event) => set("favoriteDrink", event.target.value)
-								})
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-								label: t("profile.favoriteColor"),
-								htmlFor: `${ocidPrefix}-favorite-color`,
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-									id: `${ocidPrefix}-favorite-color`,
-									value: draft.favoriteColor,
-									maxLength: ABOUT_ME_MAX,
-									"data-ocid": `${ocidPrefix}.favorite_color.input`,
-									className: "touch-target",
-									placeholder: t("profile.favoriteColor.placeholder"),
-									onChange: (event) => set("favoriteColor", event.target.value)
-								})
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-								label: t("profile.shirtSize"),
-								htmlFor: `${ocidPrefix}-shirt-size`,
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-									value: draft.shirtSize || void 0,
-									onValueChange: (value) => set("shirtSize", value),
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
-										id: `${ocidPrefix}-shirt-size`,
-										"data-ocid": `${ocidPrefix}.shirt_size.select`,
-										className: "touch-target w-full",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("profile.selectPlaceholder") })
-									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: SHIRT_SIZES$1.map((size) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-										value: size,
-										children: size
-									}, size)) })]
-								})
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-								label: t("profile.hatSize"),
-								htmlFor: `${ocidPrefix}-hat-size`,
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-									value: draft.hatSize || void 0,
-									onValueChange: (value) => set("hatSize", value),
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
-										id: `${ocidPrefix}-hat-size`,
-										"data-ocid": `${ocidPrefix}.hat_size.select`,
-										className: "touch-target w-full",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("profile.selectPlaceholder") })
-									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: HAT_SIZES$1.map((size) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-										value: size.value,
-										children: t(size.key)
-									}, size.value)) })]
-								})
-							})
-						]
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.hobbies"),
-						htmlFor: `${ocidPrefix}-hobbies`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
-							id: `${ocidPrefix}-hobbies`,
-							value: draft.hobbies,
-							maxLength: ABOUT_ME_MAX,
-							rows: 2,
-							"data-ocid": `${ocidPrefix}.hobbies.textarea`,
-							onChange: (event) => set("hobbies", event.target.value)
-						})
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.funFact"),
-						htmlFor: `${ocidPrefix}-fun-fact`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
-							id: `${ocidPrefix}-fun-fact`,
-							value: draft.funFact,
-							maxLength: ABOUT_ME_MAX,
-							rows: 2,
-							"data-ocid": `${ocidPrefix}.fun_fact.textarea`,
-							onChange: (event) => set("funFact", event.target.value)
-						})
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-						label: t("profile.goalHere"),
-						htmlFor: `${ocidPrefix}-goal-here`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Textarea, {
-							id: `${ocidPrefix}-goal-here`,
-							value: draft.goalHere,
-							maxLength: ABOUT_ME_MAX,
-							rows: 3,
-							"data-ocid": `${ocidPrefix}.goal_here.textarea`,
-							onChange: (event) => set("goalHere", event.target.value)
-						})
-					})
-				]
-			}),
+				})
+			] }),
 			message && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				role: "alert",
 				"data-ocid": `${ocidPrefix}.error_state`,
@@ -47937,6 +47974,38 @@ function canLeaders(role) {
 //#endregion
 //#region src/components/ApprovalGate.tsx
 /**
+* Narrow an actor to its optional `getMyPendingRequest` read. Older actors and
+* test mocks may not expose the method, so it is looked up structurally and
+* only invoked when the running actor actually provides it.
+*/
+function readOptionalPendingRequest(actor) {
+	if (typeof actor !== "object" || actor === null) return null;
+	const candidate = actor.getMyPendingRequest;
+	if (typeof candidate !== "function") return null;
+	return () => candidate.call(actor);
+}
+/**
+* The caller's own pending access request. Returns null when the caller has no
+* pending request, or when the running actor does not expose the read (older
+* actors and test mocks), so the gate falls back to showing the profile form.
+* `hasProfile` is true once the caller has submitted a staff profile on their
+* pending request, which lets a reload skip the form and go straight to the
+* waiting screen.
+*/
+function useMyPendingRequest() {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["myPendingRequest"],
+		queryFn: async () => {
+			if (!actor) return null;
+			const read = readOptionalPendingRequest(actor);
+			if (!read) return null;
+			return read();
+		},
+		enabled: !!actor && !isFetching
+	});
+}
+/**
 * The access gate. Anyone who signs in without an access grant lands here until
 * an admin approves them with a role. On first arrival the caller registers
 * themselves for approval so an admin can see the request.
@@ -47955,6 +48024,7 @@ function ApprovalGate({ children }) {
 	const bootstrapAdmin = useBootstrapAdmin();
 	const submitProfile = useSubmitStaffProfile();
 	const updateProfile = useUpdateMyStaffProfile();
+	const pendingRequest = useMyPendingRequest();
 	const { actor } = useActor(createActor);
 	const requested = (0, import_react.useRef)(false);
 	const bootstrapped = (0, import_react.useRef)(false);
@@ -47989,7 +48059,7 @@ function ApprovalGate({ children }) {
 		requestAccess
 	]);
 	if (access.kind === "granted") {
-		if (!access.grant.staffProfile && !grantProfileSaved) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		if (!access.grant.staffProfile && !grantProfileSaved && canLeaders(access.grant.role)) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 			"data-ocid": "gate.profile_state",
 			className: "mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-5 px-6 py-10",
 			children: [
@@ -48067,7 +48137,8 @@ function ApprovalGate({ children }) {
 		]
 	});
 	const requestSettled = requestAccess.isSuccess || requested.current;
-	if (access.kind === "pending" && requestSettled && !profileSubmitted) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+	const alreadyHasProfile = pendingRequest.data?.hasProfile === true;
+	if (access.kind === "pending" && requestSettled && !profileSubmitted && !alreadyHasProfile) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		"data-ocid": "gate.profile_state",
 		className: "mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-5 px-6 py-10",
 		children: [

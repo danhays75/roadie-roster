@@ -85,9 +85,6 @@
 
 ## Learnings
 
-- The card front shows 16 positioned star spans and no birthday tag; the MINOR tag remains. The .stars stripes use bottom/100% 44% no-repeat and .rc .f-stage .stars has z-index:1.
-- Archivo Black and Oswald are self-hosted via @fontsource imports in src/frontend/src/main.tsx (@fontsource/archivo-black/400.css, @fontsource/oswald/600.css, @fontsource/oswald/700.css); the runtime @font-face injection was removed.
-- The Roadie record has hireDate : ?Timestamp set from the sign-up's submittedAt on approveSignup, with migration src/backend/migrations/00000005_000000.mo falling back to the matching sign-up's submittedAt, else hiredAt; the card footer shows 'Roadie since' + hireDate and the back table's last row is HIRED:.
 - The card back no longer has a ROADIE STATS section; the .tbl lists every non-empty About Me field in order Hometown, Crew, Hobbies, Favorite movie, Favorite snack, Fun fact, Hired, with .rc .row padding 1.5cqw 2.2cqw and align-items:center.
 - The test setup sets testIdAttribute to data-ocid, so getByTestId resolves data-ocid, not data-testid; card photo/headshot markers must use data-ocid.
 - The inherited suite has pre-existing failing tests (including export-variants.test.ts and several card tests asserting removed surfaces) that predate this draft and remain failing.
@@ -110,3 +107,6 @@
 - The backend exposes listLeaders and getGiftBags; GiftBagFilter now includes #roadies and #leaders, and leader labels carry the leader's title as the position name.
 - The frontend has a Leaders page at src/frontend/src/pages/Leaders.tsx and a leader card page at src/frontend/src/pages/LeaderCard.tsx, gated by LEADERS_ROLES (every readable role except kiosk and integration).
 - The roadie card keeps its Roadie since front footer and opening-crew back footer; leader footers apply only to leader cards.
+- ApprovalGate.tsx gates the 'Tell us who you are' profile form to leader roles via canLeaders(role) from hooks/useAccess.ts; a granted kiosk or integration user with no staffProfile goes straight into the app.
+- StaffProfileForm.tsx offers a kiosk role choice that hides the rest of the form and skips its validation, submitting a pending request with the kiosk role.
+- The backend exposes getMyPendingRequest() : ?{ requestedAt : Timestamp; hasProfile : Bool } (query deriving the caller principal) in mixins/access-api.mo over lib/access.mo, typed as PendingRequestSummary in types/access.mo; hooks/useQueries.ts has useMyPendingRequest.
