@@ -1,3 +1,4 @@
+import Int "mo:core/Int";
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
@@ -278,6 +279,120 @@ module {
     };
     roadies.add(roadieId, { roadie with orientationEventId = ?eventId });
     logWrite(changeLog, counters, demoState, caller, "moveRoadieToSession", ?roadieId, false, "Moved roadie to orientation session");
+  };
+
+  /// List the orientation sessions available for assignment: every
+  /// `#orientation` schedule event, ordered by start. Admin, Store Manager,
+  /// Training Manager and Visiting Manager may read it.
+  public func listOrientationSessions(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    caller : Principal,
+  ) : [Phase23.OrientationSessionOption] {
+    Auth.requireOrientationStaff(accessGrants, demoState, caller);
+    let sessions = schedule.values()
+      .filter(func(e) = e.kind == #orientation)
+      .map(func(e) = { eventId = e.id; name = e.name; start = e.start; end = e.end })
+      .toArray();
+    sessions.sort(func(a, b) = Int.compare(a.start, b.start));
+  };
+
+  /// List the pending roadies with no usable orientation session: their
+  /// `orientationEventId` is null, or points to an event that is missing from
+  /// the schedule or is not an `#orientation` event. Each row carries the
+  /// roadie's photo, position and crew. Admin, Store Manager, Training Manager
+  /// and Visiting Manager may read it.
+  public func listUnassignedPendingRoadies(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    crews : Map.Map<Common.CrewId, Roadie.Crew>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    caller : Principal,
+  ) : [Phase23.UnassignedRoadieRow] {
+    Auth.requireOrientationStaff(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    roadies.values()
+      .filter(func r = r.isDemo == demo and r.status != #archived and r.rosterState == #pending and not hasOrientationSession(schedule, r.orientationEventId))
+      .map(func(r) {
+        let positionName = switch (positions.get(r.mainPositionId)) {
+          case (?p) { p.name };
+          case null { "" };
+        };
+        let crewName = switch (r.crewId) {
+          case (?cid) {
+            switch (crews.get(cid)) {
+              case (?c) { ?c.name };
+              case null { null };
+            };
+          };
+          case null { null };
+        };
+        {
+          roadieId = r.id;
+          name = displayName(r);
+          photo = r.photo;
+          positionId = r.mainPositionId;
+          positionName;
+          crewId = r.crewId;
+          crewName;
+        };
+      })
+      .toArray();
+  };
+
+  /// Move every non-archived roadie currently assigned to `fromEventId` to
+  /// `toEventId` (Admin/Store Manager only, logged). Returns the number moved.
+  /// The target must be an existing `#orientation` event. Used to merge two
+  /// sessions before deleting the emptied one.
+  public func moveAllRoadiesToSession(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    fromEventId : Common.EventId,
+    toEventId : Common.EventId,
+  ) : Nat {
+    Auth.requireManager(accessGrants, demoState, caller);
+    let target = schedule.get(toEventId) ?? Runtime.trap("Orientation session not found");
+    if (target.kind != #orientation) {
+      Runtime.trap("Schedule event is not an orientation session");
+    };
+    let demo = Auth.demoActive(demoState);
+    let moving = roadies.values()
+      .filter(func r = r.isDemo == demo and r.status != #archived and r.orientationEventId == ?fromEventId)
+      .toArray();
+    for (r in moving.values()) {
+      roadies.add(r.id, { r with orientationEventId = ?toEventId });
+    };
+    let count = moving.size();
+    let fromName = switch (schedule.get(fromEventId)) {
+      case (?e) { e.name };
+      case null { "session " # fromEventId.toText() };
+    };
+    logWrite(changeLog, counters, demoState, caller, "moveAllRoadiesToSession", null, false, "Moved " # count.toText() # " roadies from " # fromName # " to " # target.name);
+    count;
+  };
+
+  /// Internal: whether a roadie's assignment names a live orientation session.
+  func hasOrientationSession(
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    orientationEventId : ?Common.EventId,
+  ) : Bool {
+    switch (orientationEventId) {
+      case null { false };
+      case (?eventId) {
+        switch (schedule.get(eventId)) {
+          case (?event) { event.kind == #orientation };
+          case null { false };
+        };
+      };
+    };
   };
 
   /// Archive every no-show at a session (Admin/Store Manager only): roadies

@@ -79,6 +79,24 @@ mixin (
     Phase23Lib.archiveNoShows(accessGrants, demoState, roadies, schedule, changeLog, counters, caller, eventId);
   };
 
+  /// List the orientation sessions available for assignment, ordered by start
+  /// (Admin, Store Manager, Training Manager or Visiting Manager).
+  public query ({ caller }) func listOrientationSessions() : async [Phase23.OrientationSessionOption] {
+    Phase23Lib.listOrientationSessions(accessGrants, demoState, schedule, caller);
+  };
+
+  /// List the pending roadies with no usable orientation session (Admin, Store
+  /// Manager, Training Manager or Visiting Manager).
+  public query ({ caller }) func listUnassignedPendingRoadies() : async [Phase23.UnassignedRoadieRow] {
+    Phase23Lib.listUnassignedPendingRoadies(accessGrants, demoState, roadies, positions, crews, schedule, caller);
+  };
+
+  /// Move every non-archived roadie from one orientation session to another
+  /// (Admin/Store Manager only, logged). Returns the number moved.
+  public shared ({ caller }) func moveAllRoadiesToSession(fromEventId : Common.EventId, toEventId : Common.EventId) : async Nat {
+    Phase23Lib.moveAllRoadiesToSession(accessGrants, demoState, roadies, schedule, changeLog, counters, caller, fromEventId, toEventId);
+  };
+
   /// The uniform check-off for a roadie (Admin, Store Manager, Training Manager
   /// or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
   public query ({ caller }) func getUniformCheckoff(roadieId : Common.RoadieId) : async ?Phase23.UniformCheckoffView {

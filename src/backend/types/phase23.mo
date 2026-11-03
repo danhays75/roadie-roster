@@ -139,6 +139,28 @@ module {
     roadies : [OrientationRoadieRow];
   };
 
+  /// One orientation session available for assignment: an `#orientation`
+  /// schedule event, ordered by start.
+  public type OrientationSessionOption = {
+    eventId : Common.EventId;
+    name : Text;
+    start : Common.DateTime;
+    end : ?Common.DateTime;
+  };
+
+  /// One unassigned pending roadie on the orientation screen: a roadie whose
+  /// roster state is pending and whose `orientationEventId` is null or points
+  /// to an event that is missing or is not an orientation session.
+  public type UnassignedRoadieRow = {
+    roadieId : Common.RoadieId;
+    name : Text;
+    photo : ?Common.PhotoRef;
+    positionId : Common.PositionId;
+    positionName : Text;
+    crewId : ?Common.CrewId;
+    crewName : ?Text;
+  };
+
   // --- Uniform check-off ---
 
   /// One uniform check-off item for a roadie. `checked` applies to checkbox

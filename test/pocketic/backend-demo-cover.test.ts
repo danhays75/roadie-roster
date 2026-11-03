@@ -33,6 +33,8 @@ function position(name: string) {
     hatsRequired: 1n,
     needsAlcoholCert: false,
     crewManager: [] as [] | [string],
+    defaultShirts: 3n,
+    defaultHats: 2n,
   };
 }
 
@@ -54,6 +56,7 @@ function checklists() {
         text: "Non-slip shoes",
         requiresAlcoholCert: false,
         minorOnly: false,
+        itemType: { checkbox: null } as const,
       },
     ],
     paperwork: [
@@ -62,6 +65,7 @@ function checklists() {
         text: "Onboarding",
         requiresAlcoholCert: false,
         minorOnly: false,
+        itemType: { checkbox: null } as const,
       },
     ],
   };
@@ -91,6 +95,8 @@ function templateFile() {
         afterOpeningBuildTo: 5n,
         minimumAge: 18n,
         needsAlcoholCert: false,
+        defaultShirts: 3n,
+        defaultHats: 2n,
       },
     ],
     schedule: [],
@@ -384,5 +390,6 @@ function storeInfo() {
     leaderTalkSize: 10n,
     logo: [] as [] | [Uint8Array],
     secondaryLogo: [] as [] | [Uint8Array],
+    paperworkDueDate: 1_800_000_000_000_000_000n,
   };
 }

@@ -10,6 +10,7 @@ import {
   type DuplicateMatch,
   type EventId,
   type LeaderSummary,
+  type OrientationSessionOption,
   type OrientationSessionView,
   type PhotoRef,
   type Position,
@@ -27,6 +28,7 @@ import {
   type StoreLogos,
   type StoreTemplateFile,
   type Timestamp,
+  type UnassignedRoadieRow,
   type UniformCheckoffView,
   createActor,
 } from "@/backend";
@@ -1170,6 +1172,72 @@ export function useMoveRoadieToSession() {
       return actor.moveRoadieToSession(args.roadieId, args.eventId);
     },
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["orientationSession"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["unassignedPendingRoadies"],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["roadies"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * The orientation sessions as lightweight options (id, name, start, end),
+ * soonest first. Readable by orientation staff, so callers pass `enabled`
+ * (typically `canOrientation(role)`) to avoid a trapping read for other roles.
+ */
+export function useOrientationSessions(enabled = true) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["orientationSessions"],
+    queryFn: async (): Promise<OrientationSessionOption[]> => {
+      if (!actor) return [];
+      return actor.listOrientationSessions();
+    },
+    enabled: enabled && !!actor && !isFetching,
+  });
+}
+
+/**
+ * Pending roadies with no valid orientation session, each with name, position
+ * and crew. Readable by orientation staff, so callers pass `enabled` (typically
+ * `canOrientation(role)`) to avoid a trapping read for other roles.
+ */
+export function useUnassignedPendingRoadies(enabled = true) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["unassignedPendingRoadies"],
+    queryFn: async (): Promise<UnassignedRoadieRow[]> => {
+      if (!actor) return [];
+      return actor.listUnassignedPendingRoadies();
+    },
+    enabled: enabled && !!actor && !isFetching,
+  });
+}
+
+/**
+ * Assign every unassigned pending roadie to a session (Admin/Store Manager
+ * only). Returns the number moved. Invalidates the unassigned list, the session
+ * views, the roster and the dashboard so every surface reflects the move.
+ */
+export function useMoveAllRoadiesToSession() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      fromEventId: EventId;
+      toEventId: EventId;
+    }): Promise<bigint> => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.moveAllRoadiesToSession(args.fromEventId, args.toEventId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["unassignedPendingRoadies"],
+      });
       void queryClient.invalidateQueries({ queryKey: ["orientationSession"] });
       void queryClient.invalidateQueries({ queryKey: ["roadies"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard"] });

@@ -108,12 +108,6 @@
 
 ## Learnings
 
-- The inherited suite has 22 pre-existing failing tests that predate this draft and remain failing; the Leaders page test that expected a direct anchor link to /leaders/<principal> was updated for the new tile-opens-pop-up behavior.
-- Demo mode lives in src/backend/lib/demo.mo with the firewall helpers; main.mo includes DemoApi and exposes getDemoState, setDemoMode, setDemoRole, setPretendDate, getDemoDataSummary, loadDemoData and clearDemoData.
-- Demo records are marked with isDemo on Roadie, Crew, ChangeLogEntry, SignupSubmission, AttendanceRecord and TrainerNote; every read, list, count and export filters isDemo == Auth.demoActive(demoState).
-- Demo leaders are marked by staffProfile.workEmail == ?"DEMO"; Auth.isDemoLeader centralizes that marker and both listLeaders and getGiftBags gate on isDemoLeader(g) == demoActive(demoState).
-- The demo auto-off is armed with Timer.setTimer<system> in mixins/demo-api.mo scheduleAutoOff and logged with systemActor(), so the automatic off is recorded even with no later update.
-- The frontend demo banner is src/frontend/src/components/DemoBanner.tsx; DemoBannerHost must render its own DemoBanner outside the DemoBannerHosted provider or the bar is hidden on every screen.
 - The admin demo switch is src/frontend/src/components/admin/DemoModePanel.tsx rendered by components/admin/StoreInfoPanel.tsx; the Sign as Test button is in components/kiosk/KioskSignatureStep.tsx and components/approvals/ManagerSignaturePad.tsx.
 - pretendDateToInstant in src/frontend/src/lib/format.ts maps a PretendDate (UTC day + AM/PM) to a JS Date; OpeningTimeline's useNow and Kiosk's effectiveNow consume it while demo mode is on.
 - The inherited suite has 22 pre-existing failing tests that predate this draft and remain failing; the demo mode work added passing tests without changing them.
@@ -133,3 +127,9 @@
 - Orientation.tsx separates canPresent (canOrientation, includes trainingManager/visitingManager) from canManage (canArchive, Admin/Store Manager only) so the Present button is enabled for orientation staff while archive/move/undo/override stay manager-only.
 - Roster.tsx defaults to an All tab (Pending + Active together) and passes rosterStateLabel to RoadieTile only on the All tab; the CardList type includes 'all'.
 - ManagerTab.tsx wires the paperwork checkboxes to setPaperworkItems with applicable-item filtering, a 'Paperwork n of m' count and a Complete badge; useSetPaperworkItems invalidates roster, orientation session and alerts.
+- Orientation session assignment: listOrientationSessions() returns #orientation events ordered by start; listUnassignedPendingRoadies() returns pending roadies whose orientationEventId is null or dangling; moveAllRoadiesToSession(fromEventId, toEventId) moves every non-archived roadie between sessions and logs the count; moveRoadieToSession(roadieId, eventId) stays the single-roadie change.
+- UnassignedSection assigns each unassigned roadie through the per-roadie moveRoadieToSession, not the bulk move, because the bulk move only relocates roadies already attached to a source session.
+- SchedulePanel gates Move everyone on ARCHIVE_ROLES (admin/storeManager) and event.kind === orientation, matching the backend requireManager guard on moveAllRoadiesToSession.
+- Migration src/backend/migrations/00000013_000000.mo reassigns only rosterState == #pending roadies whose orientationEventId is null or names a missing/non-orientation event to the earliest upcoming orientation session, leaving all others untouched.
+- Map.map on a Map<Nat, Roadie> returning Roadie needs explicit <Nat, Roadie, Roadie> when the lambda's branches do not let inference pick V2 (M0098).
+- pnpm fix (biome --write) reformats test files under src/__tests__; revert them with git checkout after running it so the tester-owned tests stay untouched.

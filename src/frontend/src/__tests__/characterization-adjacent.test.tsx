@@ -265,6 +265,12 @@ describe("SchedulePanel renders and edits seeded events", () => {
       createScheduleEvent: vi.fn<backendInterface["createScheduleEvent"]>(
         async () => 1n,
       ),
+      updateScheduleEvent: vi.fn<backendInterface["updateScheduleEvent"]>(
+        async () => undefined,
+      ),
+      deleteScheduleEvent: vi.fn<backendInterface["deleteScheduleEvent"]>(
+        async () => undefined,
+      ),
     };
   }
 
@@ -283,6 +289,42 @@ describe("SchedulePanel renders and edits seeded events", () => {
     expect(
       await screen.findByTestId("admin.schedule.name.input"),
     ).toBeInTheDocument();
+  });
+
+  it("keeps the per-event Edit control opening the form pre-filled", async () => {
+    const user = userEvent.setup();
+    renderPageWithActor(AdminPage, adminActor(), { path: "/admin" });
+
+    await user.click(await screen.findByTestId("admin.schedule.tab"));
+    await screen.findByTestId("admin.schedule.list");
+
+    // The existing per-event Edit action stays beside the new per-session
+    // action and opens the form with the event's current name.
+    await user.click(screen.getByTestId("admin.schedule.edit_button"));
+    expect(await screen.findByTestId("admin.schedule.name.input")).toHaveValue(
+      "Paperwork due",
+    );
+  });
+
+  it("keeps the per-event Delete control confirming before deleting", async () => {
+    const user = userEvent.setup();
+    const actor = adminActor();
+    renderPageWithActor(AdminPage, actor, { path: "/admin" });
+
+    await user.click(await screen.findByTestId("admin.schedule.tab"));
+    await screen.findByTestId("admin.schedule.list");
+
+    // The existing per-event Delete action stays and asks for confirmation
+    // before it calls the delete mutation.
+    await user.click(screen.getByTestId("admin.schedule.delete_button"));
+    expect(actor.deleteScheduleEvent).not.toHaveBeenCalled();
+
+    await user.click(
+      await screen.findByTestId("admin.schedule.delete_confirm_button"),
+    );
+    await waitFor(() =>
+      expect(actor.deleteScheduleEvent).toHaveBeenCalledWith(0n),
+    );
   });
 });
 

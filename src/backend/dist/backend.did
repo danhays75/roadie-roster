@@ -57,6 +57,16 @@ type UniformCheckoffItem =
    itemType: UniformItemType;
    "text": text;
  };
+type UnassignedRoadieRow = 
+ record {
+   crewId: opt CrewId;
+   crewName: opt text;
+   name: text;
+   photo: opt PhotoRef;
+   positionId: PositionId;
+   positionName: text;
+   roadieId: RoadieId;
+ };
 type TrainingGroupView = 
  record {
    group: TrainingGroup;
@@ -373,6 +383,13 @@ type OrientationSessionView =
    name: text;
    presentCount: nat;
    roadies: vec OrientationRoadieRow;
+   start: DateTime;
+ };
+type OrientationSessionOption = 
+ record {
+   end: opt DateTime;
+   eventId: EventId;
+   name: text;
    start: DateTime;
  };
 type OrientationRoadieRow = 
@@ -909,6 +926,9 @@ service : {
   /// leadership roles. Readable by every role except Kiosk and Integration.
   /// Never carries phone or email.
   listLeaders: () -> (vec LeaderSummary) query;
+  /// List the orientation sessions available for assignment, ordered by start
+  /// (Admin, Store Manager, Training Manager or Visiting Manager).
+  listOrientationSessions: () -> (vec OrientationSessionOption) query;
   /// List pending sign-up submissions (Admin/Store Manager only).
   listPendingSignups: () -> (vec SignupSubmission) query;
   /// List pending access requests (Admin only).
@@ -925,6 +945,9 @@ service : {
   /// Integration sees nothing, and a trainer sees notes only for roadies in
   /// their assigned stations.
   listTrainerNotes: (roadieId: RoadieId) -> (vec TrainerNote) query;
+  /// List the pending roadies with no usable orientation session (Admin, Store
+  /// Manager, Training Manager or Visiting Manager).
+  listUnassignedPendingRoadies: () -> (vec UnassignedRoadieRow) query;
   /// Seed the demo data set (Admin, demo mode only).
   loadDemoData: () -> (DemoDataSummary);
   /// Load a store template file, replacing positions, schedule and checklists
@@ -937,6 +960,10 @@ service : {
   /// non-empty string and the caller is Admin or Store Manager.
   markPresent: (roadieId: RoadieId, eventId: EventId, overrideReason:
    opt text) -> ();
+  /// Move every non-archived roadie from one orientation session to another
+  /// (Admin/Store Manager only, logged). Returns the number moved.
+  moveAllRoadiesToSession: (fromEventId: EventId, toEventId: EventId) ->
+   (nat);
   /// Move a roadie to another orientation session (Admin/Store Manager only).
   moveRoadieToSession: (roadieId: RoadieId, eventId: EventId) -> ();
   /// Record attendance for a roadie (Admin/Store Manager only).

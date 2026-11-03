@@ -112,6 +112,8 @@ function templateFile() {
         afterOpeningBuildTo: 20n,
         minimumAge: 18n,
         needsAlcoholCert: true,
+        defaultShirts: 3n,
+        defaultHats: 2n,
       },
     ],
     schedule: [
@@ -129,6 +131,7 @@ function templateFile() {
           text: "Template uniform",
           requiresAlcoholCert: false,
           minorOnly: false,
+          itemType: { checkbox: null } as const,
         },
       ],
       paperwork: [
@@ -137,6 +140,7 @@ function templateFile() {
           text: "Template paperwork",
           requiresAlcoholCert: false,
           minorOnly: false,
+          itemType: { checkbox: null } as const,
         },
       ],
     },

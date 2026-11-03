@@ -45,6 +45,16 @@ export interface OrientationCopy {
   moveConfirm: string;
   moveNoTargets: string;
   moveDone: string;
+  unassignedTitle: string;
+  unassignedHint: string;
+  unassignedEmpty: string;
+  unassignedLoading: string;
+  unassignedError: string;
+  unassignedAssign: string;
+  unassignedAssignAll: string;
+  unassignedAssigning: string;
+  unassignedAssigned: string;
+  unassignedNoSession: string;
   uniformTitle: string;
   uniformBody: string;
   uniformLocked: string;
@@ -111,6 +121,17 @@ const en: OrientationCopy = {
   moveConfirm: "Move roadie",
   moveNoTargets: "There is no other session to move to.",
   moveDone: "Roadie moved.",
+  unassignedTitle: "Unassigned",
+  unassignedHint:
+    "Pending roadies with no orientation session. Assign them to the next session.",
+  unassignedEmpty: "Every pending roadie has an orientation session.",
+  unassignedLoading: "Loading unassigned roadies…",
+  unassignedError: "We couldn't load the unassigned roadies.",
+  unassignedAssign: "Assign to session",
+  unassignedAssignAll: "Assign all to {session}",
+  unassignedAssigning: "Assigning…",
+  unassignedAssigned: "Assigned.",
+  unassignedNoSession: "No upcoming session to assign to.",
   uniformTitle: "Uniform check-off",
   uniformBody: "Check off the orientation uniform items for this roadie.",
   uniformLocked:
@@ -178,6 +199,17 @@ const es: OrientationCopy = {
   moveConfirm: "Mover roadie",
   moveNoTargets: "No hay otra sesión a la que moverlo.",
   moveDone: "Roadie movido.",
+  unassignedTitle: "Sin asignar",
+  unassignedHint:
+    "Roadies pendientes sin sesión de orientación. Asígnalos a la siguiente sesión.",
+  unassignedEmpty: "Todos los roadies pendientes tienen sesión de orientación.",
+  unassignedLoading: "Cargando roadies sin asignar…",
+  unassignedError: "No pudimos cargar los roadies sin asignar.",
+  unassignedAssign: "Asignar a sesión",
+  unassignedAssignAll: "Asignar todos a {session}",
+  unassignedAssigning: "Asignando…",
+  unassignedAssigned: "Asignado.",
+  unassignedNoSession: "No hay una próxima sesión a la que asignar.",
   uniformTitle: "Registro de uniforme",
   uniformBody:
     "Marca los artículos del uniforme de orientación de este roadie.",

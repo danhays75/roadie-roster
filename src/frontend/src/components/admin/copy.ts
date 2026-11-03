@@ -90,6 +90,17 @@ export interface AdminCopy {
   schedulePaperworkDueSave: string;
   schedulePaperworkDueSaved: string;
   schedulePaperworkDueError: string;
+  scheduleMoveEveryone: string;
+  scheduleMoveEveryoneTitle: string;
+  scheduleMoveEveryoneBody: string;
+  scheduleMoveEveryoneTarget: string;
+  scheduleMoveEveryoneTargetPlaceholder: string;
+  scheduleMoveEveryoneConfirm: string;
+  scheduleMoveEveryoneDone: string;
+  scheduleMoveEveryoneDeleteHint: string;
+  scheduleMoveEveryoneNoTargets: string;
+  scheduleMoveEveryoneError: string;
+  scheduleMoveEveryoneClose: string;
   scheduleKinds: Record<EventKind, string>;
 
   checklistsTitle: string;
@@ -254,6 +265,20 @@ const en: AdminCopy = {
   schedulePaperworkDueSave: "Save due date",
   schedulePaperworkDueSaved: "Paperwork due date saved.",
   schedulePaperworkDueError: "We couldn't save the paperwork due date.",
+  scheduleMoveEveryone: "Move everyone",
+  scheduleMoveEveryoneTitle: "Move everyone to another session",
+  scheduleMoveEveryoneBody:
+    "Move every roadie from {name} to another orientation session. The source session can then be deleted.",
+  scheduleMoveEveryoneTarget: "Target session",
+  scheduleMoveEveryoneTargetPlaceholder: "Choose a session",
+  scheduleMoveEveryoneConfirm: "Move everyone",
+  scheduleMoveEveryoneDone: "Moved {count} roadies.",
+  scheduleMoveEveryoneDeleteHint:
+    "The source session is now empty and can be deleted.",
+  scheduleMoveEveryoneNoTargets:
+    "There is no other orientation session to move to.",
+  scheduleMoveEveryoneError: "We couldn't move the roadies.",
+  scheduleMoveEveryoneClose: "Close",
   scheduleKinds: {
     deadline: "Deadline",
     orientation: "Orientation session",
@@ -430,6 +455,20 @@ const es: AdminCopy = {
   schedulePaperworkDueSave: "Guardar fecha límite",
   schedulePaperworkDueSaved: "Fecha límite de papeleo guardada.",
   schedulePaperworkDueError: "No pudimos guardar la fecha límite de papeleo.",
+  scheduleMoveEveryone: "Mover a todos",
+  scheduleMoveEveryoneTitle: "Mover a todos a otra sesión",
+  scheduleMoveEveryoneBody:
+    "Mueve a todos los roadies de {name} a otra sesión de orientación. La sesión de origen se puede eliminar después.",
+  scheduleMoveEveryoneTarget: "Sesión de destino",
+  scheduleMoveEveryoneTargetPlaceholder: "Elige una sesión",
+  scheduleMoveEveryoneConfirm: "Mover a todos",
+  scheduleMoveEveryoneDone: "Se movieron {count} roadies.",
+  scheduleMoveEveryoneDeleteHint:
+    "La sesión de origen ahora está vacía y se puede eliminar.",
+  scheduleMoveEveryoneNoTargets:
+    "No hay otra sesión de orientación a la que mover.",
+  scheduleMoveEveryoneError: "No pudimos mover a los roadies.",
+  scheduleMoveEveryoneClose: "Cerrar",
   scheduleKinds: {
     deadline: "Fecha límite",
     orientation: "Sesión de orientación",

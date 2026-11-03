@@ -341,6 +341,12 @@ export interface OrientationRoadieRow {
     crewName?: string;
     photo?: PhotoRef;
 }
+export interface OrientationSessionOption {
+    end?: DateTime;
+    eventId: EventId;
+    name: string;
+    start: DateTime;
+}
 export interface OrientationSessionView {
     end?: DateTime;
     roadies: Array<OrientationRoadieRow>;
@@ -608,6 +614,15 @@ export interface TrainingGroupView {
     offThisShift: Array<RoadieId>;
     unassigned: Array<RoadieId>;
     group: TrainingGroup;
+}
+export interface UnassignedRoadieRow {
+    roadieId: RoadieId;
+    name: string;
+    positionName: string;
+    positionId: PositionId;
+    crewId?: CrewId;
+    crewName?: string;
+    photo?: PhotoRef;
 }
 export interface UniformCheckoffItem {
     itemId: bigint;
@@ -989,6 +1004,11 @@ export interface backendInterface {
      */
     listLeaders(): Promise<Array<LeaderSummary>>;
     /**
+     * / List the orientation sessions available for assignment, ordered by start
+     * / (Admin, Store Manager, Training Manager or Visiting Manager).
+     */
+    listOrientationSessions(): Promise<Array<OrientationSessionOption>>;
+    /**
      * / List pending sign-up submissions (Admin/Store Manager only).
      */
     listPendingSignups(): Promise<Array<SignupSubmission>>;
@@ -1019,6 +1039,11 @@ export interface backendInterface {
      */
     listTrainerNotes(roadieId: RoadieId): Promise<Array<TrainerNote>>;
     /**
+     * / List the pending roadies with no usable orientation session (Admin, Store
+     * / Manager, Training Manager or Visiting Manager).
+     */
+    listUnassignedPendingRoadies(): Promise<Array<UnassignedRoadieRow>>;
+    /**
      * / Seed the demo data set (Admin, demo mode only).
      */
     loadDemoData(): Promise<DemoDataSummary>;
@@ -1035,6 +1060,11 @@ export interface backendInterface {
      * / non-empty string and the caller is Admin or Store Manager.
      */
     markPresent(roadieId: RoadieId, eventId: EventId, overrideReason: string | null): Promise<void>;
+    /**
+     * / Move every non-archived roadie from one orientation session to another
+     * / (Admin/Store Manager only, logged). Returns the number moved.
+     */
+    moveAllRoadiesToSession(fromEventId: EventId, toEventId: EventId): Promise<bigint>;
     /**
      * / Move a roadie to another orientation session (Admin/Store Manager only).
      */

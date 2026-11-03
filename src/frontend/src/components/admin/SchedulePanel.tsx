@@ -2,6 +2,7 @@ import { EventKind, type ScheduleEvent } from "@/backend";
 import { DemoSettingsNote } from "@/components/DemoBanner";
 import { StatusBadge } from "@/components/StatusBadge";
 import { AdminSection, FormField } from "@/components/admin/FormField";
+import { MoveEveryoneDialog } from "@/components/admin/MoveEveryoneDialog";
 import { fill } from "@/components/admin/copy";
 import { useAdminCopy } from "@/components/admin/useAdminCopy";
 import {
@@ -25,10 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ARCHIVE_ROLES, useAccessState } from "@/hooks/useAccess";
 import { useDemo } from "@/hooks/useDemo";
 import {
   useCreateScheduleEvent,
   useDeleteScheduleEvent,
+  useOrientationSessions,
   useSchedule,
   useStoreInfo,
   useUpdateScheduleEvent,
@@ -40,7 +43,14 @@ import {
   dateToTimestamp,
   formatTimestamp,
 } from "@/lib/format";
-import { CalendarPlus, Loader2, Pencil, Save, Trash2 } from "lucide-react";
+import {
+  CalendarPlus,
+  Loader2,
+  Pencil,
+  Save,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 const EVENT_KINDS: EventKind[] = [
@@ -203,6 +213,7 @@ function PaperworkDueEditor({ readOnly }: { readOnly: boolean }) {
 export function SchedulePanel() {
   const c = useAdminCopy();
   const demo = useDemo();
+  const access = useAccessState();
   const schedule = useSchedule();
   const { data: storeInfo } = useStoreInfo();
   const timeZone = storeInfo?.timeZone || DEFAULT_TIME_ZONE;
@@ -211,10 +222,20 @@ export function SchedulePanel() {
   const remove = useDeleteScheduleEvent();
   const [draft, setDraft] = useState<EventDraft | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ScheduleEvent | null>(null);
+  const [moveSource, setMoveSource] = useState<ScheduleEvent | null>(null);
 
   // While demo mode is on the schedule edit controls are hidden: they change
   // real settings, which demo mode must not touch. The list stays readable.
   const readOnly = demo.enabled;
+
+  // Moving everyone between sessions is an Admin/Store Manager action, matching
+  // the backend's guard on moveAllRoadiesToSession.
+  const viewerRole = access.kind === "granted" ? access.grant.role : undefined;
+  const canMoveEveryone = !!viewerRole && ARCHIVE_ROLES.includes(viewerRole);
+
+  // The target options for the move dialog. Readable by orientation staff, so
+  // the read is only enabled for a caller who can actually move roadies.
+  const sessions = useOrientationSessions(canMoveEveryone && !readOnly);
 
   const events = schedule.data ?? [];
   const isEditing = draft !== null && draft.id !== 0n;
@@ -343,7 +364,23 @@ export function SchedulePanel() {
                       </p>
                     </div>
                     {!readOnly && (
-                      <div className="flex shrink-0 items-center gap-2">
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        {canMoveEveryone &&
+                          event.kind === EventKind.orientation && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="touch-target"
+                              data-ocid="admin.schedule.move_everyone_button"
+                              onClick={() => setMoveSource(event)}
+                            >
+                              <Users
+                                className="mr-2 h-4 w-4"
+                                aria-hidden="true"
+                              />
+                              {c.scheduleMoveEveryone}
+                            </Button>
+                          )}
                         <Button
                           type="button"
                           variant="outline"
@@ -535,6 +572,15 @@ export function SchedulePanel() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {moveSource && (
+          <MoveEveryoneDialog
+            source={moveSource}
+            sessions={sessions.data ?? []}
+            timeZone={timeZone}
+            onClose={() => setMoveSource(null)}
+          />
+        )}
       </AdminSection>
       <PaperworkDueEditor readOnly={readOnly} />
     </div>

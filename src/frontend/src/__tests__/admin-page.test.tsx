@@ -1,15 +1,17 @@
 import { renderPageWithActor } from "@/__tests__/router-test-utils";
 import type {
+  AccessGrant,
   Checklists,
+  OrientationSessionOption,
   Position,
   RetentionSettings,
   ScheduleEvent,
   StoreInfo,
   backendInterface,
 } from "@/backend";
-import { EventKind, House, UniformItemType } from "@/backend";
+import { EventKind, House, Role, UniformItemType } from "@/backend";
 import AdminPage from "@/pages/Admin";
-import { screen } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -128,6 +130,138 @@ function baseActor() {
     adminCount: vi.fn<backendInterface["adminCount"]>(async () => 1n),
   };
 }
+
+const PRINCIPAL = { toText: () => "aaaaa-aa" } as never;
+
+function grant(role: Role): AccessGrant {
+  return {
+    principal: PRINCIPAL,
+    approvedAt: 0n,
+    approvedBy: PRINCIPAL,
+    role,
+    trainerPositionIds: [],
+  };
+}
+
+/** Two orientation sessions, soonest first, for the Move everyone dialog. */
+function orientationOptions(): OrientationSessionOption[] {
+  const now = Date.now();
+  return [
+    {
+      eventId: 7n,
+      name: "Orientation",
+      start: BigInt(now + 2 * 24 * 60 * 60 * 1000) * 1_000_000n,
+    },
+    {
+      eventId: 8n,
+      name: "Makeup Orientation",
+      start: BigInt(now + 5 * 24 * 60 * 60 * 1000) * 1_000_000n,
+    },
+  ];
+}
+
+/** The Admin schedule actor with two orientation sessions. */
+function scheduleActor(role: Role) {
+  const now = Date.now();
+  const schedule: ScheduleEvent[] = [
+    {
+      id: 7n,
+      kind: EventKind.orientation,
+      name: "Orientation",
+      start: BigInt(now + 2 * 24 * 60 * 60 * 1000) * 1_000_000n,
+    },
+    {
+      id: 8n,
+      kind: EventKind.orientation,
+      name: "Makeup Orientation",
+      start: BigInt(now + 5 * 24 * 60 * 60 * 1000) * 1_000_000n,
+    },
+  ];
+  return {
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(role),
+    })),
+    listPositions: vi.fn<backendInterface["listPositions"]>(
+      async () => POSITIONS,
+    ),
+    listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => schedule),
+    getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => STORE),
+    getChecklists: vi.fn<backendInterface["getChecklists"]>(
+      async () => CHECKLISTS,
+    ),
+    getRetentionSettings: vi.fn<backendInterface["getRetentionSettings"]>(
+      async () => RETENTION,
+    ),
+    listAccessGrants: vi.fn<backendInterface["listAccessGrants"]>(
+      async () => [],
+    ),
+    adminCount: vi.fn<backendInterface["adminCount"]>(async () => 1n),
+    getDemoState: vi.fn<backendInterface["getDemoState"]>(async () => ({
+      enabled: false,
+      demoTrainerStations: [],
+    })),
+    listOrientationSessions: vi.fn<backendInterface["listOrientationSessions"]>(
+      async () => orientationOptions(),
+    ),
+    moveAllRoadiesToSession: vi.fn<backendInterface["moveAllRoadiesToSession"]>(
+      async () => 3n,
+    ),
+  };
+}
+
+describe("Admin > Schedule Move everyone", () => {
+  it("moves every roadie to the chosen session and reports the count", async () => {
+    const user = userEvent.setup();
+    const actor = scheduleActor(Role.admin);
+    renderPageWithActor(AdminPage, actor, { path: "/admin" });
+
+    await user.click(await screen.findByTestId("admin.schedule.tab"));
+
+    // Each orientation session offers a Move everyone control.
+    const moveButtons = await screen.findAllByTestId(
+      "admin.schedule.move_everyone_button",
+    );
+    expect(moveButtons).toHaveLength(2);
+
+    await user.click(moveButtons[0]);
+
+    const dialog = await screen.findByTestId(
+      "admin.schedule.move_everyone.target_select",
+    );
+    await user.click(dialog);
+    await user.click(
+      await screen.findByRole("option", { name: /Makeup Orientation/ }),
+    );
+    await user.click(
+      screen.getByTestId("admin.schedule.move_everyone.confirm_button"),
+    );
+
+    await waitFor(() =>
+      expect(actor.moveAllRoadiesToSession).toHaveBeenCalledWith(7n, 8n),
+    );
+    // The confirmation reports the affected count returned by the backend.
+    expect(
+      await screen.findByTestId("admin.schedule.move_everyone.success_state"),
+    ).toHaveTextContent("Moved 3 roadies.");
+  });
+
+  it("hides the Move everyone control from a role that may not move roadies", async () => {
+    const user = userEvent.setup();
+    renderPageWithActor(AdminPage, scheduleActor(Role.trainingManager), {
+      path: "/admin",
+    });
+
+    await user.click(await screen.findByTestId("admin.schedule.tab"));
+
+    // The schedule list renders, but no Move everyone control is offered.
+    expect(
+      await screen.findByTestId("admin.schedule.list"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("admin.schedule.move_everyone_button"),
+    ).not.toBeInTheDocument();
+  });
+});
 
 describe("AdminPage seeded configuration", () => {
   it("renders every admin section tab", async () => {

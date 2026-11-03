@@ -276,6 +276,16 @@ export const en: CopyDictionary = {
   "roadie.paperwork.saveError": "We couldn't save that paperwork change.",
   "roadie.changeHistory.empty": "No changes recorded for this roadie.",
   "roadie.changeHistory.touchesContact": "Contact set",
+  "roadie.orientation.none": "No session",
+  "roadie.orientation.change": "Change",
+  "roadie.orientation.changeTitle": "Change orientation session",
+  "roadie.orientation.changeBody":
+    "Choose the orientation session this roadie should attend instead.",
+  "roadie.orientation.sessionLabel": "Session",
+  "roadie.orientation.sessionPlaceholder": "Select a session",
+  "roadie.orientation.confirm": "Move roadie",
+  "roadie.orientation.noTargets": "There is no other session to move to.",
+  "roadie.orientation.error": "We couldn't move this roadie.",
   "roadie.edit.title": "Edit details",
   "roadie.edit.description":
     "Update this roadie's profile. Contact details are managed in the Manager tab.",
@@ -866,6 +876,16 @@ export const es: CopyDictionary = {
   "roadie.paperwork.saveError": "No pudimos guardar ese cambio de papeleo.",
   "roadie.changeHistory.empty": "No hay cambios registrados para este roadie.",
   "roadie.changeHistory.touchesContact": "Datos de contacto",
+  "roadie.orientation.none": "Sin sesión",
+  "roadie.orientation.change": "Cambiar",
+  "roadie.orientation.changeTitle": "Cambiar sesión de orientación",
+  "roadie.orientation.changeBody":
+    "Elige la sesión de orientación a la que este roadie debería asistir.",
+  "roadie.orientation.sessionLabel": "Sesión",
+  "roadie.orientation.sessionPlaceholder": "Selecciona una sesión",
+  "roadie.orientation.confirm": "Mover roadie",
+  "roadie.orientation.noTargets": "No hay otra sesión a la que moverlo.",
+  "roadie.orientation.error": "No pudimos mover a este roadie.",
   "roadie.edit.title": "Editar datos",
   "roadie.edit.description":
     "Actualiza el perfil de este roadie. Los datos de contacto se gestionan en la pestaña Gerente.",

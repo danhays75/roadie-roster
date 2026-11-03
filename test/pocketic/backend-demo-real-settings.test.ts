@@ -33,6 +33,8 @@ function position(name: string) {
     hatsRequired: 1n,
     needsAlcoholCert: false,
     crewManager: [] as [] | [string],
+    defaultShirts: 3n,
+    defaultHats: 2n,
   };
 }
 

@@ -1,6 +1,7 @@
 import type { ChecklistItem, ContactSet, Roadie, RoadieId } from "@/backend";
 import { EmptyState, LoadingState } from "@/components/States";
 import { StatusBadge } from "@/components/StatusBadge";
+import { OrientationSessionControl } from "@/components/roadie/OrientationSessionControl";
 import { SHIFTS, WEEKDAYS } from "@/components/roadie/constants";
 import {
   useChecklists,
@@ -620,6 +621,13 @@ export function ManagerTab({ roadie }: { roadie: Roadie }) {
         ) : (
           <EmptyState title={t("roadie.manager.empty")} />
         )}
+      </Section>
+
+      <Section
+        title={t("roadie.field.orientation")}
+        ocid="roadie.manager.orientation"
+      >
+        <OrientationSessionControl roadie={roadie} />
       </Section>
 
       <Section

@@ -5,11 +5,13 @@ import type {
   ContactSet,
   OrientationCheckoff,
   OrientationRoadieRow,
+  OrientationSessionOption,
   OrientationSessionView,
   Position,
   Roadie,
   ScheduleEvent,
   StoreInfo,
+  UnassignedRoadieRow,
   UniformCheckoffView,
   backendInterface,
 } from "@/backend";
@@ -291,6 +293,15 @@ function orientationActor(view: OrientationSessionView) {
     getUniformCheckoff: vi.fn<backendInterface["getUniformCheckoff"]>(
       async () => null,
     ),
+    listOrientationSessions: vi.fn<backendInterface["listOrientationSessions"]>(
+      async () => [],
+    ),
+    listUnassignedPendingRoadies: vi.fn<
+      backendInterface["listUnassignedPendingRoadies"]
+    >(async () => []),
+    moveRoadieToSession: vi.fn<backendInterface["moveRoadieToSession"]>(
+      async () => undefined,
+    ),
   };
 }
 
@@ -447,6 +458,129 @@ describe("Orientation screen", () => {
       expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument(),
     );
     expect(screen.getByText("Grace Hopper")).toBeInTheDocument();
+  });
+});
+
+/* ---------------------------------------------------------------------------
+   Orientation Unassigned section
+--------------------------------------------------------------------------- */
+
+/** Two orientation session options, soonest first. */
+function sessionOptions(): OrientationSessionOption[] {
+  const now = Date.now();
+  return [
+    {
+      eventId: 7n,
+      name: "Orientation",
+      start: BigInt(now + 2 * 24 * 60 * 60 * 1000) * 1_000_000n,
+    },
+    {
+      eventId: 8n,
+      name: "Makeup Orientation",
+      start: BigInt(now + 5 * 24 * 60 * 60 * 1000) * 1_000_000n,
+    },
+  ];
+}
+
+function unassignedRow(
+  overrides: Partial<UnassignedRoadieRow> = {},
+): UnassignedRoadieRow {
+  return {
+    roadieId: 1n,
+    name: "Ada Lovelace",
+    positionId: 0n,
+    positionName: "Servers",
+    ...overrides,
+  };
+}
+
+/** The Orientation page actor with an Unassigned list and session options. */
+function unassignedActor(rows: UnassignedRoadieRow[]) {
+  return {
+    ...orientationActor(
+      sessionView([orientationRow({ roadieId: 1n, name: "Ada Lovelace" })], 0n),
+    ),
+    listOrientationSessions: vi.fn<backendInterface["listOrientationSessions"]>(
+      async () => sessionOptions(),
+    ),
+    listUnassignedPendingRoadies: vi.fn<
+      backendInterface["listUnassignedPendingRoadies"]
+    >(async () => rows),
+  };
+}
+
+describe("Orientation Unassigned section", () => {
+  it("lists pending roadies with no valid session and an Assign control", async () => {
+    renderPageWithActor(
+      OrientationPage,
+      unassignedActor([
+        unassignedRow({ roadieId: 1n, name: "Ada Lovelace" }),
+        unassignedRow({ roadieId: 2n, name: "Grace Hopper" }),
+      ]),
+      { path: "/orientation" },
+    );
+
+    const section = await screen.findByTestId("orientation.unassigned.section");
+    // Wait for the unassigned list to resolve before asserting its rows.
+    await within(section).findByTestId("orientation.unassigned.list");
+    expect(within(section).getByText("Ada Lovelace")).toBeInTheDocument();
+    expect(within(section).getByText("Grace Hopper")).toBeInTheDocument();
+    // Each row carries its own Assign control and session picker.
+    expect(
+      within(section).getByTestId("orientation.unassigned.assign_button.1"),
+    ).toBeInTheDocument();
+    expect(
+      within(section).getByTestId("orientation.unassigned.assign_button.2"),
+    ).toBeInTheDocument();
+    // The Assign all control is present for a manager.
+    expect(
+      within(section).getByTestId("orientation.unassigned.assign_all_button"),
+    ).toBeInTheDocument();
+  });
+
+  it("assigns one roadie to the next upcoming session by default", async () => {
+    const user = userEvent.setup();
+    const actor = unassignedActor([
+      unassignedRow({ roadieId: 1n, name: "Ada Lovelace" }),
+    ]);
+    renderPageWithActor(OrientationPage, actor, { path: "/orientation" });
+
+    await user.click(
+      await screen.findByTestId("orientation.unassigned.assign_button.1"),
+    );
+
+    // The default target is the soonest upcoming session (event 7).
+    await waitFor(() =>
+      expect(actor.moveRoadieToSession).toHaveBeenCalledWith(1n, 7n),
+    );
+  });
+
+  it("assigns every listed roadie through Assign all", async () => {
+    const user = userEvent.setup();
+    const actor = unassignedActor([
+      unassignedRow({ roadieId: 1n, name: "Ada Lovelace" }),
+      unassignedRow({ roadieId: 2n, name: "Grace Hopper" }),
+    ]);
+    renderPageWithActor(OrientationPage, actor, { path: "/orientation" });
+
+    await user.click(
+      await screen.findByTestId("orientation.unassigned.assign_all_button"),
+    );
+
+    await waitFor(() =>
+      expect(actor.moveRoadieToSession).toHaveBeenCalledWith(1n, 7n),
+    );
+    expect(actor.moveRoadieToSession).toHaveBeenCalledWith(2n, 7n);
+  });
+
+  it("shows the empty state when every pending roadie has a session", async () => {
+    renderPageWithActor(OrientationPage, unassignedActor([]), {
+      path: "/orientation",
+    });
+
+    expect(
+      await screen.findByTestId("orientation.unassigned.empty_state"),
+    ).toBeInTheDocument();
   });
 });
 
@@ -715,6 +849,12 @@ function managerTabActor(
       async () => undefined,
     ),
     listChangeLog: vi.fn<backendInterface["listChangeLog"]>(async () => []),
+    listOrientationSessions: vi.fn<backendInterface["listOrientationSessions"]>(
+      async () => sessionOptions(),
+    ),
+    moveRoadieToSession: vi.fn<backendInterface["moveRoadieToSession"]>(
+      async () => undefined,
+    ),
   };
 }
 
@@ -818,6 +958,58 @@ describe("Manager tab paperwork checklist", () => {
     expect(
       screen.queryByTestId("roadie.paperwork.checkbox"),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("Manager tab orientation session", () => {
+  it("shows the roadie's current session and moves them through Change", async () => {
+    const user = userEvent.setup();
+    const actor = managerTabActor(
+      Role.storeManager,
+      managerRoadie({ orientationEventId: 7n }),
+      checkoff([]),
+    );
+    renderPageWithActor(RoadieCardPage, actor, {
+      path: "/roster/$roadieId",
+      initialEntry: "/roster/1",
+    });
+
+    await openManagerTab();
+
+    const section = await screen.findByTestId("roadie.manager.orientation");
+    // The current session name is shown.
+    expect(within(section).getByText("Orientation")).toBeInTheDocument();
+
+    await user.click(
+      within(section).getByTestId("roadie.orientation.change_button"),
+    );
+    // The roadie's own session is not offered as a target.
+    await user.click(
+      await screen.findByTestId("roadie.orientation.session_select"),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: /Makeup Orientation/ }),
+    );
+    await user.click(screen.getByTestId("roadie.orientation.confirm_button"));
+
+    await waitFor(() =>
+      expect(actor.moveRoadieToSession).toHaveBeenCalledWith(1n, 8n),
+    );
+  });
+
+  it("shows the No session state when the roadie has no valid session", async () => {
+    renderPageWithActor(
+      RoadieCardPage,
+      managerTabActor(Role.storeManager, managerRoadie(), checkoff([])),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await openManagerTab();
+
+    const section = await screen.findByTestId("roadie.manager.orientation");
+    expect(
+      within(section).getByTestId("roadie.orientation.no_session"),
+    ).toBeInTheDocument();
   });
 });
 

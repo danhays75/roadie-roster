@@ -270,6 +270,19 @@ actor {
         .payload("start", func e = e.start)
         .controllerOnly()
         .build(),
+      Entity.manual<Store.ScheduleEvent>(
+        "orientationSession",
+        func () = schedule.values().filter(func(e) = e.kind == #orientation),
+        "OrientationSession",
+        "id",
+      )
+        .sample({ id = 0; kind = #orientation; name = ""; start = 0; end = null })
+        .payload("id", func e = e.id)
+        .payload("name", func e = e.name)
+        .payload("start", func e = e.start)
+        .payload("end", func e = e.end)
+        .controllerOnly()
+        .build(),
       crews.toEntity("crew", "Crew", "id")
         .sample({ id = 0; name = ""; leaderPrincipal = null; isDemo = false })
         .controllerOnly()

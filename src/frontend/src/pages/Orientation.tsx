@@ -14,6 +14,7 @@ import { ArchiveNoShowsDialog } from "@/components/orientation/ArchiveNoShowsDia
 import { MoveSessionDialog } from "@/components/orientation/MoveSessionDialog";
 import { OrientationRoadieRow } from "@/components/orientation/OrientationRoadieRow";
 import { OverridePresentDialog } from "@/components/orientation/OverridePresentDialog";
+import { UnassignedSection } from "@/components/orientation/UnassignedSection";
 import { UniformCheckoffDialog } from "@/components/orientation/UniformCheckoffDialog";
 import { fill, useOrientationCopy } from "@/components/orientation/copy";
 import { useArchiveRoadie } from "@/components/roadie/useRoadieActions";
@@ -32,6 +33,7 @@ import {
   useArchiveNoShows,
   useMarkPresent,
   useOrientationSessionView,
+  useOrientationSessions,
   useSchedule,
   useStoreInfo,
   useUndoPresent,
@@ -89,6 +91,7 @@ export default function OrientationPage() {
   const { data: storeInfo } = useStoreInfo();
   const timeZone = storeInfo?.timeZone || DEFAULT_TIME_ZONE;
   const { data: schedule } = useSchedule();
+  const { data: sessionOptions } = useOrientationSessions(mayView);
 
   const sessions = useMemo(
     () => orientationSessions(schedule ?? []),
@@ -304,6 +307,15 @@ export default function OrientationPage() {
             </ul>
           )}
         </>
+      )}
+
+      {mayView && (
+        <UnassignedSection
+          sessions={sessionOptions ?? []}
+          timeZone={timeZone}
+          canManage={canManage}
+          enabled={mayView}
+        />
       )}
 
       <UniformCheckoffDialog

@@ -22,13 +22,14 @@ import {
   RosterState,
   UniformItemType,
 } from "@/backend";
+import AdminPage from "@/pages/Admin";
 import ApprovalsPage from "@/pages/Approvals";
 import DashboardPage from "@/pages/Dashboard";
 import OrientationPage from "@/pages/Orientation";
 import RoadieCardPage from "@/pages/RoadieCard";
 import RosterPage from "@/pages/Roster";
 import type { Principal } from "@icp-sdk/core/principal";
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -762,6 +763,262 @@ describe("Orientation session select keeps listing the sessions", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("option", { name: /Makeup Orientation/ }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("Orientation screen keeps its session default and empty state", () => {
+  it("defaults the session select to the next upcoming session", async () => {
+    // Two upcoming sessions; the soonest must be selected without any click.
+    const actor = {
+      ...overrideActor(
+        orientationView([
+          orientationRow({ roadieId: 1n, name: "Ada Lovelace" }),
+        ]),
+      ),
+      listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => [
+        futureOrientationSession(),
+        {
+          id: 8n,
+          kind: EventKind.orientation,
+          name: "Makeup Orientation",
+          start: BigInt(Date.now() + 5 * 24 * 60 * 60 * 1000) * 1_000_000n,
+        },
+      ]),
+    };
+    renderPageWithActor(OrientationPage, actor, { path: "/orientation" });
+
+    // The trigger shows the soonest session's name, not the placeholder.
+    const select = await screen.findByTestId("orientation.session.select");
+    await waitFor(() => expect(select).toHaveTextContent(/^Orientation ·/));
+    expect(select).not.toHaveTextContent("Select a session");
+  });
+
+  it("shows the no-sessions empty state when no orientation session is scheduled", async () => {
+    const actor = {
+      ...overrideActor(
+        orientationView([
+          orientationRow({ roadieId: 1n, name: "Ada Lovelace" }),
+        ]),
+      ),
+      listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),
+    };
+    renderPageWithActor(OrientationPage, actor, { path: "/orientation" });
+
+    expect(
+      await screen.findByTestId("orientation.no_sessions.empty_state"),
+    ).toBeInTheDocument();
+    // With no sessions there is no session list to render.
+    expect(screen.queryByTestId("orientation.list")).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Characterization baseline for the orientation-assignment request. The request
+ * intentionally adds an Unassigned section to the Orientation screen, a Move
+ * everyone action to each Admin schedule session, and an orientation session row
+ * with a Change control to the manager tab. This block deliberately does NOT
+ * assert any of those new controls (they do not exist yet). It protects the
+ * adjacent behavior that must survive:
+ *   - the Orientation screen's per-row Move control inside a session still opens
+ *     the move dialog and moves the roadie,
+ *   - the Orientation screen still renders the Present x/y count,
+ *   - Admin > Schedule still offers Edit and Delete on each event,
+ *   - the manager tab still renders its existing sections.
+ */
+
+describe("Orientation per-row move control keeps working", () => {
+  it("moves a roadie to another session through the row's move dialog", async () => {
+    const user = userEvent.setup();
+    const actor = {
+      ...overrideActor(
+        orientationView([
+          orientationRow({ roadieId: 1n, name: "Ada Lovelace" }),
+        ]),
+      ),
+      listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => [
+        futureOrientationSession(),
+        {
+          id: 8n,
+          kind: EventKind.orientation,
+          name: "Makeup Orientation",
+          start: BigInt(Date.now() + 5 * 24 * 60 * 60 * 1000) * 1_000_000n,
+        },
+      ]),
+      moveRoadieToSession: vi.fn<backendInterface["moveRoadieToSession"]>(
+        async () => undefined,
+      ),
+    };
+    renderPageWithActor(OrientationPage, actor, { path: "/orientation" });
+
+    await user.click(
+      await screen.findByTestId("orientation.roadie.move_button.1"),
+    );
+    await user.click(
+      await screen.findByTestId("orientation.move.session_select"),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: /Makeup Orientation/ }),
+    );
+    await user.click(screen.getByTestId("orientation.move.confirm_button"));
+
+    await waitFor(() =>
+      expect(actor.moveRoadieToSession).toHaveBeenCalledWith(1n, 8n),
+    );
+  });
+
+  it("renders the Present x of y count for the selected session", async () => {
+    const rows = [
+      orientationRow({ roadieId: 1n, name: "Ada Lovelace", present: true }),
+      orientationRow({ roadieId: 2n, name: "Grace Hopper" }),
+    ];
+    renderPageWithActor(
+      OrientationPage,
+      overrideActor({
+        ...orientationView(rows),
+        presentCount: 1n,
+        assignedCount: 2n,
+      }),
+      { path: "/orientation" },
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("orientation.present_count")).toHaveTextContent(
+        "1 of 2 present",
+      ),
+    );
+  });
+});
+
+/** The actor the Admin page tree reads for the schedule tab. */
+function adminScheduleActor() {
+  return {
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: managerGrant(),
+    })),
+    listPositions: vi.fn<backendInterface["listPositions"]>(async () => [
+      SERVERS,
+    ]),
+    listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => [
+      futureOrientationSession(),
+    ]),
+    getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => STORE),
+    getChecklists: vi.fn<backendInterface["getChecklists"]>(async () => ({
+      paperwork: [],
+      orientationUniform: [],
+    })),
+    getRetentionSettings: vi.fn<backendInterface["getRetentionSettings"]>(
+      async () => ({
+        notesDays: 0n,
+        archivedContactSetDays: 0n,
+        archivedPhotoDays: 0n,
+        changeLogDays: 0n,
+      }),
+    ),
+    getDemoState: vi.fn<backendInterface["getDemoState"]>(async () => ({
+      enabled: false,
+      demoTrainerStations: [],
+    })),
+    updateStoreInfo: vi.fn<backendInterface["updateStoreInfo"]>(
+      async () => undefined,
+    ),
+    updateScheduleEvent: vi.fn<backendInterface["updateScheduleEvent"]>(
+      async () => undefined,
+    ),
+    deleteScheduleEvent: vi.fn<backendInterface["deleteScheduleEvent"]>(
+      async () => undefined,
+    ),
+  };
+}
+
+describe("Admin schedule keeps its Edit and Delete actions", () => {
+  it("opens the edit dialog pre-filled from the event", async () => {
+    const user = userEvent.setup();
+    renderPageWithActor(AdminPage, adminScheduleActor(), { path: "/admin" });
+
+    await user.click(await screen.findByTestId("admin.schedule.tab"));
+    await user.click(await screen.findByTestId("admin.schedule.edit_button"));
+
+    expect(await screen.findByTestId("admin.schedule.name.input")).toHaveValue(
+      "Orientation",
+    );
+    expect(
+      screen.getByTestId("admin.schedule.save_button"),
+    ).toBeInTheDocument();
+  });
+
+  it("asks for confirmation before deleting an event", async () => {
+    const user = userEvent.setup();
+    const actor = adminScheduleActor();
+    renderPageWithActor(AdminPage, actor, { path: "/admin" });
+
+    await user.click(await screen.findByTestId("admin.schedule.tab"));
+    await user.click(await screen.findByTestId("admin.schedule.delete_button"));
+
+    // The confirmation appears and no delete is sent until it is confirmed.
+    await user.click(
+      await screen.findByTestId("admin.schedule.delete_confirm_button"),
+    );
+
+    await waitFor(() =>
+      expect(actor.deleteScheduleEvent).toHaveBeenCalledWith(7n),
+    );
+  });
+
+  it("still creates a new event through the Add dialog", async () => {
+    const user = userEvent.setup();
+    const actor = {
+      ...adminScheduleActor(),
+      createScheduleEvent: vi.fn<backendInterface["createScheduleEvent"]>(
+        async () => 0n,
+      ),
+    };
+    renderPageWithActor(AdminPage, actor, { path: "/admin" });
+
+    await user.click(await screen.findByTestId("admin.schedule.tab"));
+    await user.click(await screen.findByTestId("admin.schedule.add_button"));
+
+    // The Add dialog opens empty and the save button is disabled until a name
+    // and start are supplied.
+    const name = await screen.findByTestId("admin.schedule.name.input");
+    expect(name).toHaveValue("");
+    expect(screen.getByTestId("admin.schedule.save_button")).toBeDisabled();
+
+    await user.type(name, "Makeup Orientation");
+    fireEvent.change(screen.getByTestId("admin.schedule.start.input"), {
+      target: { value: "2027-02-01T09:00" },
+    });
+    await user.click(screen.getByTestId("admin.schedule.save_button"));
+
+    await waitFor(() =>
+      expect(actor.createScheduleEvent).toHaveBeenCalledTimes(1),
+    );
+    const created = actor.createScheduleEvent.mock.calls[0][0];
+    expect(created.name).toBe("Makeup Orientation");
+    expect(created.id).toBe(0n);
+  });
+});
+
+describe("Manager tab keeps its existing sections", () => {
+  it("renders the contact, availability, paperwork, corporate and history sections", async () => {
+    const user = userEvent.setup();
+    renderPageWithActor(RoadieCardPage, managerTabActor(), {
+      path: "/roster/$roadieId",
+      initialEntry: "/roster/1",
+    });
+
+    await user.click(await screen.findByTestId("roadie.manager.tab"));
+
+    expect(
+      await screen.findByTestId("roadie.manager.contact"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId("roadie.manager.availability"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("roadie.manager.paperwork")).toBeInTheDocument();
+    expect(screen.getByTestId("roadie.manager.corporate")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("roadie.manager.change_history"),
     ).toBeInTheDocument();
   });
 });

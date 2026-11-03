@@ -621,10 +621,25 @@ export const LeaderSummary = IDL.Record({
   'staffProfile' : IDL.Opt(StaffProfile),
   'trainerPositionIds' : IDL.Vec(PositionId),
 });
+export const OrientationSessionOption = IDL.Record({
+  'end' : IDL.Opt(DateTime),
+  'eventId' : EventId,
+  'name' : IDL.Text,
+  'start' : DateTime,
+});
 export const PendingUser = IDL.Record({
   'principal' : IDL.Principal,
   'staffProfile' : IDL.Opt(StaffProfile),
   'requestedAt' : Timestamp,
+});
+export const UnassignedRoadieRow = IDL.Record({
+  'roadieId' : RoadieId,
+  'name' : IDL.Text,
+  'positionName' : IDL.Text,
+  'positionId' : PositionId,
+  'crewId' : IDL.Opt(CrewId),
+  'crewName' : IDL.Opt(IDL.Text),
+  'photo' : IDL.Opt(PhotoRef),
 });
 export const TemplatePreview = IDL.Record({
   'leaderTalkName' : IDL.Text,
@@ -775,6 +790,11 @@ export const idlService = IDL.Service({
   'listChangeLog' : IDL.Func([], [IDL.Vec(ChangeLogEntry)], ['query']),
   'listCrews' : IDL.Func([], [IDL.Vec(Crew)], ['query']),
   'listLeaders' : IDL.Func([], [IDL.Vec(LeaderSummary)], ['query']),
+  'listOrientationSessions' : IDL.Func(
+      [],
+      [IDL.Vec(OrientationSessionOption)],
+      ['query'],
+    ),
   'listPendingSignups' : IDL.Func([], [IDL.Vec(SignupSubmission)], ['query']),
   'listPendingUsers' : IDL.Func([], [IDL.Vec(PendingUser)], ['query']),
   'listPositions' : IDL.Func([], [IDL.Vec(Position)], ['query']),
@@ -786,9 +806,15 @@ export const idlService = IDL.Service({
     ),
   'listSchedule' : IDL.Func([], [IDL.Vec(ScheduleEvent)], ['query']),
   'listTrainerNotes' : IDL.Func([RoadieId], [IDL.Vec(TrainerNote)], ['query']),
+  'listUnassignedPendingRoadies' : IDL.Func(
+      [],
+      [IDL.Vec(UnassignedRoadieRow)],
+      ['query'],
+    ),
   'loadDemoData' : IDL.Func([], [DemoDataSummary], []),
   'loadStoreTemplate' : IDL.Func([StoreTemplateFile], [TemplateLoadResult], []),
   'markPresent' : IDL.Func([RoadieId, EventId, IDL.Opt(IDL.Text)], [], []),
+  'moveAllRoadiesToSession' : IDL.Func([EventId, EventId], [IDL.Nat], []),
   'moveRoadieToSession' : IDL.Func([RoadieId, EventId], [], []),
   'recordAttendance' : IDL.Func([AttendanceRecord], [], []),
   'recordFinalSignOff' : IDL.Func([FinalSignOff], [], []),
@@ -1456,10 +1482,25 @@ export const idlFactory = ({ IDL }) => {
     'staffProfile' : IDL.Opt(StaffProfile),
     'trainerPositionIds' : IDL.Vec(PositionId),
   });
+  const OrientationSessionOption = IDL.Record({
+    'end' : IDL.Opt(DateTime),
+    'eventId' : EventId,
+    'name' : IDL.Text,
+    'start' : DateTime,
+  });
   const PendingUser = IDL.Record({
     'principal' : IDL.Principal,
     'staffProfile' : IDL.Opt(StaffProfile),
     'requestedAt' : Timestamp,
+  });
+  const UnassignedRoadieRow = IDL.Record({
+    'roadieId' : RoadieId,
+    'name' : IDL.Text,
+    'positionName' : IDL.Text,
+    'positionId' : PositionId,
+    'crewId' : IDL.Opt(CrewId),
+    'crewName' : IDL.Opt(IDL.Text),
+    'photo' : IDL.Opt(PhotoRef),
   });
   const TemplatePreview = IDL.Record({
     'leaderTalkName' : IDL.Text,
@@ -1614,6 +1655,11 @@ export const idlFactory = ({ IDL }) => {
     'listChangeLog' : IDL.Func([], [IDL.Vec(ChangeLogEntry)], ['query']),
     'listCrews' : IDL.Func([], [IDL.Vec(Crew)], ['query']),
     'listLeaders' : IDL.Func([], [IDL.Vec(LeaderSummary)], ['query']),
+    'listOrientationSessions' : IDL.Func(
+        [],
+        [IDL.Vec(OrientationSessionOption)],
+        ['query'],
+      ),
     'listPendingSignups' : IDL.Func([], [IDL.Vec(SignupSubmission)], ['query']),
     'listPendingUsers' : IDL.Func([], [IDL.Vec(PendingUser)], ['query']),
     'listPositions' : IDL.Func([], [IDL.Vec(Position)], ['query']),
@@ -1629,6 +1675,11 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(TrainerNote)],
         ['query'],
       ),
+    'listUnassignedPendingRoadies' : IDL.Func(
+        [],
+        [IDL.Vec(UnassignedRoadieRow)],
+        ['query'],
+      ),
     'loadDemoData' : IDL.Func([], [DemoDataSummary], []),
     'loadStoreTemplate' : IDL.Func(
         [StoreTemplateFile],
@@ -1636,6 +1687,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'markPresent' : IDL.Func([RoadieId, EventId, IDL.Opt(IDL.Text)], [], []),
+    'moveAllRoadiesToSession' : IDL.Func([EventId, EventId], [IDL.Nat], []),
     'moveRoadieToSession' : IDL.Func([RoadieId, EventId], [], []),
     'recordAttendance' : IDL.Func([AttendanceRecord], [], []),
     'recordFinalSignOff' : IDL.Func([FinalSignOff], [], []),
