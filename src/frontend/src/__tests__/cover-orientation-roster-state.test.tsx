@@ -1,6 +1,9 @@
 import { renderPageWithActor } from "@/__tests__/router-test-utils";
 import type {
   AccessGrant,
+  ChecklistItem,
+  ContactSet,
+  OrientationCheckoff,
   OrientationRoadieRow,
   OrientationSessionView,
   Position,
@@ -21,6 +24,7 @@ import {
 } from "@/backend";
 import DashboardPage from "@/pages/Dashboard";
 import OrientationPage from "@/pages/Orientation";
+import RoadieCardPage from "@/pages/RoadieCard";
 import RosterPage from "@/pages/Roster";
 import type { Principal } from "@icp-sdk/core/principal";
 import { screen, waitFor, within } from "@testing-library/react";
@@ -31,11 +35,15 @@ import { describe, expect, it, vi } from "vitest";
  * Cover for the orientation / roster-state request. These journeys exercise the
  * accepted observable behavior through the real page components with a typed
  * local actor mock:
- *   - the Roster page's Pending and Active tabs partition non-archived roadies,
+ *   - the Roster page opens on an All tab and its Pending and Active tabs
+ *     partition non-archived roadies,
  *   - the Orientation screen lists a session's roadies with Present x / y and
  *     marks a roadie Present through the real mutation,
  *   - incomplete paperwork replaces Present with the warning, Archive and
- *     Override actions,
+ *     Override actions, and the Override dialog sends the reason,
+ *   - the Manager tab's paperwork checkboxes show each applicable item's checked
+ *     state, toggle through setPaperworkItems, and report Paperwork n of m plus
+ *     a Complete badge,
  *   - the dashboard shows Pending and Active counts and the Hired → Active
  *     funnel.
  * The backend is mocked here; the PocketIC lane covers the real canister.
@@ -122,7 +130,34 @@ function rosterActor(roadies: Roadie[]) {
   };
 }
 
-describe("Roster page Pending and Active tabs", () => {
+describe("Roster page All, Pending and Active tabs", () => {
+  it("opens on the All tab showing both Pending and Active roadies", async () => {
+    renderPageWithActor(
+      RosterPage,
+      rosterActor([
+        roadie({
+          id: 1n,
+          rosterState: RosterState.pending,
+          profile: { name: "Pending Pat" },
+        }),
+        roadie({
+          id: 2n,
+          rosterState: RosterState.active,
+          profile: { name: "Active Alex" },
+        }),
+      ]),
+      { path: "/roster" },
+    );
+
+    // The All tab is selected by default, so both roadies show.
+    expect(await screen.findByText("Pending Pat")).toBeInTheDocument();
+    expect(screen.getByText("Active Alex")).toBeInTheDocument();
+    expect(screen.getByTestId("roster.filter.all.tab")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
   it("partitions non-archived roadies into Pending and Active tabs", async () => {
     const user = userEvent.setup();
     renderPageWithActor(
@@ -142,15 +177,21 @@ describe("Roster page Pending and Active tabs", () => {
       { path: "/roster" },
     );
 
-    // The Active tab is selected by default, so only the active roadie shows.
-    expect(await screen.findByText("Active Alex")).toBeInTheDocument();
-    expect(screen.queryByText("Pending Pat")).not.toBeInTheDocument();
+    // Both roadies show on the default All tab.
+    expect(await screen.findByText("Pending Pat")).toBeInTheDocument();
+    expect(screen.getByText("Active Alex")).toBeInTheDocument();
 
     const pendingTab = await screen.findByTestId("roster.filter.pending.tab");
     await user.click(pendingTab);
 
     expect(await screen.findByText("Pending Pat")).toBeInTheDocument();
     expect(screen.queryByText("Active Alex")).not.toBeInTheDocument();
+
+    const activeTab = screen.getByTestId("roster.filter.active.tab");
+    await user.click(activeTab);
+
+    expect(await screen.findByText("Active Alex")).toBeInTheDocument();
+    expect(screen.queryByText("Pending Pat")).not.toBeInTheDocument();
   });
 
   it("excludes archived roadies from both Pending and Active tabs", async () => {
@@ -292,8 +333,39 @@ describe("Orientation screen", () => {
     );
     await user.click(presentButton);
 
-    await waitFor(() => expect(actor.markPresent).toHaveBeenCalledWith(1n, 7n));
+    await waitFor(() =>
+      expect(actor.markPresent).toHaveBeenCalledWith(1n, 7n, null),
+    );
   });
+
+  it.each([Role.trainingManager, Role.visitingManager])(
+    "lets a %s mark a roadie Present",
+    async (role) => {
+      const user = userEvent.setup();
+      const actor = {
+        ...orientationActor(
+          sessionView(
+            [orientationRow({ roadieId: 1n, name: "Ada Lovelace" })],
+            0n,
+          ),
+        ),
+        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+          grant: { ...managerGrant(), role },
+        })),
+      };
+      renderPageWithActor(OrientationPage, actor, { path: "/orientation" });
+
+      const presentButton = await screen.findByTestId(
+        "orientation.roadie.present_button.1",
+      );
+      expect(presentButton).toBeEnabled();
+      await user.click(presentButton);
+
+      await waitFor(() =>
+        expect(actor.markPresent).toHaveBeenCalledWith(1n, 7n, null),
+      );
+    },
+  );
 
   it("replaces Present with the paperwork warning and manager actions when paperwork is incomplete", async () => {
     renderPageWithActor(
@@ -540,7 +612,247 @@ describe("Uniform check-off", () => {
       expect(actor.saveUniformCheckoff).toHaveBeenCalledTimes(1),
     );
     const saved = actor.saveUniformCheckoff.mock.calls[0][0];
-    expect(saved.roadieId).toBe(1n);
-    expect(saved.shirtsCount).toBe(3n);
+    expect(saved).toBe(1n);
+    // The save writes only the uniform fields; the count item carries its
+    // pre-filled count and the checkbox item is not checked.
+    expect(actor.saveUniformCheckoff.mock.calls[0][1]).toEqual([]);
+    expect(actor.saveUniformCheckoff.mock.calls[0][2]).toEqual([[1n, 3n]]);
+  });
+});
+
+/* ---------------------------------------------------------------------------
+   Manager tab paperwork checklist
+--------------------------------------------------------------------------- */
+
+const PAPERWORK_ITEMS: ChecklistItem[] = [
+  {
+    id: 1n,
+    text: "I-9 form",
+    minorOnly: false,
+    requiresAlcoholCert: false,
+    itemType: UniformItemType.checkbox,
+  },
+  {
+    id: 3n,
+    text: "Alcohol certificate",
+    minorOnly: false,
+    requiresAlcoholCert: true,
+    itemType: UniformItemType.checkbox,
+  },
+  {
+    id: 4n,
+    text: "LA employment certificate (LWC confirmation received)",
+    minorOnly: true,
+    requiresAlcoholCert: false,
+    itemType: UniformItemType.checkbox,
+  },
+];
+
+const MANAGER_CONTACT: ContactSet = {
+  phone: "+1-555-0100",
+  email: "ada@example.com",
+  emergencyContactName: "Grace",
+  emergencyContactPhone: "+1-555-0101",
+  dateOfBirth: 0n,
+  availability: [],
+  availabilityResignPending: false,
+};
+
+function managerRoadie(overrides: Partial<Roadie> = {}): Roadie {
+  return {
+    id: 1n,
+    status: RoadieStatus.hired,
+    mainPositionId: 0n,
+    hiredAt: 0n,
+    isMinor: false,
+    isDemo: false,
+    profile: { name: "Ada Lovelace" },
+    rosterState: RosterState.pending,
+    ...overrides,
+  };
+}
+
+function checkoff(paperworkItems: string[]): OrientationCheckoff {
+  return {
+    roadieId: 1n,
+    paperworkItems,
+    uniformItems: [],
+    uniformCounts: [],
+    shirtsCount: 0n,
+    hatsCount: 0n,
+    updatedAt: 0n,
+    isDemo: false,
+  };
+}
+
+/** The actor the roadie card's manager tab reads. */
+function managerTabActor(
+  role: Role,
+  roadie: Roadie,
+  stored: OrientationCheckoff | null,
+) {
+  return {
+    getRoadie: vi.fn<backendInterface["getRoadie"]>(async () => roadie),
+    listPositions: vi.fn<backendInterface["listPositions"]>(async () => [
+      SERVERS,
+    ]),
+    listCrews: vi.fn<backendInterface["listCrews"]>(async () => []),
+    isMinor: vi.fn<backendInterface["isMinor"]>(async () => roadie.isMinor),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: { ...managerGrant(), role },
+    })),
+    getContactSet: vi.fn<backendInterface["getContactSet"]>(async () => [
+      MANAGER_CONTACT,
+    ]),
+    getChecklists: vi.fn<backendInterface["getChecklists"]>(async () => ({
+      paperwork: PAPERWORK_ITEMS,
+      orientationUniform: [],
+    })),
+    getOrientationCheckoff: vi.fn<backendInterface["getOrientationCheckoff"]>(
+      async () => stored,
+    ),
+    setPaperworkItems: vi.fn<backendInterface["setPaperworkItems"]>(
+      async () => undefined,
+    ),
+    listChangeLog: vi.fn<backendInterface["listChangeLog"]>(async () => []),
+  };
+}
+
+async function openManagerTab() {
+  const user = userEvent.setup();
+  await user.click(await screen.findByTestId("roadie.manager.tab"));
+  return user;
+}
+
+describe("Manager tab paperwork checklist", () => {
+  it("shows each applicable item's checked state and reports Paperwork n of m", async () => {
+    renderPageWithActor(
+      RoadieCardPage,
+      managerTabActor(Role.storeManager, managerRoadie(), checkoff(["1"])),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await openManagerTab();
+
+    const section = await screen.findByTestId("roadie.manager.paperwork");
+    // The alcohol item applies (Servers needs an alcohol cert) and the minor
+    // item does not (the roadie is not a minor), so two items are applicable.
+    expect(within(section).getByText("I-9 form")).toBeInTheDocument();
+    expect(
+      within(section).getByText("Alcohol certificate"),
+    ).toBeInTheDocument();
+    expect(
+      within(section).queryByText(
+        "LA employment certificate (LWC confirmation received)",
+      ),
+    ).not.toBeInTheDocument();
+
+    // The stored item is checked; the other is not.
+    const boxes = within(section).getAllByTestId("roadie.paperwork.checkbox");
+    expect(boxes).toHaveLength(2);
+    expect(boxes[0]).toBeChecked();
+    expect(boxes[1]).not.toBeChecked();
+
+    // The progress line counts the checked applicable items.
+    expect(
+      within(section).getByTestId("roadie.paperwork.progress"),
+    ).toHaveTextContent("Paperwork 1 of 2");
+    // Not complete yet, so no Complete badge.
+    expect(
+      within(section).queryByTestId("roadie.paperwork.complete"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("toggles an item through setPaperworkItems and shows the Complete badge", async () => {
+    const actor = managerTabActor(
+      Role.storeManager,
+      managerRoadie(),
+      checkoff(["1"]),
+    );
+    renderPageWithActor(RoadieCardPage, actor, {
+      path: "/roster/$roadieId",
+      initialEntry: "/roster/1",
+    });
+
+    const user = await openManagerTab();
+
+    const section = await screen.findByTestId("roadie.manager.paperwork");
+    const boxes = within(section).getAllByTestId("roadie.paperwork.checkbox");
+    // Check the second applicable item.
+    await user.click(boxes[1]);
+
+    await waitFor(() =>
+      expect(actor.setPaperworkItems).toHaveBeenCalledWith(1n, ["1", "3"]),
+    );
+  });
+
+  it("shows the Complete badge when every applicable item is checked", async () => {
+    renderPageWithActor(
+      RoadieCardPage,
+      managerTabActor(Role.storeManager, managerRoadie(), checkoff(["1", "3"])),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await openManagerTab();
+
+    const section = await screen.findByTestId("roadie.manager.paperwork");
+    expect(
+      within(section).getByTestId("roadie.paperwork.progress"),
+    ).toHaveTextContent("Paperwork 2 of 2");
+    expect(
+      within(section).getByTestId("roadie.paperwork.complete"),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the Manager tab from a role that may not edit paperwork", async () => {
+    renderPageWithActor(
+      RoadieCardPage,
+      managerTabActor(Role.trainingManager, managerRoadie(), checkoff([])),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    // The card renders, but a Training Manager has no Manager tab and so no
+    // paperwork checkboxes to toggle.
+    expect(await screen.findByTestId("roadie.card.tab")).toBeInTheDocument();
+    expect(screen.queryByTestId("roadie.manager.tab")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("roadie.paperwork.checkbox"),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("Override dialog sends the reason with markPresent", () => {
+  it("calls markPresent with the trimmed override reason", async () => {
+    const user = userEvent.setup();
+    const actor = orientationActor(
+      sessionView(
+        [
+          orientationRow({
+            roadieId: 1n,
+            name: "Ada Lovelace",
+            paperworkStatus: PaperworkStatus.incomplete,
+          }),
+        ],
+        0n,
+      ),
+    );
+    renderPageWithActor(OrientationPage, actor, { path: "/orientation" });
+
+    await user.click(
+      await screen.findByTestId("orientation.roadie.override_button.1"),
+    );
+    await user.type(
+      await screen.findByTestId("orientation.override.reason_input"),
+      "  Paperwork on file at the store  ",
+    );
+    await user.click(screen.getByTestId("orientation.override.confirm_button"));
+
+    await waitFor(() =>
+      expect(actor.markPresent).toHaveBeenCalledWith(
+        1n,
+        7n,
+        "Paperwork on file at the store",
+      ),
+    );
   });
 });

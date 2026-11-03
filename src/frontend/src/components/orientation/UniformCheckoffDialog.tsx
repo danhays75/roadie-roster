@@ -1,5 +1,4 @@
 import {
-  type OrientationCheckoff,
   type RoadieId,
   type UniformCheckoffItem,
   UniformItemType,
@@ -45,16 +44,6 @@ function isSatisfied(item: ItemDraft): boolean {
   return item.itemType === UniformItemType.checkbox
     ? item.checked
     : item.count > 0;
-}
-
-/** The count item whose text names shirts or hats, for the totals fields. */
-function countFor(items: ItemDraft[], keyword: string): number {
-  const match = items.find(
-    (item) =>
-      item.itemType === UniformItemType.count &&
-      item.text.toLowerCase().includes(keyword),
-  );
-  return match ? match.count : 0;
 }
 
 /**
@@ -107,21 +96,20 @@ export function UniformCheckoffDialog({
 
   const onSubmit = () => {
     if (roadieId === undefined) return;
-    const checkoff: OrientationCheckoff = {
-      roadieId,
-      uniformItems: draft
-        .filter((item) => item.checked)
-        .map((item) => item.itemId.toString()),
-      uniformCounts: draft
-        .filter((item) => item.itemType === UniformItemType.count)
-        .map((item) => [item.itemId, BigInt(item.count)] as [bigint, bigint]),
-      shirtsCount: BigInt(countFor(draft, "shirt")),
-      hatsCount: BigInt(countFor(draft, "hat")),
-      paperworkItems: [],
-      isDemo: false,
-      updatedAt: 0n,
-    };
-    save.mutate(checkoff, { onSuccess: () => setSaved(true) });
+    // Save only the uniform fields. The backend keeps the roadie's paperwork
+    // items, so a uniform save never erases paperwork.
+    save.mutate(
+      {
+        roadieId,
+        uniformItems: draft
+          .filter((item) => item.checked)
+          .map((item) => item.itemId.toString()),
+        uniformCounts: draft
+          .filter((item) => item.itemType === UniformItemType.count)
+          .map((item) => [item.itemId, BigInt(item.count)] as [bigint, bigint]),
+      },
+      { onSuccess: () => setSaved(true) },
+    );
   };
 
   return (
@@ -328,7 +316,7 @@ export function UniformCheckoffDialog({
           >
             {save.isPending && (
               <Loader2
-                className="mr-2 h-4 w-4 animate-spin"
+                className="mr-2 h-4 w-4 motion-safe:animate-spin"
                 aria-hidden="true"
               />
             )}

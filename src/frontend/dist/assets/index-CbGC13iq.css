@@ -4411,6 +4411,19 @@ video {
 .peer\/menu-button[data-active="true"] ~ .peer-data-\[active\=true\]\/menu-button\:text-sidebar-accent-foreground {
   color: oklch(var(--sidebar-accent-foreground));
 }
+@media (prefers-reduced-motion: no-preference) {
+
+  @keyframes spin {
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .motion-safe\:animate-spin {
+    animation: spin 1s linear infinite;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
 
   .motion-reduce\:transition-none {

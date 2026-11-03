@@ -10,7 +10,6 @@ import {
   type DuplicateMatch,
   type EventId,
   type LeaderSummary,
-  type OrientationCheckoff,
   type OrientationSessionView,
   type PhotoRef,
   type Position,
@@ -1114,9 +1113,17 @@ export function useMarkPresent() {
   const { actor } = useActor(createActor);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (args: { roadieId: RoadieId; eventId: EventId }) => {
+    mutationFn: async (args: {
+      roadieId: RoadieId;
+      eventId: EventId;
+      overrideReason?: string | null;
+    }) => {
       if (!actor) throw new Error("Backend is not ready");
-      return actor.markPresent(args.roadieId, args.eventId);
+      return actor.markPresent(
+        args.roadieId,
+        args.eventId,
+        args.overrideReason ?? null,
+      );
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["orientationSession"] });
@@ -1216,19 +1223,84 @@ export function useUniformCheckoff(
 }
 
 /**
- * Save the uniform check-off for a roadie (Admin/Store Manager only).
- * Invalidates the check-off read so the saved state is reflected.
+ * A roadie's orientation check-off: the stored paperwork items and uniform
+ * fields. Readable by Admin and Store Manager only, so callers pass `enabled`
+ * to avoid a trapping read for other roles.
+ */
+export function useOrientationCheckoff(
+  roadieId: RoadieId | undefined,
+  enabled = true,
+) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["orientationCheckoff", roadieId?.toString()],
+    queryFn: async () => {
+      if (!actor || roadieId === undefined) return null;
+      return actor.getOrientationCheckoff(roadieId);
+    },
+    enabled: enabled && !!actor && !isFetching && roadieId !== undefined,
+  });
+}
+
+/**
+ * Save the uniform check-off for a roadie (Admin/Store Manager only). Writes
+ * only the uniform fields, so the roadie's paperwork items are preserved.
+ * Invalidates the check-off read plus the roster tile, the orientation list and
+ * the alerts so every surface reflects the save.
  */
 export function useSaveUniformCheckoff() {
   const { actor } = useActor(createActor);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (checkoff: OrientationCheckoff) => {
+    mutationFn: async (args: {
+      roadieId: RoadieId;
+      uniformItems: string[];
+      uniformCounts: Array<[bigint, bigint]>;
+    }) => {
       if (!actor) throw new Error("Backend is not ready");
-      return actor.saveUniformCheckoff(checkoff);
+      return actor.saveUniformCheckoff(
+        args.roadieId,
+        args.uniformItems,
+        args.uniformCounts,
+      );
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["uniformCheckoff"] });
+      void queryClient.invalidateQueries({ queryKey: ["orientationCheckoff"] });
+      void queryClient.invalidateQueries({ queryKey: ["orientationSession"] });
+      void queryClient.invalidateQueries({ queryKey: ["roadies"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
+      void queryClient.invalidateQueries({ queryKey: ["alerts"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Set a roadie's paperwork items (Admin/Store Manager only). Writes only the
+ * paperwork items, so the uniform fields are preserved. Invalidates the
+ * check-off read plus the roster tile, the orientation list and the alerts so
+ * every surface reflects the save.
+ */
+export function useSetPaperworkItems() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      roadieId: RoadieId;
+      paperworkItems: string[];
+    }) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.setPaperworkItems(args.roadieId, args.paperworkItems);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["orientationCheckoff"] });
+      void queryClient.invalidateQueries({ queryKey: ["orientationSession"] });
+      void queryClient.invalidateQueries({ queryKey: ["roadies"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
+      void queryClient.invalidateQueries({ queryKey: ["alerts"] });
       void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
     },
   });

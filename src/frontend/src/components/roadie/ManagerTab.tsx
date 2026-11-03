@@ -1,4 +1,4 @@
-import type { ContactSet, Roadie, RoadieId } from "@/backend";
+import type { ChecklistItem, ContactSet, Roadie, RoadieId } from "@/backend";
 import { EmptyState, LoadingState } from "@/components/States";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SHIFTS, WEEKDAYS } from "@/components/roadie/constants";
@@ -13,10 +13,16 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { canEditRoadie, useAccessState } from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
+import {
+  useOrientationCheckoff,
+  usePositions,
+  useSetPaperworkItems,
+} from "@/hooks/useQueries";
 import { formatDateOnly, formatTimestamp, refToDataUrl } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Eraser, PenLine } from "lucide-react";
+import { Check, Eraser, PenLine } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -486,12 +492,117 @@ function AvailabilityPanel({
   );
 }
 
+/**
+ * The paperwork checklist for one roadie. Shows only the items that apply to
+ * them (respecting "Only alcohol positions" and "Only under 18"), each with its
+ * stored checked state. Admin and Store Manager may toggle an item, which saves
+ * through `setPaperworkItems`; every other role sees the list read-only. A
+ * "Paperwork x of y" line and a Complete badge summarise progress.
+ */
+function PaperworkChecklist({ roadie }: { roadie: Roadie }) {
+  const { t } = useI18n();
+  const id = roadie.id;
+  const access = useAccessState();
+  const role = access.kind === "granted" ? access.grant.role : undefined;
+  const mayEdit = canEditRoadie(role);
+  const { data: checklists } = useChecklists();
+  const { data: positions } = usePositions();
+  const { data: checkoff, isLoading } = useOrientationCheckoff(id, true);
+  const save = useSetPaperworkItems();
+
+  const position = (positions ?? []).find(
+    (entry) => entry.id === roadie.mainPositionId,
+  );
+  const needsAlcohol = position?.needsAlcoholCert ?? false;
+  const applicable: ChecklistItem[] = (checklists?.paperwork ?? []).filter(
+    (item) =>
+      (!item.requiresAlcoholCert || needsAlcohol) &&
+      (!item.minorOnly || roadie.isMinor),
+  );
+  const checked = new Set(checkoff?.paperworkItems ?? []);
+  const done = applicable.filter((item) => checked.has(item.id.toString()));
+  const complete = applicable.length > 0 && done.length === applicable.length;
+
+  const toggle = (item: ChecklistItem, next: boolean) => {
+    const ids = new Set(checked);
+    const key = item.id.toString();
+    if (next) ids.add(key);
+    else ids.delete(key);
+    save.mutate({ roadieId: id, paperworkItems: [...ids] });
+  };
+
+  if (isLoading) return <LoadingState label={t("common.loading")} />;
+  if (applicable.length === 0) {
+    return <EmptyState title={t("roadie.paperwork.empty")} />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <span
+          data-ocid="roadie.paperwork.progress"
+          className="font-display text-sm font-semibold uppercase tracking-wide text-foreground"
+        >
+          {t("roadie.paperwork.progress", {
+            done: done.length,
+            total: applicable.length,
+          })}
+        </span>
+        {complete && (
+          <StatusBadge tone="hired" ocid="roadie.paperwork.complete">
+            <Check className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            {t("roadie.paperwork.complete")}
+          </StatusBadge>
+        )}
+      </div>
+
+      <ul className="space-y-3">
+        {applicable.map((item) => {
+          const key = item.id.toString();
+          const isChecked = checked.has(key);
+          return (
+            <li key={key} className="flex items-start gap-3">
+              <Checkbox
+                id={`paperwork-${key}`}
+                checked={isChecked}
+                disabled={!mayEdit || save.isPending}
+                data-ocid="roadie.paperwork.checkbox"
+                onCheckedChange={(next) => toggle(item, next === true)}
+              />
+              <Label
+                htmlFor={`paperwork-${key}`}
+                className="text-sm font-normal text-foreground"
+              >
+                {item.text}
+                {item.minorOnly && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {t("roadie.minor")}
+                  </span>
+                )}
+              </Label>
+            </li>
+          );
+        })}
+      </ul>
+
+      {save.isError && (
+        <p
+          role="alert"
+          data-ocid="roadie.paperwork.error_state"
+          className="text-sm text-destructive"
+        >
+          {t("roadie.paperwork.saveError")}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** The manager-only tab: contact set, availability, paperwork, history. */
 export function ManagerTab({ roadie }: { roadie: Roadie }) {
   const { t } = useI18n();
   const id = roadie.id;
   const { data: contactSet, isLoading } = useContactSet(id, true);
-  const { data: checklists } = useChecklists();
   const { data: changeLog } = useRoadieChangeLog(id);
 
   return (
@@ -526,32 +637,7 @@ export function ManagerTab({ roadie }: { roadie: Roadie }) {
         title={t("roadie.section.paperwork")}
         ocid="roadie.manager.paperwork"
       >
-        {checklists && checklists.paperwork.length > 0 ? (
-          <ul className="space-y-3">
-            {checklists.paperwork.map((item) => (
-              <li key={item.id.toString()} className="flex items-start gap-3">
-                <Checkbox
-                  id={`paperwork-${item.id.toString()}`}
-                  disabled
-                  data-ocid="roadie.paperwork.checkbox"
-                />
-                <Label
-                  htmlFor={`paperwork-${item.id.toString()}`}
-                  className="text-sm font-normal text-foreground"
-                >
-                  {item.text}
-                  {item.minorOnly && (
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {t("roadie.minor")}
-                    </span>
-                  )}
-                </Label>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EmptyState title={t("roadie.paperwork.empty")} />
-        )}
+        <PaperworkChecklist roadie={roadie} />
       </Section>
 
       <Section

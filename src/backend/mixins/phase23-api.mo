@@ -36,11 +36,6 @@ mixin (
     Phase23Lib.getOrientationCheckoff(accessGrants, demoState, orientationCheckoffs, caller, roadieId);
   };
 
-  /// Update the orientation check-off for a roadie (Admin/Store Manager only).
-  public shared ({ caller }) func updateOrientationCheckoff(checkoff : Phase23.OrientationCheckoff) : async () {
-    Phase23Lib.updateOrientationCheckoff(accessGrants, demoState, orientationCheckoffs, changeLog, counters, caller, checkoff);
-  };
-
   /// Record attendance for a roadie (Admin/Store Manager only).
   public shared ({ caller }) func recordAttendance(record : Phase23.AttendanceRecord) : async () {
     Phase23Lib.recordAttendance(accessGrants, demoState, attendance, changeLog, counters, caller, record);
@@ -58,10 +53,13 @@ mixin (
     Phase23Lib.getOrientationSessionView(accessGrants, demoState, roadies, positions, crews, schedule, checklists, orientationCheckoffs, attendance, caller, eventId);
   };
 
-  /// Mark a roadie Present at an orientation session (Admin/Store Manager
-  /// only). Idempotent so concurrent managers converge.
-  public shared ({ caller }) func markPresent(roadieId : Common.RoadieId, eventId : Common.EventId) : async () {
-    Phase23Lib.markPresent(accessGrants, demoState, roadies, attendance, changeLog, counters, caller, roadieId, eventId);
+  /// Mark a roadie Present at an orientation session (Admin, Store Manager,
+  /// Training Manager or Visiting Manager). Idempotent so concurrent managers
+  /// converge. Rejects an archived roadie. When the roadie's paperwork is
+  /// incomplete it traps "Paperwork incomplete" unless `overrideReason` is a
+  /// non-empty string and the caller is Admin or Store Manager.
+  public shared ({ caller }) func markPresent(roadieId : Common.RoadieId, eventId : Common.EventId, overrideReason : ?Text) : async () {
+    Phase23Lib.markPresent(accessGrants, demoState, roadies, positions, checklists, orientationCheckoffs, attendance, changeLog, counters, caller, roadieId, eventId, overrideReason);
   };
 
   /// Undo a roadie's Present mark at an orientation session (Admin/Store
@@ -81,15 +79,23 @@ mixin (
     Phase23Lib.archiveNoShows(accessGrants, demoState, roadies, schedule, changeLog, counters, caller, eventId);
   };
 
-  /// The uniform check-off for a roadie (Admin/Store Manager only). Locked
-  /// until the roadie's paperwork is 100% complete.
+  /// The uniform check-off for a roadie (Admin, Store Manager, Training Manager
+  /// or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
   public query ({ caller }) func getUniformCheckoff(roadieId : Common.RoadieId) : async ?Phase23.UniformCheckoffView {
     Phase23Lib.getUniformCheckoff(accessGrants, demoState, roadies, positions, checklists, orientationCheckoffs, caller, roadieId);
   };
 
-  /// Save the uniform check-off for a roadie (Admin/Store Manager only).
-  public shared ({ caller }) func saveUniformCheckoff(checkoff : Phase23.OrientationCheckoff) : async () {
-    Phase23Lib.saveUniformCheckoff(accessGrants, demoState, roadies, positions, checklists, orientationCheckoffs, changeLog, counters, caller, checkoff);
+  /// Save the uniform check-off for a roadie (Admin, Store Manager, Training
+  /// Manager or Visiting Manager). Updates only the uniform fields and keeps
+  /// the roadie's paperwork items.
+  public shared ({ caller }) func saveUniformCheckoff(roadieId : Common.RoadieId, uniformItems : [Text], uniformCounts : [(Nat, Nat)]) : async () {
+    Phase23Lib.saveUniformCheckoff(accessGrants, demoState, roadies, positions, checklists, orientationCheckoffs, changeLog, counters, caller, roadieId, uniformItems, uniformCounts);
+  };
+
+  /// Set the paperwork items for a roadie (Admin or Store Manager only, logged).
+  /// Updates only `paperworkItems` and keeps the uniform fields.
+  public shared ({ caller }) func setPaperworkItems(roadieId : Common.RoadieId, paperworkItems : [Text]) : async () {
+    Phase23Lib.setPaperworkItems(accessGrants, demoState, roadies, orientationCheckoffs, changeLog, counters, caller, roadieId, paperworkItems);
   };
 
   /// Read a training group with its unassigned and off-shift lists.

@@ -20,15 +20,15 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { useMemo, useState } from "react";
 
 /** Which list the card pop-up is navigating within. */
-type CardList = "pending" | "active" | "former";
+type CardList = "all" | "pending" | "active" | "former";
 
-/** The Pending / Active tab selection on the roster. */
-type RosterTab = "pending" | "active";
+/** The All / Pending / Active tab selection on the roster. */
+type RosterTab = "all" | "pending" | "active";
 
 export default function RosterPage() {
   const { t } = useDashboardCopy();
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<RosterTab>("active");
+  const [tab, setTab] = useState<RosterTab>("all");
   const [showFormer, setShowFormer] = useState(false);
   const [card, setCard] = useState<{ list: CardList; index: number } | null>(
     null,
@@ -95,7 +95,12 @@ export default function RosterPage() {
     canArchive(role),
   );
 
-  const shown = tab === "pending" ? pending : active;
+  const shown =
+    tab === "pending"
+      ? pending
+      : tab === "active"
+        ? active
+        : [...pending, ...active];
 
   const shownEntries: CardEntry[] = useMemo(
     () => shown.map((roadie) => ({ key: roadie.id.toString(), roadie })),
@@ -117,6 +122,11 @@ export default function RosterPage() {
   const hasAny = pending.length > 0 || active.length > 0 || archived.length > 0;
 
   const tabs: { key: RosterTab; label: string; count: number }[] = [
+    {
+      key: "all",
+      label: t("roster.filter.all"),
+      count: pending.length + active.length,
+    },
     {
       key: "pending",
       label: t("roster.filter.pending"),
@@ -200,7 +210,9 @@ export default function RosterPage() {
           title={
             tab === "pending"
               ? t("roster.emptyPending")
-              : t("roster.emptyActive")
+              : tab === "active"
+                ? t("roster.emptyActive")
+                : t("roster.emptyAll")
           }
         />
       )}
@@ -218,6 +230,13 @@ export default function RosterPage() {
               crewName={crewNameOf(roadie) ?? t("roadie.field.none")}
               crewLabel={t("roadie.field.crew")}
               paperworkIncomplete={paperworkFlags.get(roadie.id.toString())}
+              rosterStateLabel={
+                tab === "all"
+                  ? roadie.rosterState === RosterState.pending
+                    ? t("roster.filter.pending")
+                    : t("roster.filter.active")
+                  : undefined
+              }
               onOpen={() => setCard({ list: tab, index })}
               ocid="roster.item"
               statusOcid="roster.item.status"

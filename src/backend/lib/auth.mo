@@ -272,6 +272,26 @@ module {
     };
   };
 
+  /// Require an orientation-staff caller (Admin, Store Manager, Training
+  /// Manager or Visiting Manager); trap otherwise. While demo mode is on, the
+  /// caller's own impersonated demo role is consulted.
+  public func requireOrientationStaff(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    caller : Principal,
+  ) : () {
+    switch (effectiveRole(accessGrants, demoState, caller)) {
+      case (?role) {
+        if (role != #admin and role != #storeManager and role != #trainingManager and role != #visitingManager) {
+          Runtime.trap("Access denied: Admin, Store Manager, Training Manager or Visiting Manager role required");
+        };
+      };
+      case null {
+        Runtime.trap("Access denied: Admin, Store Manager, Training Manager or Visiting Manager role required");
+      };
+    };
+  };
+
   /// Require a read-capable caller (any role except Kiosk); trap otherwise.
   /// While demo mode is on, the caller's own impersonated demo role is
   /// consulted.

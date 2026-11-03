@@ -73,32 +73,6 @@ module {
     };
   };
 
-  /// Update the orientation check-off for a roadie (Admin/Store Manager only).
-  /// A check-off written while demo mode is on is a demo check-off; a write to
-  /// the other partition is rejected.
-  public func updateOrientationCheckoff(
-    accessGrants : Map.Map<Principal, Access.AccessGrant>,
-    demoState : Common.DemoState,
-    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
-    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
-    counters : Counters,
-    caller : Principal,
-    checkoff : Phase23.OrientationCheckoff,
-  ) : () {
-    Auth.requireManager(accessGrants, demoState, caller);
-    let demo = Auth.demoActive(demoState);
-    switch (checkoffs.get(checkoff.roadieId)) {
-      case (?existing) {
-        if (existing.isDemo != demo) {
-          Runtime.trap("Orientation check-off not found");
-        };
-      };
-      case null {};
-    };
-    checkoffs.add(checkoff.roadieId, { checkoff with updatedAt = effectiveNow(demoState); isDemo = demo });
-    logWrite(changeLog, counters, demoState, caller, "updateOrientationCheckoff", ?checkoff.roadieId, false, "Updated orientation check-off");
-  };
-
   /// Record attendance for a roadie at an event or shift (Admin/Store Manager
   /// only). A check-in recorded while demo mode is on is a demo check-in.
   public func recordAttendance(
@@ -151,7 +125,7 @@ module {
     caller : Principal,
     eventId : Common.EventId,
   ) : ?Phase23.OrientationSessionView {
-    requireOrientationReader(accessGrants, demoState, caller);
+    Auth.requireOrientationStaff(accessGrants, demoState, caller);
     let event = schedule.get(eventId) ?? Runtime.trap("Orientation session not found");
     if (event.kind != #orientation) {
       Runtime.trap("Schedule event is not an orientation session");
@@ -203,49 +177,63 @@ module {
     };
   };
 
-  /// Mark a roadie Present at an orientation session (Admin/Store Manager
-  /// only). Idempotent: several managers may call it concurrently and the
-  /// result converges. Sets the roadie's roster state to active and records
-  /// attendance.
+  /// Mark a roadie Present at an orientation session (Admin, Store Manager,
+  /// Training Manager or Visiting Manager). Idempotent: several managers may
+  /// call it concurrently and the result converges. Sets the roadie's roster
+  /// state to active and records attendance. Rejects an archived roadie. When
+  /// the roadie's paperwork is incomplete it traps "Paperwork incomplete"
+  /// unless `overrideReason` is a non-empty string and the caller is Admin or
+  /// Store Manager; the reason is written into the change log.
   public func markPresent(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    checklists : { var value : Store.Checklists },
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
     attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
     caller : Principal,
     roadieId : Common.RoadieId,
     eventId : Common.EventId,
+    overrideReason : ?Text,
   ) : () {
-    Auth.requireManager(accessGrants, demoState, caller);
+    Auth.requireOrientationStaff(accessGrants, demoState, caller);
     let roadie = requireVisibleRoadie(roadies, demoState, roadieId);
+    if (roadie.status == #archived) {
+      Runtime.trap("Roadie is archived; rehire first");
+    };
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState);
-    // Idempotent attendance: update the existing record for this roadie+event
-    // when present, otherwise append one.
-    switch (findAttendance(attendance, demo, roadieId, eventId)) {
-      case (?(key, existing)) {
-        attendance.add(key, { existing with state = #present; recordedAt = now; recordedBy = caller });
+    let stored = visibleCheckoff(checkoffs, demo, roadieId);
+    let paperworkComplete = paperworkStatusWith(checklists.value, positions, roadie, stored) == #complete;
+    var detail = "Marked present at orientation";
+    if (not paperworkComplete) {
+      let reason = switch (overrideReason) {
+        case (?r) { r };
+        case null { "" };
       };
-      case null {
-        let id = counters.nextAttendanceId;
-        counters.nextAttendanceId := id + 1;
-        attendance.add(id, {
-          roadieId;
-          eventId = ?eventId;
-          shift = null;
-          state = #present;
-          recordedAt = now;
-          recordedBy = caller;
-          isDemo = demo;
-        });
+      if (reason.size() == 0 or not Auth.isManager(accessGrants, demoState, caller)) {
+        Runtime.trap("Paperwork incomplete");
       };
+      detail := "Marked present with paperwork override: " # reason;
     };
-    if (roadie.rosterState != #active) {
-      roadies.add(roadieId, { roadie with rosterState = #active });
+    // Idempotent: only add an attendance record when none exists yet.
+    if (not isPresentAt(attendance, demo, roadieId, eventId)) {
+      let id = counters.nextAttendanceId;
+      counters.nextAttendanceId := id + 1;
+      attendance.add(id, {
+        roadieId;
+        eventId = ?eventId;
+        shift = null;
+        state = #present;
+        recordedAt = effectiveNow(demoState);
+        recordedBy = caller;
+        isDemo = demo;
+      });
     };
-    logWrite(changeLog, counters, demoState, caller, "markPresent", ?roadieId, false, "Marked present at orientation");
+    roadies.add(roadieId, { roadie with rosterState = #active });
+    logWrite(changeLog, counters, demoState, caller, "markPresent", ?roadieId, false, detail);
   };
 
   /// Undo a roadie's Present mark at an orientation session (Admin/Store
@@ -340,7 +328,7 @@ module {
     caller : Principal,
     roadieId : Common.RoadieId,
   ) : ?Phase23.UniformCheckoffView {
-    Auth.requireManager(accessGrants, demoState, caller);
+    Auth.requireOrientationStaff(accessGrants, demoState, caller);
     let roadie = requireVisibleRoadie(roadies, demoState, roadieId);
     let demo = Auth.demoActive(demoState);
     let stored = switch (checkoffs.get(roadieId)) {
@@ -376,8 +364,11 @@ module {
     ?{ roadieId; locked; complete; missing; items };
   };
 
-  /// Save the uniform check-off for a roadie (Admin/Store Manager only). The
-  /// check-off is locked until the roadie's paperwork is 100% complete.
+  /// Save the uniform check-off for a roadie (Admin, Store Manager, Training
+  /// Manager or Visiting Manager). Updates only the uniform fields and keeps
+  /// the roadie's paperwork items, so a uniform save never clobbers paperwork.
+  /// The check-off is locked until the roadie's paperwork is 100% complete.
+  /// Creates the check-off record when it is missing, with the active `isDemo`.
   public func saveUniformCheckoff(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -388,20 +379,83 @@ module {
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
     caller : Principal,
-    checkoff : Phase23.OrientationCheckoff,
+    roadieId : Common.RoadieId,
+    uniformItems : [Text],
+    uniformCounts : [(Nat, Nat)],
   ) : () {
-    Auth.requireManager(accessGrants, demoState, caller);
-    let roadie = requireVisibleRoadie(roadies, demoState, checkoff.roadieId);
+    Auth.requireOrientationStaff(accessGrants, demoState, caller);
+    let roadie = requireVisibleRoadie(roadies, demoState, roadieId);
     let demo = Auth.demoActive(demoState);
-    if (paperworkStatusWith(checklists.value, positions, roadie, visibleCheckoff(checkoffs, demo, checkoff.roadieId)) == #incomplete) {
+    let existing = visibleCheckoff(checkoffs, demo, roadieId);
+    if (paperworkStatusWith(checklists.value, positions, roadie, existing) == #incomplete) {
       Runtime.trap("Paperwork incomplete");
     };
-    checkoffs.add(checkoff.roadieId, {
-      checkoff with
+    let base = switch (existing) {
+      case (?c) { c };
+      case null {
+        {
+          roadieId;
+          uniformItems = [];
+          uniformCounts = [];
+          paperworkItems = [];
+          shirtsCount = 0;
+          hatsCount = 0;
+          updatedAt = 0;
+          isDemo = demo;
+        };
+      };
+    };
+    // Update only the uniform fields; keep the roadie's paperwork items.
+    checkoffs.add(roadieId, {
+      base with
+      uniformItems;
+      uniformCounts;
       updatedAt = effectiveNow(demoState);
-      isDemo = demo;
     });
-    logWrite(changeLog, counters, demoState, caller, "saveUniformCheckoff", ?checkoff.roadieId, false, "Saved uniform check-off");
+    logWrite(changeLog, counters, demoState, caller, "saveUniformCheckoff", ?roadieId, false, "Saved uniform check-off");
+  };
+
+  /// Set the paperwork items for a roadie (Admin or Store Manager only, logged).
+  /// Updates only `paperworkItems` and keeps the uniform fields, so a paperwork
+  /// save never clobbers the uniform check-off. Creates the check-off record
+  /// when it is missing, with the active `isDemo`.
+  public func setPaperworkItems(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    roadieId : Common.RoadieId,
+    paperworkItems : [Text],
+  ) : () {
+    Auth.requireManager(accessGrants, demoState, caller);
+    let roadie = requireVisibleRoadie(roadies, demoState, roadieId);
+    let demo = Auth.demoActive(demoState);
+    let existing = visibleCheckoff(checkoffs, demo, roadieId);
+    let base = switch (existing) {
+      case (?c) { c };
+      case null {
+        {
+          roadieId;
+          uniformItems = [];
+          uniformCounts = [];
+          paperworkItems = [];
+          shirtsCount = 0;
+          hatsCount = 0;
+          updatedAt = 0;
+          isDemo = demo;
+        };
+      };
+    };
+    // Update only the paperwork items; keep the roadie's uniform fields.
+    checkoffs.add(roadieId, {
+      base with
+      paperworkItems;
+      updatedAt = effectiveNow(demoState);
+    });
+    logWrite(changeLog, counters, demoState, caller, "setPaperworkItems", ?roadieId, false, "Set paperwork items");
   };
 
   // --- Training groups ---
@@ -801,22 +855,6 @@ module {
       .toArray();
     for (k in doomed.values()) {
       attendance.remove(k);
-    };
-  };
-
-  /// Internal: require a caller who may read the orientation check-in screen
-  /// (Admin, Store Manager, Training Manager or Visiting Manager).
-  func requireOrientationReader(
-    accessGrants : Map.Map<Principal, Access.AccessGrant>,
-    demoState : Common.DemoState,
-    caller : Principal,
-  ) : () {
-    let role = Auth.requireReadable(accessGrants, demoState, caller);
-    switch (role) {
-      case (#admin or #storeManager or #trainingManager or #visitingManager) {};
-      case (_) {
-        Runtime.trap("Access denied: Admin, Store Manager, Training Manager or Visiting Manager role required");
-      };
     };
   };
 

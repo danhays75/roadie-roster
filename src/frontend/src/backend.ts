@@ -1015,8 +1015,8 @@ export interface backendInterface {
      */
     getTrainingGroup(id: TrainingGroupId): Promise<TrainingGroupView | null>;
     /**
-     * / The uniform check-off for a roadie (Admin/Store Manager only). Locked
-     * / until the roadie's paperwork is 100% complete.
+     * / The uniform check-off for a roadie (Admin, Store Manager, Training Manager
+     * / or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
      */
     getUniformCheckoff(roadieId: RoadieId): Promise<UniformCheckoffView | null>;
     /**
@@ -1094,10 +1094,13 @@ export interface backendInterface {
      */
     loadStoreTemplate(file: StoreTemplateFile): Promise<TemplateLoadResult>;
     /**
-     * / Mark a roadie Present at an orientation session (Admin/Store Manager
-     * / only). Idempotent so concurrent managers converge.
+     * / Mark a roadie Present at an orientation session (Admin, Store Manager,
+     * / Training Manager or Visiting Manager). Idempotent so concurrent managers
+     * / converge. Rejects an archived roadie. When the roadie's paperwork is
+     * / incomplete it traps "Paperwork incomplete" unless `overrideReason` is a
+     * / non-empty string and the caller is Admin or Store Manager.
      */
-    markPresent(roadieId: RoadieId, eventId: EventId): Promise<void>;
+    markPresent(roadieId: RoadieId, eventId: EventId, overrideReason: string | null): Promise<void>;
     /**
      * / Move a roadie to another orientation session (Admin/Store Manager only).
      */
@@ -1138,9 +1141,11 @@ export interface backendInterface {
      */
     saveStoreTemplate(name: string): Promise<void>;
     /**
-     * / Save the uniform check-off for a roadie (Admin/Store Manager only).
+     * / Save the uniform check-off for a roadie (Admin, Store Manager, Training
+     * / Manager or Visiting Manager). Updates only the uniform fields and keeps
+     * / the roadie's paperwork items.
      */
-    saveUniformCheckoff(checkoff: OrientationCheckoff): Promise<void>;
+    saveUniformCheckoff(roadieId: RoadieId, uniformItems: Array<string>, uniformCounts: Array<[bigint, bigint]>): Promise<void>;
     schema(): Promise<string>;
     /**
      * / Turn demo mode on or off (Admin only). Turning it on requires the literal
@@ -1162,6 +1167,11 @@ export interface backendInterface {
      * / Record per-roadie attendance for a leader talk (Admin/Store Manager only).
      */
     setLeaderTalkAttendance(id: LeaderTalkId, attendees: Array<RoadieId>): Promise<void>;
+    /**
+     * / Set the paperwork items for a roadie (Admin or Store Manager only, logged).
+     * / Updates only `paperworkItems` and keeps the uniform fields.
+     */
+    setPaperworkItems(roadieId: RoadieId, paperworkItems: Array<string>): Promise<void>;
     /**
      * / Set or clear the pretend "now" used while demo mode is on. Null restores
      * / the real clock.
@@ -1201,10 +1211,6 @@ export interface backendInterface {
      * / Update the signed-in caller's own staff profile on their access grant.
      */
     updateMyStaffProfile(profile: StaffProfile): Promise<void>;
-    /**
-     * / Update the orientation check-off for a roadie (Admin/Store Manager only).
-     */
-    updateOrientationCheckoff(checkoff: OrientationCheckoff): Promise<void>;
     /**
      * / Update a position (Admin only).
      */
@@ -2327,17 +2333,17 @@ export class Backend implements backendInterface {
             return from_candid_TemplateLoadResult_n207(this._uploadFile, this._downloadFile, result);
         }
     }
-    async markPresent(arg0: RoadieId, arg1: EventId): Promise<void> {
+    async markPresent(arg0: RoadieId, arg1: EventId, arg2: string | null): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.markPresent(arg0, arg1);
+                const result = await this.actor.markPresent(arg0, arg1, to_candid_opt_n209(this._uploadFile, this._downloadFile, arg2));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.markPresent(arg0, arg1);
+            const result = await this.actor.markPresent(arg0, arg1, to_candid_opt_n209(this._uploadFile, this._downloadFile, arg2));
             return result;
         }
     }
@@ -2358,42 +2364,42 @@ export class Backend implements backendInterface {
     async recordAttendance(arg0: AttendanceRecord): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.recordAttendance(to_candid_AttendanceRecord_n209(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.recordAttendance(to_candid_AttendanceRecord_n210(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.recordAttendance(to_candid_AttendanceRecord_n209(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.recordAttendance(to_candid_AttendanceRecord_n210(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
     async recordFinalSignOff(arg0: FinalSignOff): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n212(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n213(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n212(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n213(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
     async rehireRoadie(arg0: RoadieId, arg1: string | null): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.rehireRoadie(arg0, to_candid_opt_n216(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.rehireRoadie(arg0, to_candid_opt_n209(this._uploadFile, this._downloadFile, arg1));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.rehireRoadie(arg0, to_candid_opt_n216(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.rehireRoadie(arg0, to_candid_opt_n209(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
     }
@@ -2467,17 +2473,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async saveUniformCheckoff(arg0: OrientationCheckoff): Promise<void> {
+    async saveUniformCheckoff(arg0: RoadieId, arg1: Array<string>, arg2: Array<[bigint, bigint]>): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.saveUniformCheckoff(arg0);
+                const result = await this.actor.saveUniformCheckoff(arg0, arg1, arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.saveUniformCheckoff(arg0);
+            const result = await this.actor.saveUniformCheckoff(arg0, arg1, arg2);
             return result;
         }
     }
@@ -2548,6 +2554,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.setLeaderTalkAttendance(arg0, arg1);
+            return result;
+        }
+    }
+    async setPaperworkItems(arg0: RoadieId, arg1: Array<string>): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setPaperworkItems(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setPaperworkItems(arg0, arg1);
             return result;
         }
     }
@@ -2674,20 +2694,6 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.updateMyStaffProfile(to_candid_StaffProfile_n20(this._uploadFile, this._downloadFile, arg0));
-            return result;
-        }
-    }
-    async updateOrientationCheckoff(arg0: OrientationCheckoff): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.updateOrientationCheckoff(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.updateOrientationCheckoff(arg0);
             return result;
         }
     }
@@ -4650,10 +4656,10 @@ function to_candid_ApprovalRequest_n17(_uploadFile: (file: ExternalBlob) => Prom
 function to_candid_ArchiveReason_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ArchiveReason): _ArchiveReason {
     return to_candid_variant_n23(_uploadFile, _downloadFile, value);
 }
-function to_candid_AttendanceRecord_n209(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AttendanceRecord): _AttendanceRecord {
-    return to_candid_record_n210(_uploadFile, _downloadFile, value);
+function to_candid_AttendanceRecord_n210(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AttendanceRecord): _AttendanceRecord {
+    return to_candid_record_n211(_uploadFile, _downloadFile, value);
 }
-function to_candid_AttendanceState_n211(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AttendanceState): _AttendanceState {
+function to_candid_AttendanceState_n212(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AttendanceState): _AttendanceState {
     return value == AttendanceState.present ? {
         present: null
     } : value == AttendanceState.late ? {
@@ -4715,8 +4721,8 @@ function to_candid_EventKind_n48(_uploadFile: (file: ExternalBlob) => Promise<Ui
         orientation: null
     } : value;
 }
-function to_candid_FinalSignOff_n212(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: FinalSignOff): _FinalSignOff {
-    return to_candid_record_n213(_uploadFile, _downloadFile, value);
+function to_candid_FinalSignOff_n213(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: FinalSignOff): _FinalSignOff {
+    return to_candid_record_n214(_uploadFile, _downloadFile, value);
 }
 function to_candid_GiftBagFilter_n99(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: GiftBagFilter): _GiftBagFilter {
     return to_candid_variant_n100(_uploadFile, _downloadFile, value);
@@ -4785,8 +4791,8 @@ function to_candid_Shift_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
         pm: null
     } : value;
 }
-function to_candid_SignOffOutcome_n214(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: SignOffOutcome): _SignOffOutcome {
-    return to_candid_variant_n215(_uploadFile, _downloadFile, value);
+function to_candid_SignOffOutcome_n215(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: SignOffOutcome): _SignOffOutcome {
+    return to_candid_variant_n216(_uploadFile, _downloadFile, value);
 }
 function to_candid_StaffProfile_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: StaffProfile): _StaffProfile {
     return to_candid_record_n21(_uploadFile, _downloadFile, value);
@@ -4848,7 +4854,7 @@ function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile: (fil
 function to_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ImmutableObjectStorageRefillInformation | null): [] | [__ImmutableObjectStorageRefillInformation] {
     return value === null ? candid_none() : candid_some(to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value));
 }
-function to_candid_opt_n216(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: string | null): [] | [string] {
+function to_candid_opt_n209(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: string | null): [] | [string] {
     return value === null ? candid_none() : candid_some(value);
 }
 function to_candid_opt_n220(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: PretendDate | null): [] | [_PretendDate] {
@@ -5133,7 +5139,7 @@ function to_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         favoriteColor: value.favoriteColor ? candid_some(value.favoriteColor) : candid_none()
     };
 }
-function to_candid_record_n210(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n211(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     eventId?: EventId;
     roadieId: RoadieId;
     isDemo: boolean;
@@ -5157,10 +5163,10 @@ function to_candid_record_n210(_uploadFile: (file: ExternalBlob) => Promise<Uint
         recordedAt: value.recordedAt,
         recordedBy: value.recordedBy,
         shift: value.shift ? candid_some(to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)) : candid_none(),
-        state: to_candid_AttendanceState_n211(_uploadFile, _downloadFile, value.state)
+        state: to_candid_AttendanceState_n212(_uploadFile, _downloadFile, value.state)
     };
 }
-function to_candid_record_n213(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n214(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     roadieId: RoadieId;
     isDemo: boolean;
     signedAt: Timestamp;
@@ -5180,7 +5186,7 @@ function to_candid_record_n213(_uploadFile: (file: ExternalBlob) => Promise<Uint
         isDemo: value.isDemo,
         signedAt: value.signedAt,
         signedBy: value.signedBy,
-        outcome: to_candid_SignOffOutcome_n214(_uploadFile, _downloadFile, value.outcome),
+        outcome: to_candid_SignOffOutcome_n215(_uploadFile, _downloadFile, value.outcome),
         futureTrainer: value.futureTrainer
     };
 }
@@ -5508,7 +5514,7 @@ function to_candid_variant_n100(_uploadFile: (file: ExternalBlob) => Promise<Uin
         position: value.position
     } : value;
 }
-function to_candid_variant_n215(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_variant_n216(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     __kind__: "certified";
     certified: null;
 } | {

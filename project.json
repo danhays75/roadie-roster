@@ -1,21 +1,19 @@
 {
-  "overview": "Roadie Roster manages hiring, orientation and opening-week staffing for a new store, with a demo mode for safe practice.",
+  "overview": "A store team app for managing roadie sign-ups, orientation check-in, paperwork, uniforms, crews and rosters.",
   "features": [
-    "Track roadies through pending and active roster states",
-    "Schedule orientation sessions and assign roadies automatically",
-    "Gate orientation on completed paperwork with a due date",
-    "Check roadies in at orientation with a uniform check-off",
-    "Set per-position uniform defaults for shirts and hats",
-    "Flag and archive no-shows with new archive reasons",
-    "Keep demo data fully separate from real records"
+    "Track roadie sign-ups and approvals",
+    "Run orientation check-in with present and undo",
+    "Check off uniform and paperwork items",
+    "Manage crews, leaders and rosters",
+    "Role-based access for managers and trainers",
+    "Demo mode with fake data"
   ],
-  "category": "staffing",
+  "category": "team-management",
   "tags": [
-    "staffing",
-    "hiring",
+    "roster",
     "orientation",
-    "retail",
-    "roster"
+    "staffing",
+    "retail"
   ],
-  "last_updated": "2026-11-03T04:21:57.484Z"
+  "last_updated": "2026-11-03T11:28:06.437Z"
 }

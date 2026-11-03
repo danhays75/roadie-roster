@@ -12,6 +12,7 @@
 - Leader About Me fields use the same labels, placeholders, Spanish copy and 200-character caps as the kiosk
 - Leaders never count toward on-hand or build-to and never appear in the position roster
 - No contact information on any card or gift bag label
+- Do not touch tests and change nothing else
 
 ## Accepted Requirements
 
@@ -107,12 +108,6 @@
 
 ## Learnings
 
-- The Approve sign-up screen is src/frontend/src/pages/Approvals.tsx; PendingSignupCard pre-selects the crew led by the approving user via an effect keyed on loaded crews plus a touched flag, and DuplicateList renders the matched roadie's name, main position, match type and archived state as a link to /roster/$roadieId.
-- RoadieTile (src/frontend/src/components/roadie/RoadieTile.tsx) is the shared roadie tile: photo via useRoadiePhoto(roadie.id) + memoized refToDataUrl, 4:3 object-cover top, navy-on-cream initials fallback, name, status badge, crew tag, MINOR tag, and a grayscale archived variant.
-- RoadieCardModal (src/frontend/src/components/roadie/RoadieCardModal.tsx) is the shared card pop-up: Radix Dialog with FlipCard at 420px max, flip, X/outside/Esc/back-button close via a pushed history entry, swipe/arrow/prev-next navigation, an N of M counter, neighbor photo preload, and a manager-only full-profile link.
-- RoadieCardModal.close() must call the close callback directly after history.back(); the popstate handler only fires for genuine back-button navigations (pushed.current still true), so relying on popstate alone leaves X/Esc/tap-outside unable to close the modal.
-- The position roster dialog's Present-mode banner renders StoreLogo (data-ocid=store.logo); the modal's FlipCard uses StoreSeal, so the banner is the dialog's only store mark.
-- The position roster dialog and Roster page both have a Show former (n) toggle revealing archived roadies in a separate No longer a roadie section with grayscale tiles and the archive reason; archived roadies never count toward on-hand.
 - The inherited suite has 22 pre-existing failing tests that predate this draft and remain failing; the Leaders page test that expected a direct anchor link to /leaders/<principal> was updated for the new tile-opens-pop-up behavior.
 - Demo mode lives in src/backend/lib/demo.mo with the firewall helpers; main.mo includes DemoApi and exposes getDemoState, setDemoMode, setDemoRole, setPretendDate, getDemoDataSummary, loadDemoData and clearDemoData.
 - Demo records are marked with isDemo on Roadie, Crew, ChangeLogEntry, SignupSubmission, AttendanceRecord and TrainerNote; every read, list, count and export filters isDemo == Auth.demoActive(demoState).
@@ -132,3 +127,9 @@
 - Demo mode lives in src/backend/lib/demo.mo; every read, list, count and export filters isDemo == Auth.demoActive(demoState).
 - archiveReasonLabel in src/frontend/src/components/roadie/RoadieTile.tsx is shared by the roadie tile and PositionRosterDialog's ArchivedRow; it maps ncnsOrientation and paperworkIncomplete.
 - The inherited frontend suite has pre-existing failing tests that predate this draft; the tester owns src/frontend/src/__tests__/ and test/pocketic/.
+- Orientation check-off writes are split: saveUniformCheckoff(roadieId, uniformItems, uniformCounts) writes only uniform fields and setPaperworkItems(roadieId, paperworkItems) writes only paperworkItems, so neither clobbers the other; both create the record with the active isDemo when missing.
+- Auth.requireOrientationStaff (admin, storeManager, trainingManager, visitingManager) guards getOrientationSessionView, markPresent, getUniformCheckoff and saveUniformCheckoff; undoPresent, moveRoadieToSession, archiveNoShows, rehire and the paperwork override stay Admin/Store Manager only.
+- markPresent(roadieId, eventId, overrideReason : ?Text) traps 'Paperwork incomplete' unless an Admin or Store Manager supplies a non-empty reason, which is logged as 'Marked present with paperwork override: <reason>', and rejects archived roadies with 'Roadie is archived; rehire first'.
+- Orientation.tsx separates canPresent (canOrientation, includes trainingManager/visitingManager) from canManage (canArchive, Admin/Store Manager only) so the Present button is enabled for orientation staff while archive/move/undo/override stay manager-only.
+- Roster.tsx defaults to an All tab (Pending + Active together) and passes rosterStateLabel to RoadieTile only on the All tab; the CardList type includes 'all'.
+- ManagerTab.tsx wires the paperwork checkboxes to setPaperworkItems with applicable-item filtering, a 'Paperwork n of m' count and a Complete badge; useSetPaperworkItems invalidates roster, orientation session and alerts.

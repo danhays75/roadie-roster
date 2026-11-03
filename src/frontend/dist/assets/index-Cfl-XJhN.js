@@ -33817,7 +33817,11 @@ Service({
 	"listTrainerNotes": Func([RoadieId], [Vec(TrainerNote)], ["query"]),
 	"loadDemoData": Func([], [DemoDataSummary], []),
 	"loadStoreTemplate": Func([StoreTemplateFile], [TemplateLoadResult], []),
-	"markPresent": Func([RoadieId, EventId], [], []),
+	"markPresent": Func([
+		RoadieId,
+		EventId,
+		Opt(Text)
+	], [], []),
 	"moveRoadieToSession": Func([RoadieId, EventId], [], []),
 	"recordAttendance": Func([AttendanceRecord], [], []),
 	"recordFinalSignOff": Func([FinalSignOff], [], []),
@@ -33827,12 +33831,17 @@ Service({
 	"requestAccess": Func([], [Bool], []),
 	"resignAvailability": Func([RoadieId, SignatureRef], [], []),
 	"saveStoreTemplate": Func([Text], [], []),
-	"saveUniformCheckoff": Func([OrientationCheckoff], [], []),
+	"saveUniformCheckoff": Func([
+		RoadieId,
+		Vec(Text),
+		Vec(Tuple(Nat, Nat))
+	], [], []),
 	"schema": Func([], [Text], ["query"]),
 	"setDemoMode": Func([Bool, Text], [DemoActionResult], []),
 	"setDemoRole": Func([DemoRole$1, Vec(PositionId)], [DemoActionResult], []),
 	"setKioskPin": Func([Text], [], []),
 	"setLeaderTalkAttendance": Func([LeaderTalkId, Vec(RoadieId)], [], []),
+	"setPaperworkItems": Func([RoadieId, Vec(Text)], [], []),
 	"setPretendDate": Func([Opt(PretendDate)], [DemoActionResult], []),
 	"submitSignup": Func([
 		RoadieProfile,
@@ -33851,7 +33860,6 @@ Service({
 		Opt(Principal)
 	], [], []),
 	"updateMyStaffProfile": Func([StaffProfile], [], []),
-	"updateOrientationCheckoff": Func([OrientationCheckoff], [], []),
 	"updatePosition": Func([Position], [], []),
 	"updateRetentionSettings": Func([RetentionSettings], [], []),
 	"updateRoadieDetails": Func([RoadieId, RoadieProfile], [], []),
@@ -34613,7 +34621,11 @@ var idlFactory = ({ IDL }) => {
 		"listTrainerNotes": IDL.Func([RoadieId], [IDL.Vec(TrainerNote)], ["query"]),
 		"loadDemoData": IDL.Func([], [DemoDataSummary], []),
 		"loadStoreTemplate": IDL.Func([StoreTemplateFile], [TemplateLoadResult], []),
-		"markPresent": IDL.Func([RoadieId, EventId], [], []),
+		"markPresent": IDL.Func([
+			RoadieId,
+			EventId,
+			IDL.Opt(IDL.Text)
+		], [], []),
 		"moveRoadieToSession": IDL.Func([RoadieId, EventId], [], []),
 		"recordAttendance": IDL.Func([AttendanceRecord], [], []),
 		"recordFinalSignOff": IDL.Func([FinalSignOff], [], []),
@@ -34623,12 +34635,17 @@ var idlFactory = ({ IDL }) => {
 		"requestAccess": IDL.Func([], [IDL.Bool], []),
 		"resignAvailability": IDL.Func([RoadieId, SignatureRef], [], []),
 		"saveStoreTemplate": IDL.Func([IDL.Text], [], []),
-		"saveUniformCheckoff": IDL.Func([OrientationCheckoff], [], []),
+		"saveUniformCheckoff": IDL.Func([
+			RoadieId,
+			IDL.Vec(IDL.Text),
+			IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Nat))
+		], [], []),
 		"schema": IDL.Func([], [IDL.Text], ["query"]),
 		"setDemoMode": IDL.Func([IDL.Bool, IDL.Text], [DemoActionResult], []),
 		"setDemoRole": IDL.Func([DemoRole, IDL.Vec(PositionId)], [DemoActionResult], []),
 		"setKioskPin": IDL.Func([IDL.Text], [], []),
 		"setLeaderTalkAttendance": IDL.Func([LeaderTalkId, IDL.Vec(RoadieId)], [], []),
+		"setPaperworkItems": IDL.Func([RoadieId, IDL.Vec(IDL.Text)], [], []),
 		"setPretendDate": IDL.Func([IDL.Opt(PretendDate)], [DemoActionResult], []),
 		"submitSignup": IDL.Func([
 			RoadieProfile,
@@ -34647,7 +34664,6 @@ var idlFactory = ({ IDL }) => {
 			IDL.Opt(IDL.Principal)
 		], [], []),
 		"updateMyStaffProfile": IDL.Func([StaffProfile], [], []),
-		"updateOrientationCheckoff": IDL.Func([OrientationCheckoff], [], []),
 		"updatePosition": IDL.Func([Position], [], []),
 		"updateRetentionSettings": IDL.Func([RetentionSettings], [], []),
 		"updateRoadieDetails": IDL.Func([RoadieId, RoadieProfile], [], []),
@@ -35614,14 +35630,14 @@ var Backend = class {
 			return from_candid_TemplateLoadResult_n207(this._uploadFile, this._downloadFile, result);
 		}
 	}
-	async markPresent(arg0, arg1) {
+	async markPresent(arg0, arg1, arg2) {
 		if (this.processError) try {
-			return await this.actor.markPresent(arg0, arg1);
+			return await this.actor.markPresent(arg0, arg1, to_candid_opt_n209(this._uploadFile, this._downloadFile, arg2));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.markPresent(arg0, arg1);
+		else return await this.actor.markPresent(arg0, arg1, to_candid_opt_n209(this._uploadFile, this._downloadFile, arg2));
 	}
 	async moveRoadieToSession(arg0, arg1) {
 		if (this.processError) try {
@@ -35634,30 +35650,30 @@ var Backend = class {
 	}
 	async recordAttendance(arg0) {
 		if (this.processError) try {
-			return await this.actor.recordAttendance(to_candid_AttendanceRecord_n209(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.recordAttendance(to_candid_AttendanceRecord_n210(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.recordAttendance(to_candid_AttendanceRecord_n209(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.recordAttendance(to_candid_AttendanceRecord_n210(this._uploadFile, this._downloadFile, arg0));
 	}
 	async recordFinalSignOff(arg0) {
 		if (this.processError) try {
-			return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n212(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n213(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n212(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n213(this._uploadFile, this._downloadFile, arg0));
 	}
 	async rehireRoadie(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.rehireRoadie(arg0, to_candid_opt_n216(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.rehireRoadie(arg0, to_candid_opt_n209(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.rehireRoadie(arg0, to_candid_opt_n216(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.rehireRoadie(arg0, to_candid_opt_n209(this._uploadFile, this._downloadFile, arg1));
 	}
 	async rejectSignup(arg0) {
 		if (this.processError) try {
@@ -35704,14 +35720,14 @@ var Backend = class {
 		}
 		else return await this.actor.saveStoreTemplate(arg0);
 	}
-	async saveUniformCheckoff(arg0) {
+	async saveUniformCheckoff(arg0, arg1, arg2) {
 		if (this.processError) try {
-			return await this.actor.saveUniformCheckoff(arg0);
+			return await this.actor.saveUniformCheckoff(arg0, arg1, arg2);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.saveUniformCheckoff(arg0);
+		else return await this.actor.saveUniformCheckoff(arg0, arg1, arg2);
 	}
 	async schema() {
 		if (this.processError) try {
@@ -35765,6 +35781,15 @@ var Backend = class {
 			throw new Error("unreachable");
 		}
 		else return await this.actor.setLeaderTalkAttendance(arg0, arg1);
+	}
+	async setPaperworkItems(arg0, arg1) {
+		if (this.processError) try {
+			return await this.actor.setPaperworkItems(arg0, arg1);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else return await this.actor.setPaperworkItems(arg0, arg1);
 	}
 	async setPretendDate(arg0) {
 		if (this.processError) try {
@@ -35850,15 +35875,6 @@ var Backend = class {
 			throw new Error("unreachable");
 		}
 		else return await this.actor.updateMyStaffProfile(to_candid_StaffProfile_n20(this._uploadFile, this._downloadFile, arg0));
-	}
-	async updateOrientationCheckoff(arg0) {
-		if (this.processError) try {
-			return await this.actor.updateOrientationCheckoff(arg0);
-		} catch (e) {
-			this.processError(e);
-			throw new Error("unreachable");
-		}
-		else return await this.actor.updateOrientationCheckoff(arg0);
 	}
 	async updatePosition(arg0) {
 		if (this.processError) try {
@@ -36899,10 +36915,10 @@ function to_candid_ApprovalRequest_n17(_uploadFile, _downloadFile, value) {
 function to_candid_ArchiveReason_n22(_uploadFile, _downloadFile, value) {
 	return to_candid_variant_n23(_uploadFile, _downloadFile, value);
 }
-function to_candid_AttendanceRecord_n209(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n210(_uploadFile, _downloadFile, value);
+function to_candid_AttendanceRecord_n210(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n211(_uploadFile, _downloadFile, value);
 }
-function to_candid_AttendanceState_n211(_uploadFile, _downloadFile, value) {
+function to_candid_AttendanceState_n212(_uploadFile, _downloadFile, value) {
 	return value == "present" ? { present: null } : value == "late" ? { late: null } : value == "absent" ? { absent: null } : value;
 }
 function to_candid_AvailabilitySlot_n231(_uploadFile, _downloadFile, value) {
@@ -36926,8 +36942,8 @@ function to_candid_DemoShift_n223(_uploadFile, _downloadFile, value) {
 function to_candid_EventKind_n48(_uploadFile, _downloadFile, value) {
 	return value == "other" ? { other: null } : value == "signOff" ? { signOff: null } : value == "deadline" ? { deadline: null } : value == "friendsAndFamily" ? { friendsAndFamily: null } : value == "openingDay" ? { openingDay: null } : value == "trainingDay" ? { trainingDay: null } : value == "orientation" ? { orientation: null } : value;
 }
-function to_candid_FinalSignOff_n212(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n213(_uploadFile, _downloadFile, value);
+function to_candid_FinalSignOff_n213(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n214(_uploadFile, _downloadFile, value);
 }
 function to_candid_GiftBagFilter_n99(_uploadFile, _downloadFile, value) {
 	return to_candid_variant_n100(_uploadFile, _downloadFile, value);
@@ -36956,8 +36972,8 @@ function to_candid_ScheduleEvent_n46(_uploadFile, _downloadFile, value) {
 function to_candid_Shift_n14(_uploadFile, _downloadFile, value) {
 	return value == "am" ? { am: null } : value == "pm" ? { pm: null } : value;
 }
-function to_candid_SignOffOutcome_n214(_uploadFile, _downloadFile, value) {
-	return to_candid_variant_n215(_uploadFile, _downloadFile, value);
+function to_candid_SignOffOutcome_n215(_uploadFile, _downloadFile, value) {
+	return to_candid_variant_n216(_uploadFile, _downloadFile, value);
 }
 function to_candid_StaffProfile_n20(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n21(_uploadFile, _downloadFile, value);
@@ -36995,7 +37011,7 @@ function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _dow
 function to_candid_opt_n1(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value));
 }
-function to_candid_opt_n216(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n209(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
 function to_candid_opt_n220(_uploadFile, _downloadFile, value) {
@@ -37124,7 +37140,7 @@ function to_candid_record_n21(_uploadFile, _downloadFile, value) {
 		favoriteColor: value.favoriteColor ? candid_some(value.favoriteColor) : candid_none()
 	};
 }
-function to_candid_record_n210(_uploadFile, _downloadFile, value) {
+function to_candid_record_n211(_uploadFile, _downloadFile, value) {
 	return {
 		eventId: value.eventId ? candid_some(value.eventId) : candid_none(),
 		roadieId: value.roadieId,
@@ -37132,16 +37148,16 @@ function to_candid_record_n210(_uploadFile, _downloadFile, value) {
 		recordedAt: value.recordedAt,
 		recordedBy: value.recordedBy,
 		shift: value.shift ? candid_some(to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)) : candid_none(),
-		state: to_candid_AttendanceState_n211(_uploadFile, _downloadFile, value.state)
+		state: to_candid_AttendanceState_n212(_uploadFile, _downloadFile, value.state)
 	};
 }
-function to_candid_record_n213(_uploadFile, _downloadFile, value) {
+function to_candid_record_n214(_uploadFile, _downloadFile, value) {
 	return {
 		roadieId: value.roadieId,
 		isDemo: value.isDemo,
 		signedAt: value.signedAt,
 		signedBy: value.signedBy,
-		outcome: to_candid_SignOffOutcome_n214(_uploadFile, _downloadFile, value.outcome),
+		outcome: to_candid_SignOffOutcome_n215(_uploadFile, _downloadFile, value.outcome),
 		futureTrainer: value.futureTrainer
 	};
 }
@@ -37257,7 +37273,7 @@ function to_candid_record_n50(_uploadFile, _downloadFile, value) {
 function to_candid_variant_n100(_uploadFile, _downloadFile, value) {
 	return value.__kind__ === "all" ? { all: value.all } : value.__kind__ === "boh" ? { boh: value.boh } : value.__kind__ === "foh" ? { foh: value.foh } : value.__kind__ === "roadies" ? { roadies: value.roadies } : value.__kind__ === "leaders" ? { leaders: value.leaders } : value.__kind__ === "position" ? { position: value.position } : value;
 }
-function to_candid_variant_n215(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n216(_uploadFile, _downloadFile, value) {
 	return value.__kind__ === "certified" ? { certified: value.certified } : value.__kind__ === "needsMoreTime" ? { needsMoreTime: value.needsMoreTime } : value;
 }
 function to_candid_variant_n23(_uploadFile, _downloadFile, value) {
@@ -47325,7 +47341,7 @@ function useMarkPresent() {
 	return useMutation({
 		mutationFn: async (args) => {
 			if (!actor) throw new Error("Backend is not ready");
-			return actor.markPresent(args.roadieId, args.eventId);
+			return actor.markPresent(args.roadieId, args.eventId, args.overrideReason ?? null);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["orientationSession"] });
@@ -47417,19 +47433,68 @@ function useUniformCheckoff(roadieId, enabled = true) {
 	});
 }
 /**
-* Save the uniform check-off for a roadie (Admin/Store Manager only).
-* Invalidates the check-off read so the saved state is reflected.
+* A roadie's orientation check-off: the stored paperwork items and uniform
+* fields. Readable by Admin and Store Manager only, so callers pass `enabled`
+* to avoid a trapping read for other roles.
+*/
+function useOrientationCheckoff(roadieId, enabled = true) {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["orientationCheckoff", roadieId?.toString()],
+		queryFn: async () => {
+			if (!actor || roadieId === void 0) return null;
+			return actor.getOrientationCheckoff(roadieId);
+		},
+		enabled: enabled && !!actor && !isFetching && roadieId !== void 0
+	});
+}
+/**
+* Save the uniform check-off for a roadie (Admin/Store Manager only). Writes
+* only the uniform fields, so the roadie's paperwork items are preserved.
+* Invalidates the check-off read plus the roster tile, the orientation list and
+* the alerts so every surface reflects the save.
 */
 function useSaveUniformCheckoff() {
 	const { actor } = useActor(createActor);
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (checkoff) => {
+		mutationFn: async (args) => {
 			if (!actor) throw new Error("Backend is not ready");
-			return actor.saveUniformCheckoff(checkoff);
+			return actor.saveUniformCheckoff(args.roadieId, args.uniformItems, args.uniformCounts);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["uniformCheckoff"] });
+			queryClient.invalidateQueries({ queryKey: ["orientationCheckoff"] });
+			queryClient.invalidateQueries({ queryKey: ["orientationSession"] });
+			queryClient.invalidateQueries({ queryKey: ["roadies"] });
+			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+			queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
+			queryClient.invalidateQueries({ queryKey: ["alerts"] });
+			queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+		}
+	});
+}
+/**
+* Set a roadie's paperwork items (Admin/Store Manager only). Writes only the
+* paperwork items, so the uniform fields are preserved. Invalidates the
+* check-off read plus the roster tile, the orientation list and the alerts so
+* every surface reflects the save.
+*/
+function useSetPaperworkItems() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (args) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.setPaperworkItems(args.roadieId, args.paperworkItems);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["orientationCheckoff"] });
+			queryClient.invalidateQueries({ queryKey: ["orientationSession"] });
+			queryClient.invalidateQueries({ queryKey: ["roadies"] });
+			queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+			queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
+			queryClient.invalidateQueries({ queryKey: ["alerts"] });
 			queryClient.invalidateQueries({ queryKey: ["changeLog"] });
 		}
 	});
@@ -47945,10 +48010,13 @@ var dictionaries = {
 		"roster.search": "Search roadies",
 		"roster.searchPlaceholder": "Search by name or position",
 		"roster.filter.all": "All",
+		"roster.filter.pending": "Pending",
 		"roster.filter.active": "Active",
 		"roster.filter.archived": "Archived",
 		"roster.empty": "No roadies match your search.",
 		"roster.emptyAll": "No roadies have been added yet.",
+		"roster.emptyPending": "No pending roadies right now.",
+		"roster.emptyActive": "No active roadies right now.",
 		"roster.loading": "Loading roster…",
 		"roster.error": "We couldn't load the roster.",
 		"roster.viewCard": "View card",
@@ -48039,6 +48107,9 @@ var dictionaries = {
 		"roadie.managerOnly": "Visible to Admin and Store Manager only.",
 		"roadie.manager.empty": "No manager details recorded yet.",
 		"roadie.paperwork.empty": "No paperwork items configured.",
+		"roadie.paperwork.progress": "Paperwork {done} of {total}",
+		"roadie.paperwork.complete": "Complete",
+		"roadie.paperwork.saveError": "We couldn't save that paperwork change.",
 		"roadie.changeHistory.empty": "No changes recorded for this roadie.",
 		"roadie.changeHistory.touchesContact": "Contact set",
 		"roadie.edit.title": "Edit details",
@@ -48476,10 +48547,13 @@ var dictionaries = {
 		"roster.search": "Buscar roadies",
 		"roster.searchPlaceholder": "Buscar por nombre o puesto",
 		"roster.filter.all": "Todos",
+		"roster.filter.pending": "Pendientes",
 		"roster.filter.active": "Activos",
 		"roster.filter.archived": "Archivados",
 		"roster.empty": "Ningún roadie coincide con tu búsqueda.",
 		"roster.emptyAll": "Aún no se ha añadido ningún roadie.",
+		"roster.emptyPending": "No hay roadies pendientes ahora.",
+		"roster.emptyActive": "No hay roadies activos ahora.",
 		"roster.loading": "Cargando plantilla…",
 		"roster.error": "No pudimos cargar la plantilla.",
 		"roster.viewCard": "Ver ficha",
@@ -48570,6 +48644,9 @@ var dictionaries = {
 		"roadie.managerOnly": "Visible solo para Admin y Gerente de tienda.",
 		"roadie.manager.empty": "Aún no hay datos de gerente.",
 		"roadie.paperwork.empty": "No hay elementos de papeleo configurados.",
+		"roadie.paperwork.progress": "Papeleo {done} de {total}",
+		"roadie.paperwork.complete": "Completo",
+		"roadie.paperwork.saveError": "No pudimos guardar ese cambio de papeleo.",
 		"roadie.changeHistory.empty": "No hay cambios registrados para este roadie.",
 		"roadie.changeHistory.touchesContact": "Datos de contacto",
 		"roadie.edit.title": "Editar datos",
@@ -57976,7 +58053,7 @@ function usePaperworkIncompleteMap(roadies, enabled) {
 * grayscale and shows the archive reason instead of the status badge. When
 * `paperworkIncomplete` is set, a red "Paperwork incomplete" flag is shown.
 */
-function RoadieTile({ roadie, positionName, crewName, crewLabel, paperworkIncomplete: paperworkFlag, onOpen, ocid = "roadie.tile", statusOcid, photoOcid, className }) {
+function RoadieTile({ roadie, positionName, crewName, crewLabel, paperworkIncomplete: paperworkFlag, rosterStateLabel, onOpen, ocid = "roadie.tile", statusOcid, photoOcid, className }) {
 	const { data: photo } = useRoadiePhoto(roadie.id);
 	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(photo), [photo]);
 	const name = roadie.profile.preferredName || roadie.profile.name;
@@ -58027,6 +58104,11 @@ function RoadieTile({ roadie, positionName, crewName, crewLabel, paperworkIncomp
 								tone: statusTone(roadie.status),
 								ocid: statusOcid,
 								children: roadieStatusLabel(roadie.status)
+							}),
+							rosterStateLabel && !isArchived && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
+								tone: roadie.rosterState === RosterState.pending ? "pending" : "hired",
+								ocid: ocid ? `${ocid}.roster_state` : void 0,
+								children: rosterStateLabel
 							}),
 							(crewLabel || crewName) && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								"data-ocid": ocid ? `${ocid}.crew` : void 0,
@@ -99597,7 +99679,7 @@ function initialsOf(name) {
 * Override and mark Present action. A roadie still Pending whose session has
 * passed shows a red No-Show tag. Tapping the row opens the uniform check-off.
 */
-function OrientationRoadieRow({ row, index, canManage, canOverride, presentPending, onMarkPresent, onUndoPresent, onArchiveIncomplete, onOverride, onMove, onOpenUniform }) {
+function OrientationRoadieRow({ row, index, canManage, canPresent, canOverride, presentPending, onMarkPresent, onUndoPresent, onArchiveIncomplete, onOverride, onMove, onOpenUniform }) {
 	const c = useOrientationCopy();
 	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(row.photo), [row.photo]);
 	const paperworkIncomplete = row.paperworkStatus === PaperworkStatus.incomplete;
@@ -99679,7 +99761,7 @@ function OrientationRoadieRow({ row, index, canManage, canOverride, presentPendi
 					type: "button",
 					className: "touch-target min-w-[7rem]",
 					"data-ocid": `orientation.roadie.present_button.${index + 1}`,
-					disabled: !canManage || presentPending,
+					disabled: !canPresent || presentPending,
 					onClick: () => onMarkPresent(row.roadieId),
 					children: [presentPending ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
 						className: "mr-2 h-4 w-4 animate-spin",
@@ -99751,7 +99833,8 @@ function OverridePresentDialog({ roadieId, roadieName, eventId, open, onOpenChan
 		setError(null);
 		markPresent.mutate({
 			roadieId,
-			eventId
+			eventId,
+			overrideReason: reason.trim()
 		}, { onSuccess: () => onOpenChange(false) });
 	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
@@ -99809,7 +99892,7 @@ function OverridePresentDialog({ roadieId, roadieName, eventId, open, onOpenChan
 							disabled: markPresent.isPending,
 							onClick: onSubmit,
 							children: [markPresent.isPending && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
-								className: "mr-2 h-4 w-4 animate-spin",
+								className: "mr-2 h-4 w-4 motion-safe:animate-spin",
 								"aria-hidden": "true"
 							}), c.overrideConfirm]
 						})
@@ -99833,11 +99916,6 @@ function toDraft(items) {
 /** Whether a draft item is satisfied: a checked box, or a positive count. */
 function isSatisfied(item) {
 	return item.itemType === UniformItemType.checkbox ? item.checked : item.count > 0;
-}
-/** The count item whose text names shirts or hats, for the totals fields. */
-function countFor(items, keyword) {
-	const match = items.find((item) => item.itemType === UniformItemType.count && item.text.toLowerCase().includes(keyword));
-	return match ? match.count : 0;
 }
 /**
 * The uniform check-off for one roadie. The items come from the orientation
@@ -99871,17 +99949,11 @@ function UniformCheckoffDialog({ roadieId, roadieName, open, onOpenChange }) {
 	};
 	const onSubmit = () => {
 		if (roadieId === void 0) return;
-		const checkoff = {
+		save.mutate({
 			roadieId,
 			uniformItems: draft.filter((item) => item.checked).map((item) => item.itemId.toString()),
-			uniformCounts: draft.filter((item) => item.itemType === UniformItemType.count).map((item) => [item.itemId, BigInt(item.count)]),
-			shirtsCount: BigInt(countFor(draft, "shirt")),
-			hatsCount: BigInt(countFor(draft, "hat")),
-			paperworkItems: [],
-			isDemo: false,
-			updatedAt: 0n
-		};
-		save.mutate(checkoff, { onSuccess: () => setSaved(true) });
+			uniformCounts: draft.filter((item) => item.itemType === UniformItemType.count).map((item) => [item.itemId, BigInt(item.count)])
+		}, { onSuccess: () => setSaved(true) });
 	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
 		open,
@@ -100028,7 +100100,7 @@ function UniformCheckoffDialog({ roadieId, roadieName, open, onOpenChange }) {
 							disabled: locked || save.isPending || draft.length === 0,
 							onClick: onSubmit,
 							children: [save.isPending && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
-								className: "mr-2 h-4 w-4 animate-spin",
+								className: "mr-2 h-4 w-4 motion-safe:animate-spin",
 								"aria-hidden": "true"
 							}), save.isPending ? c.uniformSaving : c.uniformSave]
 						})
@@ -100215,6 +100287,7 @@ function OrientationPage() {
 	const role = access.kind === "granted" ? access.grant.role : void 0;
 	const canManage = canArchive(role);
 	const mayView = canOrientation(role);
+	const canPresent = mayView;
 	const { data: storeInfo } = useStoreInfo();
 	const timeZone = storeInfo?.timeZone || "America/Chicago";
 	const { data: schedule } = useSchedule();
@@ -100381,6 +100454,7 @@ function OrientationPage() {
 						row,
 						index,
 						canManage,
+						canPresent,
 						canOverride: canManage,
 						presentPending: markPresent.isPending && markPresent.variables?.roadieId === row.roadieId,
 						onMarkPresent,
@@ -100907,12 +100981,98 @@ function AvailabilityPanel({ id, contactSet }) {
 		]
 	});
 }
+/**
+* The paperwork checklist for one roadie. Shows only the items that apply to
+* them (respecting "Only alcohol positions" and "Only under 18"), each with its
+* stored checked state. Admin and Store Manager may toggle an item, which saves
+* through `setPaperworkItems`; every other role sees the list read-only. A
+* "Paperwork x of y" line and a Complete badge summarise progress.
+*/
+function PaperworkChecklist({ roadie }) {
+	const { t } = useI18n();
+	const id = roadie.id;
+	const access = useAccessState();
+	const mayEdit = canEditRoadie(access.kind === "granted" ? access.grant.role : void 0);
+	const { data: checklists } = useChecklists();
+	const { data: positions } = usePositions();
+	const { data: checkoff, isLoading } = useOrientationCheckoff(id, true);
+	const save = useSetPaperworkItems();
+	const needsAlcohol = (positions ?? []).find((entry) => entry.id === roadie.mainPositionId)?.needsAlcoholCert ?? false;
+	const applicable = (checklists?.paperwork ?? []).filter((item) => (!item.requiresAlcoholCert || needsAlcohol) && (!item.minorOnly || roadie.isMinor));
+	const checked = new Set(checkoff?.paperworkItems ?? []);
+	const done = applicable.filter((item) => checked.has(item.id.toString()));
+	const complete = applicable.length > 0 && done.length === applicable.length;
+	const toggle = (item, next) => {
+		const ids = new Set(checked);
+		const key = item.id.toString();
+		if (next) ids.add(key);
+		else ids.delete(key);
+		save.mutate({
+			roadieId: id,
+			paperworkItems: [...ids]
+		});
+	};
+	if (isLoading) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("common.loading") });
+	if (applicable.length === 0) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: t("roadie.paperwork.empty") });
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-4",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex flex-wrap items-center gap-3",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					"data-ocid": "roadie.paperwork.progress",
+					className: "font-display text-sm font-semibold uppercase tracking-wide text-foreground",
+					children: t("roadie.paperwork.progress", {
+						done: done.length,
+						total: applicable.length
+					})
+				}), complete && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(StatusBadge, {
+					tone: "hired",
+					ocid: "roadie.paperwork.complete",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, {
+						className: "mr-1 h-3.5 w-3.5",
+						"aria-hidden": "true"
+					}), t("roadie.paperwork.complete")]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
+				className: "space-y-3",
+				children: applicable.map((item) => {
+					const key = item.id.toString();
+					const isChecked = checked.has(key);
+					return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+						className: "flex items-start gap-3",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Checkbox, {
+							id: `paperwork-${key}`,
+							checked: isChecked,
+							disabled: !mayEdit || save.isPending,
+							"data-ocid": "roadie.paperwork.checkbox",
+							onCheckedChange: (next) => toggle(item, next === true)
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Label, {
+							htmlFor: `paperwork-${key}`,
+							className: "text-sm font-normal text-foreground",
+							children: [item.text, item.minorOnly && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "ml-2 text-xs text-muted-foreground",
+								children: t("roadie.minor")
+							})]
+						})]
+					}, key);
+				})
+			}),
+			save.isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				role: "alert",
+				"data-ocid": "roadie.paperwork.error_state",
+				className: "text-sm text-destructive",
+				children: t("roadie.paperwork.saveError")
+			})
+		]
+	});
+}
 /** The manager-only tab: contact set, availability, paperwork, history. */
 function ManagerTab({ roadie }) {
 	const { t } = useI18n();
 	const id = roadie.id;
 	const { data: contactSet, isLoading } = useContactSet(id, true);
-	const { data: checklists } = useChecklists();
 	const { data: changeLog } = useRoadieChangeLog(id);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-5",
@@ -100941,24 +101101,7 @@ function ManagerTab({ roadie }) {
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Section, {
 				title: t("roadie.section.paperwork"),
 				ocid: "roadie.manager.paperwork",
-				children: checklists && checklists.paperwork.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
-					className: "space-y-3",
-					children: checklists.paperwork.map((item) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
-						className: "flex items-start gap-3",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Checkbox, {
-							id: `paperwork-${item.id.toString()}`,
-							disabled: true,
-							"data-ocid": "roadie.paperwork.checkbox"
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Label, {
-							htmlFor: `paperwork-${item.id.toString()}`,
-							className: "text-sm font-normal text-foreground",
-							children: [item.text, item.minorOnly && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: "ml-2 text-xs text-muted-foreground",
-								children: t("roadie.minor")
-							})]
-						})]
-					}, item.id.toString()))
-				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: t("roadie.paperwork.empty") })
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PaperworkChecklist, { roadie })
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Section, {
 				title: t("roadie.field.corporateId"),
@@ -102020,7 +102163,7 @@ function RoadieCardPage() {
 function RosterPage() {
 	const { t } = useDashboardCopy();
 	const [query, setQuery] = (0, import_react.useState)("");
-	const [tab, setTab] = (0, import_react.useState)("active");
+	const [tab, setTab] = (0, import_react.useState)("all");
 	const [showFormer, setShowFormer] = (0, import_react.useState)(false);
 	const [card, setCard] = (0, import_react.useState)(null);
 	const { data: roadies, isLoading, isError, refetch } = useRoadies();
@@ -102063,7 +102206,7 @@ function RosterPage() {
 		positionMap
 	]);
 	const paperworkFlags = usePaperworkIncompleteMap(roadies ?? [], canArchive(role));
-	const shown = tab === "pending" ? pending : active;
+	const shown = tab === "pending" ? pending : tab === "active" ? active : [...pending, ...active];
 	const shownEntries = (0, import_react.useMemo)(() => shown.map((roadie) => ({
 		key: roadie.id.toString(),
 		roadie
@@ -102075,15 +102218,23 @@ function RosterPage() {
 	const positionNameOf = (roadie) => positionMap.get(roadie.mainPositionId.toString())?.name ?? t("roadie.field.none");
 	const crewNameOf = (roadie) => roadie.crewId === void 0 ? void 0 : crewMap.get(roadie.crewId.toString());
 	const hasAny = pending.length > 0 || active.length > 0 || archived.length > 0;
-	const tabs = [{
-		key: "pending",
-		label: t("roster.filter.pending"),
-		count: pending.length
-	}, {
-		key: "active",
-		label: t("roster.filter.active"),
-		count: active.length
-	}];
+	const tabs = [
+		{
+			key: "all",
+			label: t("roster.filter.all"),
+			count: pending.length + active.length
+		},
+		{
+			key: "pending",
+			label: t("roster.filter.pending"),
+			count: pending.length
+		},
+		{
+			key: "active",
+			label: t("roster.filter.active"),
+			count: active.length
+		}
+	];
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-6",
 		"data-ocid": "roster.page",
@@ -102135,7 +102286,7 @@ function RosterPage() {
 				onRetry: () => void refetch()
 			}),
 			!isLoading && !isError && !hasAny && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: query ? t("roster.empty") : t("roster.emptyAll") }),
-			!isLoading && !isError && hasAny && shown.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: tab === "pending" ? t("roster.emptyPending") : t("roster.emptyActive") }),
+			!isLoading && !isError && hasAny && shown.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: tab === "pending" ? t("roster.emptyPending") : tab === "active" ? t("roster.emptyActive") : t("roster.emptyAll") }),
 			shown.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
 				className: "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4",
 				"data-ocid": "roster.list",
@@ -102145,6 +102296,7 @@ function RosterPage() {
 					crewName: crewNameOf(roadie) ?? t("roadie.field.none"),
 					crewLabel: t("roadie.field.crew"),
 					paperworkIncomplete: paperworkFlags.get(roadie.id.toString()),
+					rosterStateLabel: tab === "all" ? roadie.rosterState === RosterState.pending ? t("roster.filter.pending") : t("roster.filter.active") : void 0,
 					onOpen: () => setCard({
 						list: tab,
 						index

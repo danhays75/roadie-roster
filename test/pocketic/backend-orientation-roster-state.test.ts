@@ -177,8 +177,11 @@ describe("backend orientation and roster state", () => {
     expect(before[0]?.roadies[0]?.roadieId).toBe(roadieId);
     expect(before[0]?.roadies[0]?.present).toBe(false);
 
-    // Marking Present sets Active and records attendance.
-    await admin.markPresent(roadieId, eventId);
+    // Marking Present sets Active and records attendance. The Servers position
+    // needs an alcohol cert, so the roadie's paperwork must be complete first
+    // (the request adds the paperwork gate to markPresent).
+    await admin.setPaperworkItems(roadieId, ["0", "1", "2", "3"]);
+    await admin.markPresent(roadieId, eventId, []);
     const afterPresent = await admin.getRoadie(roadieId);
     expect(afterPresent[0]?.rosterState).toEqual({ active: null });
 

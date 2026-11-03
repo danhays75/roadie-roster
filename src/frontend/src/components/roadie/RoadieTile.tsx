@@ -7,7 +7,7 @@ import type {
   Roadie,
   RoadieId,
 } from "@/backend";
-import { RoadieStatus, createActor } from "@/backend";
+import { RoadieStatus, RosterState, createActor } from "@/backend";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   useChecklists,
@@ -178,6 +178,7 @@ export function RoadieTile({
   crewName,
   crewLabel,
   paperworkIncomplete: paperworkFlag,
+  rosterStateLabel,
   onOpen,
   ocid = "roadie.tile",
   statusOcid,
@@ -195,6 +196,11 @@ export function RoadieTile({
   crewLabel?: string;
   /** When true, show the red "Paperwork incomplete" flag on the tile. */
   paperworkIncomplete?: boolean;
+  /**
+   * When set, show a Pending/Active badge derived from the roadie's roster
+   * state. Used on the Roster page's All tab, where both states are mixed.
+   */
+  rosterStateLabel?: string;
   onOpen: (roadie: Roadie) => void;
   ocid?: string;
   statusOcid?: string;
@@ -262,6 +268,18 @@ export function RoadieTile({
             ) : (
               <StatusBadge tone={statusTone(roadie.status)} ocid={statusOcid}>
                 {roadieStatusLabel(roadie.status)}
+              </StatusBadge>
+            )}
+            {rosterStateLabel && !isArchived && (
+              <StatusBadge
+                tone={
+                  roadie.rosterState === RosterState.pending
+                    ? "pending"
+                    : "hired"
+                }
+                ocid={ocid ? `${ocid}.roster_state` : undefined}
+              >
+                {rosterStateLabel}
               </StatusBadge>
             )}
             {(crewLabel || crewName) && (

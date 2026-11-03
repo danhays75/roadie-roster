@@ -856,8 +856,8 @@ export interface _SERVICE {
    */
   'getTrainingGroup' : ActorMethod<[TrainingGroupId], [] | [TrainingGroupView]>,
   /**
-   * / The uniform check-off for a roadie (Admin/Store Manager only). Locked
-   * / until the roadie's paperwork is 100% complete.
+   * / The uniform check-off for a roadie (Admin, Store Manager, Training Manager
+   * / or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
    */
   'getUniformCheckoff' : ActorMethod<[RoadieId], [] | [UniformCheckoffView]>,
   /**
@@ -935,10 +935,13 @@ export interface _SERVICE {
    */
   'loadStoreTemplate' : ActorMethod<[StoreTemplateFile], TemplateLoadResult>,
   /**
-   * / Mark a roadie Present at an orientation session (Admin/Store Manager
-   * / only). Idempotent so concurrent managers converge.
+   * / Mark a roadie Present at an orientation session (Admin, Store Manager,
+   * / Training Manager or Visiting Manager). Idempotent so concurrent managers
+   * / converge. Rejects an archived roadie. When the roadie's paperwork is
+   * / incomplete it traps "Paperwork incomplete" unless `overrideReason` is a
+   * / non-empty string and the caller is Admin or Store Manager.
    */
-  'markPresent' : ActorMethod<[RoadieId, EventId], undefined>,
+  'markPresent' : ActorMethod<[RoadieId, EventId, [] | [string]], undefined>,
   /**
    * / Move a roadie to another orientation session (Admin/Store Manager only).
    */
@@ -979,9 +982,14 @@ export interface _SERVICE {
    */
   'saveStoreTemplate' : ActorMethod<[string], undefined>,
   /**
-   * / Save the uniform check-off for a roadie (Admin/Store Manager only).
+   * / Save the uniform check-off for a roadie (Admin, Store Manager, Training
+   * / Manager or Visiting Manager). Updates only the uniform fields and keeps
+   * / the roadie's paperwork items.
    */
-  'saveUniformCheckoff' : ActorMethod<[OrientationCheckoff], undefined>,
+  'saveUniformCheckoff' : ActorMethod<
+    [RoadieId, Array<string>, Array<[bigint, bigint]>],
+    undefined
+  >,
   'schema' : ActorMethod<[], string>,
   /**
    * / Turn demo mode on or off (Admin only). Turning it on requires the literal
@@ -1006,6 +1014,11 @@ export interface _SERVICE {
     [LeaderTalkId, Array<RoadieId>],
     undefined
   >,
+  /**
+   * / Set the paperwork items for a roadie (Admin or Store Manager only, logged).
+   * / Updates only `paperworkItems` and keeps the uniform fields.
+   */
+  'setPaperworkItems' : ActorMethod<[RoadieId, Array<string>], undefined>,
   /**
    * / Set or clear the pretend "now" used while demo mode is on. Null restores
    * / the real clock.
@@ -1048,10 +1061,6 @@ export interface _SERVICE {
    * / Update the signed-in caller's own staff profile on their access grant.
    */
   'updateMyStaffProfile' : ActorMethod<[StaffProfile], undefined>,
-  /**
-   * / Update the orientation check-off for a roadie (Admin/Store Manager only).
-   */
-  'updateOrientationCheckoff' : ActorMethod<[OrientationCheckoff], undefined>,
   /**
    * / Update a position (Admin only).
    */

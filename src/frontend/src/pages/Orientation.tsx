@@ -80,6 +80,11 @@ export default function OrientationPage() {
   const role = access.kind === "granted" ? access.grant.role : undefined;
   const canManage = canArchive(role);
   const mayView = canOrientation(role);
+  // Marking a roadie present is allowed for every role that may view the
+  // orientation surface (admin, store manager, training manager, visiting
+  // manager); the archive, move, undo and override controls stay Admin/Store
+  // Manager only via canManage.
+  const canPresent = mayView;
 
   const { data: storeInfo } = useStoreInfo();
   const timeZone = storeInfo?.timeZone || DEFAULT_TIME_ZONE;
@@ -276,6 +281,7 @@ export default function OrientationPage() {
                   row={row}
                   index={index}
                   canManage={canManage}
+                  canPresent={canPresent}
                   canOverride={canManage}
                   presentPending={
                     markPresent.isPending &&

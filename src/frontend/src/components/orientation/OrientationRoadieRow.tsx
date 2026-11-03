@@ -31,6 +31,7 @@ export function OrientationRoadieRow({
   row,
   index,
   canManage,
+  canPresent,
   canOverride,
   presentPending,
   onMarkPresent,
@@ -43,6 +44,7 @@ export function OrientationRoadieRow({
   row: OrientationRoadieRowData;
   index: number;
   canManage: boolean;
+  canPresent: boolean;
   canOverride: boolean;
   presentPending: boolean;
   onMarkPresent: (roadieId: RoadieId) => void;
@@ -153,7 +155,7 @@ export function OrientationRoadieRow({
               type="button"
               className="touch-target min-w-[7rem]"
               data-ocid={`orientation.roadie.present_button.${index + 1}`}
-              disabled={!canManage || presentPending}
+              disabled={!canPresent || presentPending}
               onClick={() => onMarkPresent(row.roadieId)}
             >
               {presentPending ? (

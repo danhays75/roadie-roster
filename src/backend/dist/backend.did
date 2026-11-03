@@ -887,8 +887,8 @@ service : {
   getStoreLogo: () -> (StoreLogos) query;
   /// Read a training group with its unassigned and off-shift lists.
   getTrainingGroup: (id: TrainingGroupId) -> (opt TrainingGroupView) query;
-  /// The uniform check-off for a roadie (Admin/Store Manager only). Locked
-  /// until the roadie's paperwork is 100% complete.
+  /// The uniform check-off for a roadie (Admin, Store Manager, Training Manager
+  /// or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
   getUniformCheckoff: (roadieId: RoadieId) -> (opt UniformCheckoffView) query;
   /// True when an Admin has set a kiosk PIN.
   hasKioskPin: () -> (bool) query;
@@ -930,9 +930,13 @@ service : {
   /// Load a store template file, replacing positions, schedule and checklists
   /// (Admin only). Refuses when any roadie exists.
   loadStoreTemplate: (file: StoreTemplateFile) -> (TemplateLoadResult);
-  /// Mark a roadie Present at an orientation session (Admin/Store Manager
-  /// only). Idempotent so concurrent managers converge.
-  markPresent: (roadieId: RoadieId, eventId: EventId) -> ();
+  /// Mark a roadie Present at an orientation session (Admin, Store Manager,
+  /// Training Manager or Visiting Manager). Idempotent so concurrent managers
+  /// converge. Rejects an archived roadie. When the roadie's paperwork is
+  /// incomplete it traps "Paperwork incomplete" unless `overrideReason` is a
+  /// non-empty string and the caller is Admin or Store Manager.
+  markPresent: (roadieId: RoadieId, eventId: EventId, overrideReason:
+   opt text) -> ();
   /// Move a roadie to another orientation session (Admin/Store Manager only).
   moveRoadieToSession: (roadieId: RoadieId, eventId: EventId) -> ();
   /// Record attendance for a roadie (Admin/Store Manager only).
@@ -954,8 +958,14 @@ service : {
   resignAvailability: (id: RoadieId, signature: SignatureRef) -> ();
   /// Save the current store configuration as a template (Admin only).
   saveStoreTemplate: (name: text) -> ();
-  /// Save the uniform check-off for a roadie (Admin/Store Manager only).
-  saveUniformCheckoff: (checkoff: OrientationCheckoff) -> ();
+  /// Save the uniform check-off for a roadie (Admin, Store Manager, Training
+  /// Manager or Visiting Manager). Updates only the uniform fields and keeps
+  /// the roadie's paperwork items.
+  saveUniformCheckoff: (roadieId: RoadieId, uniformItems: vec text,
+   uniformCounts: vec record {
+                        nat;
+                        nat;
+                      }) -> ();
   schema: () -> (text) query;
   /// Turn demo mode on or off (Admin only). Turning it on requires the literal
   /// confirmation "DEMO"; turning it on sets the eight-hour auto-off time.
@@ -970,6 +980,9 @@ service : {
   setKioskPin: (pin: text) -> ();
   /// Record per-roadie attendance for a leader talk (Admin/Store Manager only).
   setLeaderTalkAttendance: (id: LeaderTalkId, attendees: vec RoadieId) -> ();
+  /// Set the paperwork items for a roadie (Admin or Store Manager only, logged).
+  /// Updates only `paperworkItems` and keeps the uniform fields.
+  setPaperworkItems: (roadieId: RoadieId, paperworkItems: vec text) -> ();
   /// Set or clear the pretend "now" used while demo mode is on. Null restores
   /// the real clock.
   setPretendDate: (pretendDate: opt PretendDate) -> (DemoActionResult);
@@ -993,8 +1006,6 @@ service : {
   updateCrew: (id: CrewId, name: text, leaderPrincipal: opt principal) -> ();
   /// Update the signed-in caller's own staff profile on their access grant.
   updateMyStaffProfile: (profile: StaffProfile) -> ();
-  /// Update the orientation check-off for a roadie (Admin/Store Manager only).
-  updateOrientationCheckoff: (checkoff: OrientationCheckoff) -> ();
   /// Update a position (Admin only).
   updatePosition: (position: Position) -> ();
   /// Update retention settings (Admin only).

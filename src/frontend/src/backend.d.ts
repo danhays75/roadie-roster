@@ -949,8 +949,8 @@ export interface backendInterface {
      */
     getTrainingGroup(id: TrainingGroupId): Promise<TrainingGroupView | null>;
     /**
-     * / The uniform check-off for a roadie (Admin/Store Manager only). Locked
-     * / until the roadie's paperwork is 100% complete.
+     * / The uniform check-off for a roadie (Admin, Store Manager, Training Manager
+     * / or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
      */
     getUniformCheckoff(roadieId: RoadieId): Promise<UniformCheckoffView | null>;
     /**
@@ -1028,10 +1028,13 @@ export interface backendInterface {
      */
     loadStoreTemplate(file: StoreTemplateFile): Promise<TemplateLoadResult>;
     /**
-     * / Mark a roadie Present at an orientation session (Admin/Store Manager
-     * / only). Idempotent so concurrent managers converge.
+     * / Mark a roadie Present at an orientation session (Admin, Store Manager,
+     * / Training Manager or Visiting Manager). Idempotent so concurrent managers
+     * / converge. Rejects an archived roadie. When the roadie's paperwork is
+     * / incomplete it traps "Paperwork incomplete" unless `overrideReason` is a
+     * / non-empty string and the caller is Admin or Store Manager.
      */
-    markPresent(roadieId: RoadieId, eventId: EventId): Promise<void>;
+    markPresent(roadieId: RoadieId, eventId: EventId, overrideReason: string | null): Promise<void>;
     /**
      * / Move a roadie to another orientation session (Admin/Store Manager only).
      */
@@ -1072,9 +1075,11 @@ export interface backendInterface {
      */
     saveStoreTemplate(name: string): Promise<void>;
     /**
-     * / Save the uniform check-off for a roadie (Admin/Store Manager only).
+     * / Save the uniform check-off for a roadie (Admin, Store Manager, Training
+     * / Manager or Visiting Manager). Updates only the uniform fields and keeps
+     * / the roadie's paperwork items.
      */
-    saveUniformCheckoff(checkoff: OrientationCheckoff): Promise<void>;
+    saveUniformCheckoff(roadieId: RoadieId, uniformItems: Array<string>, uniformCounts: Array<[bigint, bigint]>): Promise<void>;
     schema(): Promise<string>;
     /**
      * / Turn demo mode on or off (Admin only). Turning it on requires the literal
@@ -1096,6 +1101,11 @@ export interface backendInterface {
      * / Record per-roadie attendance for a leader talk (Admin/Store Manager only).
      */
     setLeaderTalkAttendance(id: LeaderTalkId, attendees: Array<RoadieId>): Promise<void>;
+    /**
+     * / Set the paperwork items for a roadie (Admin or Store Manager only, logged).
+     * / Updates only `paperworkItems` and keeps the uniform fields.
+     */
+    setPaperworkItems(roadieId: RoadieId, paperworkItems: Array<string>): Promise<void>;
     /**
      * / Set or clear the pretend "now" used while demo mode is on. Null restores
      * / the real clock.
@@ -1135,10 +1145,6 @@ export interface backendInterface {
      * / Update the signed-in caller's own staff profile on their access grant.
      */
     updateMyStaffProfile(profile: StaffProfile): Promise<void>;
-    /**
-     * / Update the orientation check-off for a roadie (Admin/Store Manager only).
-     */
-    updateOrientationCheckoff(checkoff: OrientationCheckoff): Promise<void>;
     /**
      * / Update a position (Admin only).
      */
