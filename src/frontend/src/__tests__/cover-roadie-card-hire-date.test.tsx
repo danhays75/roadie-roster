@@ -48,7 +48,7 @@ const SECOND_POSITION: Position = {
   needsAlcoholCert: false,
 };
 
-const CREW: Crew = { id: 7n, name: "Opening Crew" };
+const CREW: Crew = { id: 7n, name: "Opening Crew", isDemo: false };
 
 const CONTACT: ContactSet = {
   phone: "+1-555-0100",
@@ -94,6 +94,7 @@ const FULL_ROADIE: Roadie = {
   crewId: 7n,
   birthdayMonthDay: "03-14",
   isMinor: true,
+  isDemo: false,
   hiredAt: 0n,
   hireDate: HIRE_TS,
   startDate: 0n,
@@ -120,6 +121,7 @@ const FALLBACK_ROADIE: Roadie = {
   mainPositionId: 0n,
   isMinor: false,
   hiredAt: HIRE_TS,
+  isDemo: false,
   profile: { name: "Bake Lee" },
   contactSet: CONTACT,
 };

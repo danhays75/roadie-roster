@@ -28,8 +28,14 @@ import { KioskSignatureStep } from "@/components/kiosk/KioskSignatureStep";
 import { KioskSuccess } from "@/components/kiosk/KioskSuccess";
 import { useKioskCopy } from "@/components/kiosk/copy";
 import { Button } from "@/components/ui/button";
+import { useDemo } from "@/hooks/useDemo";
 import { useI18n } from "@/hooks/useI18n";
-import { dateToDateOnly, fileToRef, resizeImageFile } from "@/lib/format";
+import {
+  dateToDateOnly,
+  fileToRef,
+  pretendDateToInstant,
+  resizeImageFile,
+} from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useMutation } from "@tanstack/react-query";
@@ -42,7 +48,7 @@ import {
   Send,
   UserRound,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Phase = "welcome" | "form" | "success";
 
@@ -76,11 +82,10 @@ const SUCCESS_RESET_MS = 10_000;
 /** Any step with no input for this long resets the whole kiosk. */
 const IDLE_RESET_MS = 90_000;
 
-/** Whole years between a date of birth and today, in UTC. */
-function ageInYears(dateOfBirth: string): number | null {
+/** Whole years between a date of birth and a reference instant, in UTC. */
+function ageInYears(dateOfBirth: string, now: Date): number | null {
   const dob = new Date(`${dateOfBirth}T00:00:00Z`);
   if (Number.isNaN(dob.getTime())) return null;
-  const now = new Date();
   let age = now.getUTCFullYear() - dob.getUTCFullYear();
   const monthDiff = now.getUTCMonth() - dob.getUTCMonth();
   if (
@@ -229,6 +234,18 @@ export default function KioskPage() {
   const t = useKioskCopy();
   const { setLocale } = useI18n();
   const { actor } = useActor(createActor);
+  const demo = useDemo();
+
+  // While demo mode is on with a pretend date, the kiosk's date-dependent
+  // checks (age math and the date-of-birth-in-the-past rule) use that instant
+  // instead of the real clock.
+  const effectiveNow = useMemo(() => {
+    if (demo.enabled && demo.pretendDate) {
+      const instant = pretendDateToInstant(demo.pretendDate);
+      if (instant) return instant;
+    }
+    return new Date();
+  }, [demo.enabled, demo.pretendDate]);
 
   const [phase, setPhase] = useState<Phase>("welcome");
   const [step, setStep] = useState(0);
@@ -356,10 +373,10 @@ export default function KioskPage() {
         next.dateOfBirth = t("error.dobRequired");
       } else {
         const dob = new Date(`${contact.dateOfBirth}T00:00:00Z`);
-        const age = ageInYears(contact.dateOfBirth);
+        const age = ageInYears(contact.dateOfBirth, effectiveNow);
         if (Number.isNaN(dob.getTime()) || age === null) {
           next.dateOfBirth = t("error.dobInvalid");
-        } else if (dob.getTime() >= Date.now()) {
+        } else if (dob.getTime() >= effectiveNow.getTime()) {
           next.dateOfBirth = t("error.dobPast");
         } else if (age < MIN_AGE || age > MAX_AGE) {
           next.dateOfBirth = t("error.dobAge");

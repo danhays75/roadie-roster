@@ -1,5 +1,6 @@
 import { Role, createActor } from "@/backend";
 import { ApprovalGate } from "@/components/ApprovalGate";
+import { DemoBannerHost } from "@/components/DemoBanner";
 import { AuthenticatedApp, useSignOut } from "@/components/InternetIdentity";
 import { Layout } from "@/components/Layout";
 import { EmptyState, LoadingState } from "@/components/States";
@@ -426,14 +427,16 @@ export default function App() {
 
   return (
     <I18nContext.Provider value={i18n}>
-      <AuthenticatedApp
-        title={i18n.t("auth.title")}
-        description={i18n.t("auth.description")}
-        className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground"
-        buttonClassName="touch-target rounded-md bg-primary px-5 py-3 font-display font-semibold uppercase tracking-wider text-primary-foreground transition-smooth hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
-      >
-        <RouterProvider router={router} />
-      </AuthenticatedApp>
+      <DemoBannerHost>
+        <AuthenticatedApp
+          title={i18n.t("auth.title")}
+          description={i18n.t("auth.description")}
+          className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground"
+          buttonClassName="touch-target rounded-md bg-primary px-5 py-3 font-display font-semibold uppercase tracking-wider text-primary-foreground transition-smooth hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
+        >
+          <RouterProvider router={router} />
+        </AuthenticatedApp>
+      </DemoBannerHost>
     </I18nContext.Provider>
   );
 }

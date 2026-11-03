@@ -23,13 +23,14 @@ module {
   /// Recompute the non-sensitive derived fields (`isMinor`, `birthdayMonthDay`)
   /// from the contact-set date of birth in store time, so a roadie who turns 18
   /// stops being flagged as a minor on the next read. A roadie with no contact
-  /// set keeps the stored values.
-  func refreshDerived(roadie : Roadie.Roadie, timeZone : Common.TimeZone) : Roadie.Roadie {
+  /// set keeps the stored values. `now` is the effective clock (the pretend date
+  /// while demo mode is on).
+  func refreshDerived(roadie : Roadie.Roadie, now : Common.Timestamp, timeZone : Common.TimeZone) : Roadie.Roadie {
     switch (roadie.contactSet) {
       case (?cs) {
         {
           roadie with
-          isMinor = Age.isMinor(cs.dateOfBirth, Time.now(), timeZone);
+          isMinor = Age.isMinor(cs.dateOfBirth, now, timeZone);
           birthdayMonthDay = Age.birthdayMonthDay(cs.dateOfBirth);
         };
       };
@@ -40,8 +41,8 @@ module {
   /// Strip the contact set and the full photo bytes from a roadie card for
   /// callers that may not see them. The photo is fetched separately via
   /// `getPhoto`.
-  func redact(roadie : Roadie.Roadie, canSee : Bool) : Roadie.Roadie {
-    let refreshed = refreshDerived(roadie, defaultTimeZone);
+  func redact(roadie : Roadie.Roadie, canSee : Bool, now : Common.Timestamp) : Roadie.Roadie {
+    let refreshed = refreshDerived(roadie, now, defaultTimeZone);
     if (canSee) {
       // Managers keep the contact set but never the full photo bytes.
       { refreshed with photo = null };
@@ -53,35 +54,40 @@ module {
   /// List roadie cards visible to the caller, with contact-set fields stripped
   /// for every role except Admin and Store Manager. Integration sees only the
   /// Shareable export, never roadie cards. Full photo bytes are never returned;
-  /// fetch a photo with `getPhoto`.
+  /// fetch a photo with `getPhoto`. While demo mode is on only demo records are
+  /// returned; while it is off demo records are invisible.
   public func listRoadies(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     caller : Principal,
   ) : [Roadie.Roadie] {
-    let role = Auth.requireReadable(accessGrants, caller);
-    let canSee = Auth.canSeeContactSet(accessGrants, caller);
+    let role = Auth.requireReadable(accessGrants, demoState, caller);
+    let canSee = Auth.canSeeContactSet(accessGrants, demoState, caller);
+    let now = effectiveNow(demoState);
     roadies.values()
-      .filter(func(r) = visibleToRole(r, role, accessGrants, caller))
-      .map(func(r) = redact(r, canSee))
+      .filter(func(r) = r.isDemo == Auth.demoActive(demoState) and visibleToRole(r, role, accessGrants, demoState, caller))
+      .map(func(r) = redact(r, canSee, now))
       .toArray();
   };
 
   /// Read one roadie card, with contact-set fields stripped for non-managers.
   public func getRoadie(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     caller : Principal,
     id : Common.RoadieId,
   ) : ?Roadie.Roadie {
-    let role = Auth.requireReadable(accessGrants, caller);
-    let canSee = Auth.canSeeContactSet(accessGrants, caller);
+    let role = Auth.requireReadable(accessGrants, demoState, caller);
+    let canSee = Auth.canSeeContactSet(accessGrants, demoState, caller);
+    let now = effectiveNow(demoState);
     switch (roadies.get(id)) {
       case (?r) {
-        if (not visibleToRole(r, role, accessGrants, caller)) {
+        if (r.isDemo != Auth.demoActive(demoState) or not visibleToRole(r, role, accessGrants, demoState, caller)) {
           Runtime.trap("Access denied: roadie is not visible to this role");
         };
-        ?redact(r, canSee);
+        ?redact(r, canSee, now);
       };
       case null { null };
     };
@@ -91,14 +97,15 @@ module {
   /// Returns null when the roadie has no photo or is not visible to the caller.
   public func getPhoto(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     caller : Principal,
     id : Common.RoadieId,
   ) : ?Common.PhotoRef {
-    let role = Auth.requireReadable(accessGrants, caller);
+    let role = Auth.requireReadable(accessGrants, demoState, caller);
     switch (roadies.get(id)) {
       case (?r) {
-        if (not visibleToRole(r, role, accessGrants, caller)) {
+        if (r.isDemo != Auth.demoActive(demoState) or not visibleToRole(r, role, accessGrants, demoState, caller)) {
           return null;
         };
         r.photo;
@@ -110,21 +117,24 @@ module {
   /// List the roster for one position, including archived roadies.
   public func listRosterForPosition(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     caller : Principal,
     positionId : Common.PositionId,
   ) : [Roadie.Roadie] {
-    let role = Auth.requireReadable(accessGrants, caller);
-    let canSee = Auth.canSeeContactSet(accessGrants, caller);
+    let role = Auth.requireReadable(accessGrants, demoState, caller);
+    let canSee = Auth.canSeeContactSet(accessGrants, demoState, caller);
+    let now = effectiveNow(demoState);
     roadies.values()
-      .filter(func(r) = r.mainPositionId == positionId and visibleToRole(r, role, accessGrants, caller))
-      .map(func(r) = redact(r, canSee))
+      .filter(func(r) = r.isDemo == Auth.demoActive(demoState) and r.mainPositionId == positionId and visibleToRole(r, role, accessGrants, demoState, caller))
+      .map(func(r) = redact(r, canSee, now))
       .toArray();
   };
 
   /// Edit a roadie's non-contact details (Admin/Store Manager only).
   public func updateRoadieDetails(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
@@ -132,10 +142,10 @@ module {
     id : Common.RoadieId,
     profile : Roadie.RoadieProfile,
   ) : () {
-    Auth.requireManager(accessGrants, caller);
-    let roadie = roadies.get(id) ?? Runtime.trap("Roadie not found");
+    Auth.requireManager(accessGrants, demoState, caller);
+    let roadie = requireVisibleRoadie(roadies, demoState, id);
     roadies.add(id, { roadie with profile });
-    ignore ChangeLog.record(changeLog, counters, caller, "updateRoadieDetails", ?id, false, "Updated roadie details");
+    logWrite(changeLog, counters, demoState, caller, "updateRoadieDetails", ?id, false, "Updated roadie details");
   };
 
   /// Change a roadie's position or crew, moving the on-hand count (Admin/Store
@@ -143,6 +153,7 @@ module {
   /// the minimum age of either the main or the second position.
   public func changePosition(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
@@ -153,8 +164,8 @@ module {
     secondPositionId : ?Common.PositionId,
     crewId : ?Common.CrewId,
   ) : () {
-    Auth.requireManager(accessGrants, caller);
-    let roadie = roadies.get(id) ?? Runtime.trap("Roadie not found");
+    Auth.requireManager(accessGrants, demoState, caller);
+    let roadie = requireVisibleRoadie(roadies, demoState, id);
     let main = positions.get(mainPositionId) ?? Runtime.trap("Position not found");
     let second = switch (secondPositionId) {
       case (?sid) { ?(positions.get(sid) ?? Runtime.trap("Second position not found")) };
@@ -163,7 +174,7 @@ module {
     // Age gate: the roadie must meet the minimum age of every assigned position.
     switch (roadie.contactSet) {
       case (?cs) {
-        let now = Time.now();
+        let now = effectiveNow(demoState);
         if (not Age.meetsMinimumAge(cs.dateOfBirth, main.minimumAge, now, defaultTimeZone)) {
           Runtime.trap("Roadie is below the minimum age for this position");
         };
@@ -179,12 +190,13 @@ module {
       case null {};
     };
     roadies.add(id, { roadie with mainPositionId; secondPositionId; crewId });
-    ignore ChangeLog.record(changeLog, counters, caller, "changePosition", ?id, false, "Changed position");
+    logWrite(changeLog, counters, demoState, caller, "changePosition", ?id, false, "Changed position");
   };
 
   /// Archive a roadie with a required reason (Admin/Store Manager only).
   public func archiveRoadie(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
@@ -192,16 +204,17 @@ module {
     id : Common.RoadieId,
     reason : Roadie.ArchiveReason,
   ) : () {
-    Auth.requireManager(accessGrants, caller);
-    let roadie = roadies.get(id) ?? Runtime.trap("Roadie not found");
-    roadies.add(id, { roadie with status = #archived; archivedReason = ?reason; archivedAt = ?Time.now() });
-    ignore ChangeLog.record(changeLog, counters, caller, "archiveRoadie", ?id, false, "Archived roadie");
+    Auth.requireManager(accessGrants, demoState, caller);
+    let roadie = requireVisibleRoadie(roadies, demoState, id);
+    roadies.add(id, { roadie with status = #archived; archivedReason = ?reason; archivedAt = ?effectiveNow(demoState) });
+    logWrite(changeLog, counters, demoState, caller, "archiveRoadie", ?id, false, "Archived roadie");
   };
 
   /// Rehire an archived roadie (Admin/Store Manager only). A non-blank reason
   /// is always required.
   public func rehireRoadie(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
@@ -209,7 +222,7 @@ module {
     id : Common.RoadieId,
     reason : ?Text,
   ) : () {
-    Auth.requireManager(accessGrants, caller);
+    Auth.requireManager(accessGrants, demoState, caller);
     let trimmed = switch (reason) {
       case (?r) { r.trim(#predicate(func(c : Char) : Bool { c.isWhitespace() })) };
       case null { "" };
@@ -217,15 +230,16 @@ module {
     if (trimmed.size() == 0) {
       Runtime.trap("A rehire reason is required");
     };
-    let roadie = roadies.get(id) ?? Runtime.trap("Roadie not found");
+    let roadie = requireVisibleRoadie(roadies, demoState, id);
     roadies.add(id, { roadie with status = #hired; archivedReason = null; archivedAt = null });
-    ignore ChangeLog.record(changeLog, counters, caller, "rehireRoadie", ?id, false, "Rehired roadie");
+    logWrite(changeLog, counters, demoState, caller, "rehireRoadie", ?id, false, "Rehired roadie");
   };
 
   /// Update a roadie's status (Admin/Store Manager only). This never sets or
   /// clears the archived status; only archiveRoadie and rehireRoadie may.
   public func updateRoadieStatus(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
@@ -233,17 +247,17 @@ module {
     id : Common.RoadieId,
     status : Roadie.RoadieStatus,
   ) : () {
-    Auth.requireManager(accessGrants, caller);
+    Auth.requireManager(accessGrants, demoState, caller);
     switch (status) {
       case (#archived) { Runtime.trap("Use archiveRoadie to archive a roadie") };
       case (_) {};
     };
-    let roadie = roadies.get(id) ?? Runtime.trap("Roadie not found");
+    let roadie = requireVisibleRoadie(roadies, demoState, id);
     if (roadie.status == #archived) {
       Runtime.trap("Use rehireRoadie to restore an archived roadie");
     };
     roadies.add(id, { roadie with status });
-    ignore ChangeLog.record(changeLog, counters, caller, "updateRoadieStatus", ?id, false, "Updated roadie status");
+    logWrite(changeLog, counters, demoState, caller, "updateRoadieStatus", ?id, false, "Updated roadie status");
   };
 
   /// Read a roadie's contact set. Admin and Store Manager receive the contact
@@ -251,17 +265,18 @@ module {
   /// and never undefined), so the redaction is observable and consistent.
   public func getContactSet(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     caller : Principal,
     id : Common.RoadieId,
   ) : [Roadie.ContactSet] {
-    let role = Auth.requireReadable(accessGrants, caller);
-    if (not Auth.canSeeContactSet(accessGrants, caller)) {
+    let role = Auth.requireReadable(accessGrants, demoState, caller);
+    if (not Auth.canSeeContactSet(accessGrants, demoState, caller)) {
       return [];
     };
     switch (roadies.get(id)) {
       case (?r) {
-        if (not visibleToRole(r, role, accessGrants, caller)) {
+        if (r.isDemo != Auth.demoActive(demoState) or not visibleToRole(r, role, accessGrants, demoState, caller)) {
           return [];
         };
         switch (r.contactSet) {
@@ -276,15 +291,17 @@ module {
   /// Per-position roster counts: on-hand roadies and open spots. Each roadie
   /// counts once, under their main position only; the second position is
   /// cross-trained and does not count toward on-hand. Open spots is the
-  /// build-to target minus on-hand, clamped at zero.
+  /// build-to target minus on-hand, clamped at zero. Demo records count only
+  /// while demo mode is on.
   public func getRosterSummary(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
     caller : Principal,
   ) : [Roadie.RosterSummary] {
-    ignore Auth.requireReadable(accessGrants, caller);
-    let active = roadies.values().filter(func r = r.status != #archived).toArray();
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
+    let active = roadies.values().filter(func r = r.isDemo == Auth.demoActive(demoState) and r.status != #archived).toArray();
     positions.values().map(func(p) {
       let onHand = active.filter(func(r) = r.mainPositionId == p.id).size();
       {
@@ -305,6 +322,7 @@ module {
   /// Update a roadie's contact set (Admin/Store Manager only).
   public func updateContactSet(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
@@ -312,15 +330,16 @@ module {
     id : Common.RoadieId,
     contactSet : Roadie.ContactSet,
   ) : () {
-    Auth.requireManager(accessGrants, caller);
-    let roadie = roadies.get(id) ?? Runtime.trap("Roadie not found");
+    Auth.requireManager(accessGrants, demoState, caller);
+    let roadie = requireVisibleRoadie(roadies, demoState, id);
     roadies.add(id, { roadie with contactSet = ?contactSet });
-    ignore ChangeLog.record(changeLog, counters, caller, "updateContactSet", ?id, true, "Updated contact set");
+    logWrite(changeLog, counters, demoState, caller, "updateContactSet", ?id, true, "Updated contact set");
   };
 
   /// Re-sign a roadie's availability (Admin/Store Manager only).
   public func resignAvailability(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
@@ -328,61 +347,107 @@ module {
     id : Common.RoadieId,
     signature : Common.SignatureRef,
   ) : () {
-    Auth.requireManager(accessGrants, caller);
-    let roadie = roadies.get(id) ?? Runtime.trap("Roadie not found");
+    Auth.requireManager(accessGrants, demoState, caller);
+    let roadie = requireVisibleRoadie(roadies, demoState, id);
     let cs = roadie.contactSet ?? Runtime.trap("Roadie has no contact set");
     let updated : Roadie.ContactSet = {
       cs with
       availabilitySignature = ?signature;
-      availabilitySignedAt = ?Time.now();
+      availabilitySignedAt = ?effectiveNow(demoState);
       availabilityResignPending = false;
     };
     roadies.add(id, { roadie with contactSet = ?updated });
-    ignore ChangeLog.record(changeLog, counters, caller, "resignAvailability", ?id, true, "Re-signed availability");
+    logWrite(changeLog, counters, demoState, caller, "resignAvailability", ?id, true, "Re-signed availability");
   };
 
-  /// List crews (any role except Kiosk).
+  /// List crews (any role except Kiosk). Demo crews are visible only while demo
+  /// mode is on.
   public func listCrews(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     crews : Map.Map<Common.CrewId, Roadie.Crew>,
     caller : Principal,
   ) : [Roadie.Crew] {
-    ignore Auth.requireReadable(accessGrants, caller);
-    crews.values().toArray();
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
+    crews.values().filter(func c = c.isDemo == Auth.demoActive(demoState)).toArray();
   };
 
-  /// Create a crew (Admin/Store Manager only).
+  /// Create a crew (Admin/Store Manager only). A crew created while demo mode
+  /// is on is a demo crew.
   public func createCrew(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     crews : Map.Map<Common.CrewId, Roadie.Crew>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
     caller : Principal,
     name : Text,
   ) : Common.CrewId {
-    Auth.requireManager(accessGrants, caller);
+    Auth.requireManager(accessGrants, demoState, caller);
     let id = counters.nextCrewId;
     counters.nextCrewId := id + 1;
-    crews.add(id, { id; name });
-    ignore ChangeLog.record(changeLog, counters, caller, "createCrew", null, false, "Created crew " # name);
+    crews.add(id, { id; name; leaderPrincipal = null; isDemo = Auth.demoActive(demoState) });
+    logWrite(changeLog, counters, demoState, caller, "createCrew", null, false, "Created crew " # name);
     id;
+  };
+
+  /// Rename a crew and/or change its leader (Admin/Store Manager only).
+  public func updateCrew(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    crews : Map.Map<Common.CrewId, Roadie.Crew>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    id : Common.CrewId,
+    name : Text,
+    leaderPrincipal : ?Principal,
+  ) : () {
+    Auth.requireManager(accessGrants, demoState, caller);
+    let crew = requireVisibleCrew(crews, demoState, id);
+    crews.add(id, { crew with name; leaderPrincipal });
+    logWrite(changeLog, counters, demoState, caller, "updateCrew", null, false, "Updated crew " # name);
+  };
+
+  /// Delete a crew (Admin/Store Manager only). Refuses while any roadie is
+  /// assigned to the crew.
+  public func deleteCrew(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    crews : Map.Map<Common.CrewId, Roadie.Crew>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    id : Common.CrewId,
+  ) : () {
+    Auth.requireManager(accessGrants, demoState, caller);
+    let crew = requireVisibleCrew(crews, demoState, id);
+    let hasMembers = roadies.values().any(func(r) = r.isDemo == Auth.demoActive(demoState) and r.crewId == ?id);
+    if (hasMembers) {
+      Runtime.trap("Move its roadies first.");
+    };
+    crews.remove(id);
+    logWrite(changeLog, counters, demoState, caller, "deleteCrew", null, false, "Deleted crew " # crew.name);
   };
 
   /// List change-log entries visible to the caller. Integration sees only the
   /// Shareable export, so it receives no change log. A trainer sees only
-  /// entries about roadies in their approved stations.
+  /// entries about roadies in their approved stations. Demo entries are visible
+  /// only while demo mode is on.
   public func listChangeLog(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     caller : Principal,
   ) : [Roadie.ChangeLogEntry] {
-    let role = Auth.requireReadable(accessGrants, caller);
+    let role = Auth.requireReadable(accessGrants, demoState, caller);
     if (role == #integration) {
       return [];
     };
     changeLog.values()
-      .filter(func(e) = changeLogVisibleToRole(e, role, accessGrants, caller, roadies))
+      .filter(func(e) = e.isDemo == Auth.demoActive(demoState) and changeLogVisibleToRole(e, role, accessGrants, demoState, caller, roadies))
       .toArray();
   };
 
@@ -394,10 +459,11 @@ module {
     entry : Roadie.ChangeLogEntry,
     role : Common.Role,
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     caller : Principal,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
   ) : Bool {
-    if (entry.touchesContactSet and not Auth.isManager(accessGrants, caller)) {
+    if (entry.touchesContactSet and not Auth.isManager(accessGrants, demoState, caller)) {
       return false;
     };
     if (role != #trainer) {
@@ -406,7 +472,7 @@ module {
     switch (entry.subjectRoadieId) {
       case (?rid) {
         switch (roadies.get(rid)) {
-          case (?r) { visibleToRole(r, role, accessGrants, caller) };
+          case (?r) { visibleToRole(r, role, accessGrants, demoState, caller) };
           case null { false };
         };
       };
@@ -414,18 +480,23 @@ module {
     };
   };
 
-  /// Compute whether a roadie is a minor as of now, in store time.
+  /// Compute whether a roadie is a minor as of now, in store time. While demo
+  /// mode is on, the pretend date drives the age math.
   public func isMinor(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     caller : Principal,
     id : Common.RoadieId,
   ) : Bool {
-    ignore Auth.requireReadable(accessGrants, caller);
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
     switch (roadies.get(id)) {
       case (?r) {
+        if (r.isDemo != Auth.demoActive(demoState)) {
+          return false;
+        };
         switch (r.contactSet) {
-          case (?cs) { Age.isMinor(cs.dateOfBirth, Time.now(), defaultTimeZone) };
+          case (?cs) { Age.isMinor(cs.dateOfBirth, effectiveNow(demoState), defaultTimeZone) };
           case null { r.isMinor };
         };
       };
@@ -433,26 +504,95 @@ module {
     };
   };
 
+  /// Internal: the effective clock. While demo mode is on with a pretend date
+  /// set, the pretend timestamp is returned; otherwise the real clock.
+  func effectiveNow(demoState : Common.DemoState) : Common.Timestamp {
+    if (not Auth.demoActive(demoState)) {
+      return Time.now();
+    };
+    switch (demoState.pretendDate) {
+      case (?pd) {
+        let hourOffset : Int = switch (pd.shift) {
+          case (#am) { 9 };
+          case (#pm) { 15 };
+        };
+        pd.day + hourOffset * 3_600_000_000_000;
+      };
+      case null { Time.now() };
+    };
+  };
+
+  /// Internal: fetch a roadie that belongs to the active demo/real partition,
+  /// or trap.
+  func requireVisibleRoadie(
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    demoState : Common.DemoState,
+    id : Common.RoadieId,
+  ) : Roadie.Roadie {
+    let roadie = roadies.get(id) ?? Runtime.trap("Roadie not found");
+    if (roadie.isDemo != Auth.demoActive(demoState)) {
+      Runtime.trap("Roadie not found");
+    };
+    roadie;
+  };
+
+  /// Internal: fetch a crew that belongs to the active demo/real partition, or
+  /// trap.
+  func requireVisibleCrew(
+    crews : Map.Map<Common.CrewId, Roadie.Crew>,
+    demoState : Common.DemoState,
+    id : Common.CrewId,
+  ) : Roadie.Crew {
+    let crew = crews.get(id) ?? Runtime.trap("Crew not found");
+    if (crew.isDemo != Auth.demoActive(demoState)) {
+      Runtime.trap("Crew not found");
+    };
+    crew;
+  };
+
+  /// Internal: write a change-log entry into the active partition.
+  func logWrite(
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    demoState : Common.DemoState,
+    by : Principal,
+    action : Text,
+    subjectRoadieId : ?Common.RoadieId,
+    touchesContactSet : Bool,
+    detail : Text,
+  ) : () {
+    if (Auth.demoActive(demoState)) {
+      ignore ChangeLog.recordDemo(changeLog, counters, by, action, subjectRoadieId, touchesContactSet, detail);
+    } else {
+      ignore ChangeLog.record(changeLog, counters, by, action, subjectRoadieId, touchesContactSet, detail);
+    };
+  };
+
   /// Internal: whether a roadie is visible to a role. A trainer sees only
   /// roadies in their approved stations; a trainer with no approved stations
-  /// sees no roadies. Integration sees only the Shareable export.
+  /// sees no roadies. Integration sees only the Shareable export. While demo
+  /// mode is on, a demo NSO Trainer sees only the chosen demo stations.
   func visibleToRole(
     roadie : Roadie.Roadie,
     role : Common.Role,
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     caller : Principal,
   ) : Bool {
     switch (role) {
       case (#integration) { false };
       case (#trainer) {
-        switch (accessGrants.get(caller)) {
-          case (?grant) {
-            grant.trainerPositionIds.any(func(pid) =
-              pid == roadie.mainPositionId or roadie.secondPositionId == ?pid
-            );
+        let stations = if (Auth.demoActive(demoState)) {
+          demoState.demoTrainerStations;
+        } else {
+          switch (accessGrants.get(caller)) {
+            case (?grant) { grant.trainerPositionIds };
+            case null { [] };
           };
-          case null { false };
         };
+        stations.any(func(pid) =
+          pid == roadie.mainPositionId or roadie.secondPositionId == ?pid
+        );
       };
       case (_) { true };
     };

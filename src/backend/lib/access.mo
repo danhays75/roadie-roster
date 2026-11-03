@@ -102,19 +102,21 @@ module {
   /// List pending access requests (Admin only).
   public func listPendingUsers(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     pendingUsers : Map.Map<Principal, Access.PendingUser>,
     caller : Principal,
   ) : [Access.PendingUser] {
-    Auth.requireAdmin(accessGrants, caller);
+    Auth.requireAdmin(accessGrants, demoState, caller);
     pendingUsers.values().toArray();
   };
 
   /// List all access grants (Admin only).
   public func listAccessGrants(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     caller : Principal,
   ) : [Access.AccessGrant] {
-    Auth.requireAdmin(accessGrants, caller);
+    Auth.requireAdmin(accessGrants, demoState, caller);
     accessGrants.values().toArray();
   };
 
@@ -125,13 +127,14 @@ module {
   /// its work phone and work email cleared.
   public func listLeaders(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     caller : Principal,
   ) : [Access.LeaderSummary] {
-    let role = Auth.requireReadable(accessGrants, caller);
+    let role = Auth.requireReadable(accessGrants, demoState, caller);
     if (role == #integration) {
       Runtime.trap("Access denied: Integration role may only read the Shareable export");
     };
-    accessGrants.values().filter(func(g) = isLeaderRole(g.role)).map(func(g) {
+    accessGrants.values().filter(func(g) = isLeaderRole(g.role) and Auth.isDemoLeader(g) == Auth.demoActive(demoState)).map(func(g) {
       {
         principal = g.principal;
         role = g.role;
@@ -201,11 +204,12 @@ module {
   /// end-dated into lockout.
   public func approveUser(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     pendingUsers : Map.Map<Principal, Access.PendingUser>,
     caller : Principal,
     request : Access.ApprovalRequest,
   ) : () {
-    Auth.requireAdmin(accessGrants, caller);
+    Auth.requireAdmin(accessGrants, demoState, caller);
     if (not pendingUsers.containsKey(request.principal)) {
       Runtime.trap("No pending request for this principal");
     };
@@ -231,11 +235,12 @@ module {
   /// leave zero active admins, including demoting the last admin.
   public func updateUserRole(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     caller : Principal,
     principal : Principal,
     role : Common.Role,
   ) : () {
-    Auth.requireAdmin(accessGrants, caller);
+    Auth.requireAdmin(accessGrants, demoState, caller);
     let grant = accessGrants.get(principal) ?? Runtime.trap("Access grant not found");
     if (grant.role == #admin and role != #admin and isActiveAdmin(grant) and countAdmins(accessGrants) <= 1) {
       Runtime.trap("Cannot demote the last active admin");
@@ -251,11 +256,12 @@ module {
   /// Update a user's trainer stations (Admin only).
   public func updateTrainerStations(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     caller : Principal,
     principal : Principal,
     positionIds : [Common.PositionId],
   ) : () {
-    Auth.requireAdmin(accessGrants, caller);
+    Auth.requireAdmin(accessGrants, demoState, caller);
     let grant = accessGrants.get(principal) ?? Runtime.trap("Access grant not found");
     accessGrants.add(principal, { grant with trainerPositionIds = positionIds });
   };
@@ -265,11 +271,12 @@ module {
   /// end-dated into lockout. An Admin grant is always stored with no end date.
   public func updateAccessEnd(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     caller : Principal,
     principal : Principal,
     accessEndsAt : ?Common.Timestamp,
   ) : () {
-    Auth.requireAdmin(accessGrants, caller);
+    Auth.requireAdmin(accessGrants, demoState, caller);
     let grant = accessGrants.get(principal) ?? Runtime.trap("Access grant not found");
     if (grant.role == #admin) {
       // An admin can never be end-dated at all.
@@ -285,10 +292,11 @@ module {
   /// Remove a user's access (Admin only); the last admin cannot be removed.
   public func removeUser(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     caller : Principal,
     principal : Principal,
   ) : () {
-    Auth.requireAdmin(accessGrants, caller);
+    Auth.requireAdmin(accessGrants, demoState, caller);
     let grant = accessGrants.get(principal) ?? Runtime.trap("Access grant not found");
     if (grant.role == #admin and isActiveAdmin(grant) and countAdmins(accessGrants) <= 1) {
       Runtime.trap("Cannot remove the last active admin");
@@ -299,9 +307,10 @@ module {
   /// Count the current admins.
   public func adminCount(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     caller : Principal,
   ) : Nat {
-    ignore Auth.requireReadable(accessGrants, caller);
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
     countAdmins(accessGrants);
   };
 

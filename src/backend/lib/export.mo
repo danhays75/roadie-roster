@@ -18,18 +18,20 @@ module {
   /// Build the Shareable export (no contact set); available to Integration and above.
   public func buildShareableExport(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
     checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
     caller : Principal,
   ) : Export.ExportData {
-    ignore Auth.requireReadable(accessGrants, caller);
-    build(roadies, positions, checkoffs, false);
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
+    build(roadies, positions, checkoffs, false, Auth.demoActive(demoState));
   };
 
   /// Build the Full export including contact set (Admin/Store Manager only).
   public func buildFullExport(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
     checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
@@ -37,9 +39,13 @@ module {
     counters : Counters,
     caller : Principal,
   ) : Export.ExportData {
-    Auth.requireManager(accessGrants, caller);
-    ignore ChangeLog.record(changeLog, counters, caller, "buildFullExport", null, true, "Built the Full export");
-    build(roadies, positions, checkoffs, true);
+    Auth.requireManager(accessGrants, demoState, caller);
+    if (Auth.demoActive(demoState)) {
+      ignore ChangeLog.recordDemo(changeLog, counters, caller, "buildFullExport", null, true, "Built the Full export");
+    } else {
+      ignore ChangeLog.record(changeLog, counters, caller, "buildFullExport", null, true, "Built the Full export");
+    };
+    build(roadies, positions, checkoffs, true, Auth.demoActive(demoState));
   };
 
   /// Internal: assemble the export payload. Availability (by shift and by day)
@@ -50,9 +56,10 @@ module {
     positions : Map.Map<Common.PositionId, Store.Position>,
     checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
     includeContactSet : Bool,
+    demoActive : Bool,
   ) : Export.ExportData {
     let allPositions = positions.values().toArray();
-    let active = roadies.values().filter(func r = r.status != #archived).toArray();
+    let active = roadies.values().filter(func r = r.isDemo == demoActive and r.status != #archived).toArray();
 
     // Overview rows: one per position, in position-id order.
     let sortedPositions = allPositions.sort(func(a, b) = Nat.compare(a.id, b.id));

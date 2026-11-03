@@ -1,11 +1,13 @@
 import type { DateOnly, EventKind, ScheduleEvent } from "@/backend";
 import { EventKind as EventKindEnum } from "@/backend";
 import { Card, CardContent } from "@/components/ui/card";
+import { useDemo } from "@/hooks/useDemo";
 import { useStoreInfo } from "@/hooks/useQueries";
 import {
   dateOnlyToDate,
   formatDateOnlyLong,
   formatTimestampMediumDate,
+  pretendDateToInstant,
   timestampToDate,
 } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -27,13 +29,18 @@ export function eventKindLabel(kind: EventKind): string {
   return labels[kind] ?? "Event";
 }
 
-function useNow(intervalMs = 60_000): number {
+/**
+ * The current instant, refreshed on an interval. When demo mode supplies a
+ * pretend date, that instant is returned instead of the real clock so the
+ * countdown and schedule windows follow the pretend date.
+ */
+function useNow(pretendInstant: number | null, intervalMs = 60_000): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), intervalMs);
     return () => window.clearInterval(id);
   }, [intervalMs]);
-  return now;
+  return pretendInstant ?? now;
 }
 
 function splitCountdown(ms: number) {
@@ -93,10 +100,17 @@ export function OpeningTimeline({
 }) {
   const { t } = useDashboardCopy();
   const { data: storeInfo } = useStoreInfo();
+  const demo = useDemo();
   // Schedule times are wall-clock times in the store's zone, so they must be
   // formatted with that zone rather than the device's.
   const timeZone = storeInfo?.timeZone;
-  const now = useNow();
+  // While demo mode is on with a pretend date, the countdown and schedule
+  // windows follow that instant instead of the real clock.
+  const pretendInstant = useMemo(() => {
+    if (!demo.enabled || !demo.pretendDate) return null;
+    return pretendDateToInstant(demo.pretendDate)?.getTime() ?? null;
+  }, [demo.enabled, demo.pretendDate]);
+  const now = useNow(pretendInstant);
 
   const [expanded, setExpanded] = useState(readStoredExpanded);
 

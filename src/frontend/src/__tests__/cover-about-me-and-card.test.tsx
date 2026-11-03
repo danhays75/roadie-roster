@@ -41,7 +41,7 @@ const POSITION: Position = {
   needsAlcoholCert: false,
 };
 
-const CREW: Crew = { id: 7n, name: "Opening Crew" };
+const CREW: Crew = { id: 7n, name: "Opening Crew", isDemo: false };
 
 const STORE_INFO: StoreInfo = {
   amShiftEnd: 0n,
@@ -69,6 +69,7 @@ const FULL_ROADIE: Roadie = {
   crewId: 7n,
   isMinor: false,
   hiredAt: 0n,
+  isDemo: false,
   hireDate: BigInt(Date.UTC(2027, 0, 30, 12, 0, 0)) * 1_000_000n,
   profile: {
     name: "Frank George",

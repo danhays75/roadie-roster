@@ -13,6 +13,9 @@ module {
     signature : ?Common.SignatureRef;
     contactSet : Roadie.ContactSet;
     status : SignupStatus;
+    /// True when this submission is a demo record. Demo sign-ups are invisible
+    /// while demo mode is off.
+    isDemo : Bool;
   };
 
   /// The approval state of a submission.
@@ -22,9 +25,13 @@ module {
     #rejected;
   };
 
-  /// A duplicate match found during approval review.
+  /// A duplicate match found during approval review. `name` and
+  /// `mainPositionName` describe the matched roadie so the UI can name them
+  /// without showing a raw id; `matchedOn` is "phone", "email" or "both".
   public type DuplicateMatch = {
     roadieId : Common.RoadieId;
+    name : Text;
+    mainPositionName : Text;
     matchedOn : Text;
     archived : Bool;
   };

@@ -1,4 +1,5 @@
 import type { Role } from "@/backend";
+import { DemoBanner } from "@/components/DemoBanner";
 import { SignOutButton } from "@/components/InternetIdentity";
 import { StoreLogo } from "@/components/StoreLogo";
 import { Button } from "@/components/ui/button";
@@ -84,7 +85,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
-      <header className="sticky top-0 z-40 bg-secondary text-secondary-foreground">
+      <DemoBanner />
+      <header className="sticky top-[var(--demo-banner-h,0px)] z-40 bg-secondary text-secondary-foreground">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6 md:py-4">
           <Link
             to="/dashboard"

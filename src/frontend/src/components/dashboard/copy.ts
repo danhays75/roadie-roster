@@ -120,6 +120,32 @@ const dashboardCopy: Record<string, { en: string; es: string }> = {
     en: "We couldn't rehire that roadie.",
     es: "No pudimos recontratar a ese roadie.",
   },
+  "dashboard.roster.showFormer": {
+    en: "Show former ({count})",
+    es: "Ver anteriores ({count})",
+  },
+  "dashboard.roster.hideFormer": {
+    en: "Hide former ({count})",
+    es: "Ocultar anteriores ({count})",
+  },
+  "dashboard.roster.formerTitle": {
+    en: "No longer a roadie",
+    es: "Ya no es roadie",
+  },
+  "roadie.card.modal.counter": {
+    en: "{index} of {total}",
+    es: "{index} de {total}",
+  },
+  "roadie.card.modal.prev": { en: "Previous", es: "Anterior" },
+  "roadie.card.modal.next": { en: "Next", es: "Siguiente" },
+  "roadie.card.modal.fullProfile": {
+    en: "Open full profile",
+    es: "Abrir perfil completo",
+  },
+  "roadie.card.modal.description": {
+    en: "Roadie card. Swipe or use the arrow keys to move between cards.",
+    es: "Ficha del roadie. Desliza o usa las flechas para moverte entre fichas.",
+  },
 };
 
 function interpolate(

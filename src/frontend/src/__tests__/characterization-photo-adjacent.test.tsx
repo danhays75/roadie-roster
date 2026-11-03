@@ -36,6 +36,7 @@ function roadieWithoutPhoto(): Roadie {
     mainPositionId: 10n,
     hiredAt: 0n,
     isMinor: false,
+    isDemo: false,
     profile: { name: "Ada Lovelace", preferredName: "Ada" },
   };
 }

@@ -36,37 +36,42 @@ function initialsOf(name: string): string {
 function StoreSeal({ storeNumber }: { storeNumber: string }) {
   return (
     <svg
-      viewBox="0 0 64 64"
-      role="img"
-      aria-label={storeNumber}
       className="seal"
+      viewBox="0 0 100 100"
+      role="img"
+      aria-label={String(storeNumber)}
     >
-      <title>{storeNumber}</title>
-      <circle cx="32" cy="32" r="31" fill="#b22234" />
-      <circle
-        cx="32"
-        cy="32"
-        r="27"
-        fill="none"
-        stroke="#f4efe3"
-        strokeWidth="2"
+      <path
+        d="M50.0,2.0 L55.8,5.9 L62.4,3.6 L67.0,8.9 L74.0,8.4 L77.1,14.7 L83.9,16.1 L85.3,22.9 L91.6,26.0 L91.1,33.0 L96.4,37.6 L94.1,44.2 L98.0,50.0 L94.1,55.8 L96.4,62.4 L91.1,67.0 L91.6,74.0 L85.3,77.1 L83.9,83.9 L77.1,85.3 L74.0,91.6 L67.0,91.1 L62.4,96.4 L55.8,94.1 L50.0,98.0 L44.2,94.1 L37.6,96.4 L33.0,91.1 L26.0,91.6 L22.9,85.3 L16.1,83.9 L14.7,77.1 L8.4,74.0 L8.9,67.0 L3.6,62.4 L5.9,55.8 L2.0,50.0 L5.9,44.2 L3.6,37.6 L8.9,33.0 L8.4,26.0 L14.7,22.9 L16.1,16.1 L22.9,14.7 L26.0,8.4 L33.0,8.9 L37.6,3.6 L44.2,5.9Z"
+        fill="#B22234"
       />
+      <circle cx="50" cy="50" r="38" fill="#9E1C2C" />
+      <circle
+        cx="50"
+        cy="50"
+        r="36.5"
+        fill="none"
+        stroke="#C9A45C"
+        strokeWidth="1"
+        strokeDasharray="1.5 2"
+        opacity=".7"
+      />
+      <text x="50" y="27" textAnchor="middle" fontSize="12" fill="#C9A45C">
+        ★ ★ ★
+      </text>
       <text
-        x="32"
-        y="30"
+        x="50"
+        y="62"
         textAnchor="middle"
-        dominantBaseline="middle"
-        fill="#f4efe3"
         fontFamily='"Archivo Black", sans-serif'
-        fontSize="20"
+        fontSize="27"
+        fill="#F4EFE3"
       >
         {storeNumber}
       </text>
-      <g fill="#f4efe3">
-        <path d="M32 40.5l1.6 3.2 3.5.5-2.55 2.5.6 3.5-3.15-1.65-3.15 1.65.6-3.5-2.55-2.5 3.5-.5z" />
-        <path d="M22 42l1.1 2.2 2.4.35-1.75 1.7.4 2.4-2.15-1.15-2.15 1.15.4-2.4-1.75-1.7 2.4-.35z" />
-        <path d="M42 42l1.1 2.2 2.4.35-1.75 1.7.4 2.4-2.15-1.15-2.15 1.15.4-2.4-1.75-1.7 2.4-.35z" />
-      </g>
+      <text x="50" y="80" textAnchor="middle" fontSize="12" fill="#C9A45C">
+        ★ ★ ★
+      </text>
     </svg>
   );
 }
@@ -176,7 +181,16 @@ export function FlipCard({
   const { data: storeInfo } = useStoreInfo();
   const { data: photo } = useRoadiePhoto(roadie?.id);
 
-  const photoUrl = useMemo(() => refToDataUrl(photo), [photo]);
+  // A leader has no roadie id, so their photo comes from the staff profile
+  // instead of the roadie photo query. Both faces share the resolved data URL.
+  const leaderPhotoUrl = useMemo(
+    () => refToDataUrl(leader?.staffProfile?.photo),
+    [leader?.staffProfile?.photo],
+  );
+  const photoUrl = useMemo(
+    () => (leader ? leaderPhotoUrl : refToDataUrl(photo)),
+    [leader, leaderPhotoUrl, photo],
+  );
 
   const isLeader = !!leader;
   const leaderProfile = leader?.staffProfile;

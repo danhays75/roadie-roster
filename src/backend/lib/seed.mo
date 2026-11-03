@@ -27,6 +27,7 @@ module {
   /// trigger it; it is idempotent and never overwrites data.
   public func ensureSeeded(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     storeInfo : { var value : Store.StoreInfo },
     positions : Map.Map<Common.PositionId, Store.Position>,
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
@@ -37,7 +38,7 @@ module {
   ) : Bool {
     // Only an Admin may trigger the re-seed; every other role, Kiosk and
     // unregistered callers are rejected by the shared guard.
-    Auth.requireAdmin(accessGrants, caller);
+    Auth.requireAdmin(accessGrants, demoState, caller);
     if (not needsSeed(positions)) {
       return false;
     };

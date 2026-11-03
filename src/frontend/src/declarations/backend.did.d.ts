@@ -50,6 +50,7 @@ export type ArchiveReason = { 'noShow' : null } |
 export interface AttendanceRecord {
   'eventId' : [] | [EventId],
   'roadieId' : RoadieId,
+  'isDemo' : boolean,
   'recordedAt' : Timestamp,
   'recordedBy' : Principal,
   'shift' : [] | [Shift],
@@ -65,6 +66,7 @@ export interface ChangeLogEntry {
   'by' : Principal,
   'id' : ChangeLogId,
   'action' : string,
+  'isDemo' : boolean,
   'detail' : string,
   'touchesContactSet' : boolean,
   'subjectRoadieId' : [] | [RoadieId],
@@ -94,13 +96,47 @@ export interface ContactSet {
   'phone' : Phone,
   'managerSignature' : [] | [SignatureRef],
 }
-export interface Crew { 'id' : CrewId, 'name' : string }
+export interface Crew {
+  'id' : CrewId,
+  'name' : string,
+  'isDemo' : boolean,
+  'leaderPrincipal' : [] | [Principal],
+}
 export type CrewId = bigint;
 export type DateOnly = bigint;
 export type DateTime = bigint;
+export type DemoActionResult = { 'ok' : DemoStateView } |
+  { 'err' : string };
+export interface DemoDataSummary {
+  'roadies' : bigint,
+  'leaders' : bigint,
+  'signups' : bigint,
+  'crews' : bigint,
+  'attendance' : bigint,
+  'notes' : bigint,
+}
+export type DemoRole = { 'admin' : null } |
+  { 'trainingManager' : null } |
+  { 'trainer' : null } |
+  { 'leadership' : null } |
+  { 'visitingManager' : null } |
+  { 'storeManager' : null } |
+  { 'kiosk' : null };
+export type DemoShift = { 'am' : null } |
+  { 'pm' : null };
+export interface DemoStateView {
+  'autoOffAt' : [] | [Timestamp],
+  'turnedOnAt' : [] | [Timestamp],
+  'pretendDate' : [] | [PretendDate],
+  'demoRole' : DemoRole,
+  'enabled' : boolean,
+  'demoTrainerStations' : Array<PositionId>,
+}
 export interface DuplicateMatch {
   'matchedOn' : string,
   'roadieId' : RoadieId,
+  'name' : string,
+  'mainPositionName' : string,
   'archived' : boolean,
 }
 export type Email = string;
@@ -261,6 +297,7 @@ export interface Position {
   'hatsRequired' : bigint,
 }
 export type PositionId = bigint;
+export interface PretendDate { 'day' : DateOnly, 'shift' : DemoShift }
 export interface Result { 'hasMore' : boolean, 'rows' : Array<Array<Cell>> }
 export type Result__1 = { 'ok' : null } |
   { 'err' : Error };
@@ -279,6 +316,7 @@ export interface Roadie {
   'hireDate' : [] | [Timestamp],
   'corporateEmployeeId' : [] | [string],
   'contactSet' : [] | [ContactSet],
+  'isDemo' : boolean,
   'crewId' : [] | [CrewId],
   'signedBy' : [] | [Principal],
   'birthdayMonthDay' : [] | [string],
@@ -356,6 +394,7 @@ export interface SignupSubmission {
   'signature' : [] | [SignatureRef],
   'contactSet' : ContactSet,
   'submittedAt' : Timestamp,
+  'isDemo' : boolean,
   'photo' : [] | [PhotoRef],
   'profile' : RoadieProfile,
 }
@@ -447,6 +486,7 @@ export interface TrainerNote {
   'didWell' : string,
   'roadieId' : RoadieId,
   'createdAt' : Timestamp,
+  'isDemo' : boolean,
   'author' : Principal,
   'shift' : Shift,
   'workOn' : string,
@@ -581,6 +621,11 @@ export interface _SERVICE {
    */
   'checkKioskPin' : ActorMethod<[string], boolean>,
   /**
+   * / Remove every demo record (Admin, demo mode only). Real records are never
+   * / touched.
+   */
+  'clearDemoData' : ActorMethod<[], DemoDataSummary>,
+  /**
    * / Create a crew (Admin/Store Manager only).
    */
   'createCrew' : ActorMethod<[string], CrewId>,
@@ -601,6 +646,11 @@ export interface _SERVICE {
    */
   'createTrainingGroup' : ActorMethod<[TrainingGroup], TrainingGroupId>,
   /**
+   * / Delete a crew (Admin/Store Manager only). Refuses while any roadie is
+   * / assigned to the crew.
+   */
+  'deleteCrew' : ActorMethod<[CrewId], undefined>,
+  /**
    * / Delete a position (Admin only).
    */
   'deletePosition' : ActorMethod<[PositionId], undefined>,
@@ -620,6 +670,7 @@ export interface _SERVICE {
   'execute' : ActorMethod<[string], Result>,
   /**
    * / Find duplicate cards matching a submission (Admin/Store Manager only).
+   * / Each match names the matched roadie and their main position.
    */
   'findDuplicates' : ActorMethod<[SignupId], Array<DuplicateMatch>>,
   /**
@@ -651,6 +702,15 @@ export interface _SERVICE {
       'buildToTotal' : bigint,
     }
   >,
+  /**
+   * / Count the demo records currently loaded.
+   */
+  'getDemoDataSummary' : ActorMethod<[], DemoDataSummary>,
+  /**
+   * / Read the current demo state. Any caller, including unregistered users, so
+   * / the banner can render on the sign-in and waiting screens.
+   */
+  'getDemoState' : ActorMethod<[], DemoStateView>,
   /**
    * / Build the Gift Bags shopping list and printable labels for the selected
    * / filter, across active (non-archived) roadies only. Visible to Admin, Store
@@ -780,6 +840,10 @@ export interface _SERVICE {
    */
   'listTrainerNotes' : ActorMethod<[RoadieId], Array<TrainerNote>>,
   /**
+   * / Seed the demo data set (Admin, demo mode only).
+   */
+  'loadDemoData' : ActorMethod<[], DemoDataSummary>,
+  /**
    * / Load a store template file, replacing positions, schedule and checklists
    * / (Admin only). Refuses when any roadie exists.
    */
@@ -820,6 +884,18 @@ export interface _SERVICE {
   'saveStoreTemplate' : ActorMethod<[string], undefined>,
   'schema' : ActorMethod<[], string>,
   /**
+   * / Turn demo mode on or off (Admin only). Turning it on requires the literal
+   * / confirmation "DEMO"; turning it on sets the eight-hour auto-off time.
+   * / Every on/off is written to the change log.
+   */
+  'setDemoMode' : ActorMethod<[boolean, string], DemoActionResult>,
+  /**
+   * / Set the impersonated demo role and, for a demo NSO Trainer, the stations
+   * / that role may see. Any signed-in caller may choose a demo role while demo
+   * / mode is on.
+   */
+  'setDemoRole' : ActorMethod<[DemoRole, Array<PositionId>], DemoActionResult>,
+  /**
    * / Set the kiosk staff PIN (Admin only). Stored hashed; never returned.
    */
   'setKioskPin' : ActorMethod<[string], undefined>,
@@ -830,6 +906,11 @@ export interface _SERVICE {
     [LeaderTalkId, Array<RoadieId>],
     undefined
   >,
+  /**
+   * / Set or clear the pretend "now" used while demo mode is on. Null restores
+   * / the real clock.
+   */
+  'setPretendDate' : ActorMethod<[[] | [PretendDate]], DemoActionResult>,
   /**
    * / Submit a new sign-up from the kiosk (Kiosk, Store Manager or Admin only).
    */
@@ -854,6 +935,10 @@ export interface _SERVICE {
    * / Update a roadie's contact set (Admin/Store Manager only).
    */
   'updateContactSet' : ActorMethod<[RoadieId, ContactSet], undefined>,
+  /**
+   * / Rename a crew and/or change its leader (Admin/Store Manager only).
+   */
+  'updateCrew' : ActorMethod<[CrewId, string, [] | [Principal]], undefined>,
   /**
    * / Update the signed-in caller's own staff profile on their access grant.
    */

@@ -258,6 +258,7 @@ describe("main logo still renders on every surface", () => {
       hiredAt: 0n,
       profile: { name: "Ada Lovelace" },
       isMinor: false,
+      isDemo: false,
     };
 
     renderPageWithActor(

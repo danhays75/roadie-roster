@@ -119,4 +119,75 @@ module {
     #ok : T;
     #err : ApiError;
   };
+
+  // --- Demo mode ---
+
+  /// The role a signed-in caller impersonates while demo mode is on. Mirrors
+  /// the real application roles so the backend can enforce the same permission
+  /// rules for the impersonated role as for a real user with that role.
+  public type DemoRole = {
+    #admin;
+    #storeManager;
+    #trainingManager;
+    #trainer;
+    #visitingManager;
+    #leadership;
+    #kiosk;
+  };
+
+  /// The pretend clock's half of day.
+  public type DemoShift = {
+    #am;
+    #pm;
+  };
+
+  /// The pretend "now" used while demo mode is on. `day` is a UTC-midnight
+  /// date-only timestamp; `shift` selects AM or PM.
+  public type PretendDate = {
+    day : DateOnly;
+    shift : DemoShift;
+  };
+
+  /// The persisted demo-mode state. `enabled` is off by default; `turnedOnAt`
+  /// and `autoOffAt` are set when demo mode is turned on and `autoOffAt` is
+  /// eight hours later. `pretendDate` overrides "now" for schedule windows,
+  /// countdowns, the Today screen, check-in availability and age math.
+  /// `demoRole` is the impersonated role; `demoTrainerStations` are the
+  /// stations a demo NSO Trainer may see.
+  public type DemoState = {
+    var enabled : Bool;
+    var turnedOnAt : ?Timestamp;
+    var autoOffAt : ?Timestamp;
+    var pretendDate : ?PretendDate;
+    var demoRole : DemoRole;
+    var demoTrainerStations : [PositionId];
+  };
+
+  /// A read-only view of the demo state returned to the frontend.
+  public type DemoStateView = {
+    enabled : Bool;
+    turnedOnAt : ?Timestamp;
+    autoOffAt : ?Timestamp;
+    pretendDate : ?PretendDate;
+    demoRole : DemoRole;
+    demoTrainerStations : [PositionId];
+  };
+
+  /// The counts of demo records currently loaded, so the admin UI can show
+  /// what "Clear demo data" would remove.
+  public type DemoDataSummary = {
+    roadies : Nat;
+    signups : Nat;
+    crews : Nat;
+    leaders : Nat;
+    attendance : Nat;
+    notes : Nat;
+  };
+
+  /// The result of a demo-mode action. `#ok` carries the new state view;
+  /// `#err` explains why the action was refused.
+  public type DemoActionResult = {
+    #ok : DemoStateView;
+    #err : Text;
+  };
 };

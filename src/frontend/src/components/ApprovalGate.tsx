@@ -1,4 +1,5 @@
 import { createActor } from "@/backend";
+import { DemoBanner } from "@/components/DemoBanner";
 import { SignOutButton } from "@/components/InternetIdentity";
 import { StaffProfileForm } from "@/components/StaffProfileForm";
 import { LoadingState } from "@/components/States";
@@ -72,8 +73,20 @@ function useMyPendingRequest() {
  * caller (idempotent) so the first admin's grant is persisted and their admin
  * operations stop trapping. Once the caller holds a grant, the gate renders
  * `children` — the app chrome.
+ *
+ * The demo banner is mounted above every gate screen (waiting, profile, error)
+ * so demo mode is visible before the caller reaches the app chrome.
  */
 export function ApprovalGate({ children }: { children?: React.ReactNode }) {
+  return (
+    <>
+      <DemoBanner />
+      <ApprovalGateInner>{children}</ApprovalGateInner>
+    </>
+  );
+}
+
+function ApprovalGateInner({ children }: { children?: React.ReactNode }) {
   const { t } = useI18n();
   const access = useAccessState();
   const requestAccess = useRequestAccess();
@@ -126,8 +139,11 @@ export function ApprovalGate({ children }: { children?: React.ReactNode }) {
   if (access.kind === "granted") {
     // Only leader roles fill in a staff profile. A granted kiosk or integration
     // user has no profile to give, so they go straight into the app (the kiosk
-    // welcome screen with its PIN sign-out) instead of seeing the form.
+    // welcome screen with its PIN sign-out) instead of seeing the form. A demo
+    // grant never shows the form: the caller is impersonating a role against
+    // demo data, not completing their own profile.
     const needsProfile =
+      !access.demo &&
       !access.grant.staffProfile &&
       !grantProfileSaved &&
       canLeaders(access.grant.role);

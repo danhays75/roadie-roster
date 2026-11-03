@@ -29,6 +29,7 @@ import ExportApi "mixins/export-api";
 import GiftBagsApi "mixins/giftbags-api";
 import KioskApi "mixins/kiosk-api";
 import SeedApi "mixins/seed-api";
+import DemoApi "mixins/demo-api";
 import ApiDocMixin "mixins/api-doc";
 
 actor {
@@ -57,6 +58,11 @@ actor {
 
   // Admin-set kiosk staff PIN, stored only as a hash.
   let kioskPin : { var value : ?Text };
+
+  // Demo-mode state: off by default, with the auto-off time, the pretend date
+  // and the impersonated demo role. Demo records are stored alongside real
+  // records and separated by an `isDemo` flag on each record.
+  let demoState : Common.DemoState;
 
   let orientationCheckoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>;
   let attendance : Map.Map<Nat, Phase23.AttendanceRecord>;
@@ -95,10 +101,11 @@ actor {
     attendance,
     changeLog,
     counters,
+    demoState,
   );
-  include RoadieApi(accessGrants, roadies, crews, positions, changeLog, counters);
-  include SignupApi(accessGrants, signups, roadies, positions, storeInfo, changeLog, counters);
-  include AccessApi(accessGrants, pendingUsers, accessControlState);
+  include RoadieApi(accessGrants, roadies, crews, positions, changeLog, counters, demoState);
+  include SignupApi(accessGrants, signups, roadies, positions, storeInfo, changeLog, counters, demoState);
+  include AccessApi(accessGrants, pendingUsers, accessControlState, demoState);
   include Phase23Api(
     accessGrants,
     roadies,
@@ -112,14 +119,31 @@ actor {
     alerts,
     changeLog,
     counters,
+    demoState,
   );
-  include ExportApi(accessGrants, roadies, positions, orientationCheckoffs, changeLog, counters);
-  include GiftBagsApi(accessGrants, roadies, positions);
-  include KioskApi(accessGrants, kioskPin);
+  include ExportApi(accessGrants, roadies, positions, orientationCheckoffs, changeLog, counters, demoState);
+  include GiftBagsApi(accessGrants, roadies, positions, demoState);
+  include KioskApi(accessGrants, kioskPin, demoState);
+
+  // --- Demo mode ---
+  include DemoApi(
+    accessGrants,
+    demoState,
+    roadies,
+    signups,
+    crews,
+    attendance,
+    trainerNotes,
+    positions,
+    storeInfo,
+    changeLog,
+    counters,
+  );
 
   // --- Idempotent runtime re-seed ---
   include SeedApi(
     accessGrants,
+    demoState,
     storeInfo,
     positions,
     schedule,
@@ -196,6 +220,7 @@ actor {
           hiredAt = 0;
           hireDate = null;
           signedBy = null;
+          isDemo = false;
         })
         .payload("id", func r = r.id)
         .payload("name", func r = r.profile.name)
@@ -230,7 +255,7 @@ actor {
         .controllerOnly()
         .build(),
       crews.toEntity("crew", "Crew", "id")
-        .sample({ id = 0; name = "" })
+        .sample({ id = 0; name = ""; leaderPrincipal = null; isDemo = false })
         .controllerOnly()
         .build(),
       changeLog.toEntity("changeLogEntry", "ChangeLogEntry", "id")
@@ -242,6 +267,7 @@ actor {
           subjectRoadieId = null;
           touchesContactSet = false;
           detail = "";
+          isDemo = false;
         })
         .controllerOnly()
         .build(),
@@ -284,6 +310,7 @@ actor {
             managerSignedBy = null;
           };
           status = #pending;
+          isDemo = false;
         })
         .payload("id", func s = s.id)
         .payload("submittedAt", func s = s.submittedAt)
@@ -404,6 +431,7 @@ actor {
           state = #present;
           recordedAt = 0;
           recordedBy = Principal.fromText("aaaaa-aa");
+          isDemo = false;
         })
         .payload("roadieId", func a = a.roadieId)
         .payload("eventId", func a = a.eventId)
@@ -425,6 +453,7 @@ actor {
           didWell = "";
           workOn = "";
           createdAt = 0;
+          isDemo = false;
         })
         .payload("id", func n = n.id)
         .payload("roadieId", func n = n.roadieId)

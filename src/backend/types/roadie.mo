@@ -89,12 +89,19 @@ module {
     hiredAt : Common.Timestamp;
     hireDate : ?Common.Timestamp;
     signedBy : ?Principal;
+    /// True when this card is a demo record. Demo records are invisible while
+    /// demo mode is off and never count toward on-hand, build-to, exports,
+    /// gift bags or the store template.
+    isDemo : Bool;
   };
 
-  /// A crew.
+  /// A crew. `leaderPrincipal` is the approved leader who leads the crew, or
+  /// null when the crew has no leader yet. `isDemo` marks a demo crew.
   public type Crew = {
     id : Common.CrewId;
     name : Text;
+    leaderPrincipal : ?Principal;
+    isDemo : Bool;
   };
 
   /// Per-position roster counts: on-hand roadies and open spots.
@@ -106,7 +113,8 @@ module {
     openSpots : Nat;
   };
 
-  /// A single change-log entry.
+  /// A single change-log entry. `isDemo` marks entries written while demo mode
+  /// was on, so the change log can separate demo activity from real activity.
   public type ChangeLogEntry = {
     id : Common.ChangeLogId;
     at : Common.Timestamp;
@@ -115,5 +123,6 @@ module {
     subjectRoadieId : ?Common.RoadieId;
     touchesContactSet : Bool;
     detail : Text;
+    isDemo : Bool;
   };
 };

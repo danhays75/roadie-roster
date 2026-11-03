@@ -49,6 +49,7 @@ function pendingSignup(id: bigint): SignupSubmission {
     status: { __kind__: "pending", pending: null },
     submittedAt: 0n,
     profile: { name: `Applicant ${id}` },
+    isDemo: false,
     contactSet: {
       email: `a${id}@example.com`,
       phone: "+1-555-0100",
@@ -479,6 +480,7 @@ describe("archived dates show as timestamps in the store time zone", () => {
     hiredAt: 0n,
     profile: { name: "Archived Ada" },
     isMinor: false,
+    isDemo: false,
     archivedReason: { __kind__: "noShow", noShow: null },
     archivedAt: ARCHIVED_AT,
   };

@@ -76,6 +76,28 @@
 - Leaders never count toward on-hand or build-to and never appear in the position roster
 - Gift Bags Roadies/Leaders/All filter across the shopping list, labels and Excel download, with leader labels showing the title
 - No contact information on any card or label
+- Add a Crews tab in Admin (Admin and Store Manager) listing crews with name, leader (name and photo from staffProfile) and member count
+- Add crew by picking a leader from approved leaders (Admin, Store Manager, Training Manager, Visiting Manager), with the name auto-filling as "<preferred or first name>'s Crew" and staying editable
+- Rename, change leader and delete crews; delete is blocked while the crew has members, showing "Move its roadies first."
+- Backend Crew gains leaderPrincipal : ?Principal (migration, default null), plus updateCrew(id, name, leaderPrincipal) and deleteCrew(id)
+- All crew writes are Admin or Store Manager only; listCrews stays readable
+- Record every crew change in the change log
+- On the Approve sign-up screen, pre-select the crew led by the approving user, otherwise default to "No crew", still changeable
+- Replace "Card #0 matched on phone" with the matched roadie's name and main position, what matched (phone, email, or both) and whether they're archived, linked to their card, never showing a raw id, and checking archived roadies too
+- Fix the roadie photo in the position roster dialog so it loads the roadie's own photo
+- A shared RoadieTile used in the position roster dialog and on the Roster page
+- A shared card pop-up modal used on the Roster page, position roster dialog, Leaders page and Crews member list
+- A "Show former (n)" toggle for archived roadies on the position dialog and Roster page
+- Do not touch tests and change nothing else
+- Admin > Store settings gets a Demo mode switch, OFF by default, only an Admin can turn it on, and they must type DEMO to confirm
+- Demo mode turns itself off automatically after 8 hours and every on/off is written to the change log
+- While demo mode is on, every screen including the kiosk and the sign-in/waiting screens shows a sticky orange banner 'DEMO MODE · fake data · not for real hires' with a Turn off button for Admins
+- Demo records are completely separate from real ones across roadies, sign-ups, crews, leaders, check-ins and notes; while demo mode is on every query and export returns only demo records, and while it is off demo records are invisible and never count toward on-hand, build-to, exports, gift bags or the store template
+- While demo mode is on the banner has a View as picker (Admin, Store Manager, Training Manager, NSO Trainer with stations, Visiting Manager, Leadership, Kiosk); any signed-in caller, even unapproved, acts as the chosen demo role against demo data only, with the backend enforcing the same permission rules as for a real user with that role
+- Load demo data and Clear demo data buttons (Admin, demo mode only) seed about 40 roadies with illustrated avatars and full About Me answers, 2 minors, 2 archived, 3 crews, 4 leaders (Legend, Platinum, 2 Gold trainers with stations, home stores and dates) and 3 pending kiosk sign-ups including one phone duplicate
+- While demo mode is on the banner has a Pretend it's picker (date plus AM/PM) that overrides now for schedule windows, countdowns, the Today screen, check-in availability and age math, and the pretend date is shown in the banner
+- In demo mode only, every signature pad shows a Sign as Test button that fills in a sample signature
+- In demo mode, kiosk sign-ups are saved as demo sign-ups
 
 ## Verified Commands
 
@@ -85,28 +107,28 @@
 
 ## Learnings
 
-- The card back no longer has a ROADIE STATS section; the .tbl lists every non-empty About Me field in order Hometown, Crew, Hobbies, Favorite movie, Favorite snack, Fun fact, Hired, with .rc .row padding 1.5cqw 2.2cqw and align-items:center.
-- The test setup sets testIdAttribute to data-ocid, so getByTestId resolves data-ocid, not data-testid; card photo/headshot markers must use data-ocid.
-- The inherited suite has pre-existing failing tests (including export-variants.test.ts and several card tests asserting removed surfaces) that predate this draft and remain failing.
-- The kiosk About Me fields live in src/frontend/src/components/kiosk/KioskDetailsStep.tsx (KioskDetails/EMPTY_DETAILS) with EN/ES copy in src/frontend/src/components/kiosk/copy.ts; favoriteMovie stays in state and toProfile but is removed from the form and review.
-- The card back rows are built by profileRows in src/frontend/src/components/roadie/FlipCard.tsx; the >7-row dense class is applied on the .tbl wrapper and styled as .rc .tbl.dense .row font-size 3.4cqw.
-- storeInfo.openingDate is a DateOnly, so format it with formatDateOnly (UTC); formatTimestampMonthDayYear with the store time zone shifts the day back one. roadie.hireDate/hiredAt are Timestamp date-only values; formatTimestampDateOnly renders their UTC calendar day.
-- The Gift Bags page is src/frontend/src/pages/GiftBags.tsx with the workbook helper src/frontend/src/lib/giftBags.ts and print CSS in src/frontend/src/index.css; the nav item and route are gated by GIFT_BAGS_ROLES (Admin, Store Manager, Training Manager) in hooks/useAccess.ts and App.tsx.
-- The backend getGiftBags(filter) query groups the six Gift Bag answers case-insensitively (ignoring spaces and punctuation, showing the most common spelling), sorted by count desc with a No answer count, and returns printable label rows; active roadies only.
-- The Full export workbook (lib/export.ts groupHeaders/groupRow) carries the four favorite columns; the backend ExportRow already carries favoriteTeam, favoriteSnack, favoriteDrink and favoriteColor.
-- The kiosk route /kiosk crashes the browser page target when opened from the authenticated dashboard; the About Me step never renders. The crash was not reproduced or fixed within the local testing budget.
-- The inherited suite has 14 pre-existing failing tests that predate this draft and remain failing.
-- The backend AccessGrant and PendingUser gained a staffProfile field; migration src/backend/migrations/00000007_000000.mo adds it and renames paperwork item id=4 to 'LA employment certificate (LWC confirmation received)' keeping minorOnly=true.
-- The backend exposes submitStaffProfile, updateMyStaffProfile, downloadStoreTemplate and loadStoreTemplate; downloadStoreTemplate is a query and loadStoreTemplate refuses when any roadie exists.
-- The frontend has a StaffProfileForm component, a /my-profile route, a staffDisplayName helper in lib/format.ts, and a nav.myProfile NAV_ITEMS entry.
-- The PocketIC backend lane's stale test files omit the required staffProfile key on approveUser calls, so the Candid client encode fails with 'Record is missing key "staffProfile"'; the backend itself is correct.
-- Leader cards reuse FlipCard with a leader prop; the tier variant and ribbon come from the leader's stated profile role (staffProfile.requestedRole), not the grant role, because the owner is bootstrapped as admin.
-- listLeaders redacts workPhone and workEmail before returning, so leader cards and gift bag labels never carry contact info.
-- Gift Bags leader labels all carry roadieId 0, so the labels list key must combine roadieId, name, positionName and index to stay unique.
-- The backend AccessGrant and PendingUser staffProfile gained the ten optional About Me fields; migration src/backend/migrations/00000008_000000.mo adds them.
-- The backend exposes listLeaders and getGiftBags; GiftBagFilter now includes #roadies and #leaders, and leader labels carry the leader's title as the position name.
-- The frontend has a Leaders page at src/frontend/src/pages/Leaders.tsx and a leader card page at src/frontend/src/pages/LeaderCard.tsx, gated by LEADERS_ROLES (every readable role except kiosk and integration).
-- The roadie card keeps its Roadie since front footer and opening-crew back footer; leader footers apply only to leader cards.
-- ApprovalGate.tsx gates the 'Tell us who you are' profile form to leader roles via canLeaders(role) from hooks/useAccess.ts; a granted kiosk or integration user with no staffProfile goes straight into the app.
-- StaffProfileForm.tsx offers a kiosk role choice that hides the rest of the form and skips its validation, submitting a pending request with the kiosk role.
 - The backend exposes getMyPendingRequest() : ?{ requestedAt : Timestamp; hasProfile : Bool } (query deriving the caller principal) in mixins/access-api.mo over lib/access.mo, typed as PendingRequestSummary in types/access.mo; hooks/useQueries.ts has useMyPendingRequest.
+- Leader cards resolve their photo from leader.staffProfile.photo via refToDataUrl in FlipCard.tsx; the roadie path still uses useRoadiePhoto(roadie?.id).
+- roadieCard.css tier variants re-color via .rc.gold/.rc.plat/.rc.legend variable overrides; base .rc rules read var(--navy/--red/--cream/--gold).
+- StoreSeal's accessible name is the bare store number (aria-label={String(storeNumber)}), not 'Store <n>', so tests match the number exactly.
+- LeaderTile in pages/Leaders.tsx renders leader.staffProfile.photo via a memoized refToDataUrl with an initials fallback, marked data-ocid=leaders.item.photo.
+- A stored photo is raw bytes with no content type; build its preview data URL from the detected magic-number MIME type, not a hardcoded image/jpeg.
+- Crews are stored in main.mo as crews : Map.Map<Common.CrewId, Roadie.Crew>; Crew={id,name,leaderPrincipal} lives in types/roadie.mo, with migration src/backend/migrations/00000009_000000.mo adding leaderPrincipal. createCrew/updateCrew/deleteCrew/listCrews live in lib/roadie.mo and are exposed via mixins/roadie-api.mo; all crew writes require Admin or Store Manager and deleteCrew refuses while any roadie is assigned.
+- Crew ids start at 0n (nextCrewId counter), so 0n is a valid crew id and cannot be the add-vs-edit sentinel; use an explicit null id. createCrew(name) cannot set a leader, so persist a chosen leader by chaining createCrew then updateCrew(newId, name, leader).
+- The Crews tab lives in src/frontend/src/components/admin/CrewsPanel.tsx and is registered in src/frontend/src/pages/Admin.tsx, gated to Admin and Store Manager; hooks/useQueries.ts has useCreateCrew/useUpdateCrew/useDeleteCrew.
+- findDuplicates in lib/signup.mo matches phone OR email, includes archived roadies, and populates name, mainPositionName and matchedOn; matchedOn reports 'phone' when the phone matches and 'email' only when the email is the sole match. DuplicateMatch = { roadieId; name; mainPositionName; matchedOn; archived } in types/signup.mo.
+- The Approve sign-up screen is src/frontend/src/pages/Approvals.tsx; PendingSignupCard pre-selects the crew led by the approving user via an effect keyed on loaded crews plus a touched flag, and DuplicateList renders the matched roadie's name, main position, match type and archived state as a link to /roster/$roadieId.
+- RoadieTile (src/frontend/src/components/roadie/RoadieTile.tsx) is the shared roadie tile: photo via useRoadiePhoto(roadie.id) + memoized refToDataUrl, 4:3 object-cover top, navy-on-cream initials fallback, name, status badge, crew tag, MINOR tag, and a grayscale archived variant.
+- RoadieCardModal (src/frontend/src/components/roadie/RoadieCardModal.tsx) is the shared card pop-up: Radix Dialog with FlipCard at 420px max, flip, X/outside/Esc/back-button close via a pushed history entry, swipe/arrow/prev-next navigation, an N of M counter, neighbor photo preload, and a manager-only full-profile link.
+- RoadieCardModal.close() must call the close callback directly after history.back(); the popstate handler only fires for genuine back-button navigations (pushed.current still true), so relying on popstate alone leaves X/Esc/tap-outside unable to close the modal.
+- The position roster dialog's Present-mode banner renders StoreLogo (data-ocid=store.logo); the modal's FlipCard uses StoreSeal, so the banner is the dialog's only store mark.
+- The position roster dialog and Roster page both have a Show former (n) toggle revealing archived roadies in a separate No longer a roadie section with grayscale tiles and the archive reason; archived roadies never count toward on-hand.
+- The inherited suite has 22 pre-existing failing tests that predate this draft and remain failing; the Leaders page test that expected a direct anchor link to /leaders/<principal> was updated for the new tile-opens-pop-up behavior.
+- Demo mode lives in src/backend/lib/demo.mo with the firewall helpers; main.mo includes DemoApi and exposes getDemoState, setDemoMode, setDemoRole, setPretendDate, getDemoDataSummary, loadDemoData and clearDemoData.
+- Demo records are marked with isDemo on Roadie, Crew, ChangeLogEntry, SignupSubmission, AttendanceRecord and TrainerNote; every read, list, count and export filters isDemo == Auth.demoActive(demoState).
+- Demo leaders are marked by staffProfile.workEmail == ?"DEMO"; Auth.isDemoLeader centralizes that marker and both listLeaders and getGiftBags gate on isDemoLeader(g) == demoActive(demoState).
+- The demo auto-off is armed with Timer.setTimer<system> in mixins/demo-api.mo scheduleAutoOff and logged with systemActor(), so the automatic off is recorded even with no later update.
+- The frontend demo banner is src/frontend/src/components/DemoBanner.tsx; DemoBannerHost must render its own DemoBanner outside the DemoBannerHosted provider or the bar is hidden on every screen.
+- The admin demo switch is src/frontend/src/components/admin/DemoModePanel.tsx rendered by components/admin/StoreInfoPanel.tsx; the Sign as Test button is in components/kiosk/KioskSignatureStep.tsx and components/approvals/ManagerSignaturePad.tsx.
+- pretendDateToInstant in src/frontend/src/lib/format.ts maps a PretendDate (UTC day + AM/PM) to a JS Date; OpeningTimeline's useNow and Kiosk's effectiveNow consume it while demo mode is on.
+- The inherited suite has 22 pre-existing failing tests that predate this draft and remain failing; the demo mode work added passing tests without changing them.

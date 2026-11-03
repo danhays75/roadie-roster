@@ -1,12 +1,16 @@
 import { type LeaderSummary, Role } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
+import {
+  type CardEntry,
+  FullProfileLink,
+  RoadieCardModal,
+} from "@/components/roadie/RoadieCardModal";
 import { useI18n } from "@/hooks/useI18n";
 import { useLeaders } from "@/hooks/useQueries";
-import { staffDisplayName } from "@/lib/format";
-import { Link } from "@tanstack/react-router";
+import { refToDataUrl, staffDisplayName } from "@/lib/format";
 import { ChevronRight } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 /** The three tier groups, in display order. */
 type TierKey = "legend" | "plat" | "gold";
@@ -63,19 +67,37 @@ function tierLabelKey(leader: LeaderSummary): string {
   }
 }
 
-/** One leader card in the grid, linking to the full flip card. */
-function LeaderTile({ leader }: { leader: LeaderSummary }) {
+/** A leader's initials for the no-photo placeholder, at most two letters. */
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+/** One leader card in the grid; tapping it opens the shared card pop-up. */
+function LeaderTile({
+  leader,
+  onOpen,
+}: {
+  leader: LeaderSummary;
+  onOpen: () => void;
+}) {
   const { t } = useI18n();
   const name = staffDisplayName(leader.staffProfile, t("profile.unnamed"));
   const title = leader.title?.trim() || t("roadie.field.none");
+  const photoUrl = useMemo(
+    () => refToDataUrl(leader.staffProfile?.photo),
+    [leader.staffProfile?.photo],
+  );
 
   return (
     <li data-ocid="leaders.item">
-      <Link
-        to="/leaders/$leaderId"
-        params={{ leaderId: leader.principal.toString() }}
+      <button
+        type="button"
         data-ocid="leaders.item.link"
-        className="group flex h-full flex-col gap-3 rounded-lg border border-border bg-card p-4 shadow-subtle transition-smooth hover:-translate-y-0.5 hover:shadow-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        onClick={onOpen}
+        className="group flex h-full w-full flex-col gap-3 rounded-lg border border-border bg-card p-4 text-left shadow-subtle transition-smooth hover:-translate-y-0.5 hover:shadow-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         <span
           className="inline-flex w-fit items-center rounded-full bg-primary px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-wider text-primary-foreground"
@@ -83,6 +105,26 @@ function LeaderTile({ leader }: { leader: LeaderSummary }) {
         >
           {t(tierLabelKey(leader))}
         </span>
+
+        <div
+          className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-primary bg-muted"
+          data-ocid="leaders.item.photo"
+        >
+          {photoUrl ? (
+            <img
+              src={photoUrl}
+              alt={name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span
+              className="font-display text-xl font-semibold uppercase tracking-wide text-muted-foreground"
+              aria-hidden="true"
+            >
+              {initialsOf(name)}
+            </span>
+          )}
+        </div>
 
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-lg font-semibold uppercase tracking-wide text-foreground">
@@ -100,7 +142,7 @@ function LeaderTile({ leader }: { leader: LeaderSummary }) {
             aria-hidden="true"
           />
         </span>
-      </Link>
+      </button>
     </li>
   );
 }
@@ -108,6 +150,9 @@ function LeaderTile({ leader }: { leader: LeaderSummary }) {
 export default function LeadersPage() {
   const { t } = useI18n();
   const { data: leaders, isLoading, isError, refetch } = useLeaders(true);
+  const [card, setCard] = useState<{ tier: TierKey; index: number } | null>(
+    null,
+  );
 
   const grouped = useMemo(() => {
     const groups: Record<TierKey, LeaderSummary[]> = {
@@ -120,6 +165,21 @@ export default function LeadersPage() {
     }
     return groups;
   }, [leaders]);
+
+  const entriesByTier = useMemo(() => {
+    const map: Record<TierKey, CardEntry[]> = {
+      legend: [],
+      plat: [],
+      gold: [],
+    };
+    for (const tier of TIERS) {
+      map[tier.key] = grouped[tier.key].map((leader) => ({
+        key: leader.principal.toString(),
+        leader,
+      }));
+    }
+    return map;
+  }, [grouped]);
 
   const total = leaders?.length ?? 0;
 
@@ -168,16 +228,30 @@ export default function LeadersPage() {
                 className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
                 data-ocid={`leaders.list.${tier.key}`}
               >
-                {members.map((leader) => (
+                {members.map((leader, index) => (
                   <LeaderTile
                     key={leader.principal.toString()}
                     leader={leader}
+                    onOpen={() => setCard({ tier: tier.key, index })}
                   />
                 ))}
               </ul>
             </section>
           );
         })}
+
+      <RoadieCardModal
+        entries={card ? entriesByTier[card.tier] : []}
+        index={card?.index ?? 0}
+        open={card !== null}
+        onOpenChange={(next) => {
+          if (!next) setCard(null);
+        }}
+        onIndexChange={(index) =>
+          setCard((current) => (current ? { ...current, index } : current))
+        }
+        renderFullProfile={(entry) => <FullProfileLink entry={entry} />}
+      />
     </div>
   );
 }

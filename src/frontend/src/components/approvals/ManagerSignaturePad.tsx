@@ -1,7 +1,39 @@
 import { Button } from "@/components/ui/button";
+import { useDemo } from "@/hooks/useDemo";
 import { useI18n } from "@/hooks/useI18n";
-import { Eraser, PenLine } from "lucide-react";
+import { Eraser, PenLine, Wand2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+/**
+ * A sample signature drawn as normalized points (0..1 of the canvas box), so
+ * the demo "Sign as Test" button can fill the pad at any canvas size. The path
+ * is a single flowing cursive stroke that reads as a signature.
+ */
+const SAMPLE_SIGNATURE: Array<[number, number]> = [
+  [0.08, 0.68],
+  [0.12, 0.42],
+  [0.16, 0.3],
+  [0.2, 0.34],
+  [0.22, 0.52],
+  [0.24, 0.66],
+  [0.28, 0.6],
+  [0.32, 0.44],
+  [0.36, 0.38],
+  [0.4, 0.46],
+  [0.42, 0.6],
+  [0.46, 0.64],
+  [0.5, 0.5],
+  [0.54, 0.36],
+  [0.58, 0.4],
+  [0.6, 0.56],
+  [0.64, 0.62],
+  [0.68, 0.48],
+  [0.72, 0.34],
+  [0.76, 0.4],
+  [0.8, 0.58],
+  [0.86, 0.62],
+  [0.92, 0.5],
+];
 
 /**
  * A pointer-drawn manager signature on a canvas. Emits the drawn strokes as
@@ -19,6 +51,7 @@ export function ManagerSignaturePad({
   error?: string;
 }) {
   const { t } = useI18n();
+  const demo = useDemo();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
   const [dirty, setDirty] = useState(false);
@@ -96,6 +129,32 @@ export function ManagerSignaturePad({
     onChange(null);
   };
 
+  // Demo only: fill the pad with a sample signature and emit it as PNG bytes,
+  // exactly as a real stroke would. The canvas is redrawn so the visible pad
+  // matches the captured signature.
+  const signAsTest = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    SAMPLE_SIGNATURE.forEach(([nx, ny], index) => {
+      const x = nx * rect.width;
+      const y = ny * rect.height;
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    setDirty(true);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      void blob
+        .arrayBuffer()
+        .then((buffer) => onChange(new Uint8Array(buffer)));
+    }, "image/png");
+  };
+
   const hasSignature = value !== null && value.length > 0;
 
   return (
@@ -134,6 +193,18 @@ export function ManagerSignaturePad({
             {t("common.cancel")}
           </Button>
         </div>
+        {demo.enabled && (
+          <Button
+            type="button"
+            variant="secondary"
+            data-ocid="approvals.signup.signature.sign_as_test_button"
+            onClick={signAsTest}
+            className="touch-target mt-3 w-full rounded-full"
+          >
+            <Wand2 className="h-4 w-4" aria-hidden="true" />
+            {t("demo.signAsTest")}
+          </Button>
+        )}
       </div>
       {error && (
         <p

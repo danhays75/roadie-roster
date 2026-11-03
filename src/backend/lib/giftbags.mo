@@ -17,20 +17,21 @@ module {
   /// phone, email or date of birth.
   public func getGiftBags(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
     caller : Principal,
     filter : GiftBags.GiftBagFilter,
   ) : GiftBags.GiftBagsData {
-    let role = Auth.requireRegistered(accessGrants, caller);
+    let role = Auth.requireRegistered(accessGrants, demoState, caller);
     if (role != #admin and role != #storeManager and role != #trainingManager) {
       Runtime.trap("Access denied: Admin, Store Manager or Training Manager role required");
     };
 
-    let active = roadies.values().filter(func r = r.status != #archived).toArray();
+    let active = roadies.values().filter(func r = r.isDemo == Auth.demoActive(demoState) and r.status != #archived).toArray();
     let selectedRoadies = active.filter(func r = matchesFilter(r, positions, filter));
     let selectedLeaders = if (includesLeaders(filter)) {
-      accessGrants.values().filter(func g = isLeaderRole(g.role)).toArray();
+      accessGrants.values().filter(func g = isLeaderRole(g.role) and Auth.isDemoLeader(g) == Auth.demoActive(demoState)).toArray();
     } else {
       [];
     };

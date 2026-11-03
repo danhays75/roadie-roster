@@ -1,6 +1,8 @@
 import { Role } from "@/backend";
+import { demoRoleToRole, useDemo } from "@/hooks/useDemo";
 import { useMyAccess } from "@/hooks/useQueries";
-import type { AccessState, NavItem } from "@/types";
+import type { AccessGrant, AccessState, NavItem } from "@/types";
+import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useMemo } from "react";
 
 /** Roles allowed to archive or rehire a roadie. */
@@ -69,13 +71,56 @@ export const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-/** Resolve the caller's access state from the backend grant. */
+/**
+ * Resolve the caller's access state from the backend grant.
+ *
+ * While demo mode is on the effective role follows the chosen demo role: a
+ * caller with a real grant keeps their grant but acts as the demo role, and a
+ * caller with no grant (pending or unregistered) is treated as granted with a
+ * synthetic grant carrying the demo role, so the whole app renders against demo
+ * data. The backend enforces the same permission rules for the impersonated
+ * role as for a real user with that role.
+ */
 export function useAccessState(): AccessState {
   const { data, isLoading, isError, error, isReady } = useMyAccess();
+  const demo = useDemo();
+  const { identity } = useInternetIdentity();
+
   return useMemo(() => {
     // Until the backend actor is ready the read has not run; report loading so
     // the waiting screen does not flash before the grant is known.
     if (!isReady || isLoading) return { kind: "loading" };
+
+    const demoOn = demo.enabled;
+    const demoRole = demoRoleToRole(demo.demoRole);
+
+    if (demoOn) {
+      // A real grant keeps its identity but acts as the demo role.
+      if (data) {
+        return {
+          kind: "granted",
+          grant: { ...data, role: demoRole },
+          demo: true,
+        };
+      }
+      // No grant yet: synthesize one so an unapproved caller can act as the
+      // demo role against demo data only.
+      const principal =
+        identity && !identity.getPrincipal().isAnonymous()
+          ? identity.getPrincipal()
+          : undefined;
+      if (principal) {
+        const synthetic: AccessGrant = {
+          principal,
+          approvedAt: 0n,
+          approvedBy: principal,
+          role: demoRole,
+          trainerPositionIds: demo.demoTrainerStations,
+        };
+        return { kind: "granted", grant: synthetic, demo: true };
+      }
+    }
+
     // Prefer a resolved grant over a failed poll: one transient error must not
     // replace the app (or a kiosk sign-up in progress) with the error screen.
     if (data) return { kind: "granted", grant: data };
@@ -86,7 +131,17 @@ export function useAccessState(): AccessState {
       };
     }
     return { kind: "pending" };
-  }, [data, isLoading, isError, error, isReady]);
+  }, [
+    data,
+    isLoading,
+    isError,
+    error,
+    isReady,
+    demo.enabled,
+    demo.demoRole,
+    demo.demoTrainerStations,
+    identity,
+  ]);
 }
 
 /** Whether the given role may see a nav item. */

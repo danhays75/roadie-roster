@@ -92,9 +92,10 @@ const ROADIE: Roadie = {
   hiredAt: 0n,
   profile: { name: "Ada Lovelace" },
   isMinor: false,
+  isDemo: false,
 };
 
-const CREW: Crew = { id: 1n, name: "Opening Crew" };
+const CREW: Crew = { id: 1n, name: "Opening Crew", isDemo: false };
 
 describe("StoreLogo sizes an uploaded logo by height with automatic width", () => {
   it("keeps the caller's height, drops a square width, and stays object-contain", async () => {

@@ -39,6 +39,7 @@ function roadie(id: bigint, status: RoadieStatus): Roadie {
     mainPositionId: 0n,
     hiredAt: 0n,
     isMinor: false,
+    isDemo: false,
     profile: { name: `Roadie ${id}` },
   };
 }

@@ -304,6 +304,7 @@ describe("PositionRosterDialog archived section", () => {
     hiredAt: 0n,
     profile: { name: "Archived Ada" },
     isMinor: false,
+    isDemo: false,
     archivedReason: { __kind__: "noShow", noShow: null },
     archivedAt: 1_801_202_400_000_000_000n,
   };

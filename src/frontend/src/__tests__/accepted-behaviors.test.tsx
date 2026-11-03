@@ -211,6 +211,7 @@ describe("roadie card birthday and Minor badge", () => {
     hiredAt: 0n,
     profile: { name: "Sam Minor" },
     isMinor: true,
+    isDemo: false,
     birthdayMonthDay: "03-14",
   };
 

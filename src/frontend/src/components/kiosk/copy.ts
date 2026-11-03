@@ -123,6 +123,7 @@ const kioskCopy: Record<Locale, Record<string, string>> = {
     "signature.prompt": "Draw your signature above.",
     "signature.captured": "Signature captured.",
     "signature.clear": "Clear",
+    "signature.signAsTest": "Sign as Test",
 
     "review.title": "Check your answers",
     "review.body":
@@ -286,6 +287,7 @@ const kioskCopy: Record<Locale, Record<string, string>> = {
     "signature.prompt": "Dibuja tu firma arriba.",
     "signature.captured": "Firma capturada.",
     "signature.clear": "Borrar",
+    "signature.signAsTest": "Firmar como prueba",
 
     "review.title": "Revisa tus respuestas",
     "review.body":

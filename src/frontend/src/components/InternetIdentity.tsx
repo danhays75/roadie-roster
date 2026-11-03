@@ -1,3 +1,4 @@
+import { DemoBanner } from "@/components/DemoBanner";
 import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import {
   QueryClient,
@@ -89,7 +90,10 @@ export function RequireSignIn({
       : undefined;
   if (isInitializing || isLoggingIn) {
     return (
-      <output data-ocid="auth.loading_state">Loading your session…</output>
+      <>
+        <DemoBanner />
+        <output data-ocid="auth.loading_state">Loading your session…</output>
+      </>
     );
   }
   if (principal === undefined) {
@@ -125,6 +129,7 @@ export function AuthenticatedApp({
             "flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground"
           }
         >
+          <DemoBanner />
           <h1 className="font-display text-3xl font-semibold">{title}</h1>
           {description && (
             <p className="max-w-md text-muted-foreground">{description}</p>

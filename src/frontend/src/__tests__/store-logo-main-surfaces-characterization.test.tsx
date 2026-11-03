@@ -84,6 +84,7 @@ const ROADIE: Roadie = {
   hiredAt: 0n,
   profile: { name: "Ada Lovelace" },
   isMinor: false,
+  isDemo: false,
 };
 
 /** The actor methods the header reads. */

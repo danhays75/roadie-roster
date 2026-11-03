@@ -44,6 +44,7 @@ const ROADIE: Roadie = {
   hiredAt: 0n,
   profile: { name: "Ada Lovelace", preferredName: "Ada" },
   isMinor: false,
+  isDemo: false,
   contactSet: CONTACT,
 };
 

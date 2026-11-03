@@ -16,6 +16,7 @@ function redactedRoadie(): Roadie {
     profile: PROFILE,
     hiredAt: 0n,
     isMinor: false,
+    isDemo: false,
   };
 }
 

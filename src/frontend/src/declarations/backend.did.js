@@ -52,6 +52,7 @@ export const TrainerNote = IDL.Record({
   'didWell' : IDL.Text,
   'roadieId' : RoadieId,
   'createdAt' : Timestamp,
+  'isDemo' : IDL.Bool,
   'author' : IDL.Principal,
   'shift' : Shift,
   'workOn' : IDL.Text,
@@ -177,6 +178,14 @@ export const ExportData = IDL.Record({
   'fohTotalPar' : IDL.Nat,
   'grandNeed' : IDL.Nat,
 });
+export const DemoDataSummary = IDL.Record({
+  'roadies' : IDL.Nat,
+  'leaders' : IDL.Nat,
+  'signups' : IDL.Nat,
+  'crews' : IDL.Nat,
+  'attendance' : IDL.Nat,
+  'notes' : IDL.Nat,
+});
 export const LeaderTalkId = IDL.Nat;
 export const LeaderTalk = IDL.Record({
   'id' : LeaderTalkId,
@@ -274,6 +283,8 @@ export const Result = IDL.Record({
 export const DuplicateMatch = IDL.Record({
   'matchedOn' : IDL.Text,
   'roadieId' : RoadieId,
+  'name' : IDL.Text,
+  'mainPositionName' : IDL.Text,
   'archived' : IDL.Bool,
 });
 export const AvailabilitySlot = IDL.Record({
@@ -293,6 +304,28 @@ export const ContactSet = IDL.Record({
   'emergencyContactName' : IDL.Text,
   'phone' : Phone,
   'managerSignature' : IDL.Opt(SignatureRef),
+});
+export const DemoShift = IDL.Variant({ 'am' : IDL.Null, 'pm' : IDL.Null });
+export const PretendDate = IDL.Record({
+  'day' : DateOnly,
+  'shift' : DemoShift,
+});
+export const DemoRole = IDL.Variant({
+  'admin' : IDL.Null,
+  'trainingManager' : IDL.Null,
+  'trainer' : IDL.Null,
+  'leadership' : IDL.Null,
+  'visitingManager' : IDL.Null,
+  'storeManager' : IDL.Null,
+  'kiosk' : IDL.Null,
+});
+export const DemoStateView = IDL.Record({
+  'autoOffAt' : IDL.Opt(Timestamp),
+  'turnedOnAt' : IDL.Opt(Timestamp),
+  'pretendDate' : IDL.Opt(PretendDate),
+  'demoRole' : DemoRole,
+  'enabled' : IDL.Bool,
+  'demoTrainerStations' : IDL.Vec(PositionId),
 });
 export const GiftBagFilter = IDL.Variant({
   'all' : IDL.Null,
@@ -400,6 +433,7 @@ export const Roadie = IDL.Record({
   'hireDate' : IDL.Opt(Timestamp),
   'corporateEmployeeId' : IDL.Opt(IDL.Text),
   'contactSet' : IDL.Opt(ContactSet),
+  'isDemo' : IDL.Bool,
   'crewId' : IDL.Opt(CrewId),
   'signedBy' : IDL.Opt(IDL.Principal),
   'birthdayMonthDay' : IDL.Opt(IDL.Text),
@@ -430,6 +464,7 @@ export const SignupSubmission = IDL.Record({
   'signature' : IDL.Opt(SignatureRef),
   'contactSet' : ContactSet,
   'submittedAt' : Timestamp,
+  'isDemo' : IDL.Bool,
   'photo' : IDL.Opt(PhotoRef),
   'profile' : RoadieProfile,
 });
@@ -476,6 +511,7 @@ export const AttendanceState = IDL.Variant({
 export const AttendanceRecord = IDL.Record({
   'eventId' : IDL.Opt(EventId),
   'roadieId' : RoadieId,
+  'isDemo' : IDL.Bool,
   'recordedAt' : Timestamp,
   'recordedBy' : IDL.Principal,
   'shift' : IDL.Opt(Shift),
@@ -487,11 +523,17 @@ export const ChangeLogEntry = IDL.Record({
   'by' : IDL.Principal,
   'id' : ChangeLogId,
   'action' : IDL.Text,
+  'isDemo' : IDL.Bool,
   'detail' : IDL.Text,
   'touchesContactSet' : IDL.Bool,
   'subjectRoadieId' : IDL.Opt(RoadieId),
 });
-export const Crew = IDL.Record({ 'id' : CrewId, 'name' : IDL.Text });
+export const Crew = IDL.Record({
+  'id' : CrewId,
+  'name' : IDL.Text,
+  'isDemo' : IDL.Bool,
+  'leaderPrincipal' : IDL.Opt(IDL.Principal),
+});
 export const LeaderSummary = IDL.Record({
   'title' : IDL.Text,
   'principal' : IDL.Principal,
@@ -527,6 +569,10 @@ export const FinalSignOff = IDL.Record({
   'signedBy' : IDL.Principal,
   'outcome' : SignOffOutcome,
   'futureTrainer' : IDL.Bool,
+});
+export const DemoActionResult = IDL.Variant({
+  'ok' : DemoStateView,
+  'err' : IDL.Text,
 });
 
 export const idlService = IDL.Service({
@@ -581,11 +627,13 @@ export const idlService = IDL.Service({
       [],
     ),
   'checkKioskPin' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+  'clearDemoData' : IDL.Func([], [DemoDataSummary], []),
   'createCrew' : IDL.Func([IDL.Text], [CrewId], []),
   'createLeaderTalk' : IDL.Func([LeaderTalk], [LeaderTalkId], []),
   'createPosition' : IDL.Func([Position], [PositionId], []),
   'createScheduleEvent' : IDL.Func([ScheduleEvent], [EventId], []),
   'createTrainingGroup' : IDL.Func([TrainingGroup], [TrainingGroupId], []),
+  'deleteCrew' : IDL.Func([CrewId], [], []),
   'deletePosition' : IDL.Func([PositionId], [], []),
   'deleteScheduleEvent' : IDL.Func([EventId], [], []),
   'downloadStoreTemplate' : IDL.Func([], [StoreTemplateFile], ['query']),
@@ -611,6 +659,8 @@ export const idlService = IDL.Service({
       ],
       ['query'],
     ),
+  'getDemoDataSummary' : IDL.Func([], [DemoDataSummary], ['query']),
+  'getDemoState' : IDL.Func([], [DemoStateView], ['query']),
   'getGiftBags' : IDL.Func([GiftBagFilter], [GiftBagsData], ['query']),
   'getMyAccess' : IDL.Func([], [IDL.Opt(AccessGrant)], ['query']),
   'getMyPendingRequest' : IDL.Func(
@@ -660,6 +710,7 @@ export const idlService = IDL.Service({
     ),
   'listSchedule' : IDL.Func([], [IDL.Vec(ScheduleEvent)], ['query']),
   'listTrainerNotes' : IDL.Func([RoadieId], [IDL.Vec(TrainerNote)], ['query']),
+  'loadDemoData' : IDL.Func([], [DemoDataSummary], []),
   'loadStoreTemplate' : IDL.Func([StoreTemplateFile], [TemplateLoadResult], []),
   'recordAttendance' : IDL.Func([AttendanceRecord], [], []),
   'recordFinalSignOff' : IDL.Func([FinalSignOff], [], []),
@@ -670,12 +721,19 @@ export const idlService = IDL.Service({
   'resignAvailability' : IDL.Func([RoadieId, SignatureRef], [], []),
   'saveStoreTemplate' : IDL.Func([IDL.Text], [], []),
   'schema' : IDL.Func([], [IDL.Text], ['query']),
+  'setDemoMode' : IDL.Func([IDL.Bool, IDL.Text], [DemoActionResult], []),
+  'setDemoRole' : IDL.Func(
+      [DemoRole, IDL.Vec(PositionId)],
+      [DemoActionResult],
+      [],
+    ),
   'setKioskPin' : IDL.Func([IDL.Text], [], []),
   'setLeaderTalkAttendance' : IDL.Func(
       [LeaderTalkId, IDL.Vec(RoadieId)],
       [],
       [],
     ),
+  'setPretendDate' : IDL.Func([IDL.Opt(PretendDate)], [DemoActionResult], []),
   'submitSignup' : IDL.Func(
       [RoadieProfile, IDL.Opt(PhotoRef), IDL.Opt(SignatureRef), ContactSet],
       [SignupId],
@@ -685,6 +743,7 @@ export const idlService = IDL.Service({
   'updateAccessEnd' : IDL.Func([IDL.Principal, IDL.Opt(Timestamp)], [], []),
   'updateChecklists' : IDL.Func([Checklists], [], []),
   'updateContactSet' : IDL.Func([RoadieId, ContactSet], [], []),
+  'updateCrew' : IDL.Func([CrewId, IDL.Text, IDL.Opt(IDL.Principal)], [], []),
   'updateMyStaffProfile' : IDL.Func([StaffProfile], [], []),
   'updateOrientationCheckoff' : IDL.Func([OrientationCheckoff], [], []),
   'updatePosition' : IDL.Func([Position], [], []),
@@ -750,6 +809,7 @@ export const idlFactory = ({ IDL }) => {
     'didWell' : IDL.Text,
     'roadieId' : RoadieId,
     'createdAt' : Timestamp,
+    'isDemo' : IDL.Bool,
     'author' : IDL.Principal,
     'shift' : Shift,
     'workOn' : IDL.Text,
@@ -875,6 +935,14 @@ export const idlFactory = ({ IDL }) => {
     'fohTotalPar' : IDL.Nat,
     'grandNeed' : IDL.Nat,
   });
+  const DemoDataSummary = IDL.Record({
+    'roadies' : IDL.Nat,
+    'leaders' : IDL.Nat,
+    'signups' : IDL.Nat,
+    'crews' : IDL.Nat,
+    'attendance' : IDL.Nat,
+    'notes' : IDL.Nat,
+  });
   const LeaderTalkId = IDL.Nat;
   const LeaderTalk = IDL.Record({
     'id' : LeaderTalkId,
@@ -972,6 +1040,8 @@ export const idlFactory = ({ IDL }) => {
   const DuplicateMatch = IDL.Record({
     'matchedOn' : IDL.Text,
     'roadieId' : RoadieId,
+    'name' : IDL.Text,
+    'mainPositionName' : IDL.Text,
     'archived' : IDL.Bool,
   });
   const AvailabilitySlot = IDL.Record({ 'day' : Weekday, 'shift' : Shift });
@@ -988,6 +1058,25 @@ export const idlFactory = ({ IDL }) => {
     'emergencyContactName' : IDL.Text,
     'phone' : Phone,
     'managerSignature' : IDL.Opt(SignatureRef),
+  });
+  const DemoShift = IDL.Variant({ 'am' : IDL.Null, 'pm' : IDL.Null });
+  const PretendDate = IDL.Record({ 'day' : DateOnly, 'shift' : DemoShift });
+  const DemoRole = IDL.Variant({
+    'admin' : IDL.Null,
+    'trainingManager' : IDL.Null,
+    'trainer' : IDL.Null,
+    'leadership' : IDL.Null,
+    'visitingManager' : IDL.Null,
+    'storeManager' : IDL.Null,
+    'kiosk' : IDL.Null,
+  });
+  const DemoStateView = IDL.Record({
+    'autoOffAt' : IDL.Opt(Timestamp),
+    'turnedOnAt' : IDL.Opt(Timestamp),
+    'pretendDate' : IDL.Opt(PretendDate),
+    'demoRole' : DemoRole,
+    'enabled' : IDL.Bool,
+    'demoTrainerStations' : IDL.Vec(PositionId),
   });
   const GiftBagFilter = IDL.Variant({
     'all' : IDL.Null,
@@ -1095,6 +1184,7 @@ export const idlFactory = ({ IDL }) => {
     'hireDate' : IDL.Opt(Timestamp),
     'corporateEmployeeId' : IDL.Opt(IDL.Text),
     'contactSet' : IDL.Opt(ContactSet),
+    'isDemo' : IDL.Bool,
     'crewId' : IDL.Opt(CrewId),
     'signedBy' : IDL.Opt(IDL.Principal),
     'birthdayMonthDay' : IDL.Opt(IDL.Text),
@@ -1125,6 +1215,7 @@ export const idlFactory = ({ IDL }) => {
     'signature' : IDL.Opt(SignatureRef),
     'contactSet' : ContactSet,
     'submittedAt' : Timestamp,
+    'isDemo' : IDL.Bool,
     'photo' : IDL.Opt(PhotoRef),
     'profile' : RoadieProfile,
   });
@@ -1171,6 +1262,7 @@ export const idlFactory = ({ IDL }) => {
   const AttendanceRecord = IDL.Record({
     'eventId' : IDL.Opt(EventId),
     'roadieId' : RoadieId,
+    'isDemo' : IDL.Bool,
     'recordedAt' : Timestamp,
     'recordedBy' : IDL.Principal,
     'shift' : IDL.Opt(Shift),
@@ -1182,11 +1274,17 @@ export const idlFactory = ({ IDL }) => {
     'by' : IDL.Principal,
     'id' : ChangeLogId,
     'action' : IDL.Text,
+    'isDemo' : IDL.Bool,
     'detail' : IDL.Text,
     'touchesContactSet' : IDL.Bool,
     'subjectRoadieId' : IDL.Opt(RoadieId),
   });
-  const Crew = IDL.Record({ 'id' : CrewId, 'name' : IDL.Text });
+  const Crew = IDL.Record({
+    'id' : CrewId,
+    'name' : IDL.Text,
+    'isDemo' : IDL.Bool,
+    'leaderPrincipal' : IDL.Opt(IDL.Principal),
+  });
   const LeaderSummary = IDL.Record({
     'title' : IDL.Text,
     'principal' : IDL.Principal,
@@ -1222,6 +1320,10 @@ export const idlFactory = ({ IDL }) => {
     'signedBy' : IDL.Principal,
     'outcome' : SignOffOutcome,
     'futureTrainer' : IDL.Bool,
+  });
+  const DemoActionResult = IDL.Variant({
+    'ok' : DemoStateView,
+    'err' : IDL.Text,
   });
   
   return IDL.Service({
@@ -1276,11 +1378,13 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'checkKioskPin' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+    'clearDemoData' : IDL.Func([], [DemoDataSummary], []),
     'createCrew' : IDL.Func([IDL.Text], [CrewId], []),
     'createLeaderTalk' : IDL.Func([LeaderTalk], [LeaderTalkId], []),
     'createPosition' : IDL.Func([Position], [PositionId], []),
     'createScheduleEvent' : IDL.Func([ScheduleEvent], [EventId], []),
     'createTrainingGroup' : IDL.Func([TrainingGroup], [TrainingGroupId], []),
+    'deleteCrew' : IDL.Func([CrewId], [], []),
     'deletePosition' : IDL.Func([PositionId], [], []),
     'deleteScheduleEvent' : IDL.Func([EventId], [], []),
     'downloadStoreTemplate' : IDL.Func([], [StoreTemplateFile], ['query']),
@@ -1310,6 +1414,8 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
+    'getDemoDataSummary' : IDL.Func([], [DemoDataSummary], ['query']),
+    'getDemoState' : IDL.Func([], [DemoStateView], ['query']),
     'getGiftBags' : IDL.Func([GiftBagFilter], [GiftBagsData], ['query']),
     'getMyAccess' : IDL.Func([], [IDL.Opt(AccessGrant)], ['query']),
     'getMyPendingRequest' : IDL.Func(
@@ -1363,6 +1469,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(TrainerNote)],
         ['query'],
       ),
+    'loadDemoData' : IDL.Func([], [DemoDataSummary], []),
     'loadStoreTemplate' : IDL.Func(
         [StoreTemplateFile],
         [TemplateLoadResult],
@@ -1377,12 +1484,19 @@ export const idlFactory = ({ IDL }) => {
     'resignAvailability' : IDL.Func([RoadieId, SignatureRef], [], []),
     'saveStoreTemplate' : IDL.Func([IDL.Text], [], []),
     'schema' : IDL.Func([], [IDL.Text], ['query']),
+    'setDemoMode' : IDL.Func([IDL.Bool, IDL.Text], [DemoActionResult], []),
+    'setDemoRole' : IDL.Func(
+        [DemoRole, IDL.Vec(PositionId)],
+        [DemoActionResult],
+        [],
+      ),
     'setKioskPin' : IDL.Func([IDL.Text], [], []),
     'setLeaderTalkAttendance' : IDL.Func(
         [LeaderTalkId, IDL.Vec(RoadieId)],
         [],
         [],
       ),
+    'setPretendDate' : IDL.Func([IDL.Opt(PretendDate)], [DemoActionResult], []),
     'submitSignup' : IDL.Func(
         [RoadieProfile, IDL.Opt(PhotoRef), IDL.Opt(SignatureRef), ContactSet],
         [SignupId],
@@ -1392,6 +1506,7 @@ export const idlFactory = ({ IDL }) => {
     'updateAccessEnd' : IDL.Func([IDL.Principal, IDL.Opt(Timestamp)], [], []),
     'updateChecklists' : IDL.Func([Checklists], [], []),
     'updateContactSet' : IDL.Func([RoadieId, ContactSet], [], []),
+    'updateCrew' : IDL.Func([CrewId, IDL.Text, IDL.Opt(IDL.Principal)], [], []),
     'updateMyStaffProfile' : IDL.Func([StaffProfile], [], []),
     'updateOrientationCheckoff' : IDL.Func([OrientationCheckoff], [], []),
     'updatePosition' : IDL.Func([Position], [], []),

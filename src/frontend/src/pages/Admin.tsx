@@ -1,10 +1,12 @@
 import { PageHeader } from "@/components/PageHeader";
 import { AccessPanel } from "@/components/admin/AccessPanel";
 import { ChecklistsPanel } from "@/components/admin/ChecklistsPanel";
+import { CrewsPanel } from "@/components/admin/CrewsPanel";
 import { PositionsPanel } from "@/components/admin/PositionsPanel";
 import { SchedulePanel } from "@/components/admin/SchedulePanel";
 import { StoreInfoPanel } from "@/components/admin/StoreInfoPanel";
 import { TemplatePanel } from "@/components/admin/TemplatePanel";
+import { APPROVAL_ROLES, useAccessState } from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
 import { usePositions } from "@/hooks/useQueries";
 import { useSeedWhenEmpty } from "@/hooks/useSeeding";
@@ -16,12 +18,17 @@ type AdminTab =
   | "positions"
   | "schedule"
   | "checklists"
-  | "template";
+  | "template"
+  | "crews";
 
 export default function AdminPage() {
   const { t } = useI18n();
   const [tab, setTab] = useState<AdminTab>("store");
   const positions = usePositions();
+  const access = useAccessState();
+  const viewerRole = access.kind === "granted" ? access.grant.role : undefined;
+  // The Crews tab is visible to Admin and Store Manager only.
+  const canSeeCrews = !!viewerRole && APPROVAL_ROLES.includes(viewerRole);
 
   // Seed the store once when it has no positions yet so the admin page shows
   // the seeded positions, schedule, store info, checklists and retention.
@@ -33,6 +40,9 @@ export default function AdminPage() {
     { key: "schedule", label: t("admin.section.schedule") },
     { key: "checklists", label: t("admin.section.checklists") },
     { key: "template", label: t("admin.section.template") },
+    ...(canSeeCrews
+      ? [{ key: "crews" as const, label: t("admin.section.crews") }]
+      : []),
     { key: "access", label: t("admin.section.access") },
   ];
 
@@ -69,6 +79,7 @@ export default function AdminPage() {
       {tab === "schedule" && <SchedulePanel />}
       {tab === "checklists" && <ChecklistsPanel />}
       {tab === "template" && <TemplatePanel />}
+      {tab === "crews" && canSeeCrews && <CrewsPanel />}
       {tab === "access" && <AccessPanel />}
     </div>
   );

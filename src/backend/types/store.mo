@@ -154,4 +154,12 @@ module {
     #ok : TemplatePreview;
     #err : Text;
   };
+
+  /// The Admin > Store settings payload: the store configuration plus the
+  /// current demo-mode state, so the settings screen can render the Demo mode
+  /// switch and its confirmation in one read.
+  public type StoreSettings = {
+    info : StoreInfo;
+    demo : Common.DemoStateView;
+  };
 };

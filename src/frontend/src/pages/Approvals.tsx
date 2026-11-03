@@ -49,8 +49,9 @@ import {
   formatDateOnly,
   formatTimestamp,
 } from "@/lib/format";
+import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Check, UserCheck, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 /** The orientation sessions that have not yet passed, soonest first. */
 function upcomingOrientations(schedule: ScheduleEvent[]): ScheduleEvent[] {
@@ -95,6 +96,13 @@ function ageInTimeZone(dateOfBirth: DateOnly, timeZone: string): number | null {
   return age;
 }
 
+/** The copy key describing what a duplicate matched on. */
+function matchFieldKey(matchedOn: string): string {
+  if (matchedOn === "both") return "approvals.signup.duplicates.match.both";
+  if (matchedOn === "email") return "approvals.signup.duplicates.match.email";
+  return "approvals.signup.duplicates.match.phone";
+}
+
 /** A compact list of duplicate matches found against all cards. */
 function DuplicateList({ matches }: { matches: DuplicateMatch[] }) {
   const { t } = useI18n();
@@ -121,15 +129,25 @@ function DuplicateList({ matches }: { matches: DuplicateMatch[] }) {
       <ul className="mt-2 space-y-1 text-sm text-foreground">
         {matches.map((match) => (
           <li key={`${match.roadieId}-${match.matchedOn}`}>
-            {t("approvals.signup.duplicates.row", {
-              id: match.roadieId.toString(),
-              field: match.matchedOn,
-            })}
-            {match.archived && (
-              <span className="ml-2 text-xs text-muted-foreground">
-                {t("roster.archived")}
+            <Link
+              to="/roster/$roadieId"
+              params={{ roadieId: match.roadieId.toString() }}
+              data-ocid="approvals.signup.duplicates.link"
+              className="inline-flex min-h-[44px] flex-wrap items-center gap-x-1.5 rounded-sm text-foreground underline decoration-dotted underline-offset-4 transition-smooth hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span>
+                {t("approvals.signup.duplicates.row", {
+                  name: match.name,
+                  position: match.mainPositionName,
+                  field: t(matchFieldKey(match.matchedOn)),
+                })}
               </span>
-            )}
+              {match.archived && (
+                <span className="text-xs text-muted-foreground">
+                  {t("roster.archived")}
+                </span>
+              )}
+            </Link>
           </li>
         ))}
       </ul>
@@ -147,12 +165,14 @@ function PendingSignupCard({
   crews,
   sessions,
   timeZone,
+  approverPrincipal,
 }: {
   signup: SignupSubmission;
   positions: Position[];
   crews: Crew[];
   sessions: ScheduleEvent[];
   timeZone: string;
+  approverPrincipal: string | null;
 }) {
   const { t } = useI18n();
   const { data: duplicates, isLoading: duplicatesLoading } =
@@ -160,14 +180,30 @@ function PendingSignupCard({
   const approve = useApproveSignup();
   const reject = useRejectSignup();
 
+  // The crew led by the approving user, if any, is the default selection.
+  const ledCrewId = useMemo(() => {
+    if (!approverPrincipal) return "";
+    const led = crews.find(
+      (crew) => crew.leaderPrincipal?.toString() === approverPrincipal,
+    );
+    return led ? led.id.toString() : "";
+  }, [crews, approverPrincipal]);
+
   const [mainPositionId, setMainPositionId] = useState("");
   const [secondPositionId, setSecondPositionId] = useState("");
   const [crewId, setCrewId] = useState("");
+  const [crewTouched, setCrewTouched] = useState(false);
   const [orientationId, setOrientationId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [signature, setSignature] = useState<Uint8Array | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
+
+  // Pre-select the crew led by the approving user once the crews load, unless
+  // the manager has already chosen a crew themselves.
+  useEffect(() => {
+    if (!crewTouched && ledCrewId) setCrewId(ledCrewId);
+  }, [crewTouched, ledCrewId]);
 
   const mainPosition = positions.find(
     (position) => position.id.toString() === mainPositionId,
@@ -233,6 +269,7 @@ function PendingSignupCard({
           setMainPositionId("");
           setSecondPositionId("");
           setCrewId("");
+          setCrewTouched(false);
           setOrientationId("");
           setStartDate("");
           setSignature(null);
@@ -378,7 +415,13 @@ function PendingSignupCard({
           <Label htmlFor={`crew-${key}`}>
             {t("approvals.signup.crew.label")}
           </Label>
-          <Select value={crewId} onValueChange={setCrewId}>
+          <Select
+            value={crewId}
+            onValueChange={(value) => {
+              setCrewTouched(true);
+              setCrewId(value);
+            }}
+          >
             <SelectTrigger
               id={`crew-${key}`}
               data-ocid="approvals.signup.crew.select"
@@ -394,6 +437,11 @@ function PendingSignupCard({
               ))}
             </SelectContent>
           </Select>
+          {ledCrewId && (
+            <p className="text-xs text-muted-foreground">
+              {t("approvals.signup.crew.default")}
+            </p>
+          )}
         </div>
 
         <div className="space-y-1.5">
@@ -509,6 +557,7 @@ function PendingSignupList({
   crews,
   sessions,
   timeZone,
+  approverPrincipal,
   isLoading,
   isError,
   onRetry,
@@ -518,6 +567,7 @@ function PendingSignupList({
   crews: Crew[];
   sessions: ScheduleEvent[];
   timeZone: string;
+  approverPrincipal: string | null;
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
@@ -548,6 +598,7 @@ function PendingSignupList({
           crews={crews}
           sessions={sessions}
           timeZone={timeZone}
+          approverPrincipal={approverPrincipal}
         />
       ))}
     </ul>
@@ -566,6 +617,8 @@ export default function ApprovalsPage() {
   const access = useAccessState();
   const role = access.kind === "granted" ? access.grant.role : undefined;
   const isAdmin = canAdmin(role);
+  const approverPrincipal =
+    access.kind === "granted" ? access.grant.principal.toString() : null;
 
   const { data: storeInfo } = useStoreInfo();
   const timeZone = storeInfo?.timeZone || DEFAULT_TIME_ZONE;
@@ -608,6 +661,7 @@ export default function ApprovalsPage() {
           crews={crews ?? []}
           sessions={sessions}
           timeZone={timeZone}
+          approverPrincipal={approverPrincipal}
           isLoading={signupsLoading}
           isError={signupsError}
           onRetry={() => void refetchSignups()}

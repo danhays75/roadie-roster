@@ -18,7 +18,8 @@ module {
     #absent;
   };
 
-  /// One attendance record per roadie per event or shift.
+  /// One attendance record per roadie per event or shift. `isDemo` marks a
+  /// demo check-in.
   public type AttendanceRecord = {
     roadieId : Common.RoadieId;
     eventId : ?Common.EventId;
@@ -26,6 +27,7 @@ module {
     state : AttendanceState;
     recordedAt : Common.Timestamp;
     recordedBy : Principal;
+    isDemo : Bool;
   };
 
   /// A training group for one day and shift.
@@ -45,7 +47,7 @@ module {
     offThisShift : [Common.RoadieId];
   };
 
-  /// A trainer note about one roadie for one shift.
+  /// A trainer note about one roadie for one shift. `isDemo` marks a demo note.
   public type TrainerNote = {
     id : Nat;
     author : Principal;
@@ -55,6 +57,7 @@ module {
     didWell : Text;
     workOn : Text;
     createdAt : Common.Timestamp;
+    isDemo : Bool;
   };
 
   /// A leader talk with per-roadie attendance.

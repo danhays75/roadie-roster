@@ -10,6 +10,7 @@ mixin (
   accessGrants : Map.Map<Principal, Access.AccessGrant>,
   pendingUsers : Map.Map<Principal, Access.PendingUser>,
   accessControlState : AccessControl.AccessControlState,
+  demoState : Common.DemoState,
 ) {
   /// Register the caller for approval. Any signed-in caller may call this once;
   /// it is idempotent and returns true when the caller is already registered or
@@ -60,49 +61,49 @@ mixin (
 
   /// List pending access requests (Admin only).
   public query ({ caller }) func listPendingUsers() : async [Access.PendingUser] {
-    AccessLib.listPendingUsers(accessGrants, pendingUsers, caller);
+    AccessLib.listPendingUsers(accessGrants, demoState, pendingUsers, caller);
   };
 
   /// List all access grants (Admin only).
   public query ({ caller }) func listAccessGrants() : async [Access.AccessGrant] {
-    AccessLib.listAccessGrants(accessGrants, caller);
+    AccessLib.listAccessGrants(accessGrants, demoState, caller);
   };
 
   /// List the leaders shown on the Leaders page: the manager, trainer and
   /// leadership roles. Readable by every role except Kiosk and Integration.
   /// Never carries phone or email.
   public query ({ caller }) func listLeaders() : async [Access.LeaderSummary] {
-    AccessLib.listLeaders(accessGrants, caller);
+    AccessLib.listLeaders(accessGrants, demoState, caller);
   };
 
   /// Approve a pending user (Admin only).
   public shared ({ caller }) func approveUser(request : Access.ApprovalRequest) : async () {
-    AccessLib.approveUser(accessGrants, pendingUsers, caller, request);
+    AccessLib.approveUser(accessGrants, demoState, pendingUsers, caller, request);
   };
 
   /// Change an existing user's role (Admin only).
   public shared ({ caller }) func updateUserRole(principal : Principal, role : Common.Role) : async () {
-    AccessLib.updateUserRole(accessGrants, caller, principal, role);
+    AccessLib.updateUserRole(accessGrants, demoState, caller, principal, role);
   };
 
   /// Update a user's trainer stations (Admin only).
   public shared ({ caller }) func updateTrainerStations(principal : Principal, positionIds : [Common.PositionId]) : async () {
-    AccessLib.updateTrainerStations(accessGrants, caller, principal, positionIds);
+    AccessLib.updateTrainerStations(accessGrants, demoState, caller, principal, positionIds);
   };
 
   /// Update a user's access end date (Admin only).
   public shared ({ caller }) func updateAccessEnd(principal : Principal, accessEndsAt : ?Common.Timestamp) : async () {
-    AccessLib.updateAccessEnd(accessGrants, caller, principal, accessEndsAt);
+    AccessLib.updateAccessEnd(accessGrants, demoState, caller, principal, accessEndsAt);
   };
 
   /// Remove a user's access (Admin only).
   public shared ({ caller }) func removeUser(principal : Principal) : async () {
-    AccessLib.removeUser(accessGrants, caller, principal);
+    AccessLib.removeUser(accessGrants, demoState, caller, principal);
   };
 
   /// Count the current admins.
   public query ({ caller }) func adminCount() : async Nat {
-    AccessLib.adminCount(accessGrants, caller);
+    AccessLib.adminCount(accessGrants, demoState, caller);
   };
 
   /// Build the access end timestamp for a chosen calendar day: 11:59:59 PM

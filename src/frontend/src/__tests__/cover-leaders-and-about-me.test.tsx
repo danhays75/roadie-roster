@@ -280,7 +280,7 @@ describe("My profile: leader About Me fields", () => {
   });
 });
 
-describe("Leaders page: tier grouping and card link", () => {
+describe("Leaders page: tier grouping and card pop-up", () => {
   function leadersActor(leaders: LeaderSummary[]) {
     return {
       getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
@@ -293,10 +293,28 @@ describe("Leaders page: tier grouping and card link", () => {
       listPositions: vi.fn<backendInterface["listPositions"]>(async () => [
         POSITION,
       ]),
+      listCrews: vi.fn<backendInterface["listCrews"]>(async () => []),
+      getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => ({
+        amShiftEnd: 0n,
+        pmShiftStart: 0n,
+        storeNumber: "975",
+        leaderTalkName: "Leader talk",
+        appName: "Roadie Roster",
+        leaderTalkSize: 4n,
+        amShiftStart: 0n,
+        openingDate: 0n,
+        pmShiftEnd: 0n,
+        trainingGroupSize: 4n,
+        address: "1 Main St",
+        locationName: "Bake",
+        timeZone: "America/Chicago",
+        storePhone: "+1-555-0199",
+      })),
     };
   }
 
-  it("groups cards by tier and links each to its full flip card", async () => {
+  it("groups cards by tier and opens the card pop-up from a tile", async () => {
+    const user = userEvent.setup();
     const leaders = [
       leader(Role.leadership, "legend-1", { preferredName: "Lee" }),
       leader(Role.storeManager, "plat-1", { preferredName: "Pat" }),
@@ -314,9 +332,23 @@ describe("Leaders page: tier grouping and card link", () => {
     expect(within(plat).getByText(/Pat/)).toBeInTheDocument();
     expect(within(gold).getByText(/Tay/)).toBeInTheDocument();
 
-    // Each tile links to the leader's full card route.
-    const link = within(legend).getByTestId("leaders.item.link");
-    expect(link).toHaveAttribute("href", "/leaders/legend-1");
+    // Tapping a tile opens the shared card pop-up rather than navigating.
+    const tile = within(legend).getByTestId("leaders.item.link");
+    expect(tile.tagName.toLowerCase()).toBe("button");
+    await user.click(tile);
+
+    const modal = await screen.findByTestId("roadie.card_modal");
+    expect(within(modal).getByTestId("roadie.flip_card")).toBeInTheDocument();
+
+    // The "Open full profile" link inside the modal still goes to the leader's
+    // full card route.
+    const fullProfile = within(modal).getByTestId(
+      "roadie.card_modal.full_profile_link",
+    );
+    expect(within(fullProfile).getByRole("link")).toHaveAttribute(
+      "href",
+      "/leaders/legend-1",
+    );
   });
 
   it("shows the tier ribbon label for each leader role", async () => {

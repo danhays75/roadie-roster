@@ -3,6 +3,7 @@ import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Text "mo:core/Text";
 import Nat64 "mo:core/Nat64";
+import Common "../types/common";
 import Access "../types/access";
 import Auth "auth";
 
@@ -24,11 +25,12 @@ module {
   /// the plaintext is never persisted.
   public func setKioskPin(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     kioskPin : KioskPinState,
     caller : Principal,
     pin : Text,
   ) : () {
-    Auth.requireAdmin(accessGrants, caller);
+    Auth.requireAdmin(accessGrants, demoState, caller);
     if (pin.size() == 0) {
       Runtime.trap("Kiosk PIN must not be empty");
     };

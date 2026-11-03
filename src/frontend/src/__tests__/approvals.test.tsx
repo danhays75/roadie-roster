@@ -15,6 +15,7 @@ function minorSignup(): SignupSubmission {
     status: { __kind__: "pending", pending: null },
     submittedAt: BigInt(now) * 1_000_000n,
     profile: { name: "Young Applicant" },
+    isDemo: false,
     contactSet: {
       email: "young@example.com",
       phone: "+1-555-0199",
@@ -48,7 +49,13 @@ function baseActor(signup: SignupSubmission) {
     listCrews: vi.fn(async () => []),
     listSchedule: vi.fn(async () => []),
     findDuplicates: vi.fn(async () => [
-      { roadieId: 7n, matchedOn: "phone", archived: false },
+      {
+        roadieId: 7n,
+        name: "Alex Rivera",
+        mainPositionName: "Bartender",
+        matchedOn: "phone",
+        archived: false,
+      },
     ]),
   };
 }
@@ -64,7 +71,11 @@ describe("ApprovalsPage duplicate check and minor block", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        t("approvals.signup.duplicates.row", { id: "7", field: "phone" }),
+        t("approvals.signup.duplicates.row", {
+          name: "Alex Rivera",
+          position: "Bartender",
+          field: t("approvals.signup.duplicates.match.phone"),
+        }),
       ),
     ).toBeInTheDocument();
   });

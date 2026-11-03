@@ -68,6 +68,7 @@ const ROADIE: Roadie = {
   crewId: 7n,
   birthdayMonthDay: "03-14",
   isMinor: true,
+  isDemo: false,
   hiredAt: 0n,
   startDate: 0n,
   profile: {

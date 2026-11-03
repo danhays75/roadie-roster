@@ -2,12 +2,18 @@ import {
   type ApprovalDecision,
   type ApprovalRequest,
   type Checklists,
+  type CrewId,
+  type DemoActionResult,
+  type DemoDataSummary,
+  type DemoRole,
+  type DemoStateView,
   type DuplicateMatch,
   type EventId,
   type LeaderSummary,
   type PhotoRef,
   type Position,
   type PositionId,
+  type PretendDate,
   type RetentionSettings,
   type RoadieId,
   type Role,
@@ -340,6 +346,161 @@ export function useSetKioskPin() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["hasKioskPin"] });
+    },
+  });
+}
+
+/* ---------------------------------------------------------------------------
+   Demo mode
+--------------------------------------------------------------------------- */
+
+/**
+ * The current demo state. Readable by any caller, including unregistered users,
+ * so the banner can render on the sign-in and waiting screens. Polls so an
+ * auto-off (eight hours) or another admin's change is reflected without a
+ * reload.
+ */
+export function useDemoState() {
+  const { actor, isFetching } = useActor(createActor);
+  const enabled = !!actor && !isFetching;
+  const query = useQuery({
+    queryKey: ["demoState"],
+    queryFn: async (): Promise<DemoStateView | null> => {
+      if (!actor) return null;
+      return actor.getDemoState();
+    },
+    enabled,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+  });
+  return { ...query, isReady: enabled };
+}
+
+/**
+ * Turn demo mode on or off (Admin only). Turning it on requires the literal
+ * confirmation "DEMO". The demo state is invalidated so the banner and every
+ * demo-aware read refresh.
+ */
+export function useSetDemoMode() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      enabled: boolean;
+      confirmation: string;
+    }): Promise<DemoActionResult> => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.setDemoMode(args.enabled, args.confirmation);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["demoState"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Choose the impersonated demo role and, for a demo NSO Trainer, the stations
+ * that role may see. Any signed-in caller may choose a demo role while demo
+ * mode is on.
+ */
+export function useSetDemoRole() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      role: DemoRole;
+      stations: PositionId[];
+    }): Promise<DemoActionResult> => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.setDemoRole(args.role, args.stations);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["demoState"] });
+      void queryClient.invalidateQueries({ queryKey: ["myAccess"] });
+    },
+  });
+}
+
+/**
+ * Set or clear the pretend "now" used while demo mode is on. Null restores the
+ * real clock.
+ */
+export function useSetPretendDate() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      pretendDate: PretendDate | null,
+    ): Promise<DemoActionResult> => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.setPretendDate(pretendDate);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["demoState"] });
+    },
+  });
+}
+
+/** Count the demo records currently loaded (Admin, demo mode only). */
+export function useDemoDataSummary(enabled = true) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["demoDataSummary"],
+    queryFn: async (): Promise<DemoDataSummary | null> => {
+      if (!actor) return null;
+      return actor.getDemoDataSummary();
+    },
+    enabled: enabled && !!actor && !isFetching,
+  });
+}
+
+/**
+ * Seed the demo data set (Admin, demo mode only). Invalidates every surface the
+ * seed populates so the demo records appear immediately.
+ */
+export function useLoadDemoData() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (): Promise<DemoDataSummary> => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.loadDemoData();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["demoDataSummary"] });
+      void queryClient.invalidateQueries({ queryKey: ["roadies"] });
+      void queryClient.invalidateQueries({ queryKey: ["pendingSignups"] });
+      void queryClient.invalidateQueries({ queryKey: ["crews"] });
+      void queryClient.invalidateQueries({ queryKey: ["leaders"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Remove every demo record (Admin, demo mode only). Real records are never
+ * touched.
+ */
+export function useClearDemoData() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (): Promise<DemoDataSummary> => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.clearDemoData();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["demoDataSummary"] });
+      void queryClient.invalidateQueries({ queryKey: ["roadies"] });
+      void queryClient.invalidateQueries({ queryKey: ["pendingSignups"] });
+      void queryClient.invalidateQueries({ queryKey: ["crews"] });
+      void queryClient.invalidateQueries({ queryKey: ["leaders"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
     },
   });
 }
@@ -778,6 +939,67 @@ export function useCrews() {
       return actor.listCrews();
     },
     enabled: !!actor && !isFetching,
+  });
+}
+
+/**
+ * Create a crew (Admin/Store Manager only). The backend returns the new crew
+ * id; the crews list is invalidated so the new row appears.
+ */
+export function useCreateCrew() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.createCrew(name);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["crews"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Rename a crew and/or change its leader (Admin/Store Manager only). Both
+ * fields save through the same update, so the crews list is invalidated once.
+ */
+export function useUpdateCrew() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      id: CrewId;
+      name: string;
+      leaderPrincipal: Principal | null;
+    }) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.updateCrew(args.id, args.name, args.leaderPrincipal);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["crews"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Delete a crew (Admin/Store Manager only). The backend refuses while any
+ * roadie is assigned to the crew, so the caller surfaces that error.
+ */
+export function useDeleteCrew() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: CrewId) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.deleteCrew(id);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["crews"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
   });
 }
 

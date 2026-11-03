@@ -1,8 +1,13 @@
-import type { ArchiveReason, Position, Roadie } from "@/backend";
+import type { Position, Roadie } from "@/backend";
 import { RoadieStatus } from "@/backend";
-import { StatusBadge } from "@/components/StatusBadge";
 import { StoreLogo } from "@/components/StoreLogo";
 import { DEFAULT_TIME_ZONE } from "@/components/approvals/timeZone";
+import {
+  type CardEntry,
+  FullProfileLink,
+  RoadieCardModal,
+} from "@/components/roadie/RoadieCardModal";
+import { RoadieTile, archiveReasonLabel } from "@/components/roadie/RoadieTile";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,47 +16,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { canArchive, useAccessState } from "@/hooks/useAccess";
 import { useStoreInfo } from "@/hooks/useQueries";
-import { formatTimestamp, roadieStatusLabel } from "@/lib/format";
-import { Loader2, RotateCcw, UserPlus } from "lucide-react";
+import { formatTimestamp } from "@/lib/format";
+import {
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  RotateCcw,
+  UserPlus,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { useDashboardCopy } from "./copy";
 import { useRehireRoadie, useRosterForPosition } from "./hooks";
-
-/** Human label for an archive reason. */
-export function archiveReasonLabel(reason: ArchiveReason | undefined): string {
-  if (!reason) return "Archived";
-  switch (reason.__kind__) {
-    case "noShow":
-      return "No-show";
-    case "quitDuringTraining":
-      return "Quit during training";
-    case "tookAnotherJob":
-      return "Took another job";
-    case "letGo":
-      return "Let go";
-    case "other":
-      return reason.other || "Other";
-    default:
-      return "Archived";
-  }
-}
-
-function RoadiePhotoCard({ roadie }: { roadie: Roadie }) {
-  const name = roadie.profile.preferredName || roadie.profile.name;
-  return (
-    <li
-      data-ocid="dashboard.roster.item"
-      className="flex flex-col items-center gap-2 rounded-lg border border-border bg-card p-3 text-center shadow-subtle"
-    >
-      <StoreLogo className="h-14 w-14" />
-      <p className="w-full truncate font-display text-sm font-semibold uppercase tracking-wide text-foreground">
-        {name}
-      </p>
-      <StatusBadge tone="hired">{roadieStatusLabel(roadie.status)}</StatusBadge>
-    </li>
-  );
-}
 
 function OpenSpotTile({ index }: { index: number }) {
   const { t } = useDashboardCopy();
@@ -138,8 +115,10 @@ function ArchivedRow({
 }
 
 /**
- * The roster for one position: active photo cards, dashed open-spot tiles for
- * each still-needed hire, and an archived section with rehire for managers.
+ * The roster for one position: active photo tiles, dashed open-spot tiles for
+ * each still-needed hire, and a "Show former (n)" toggle that reveals archived
+ * roadies in a separate "No longer a roadie" section with rehire for managers.
+ * Tapping an active tile opens the shared card pop-up.
  */
 export function PositionRosterDialog({
   position,
@@ -155,6 +134,9 @@ export function PositionRosterDialog({
   const { t } = useDashboardCopy();
   const { data: storeInfo } = useStoreInfo();
   const timeZone = storeInfo?.timeZone || DEFAULT_TIME_ZONE;
+  const access = useAccessState();
+  const role = access.kind === "granted" ? access.grant.role : undefined;
+  const mayOpenFullProfile = canArchive(role);
   const {
     data: roster,
     isLoading,
@@ -169,6 +151,14 @@ export function PositionRosterDialog({
     };
   }, [roster]);
 
+  const [showFormer, setShowFormer] = useState(true);
+  const [cardIndex, setCardIndex] = useState<number | null>(null);
+
+  const entries: CardEntry[] = useMemo(
+    () => active.map((roadie) => ({ key: roadie.id.toString(), roadie })),
+    [active],
+  );
+
   const target = position ? Number(position.openingBuildTo) : 0;
   const openSpots = Math.max(0, target - active.length);
 
@@ -178,6 +168,19 @@ export function PositionRosterDialog({
         data-ocid="dashboard.roster.dialog"
         className="max-h-[85vh] overflow-y-auto sm:max-w-2xl"
       >
+        {/* Present-mode banner: the store mark sits at the top of the dialog,
+            above the position title, so the roster reads as a store-branded
+            presentation surface. */}
+        <div
+          data-ocid="dashboard.roster.banner"
+          className="flex items-center gap-3 rounded-lg bg-secondary px-4 py-3 text-secondary-foreground"
+        >
+          <StoreLogo className="h-12 w-12" />
+          <span className="min-w-0 truncate font-display text-sm font-bold uppercase tracking-widest text-white">
+            {storeInfo?.locationName || storeInfo?.appName || ""}
+          </span>
+        </div>
+
         <DialogHeader>
           <DialogTitle className="font-display text-xl font-bold uppercase tracking-wide">
             {position?.name ?? t("dashboard.roster.title")}
@@ -224,8 +227,15 @@ export function PositionRosterDialog({
                 className="grid grid-cols-2 gap-3 sm:grid-cols-3"
                 data-ocid="dashboard.roster.list"
               >
-                {active.map((roadie) => (
-                  <RoadiePhotoCard key={roadie.id.toString()} roadie={roadie} />
+                {active.map((roadie, index) => (
+                  <RoadieTile
+                    key={roadie.id.toString()}
+                    roadie={roadie}
+                    onOpen={() => setCardIndex(index)}
+                    ocid="dashboard.roster.item"
+                    statusOcid="dashboard.roster.item.status"
+                    photoOcid="dashboard.roster.item.photo"
+                  />
                 ))}
                 {Array.from({ length: openSpots }, (_, i) => `open-${i}`).map(
                   (id, index) => (
@@ -240,24 +250,61 @@ export function PositionRosterDialog({
                 className="mt-2 space-y-2"
                 data-ocid="dashboard.roster.archived.section"
               >
-                <h3 className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                  {t("dashboard.roster.archivedTitle")}
-                </h3>
-                <ul className="space-y-2">
-                  {archived.map((roadie) => (
-                    <ArchivedRow
-                      key={roadie.id.toString()}
-                      roadie={roadie}
-                      canRehire={canRehire}
-                      timeZone={timeZone}
-                    />
-                  ))}
-                </ul>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="touch-target w-full justify-between"
+                  aria-expanded={showFormer}
+                  data-ocid="dashboard.roster.former.toggle"
+                  onClick={() => setShowFormer((on) => !on)}
+                >
+                  <span className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                    {showFormer
+                      ? t("dashboard.roster.hideFormer", {
+                          count: archived.length,
+                        })
+                      : t("dashboard.roster.showFormer", {
+                          count: archived.length,
+                        })}
+                  </span>
+                  {showFormer ? (
+                    <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </Button>
+                {showFormer && (
+                  <ul className="space-y-2">
+                    {archived.map((roadie) => (
+                      <ArchivedRow
+                        key={roadie.id.toString()}
+                        roadie={roadie}
+                        canRehire={canRehire}
+                        timeZone={timeZone}
+                      />
+                    ))}
+                  </ul>
+                )}
               </section>
             )}
           </>
         )}
       </DialogContent>
+
+      <RoadieCardModal
+        entries={entries}
+        index={cardIndex ?? 0}
+        open={cardIndex !== null}
+        onOpenChange={(next) => {
+          if (!next) setCardIndex(null);
+        }}
+        onIndexChange={setCardIndex}
+        renderFullProfile={
+          mayOpenFullProfile
+            ? (entry) => <FullProfileLink entry={entry} />
+            : undefined
+        }
+      />
     </Dialog>
   );
 }

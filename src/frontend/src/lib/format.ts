@@ -1,10 +1,12 @@
 import type {
   DateOnly,
   PhotoRef,
+  PretendDate,
   SignatureRef,
   StaffProfile,
   Timestamp,
 } from "@/backend";
+import { DemoShift } from "@/backend";
 
 /**
  * A stored photo/signature reference is the raw uploaded bytes. Render it as a
@@ -130,6 +132,22 @@ export function dateOnlyToDate(dateOnly: DateOnly): Date | null {
 }
 
 /**
+ * Resolve a demo "Pretend it's" value to the instant it stands for. The day is
+ * a UTC calendar day; the AM/PM shift picks a representative mid-shift time
+ * (09:00 UTC for AM, 15:00 UTC for PM) so schedule windows, countdowns and
+ * check-in availability move with the pretend date. Returns null when the day
+ * is invalid.
+ */
+export function pretendDateToInstant(pretendDate: PretendDate): Date | null {
+  const day = dateOnlyToDate(pretendDate.day);
+  if (!day) return null;
+  const hour = pretendDate.shift === DemoShift.pm ? 15 : 9;
+  return new Date(
+    Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), hour),
+  );
+}
+
+/**
  * Format a backend timestamp for display in the store's time zone; falls back
  * to an em dash. Pass `timeZone` (an IANA name such as `America/Chicago`) so a
  * schedule time reads the same on every device.
@@ -198,6 +216,43 @@ export function dateToDateOnly(date: Date): DateOnly {
     date.getUTCMonth(),
     date.getUTCDate(),
   );
+  return BigInt(utcMidnight) * 1_000_000n;
+}
+
+/**
+ * Format a `DateOnly` as the `YYYY-MM-DD` value an `<input type="date">`
+ * expects. Uses the UTC calendar day so the field never shifts with the device
+ * time zone. Returns an empty string when the value is invalid.
+ */
+export function dateOnlyToInputValue(dateOnly: DateOnly): string {
+  const date = dateOnlyToDate(dateOnly);
+  if (!date) return "";
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Parse the `YYYY-MM-DD` value of an `<input type="date">` into a Motoko
+ * `DateOnly` (nanoseconds at UTC midnight). Returns null when the value is
+ * empty or not a valid calendar day.
+ */
+export function inputValueToDateOnly(value: string): DateOnly | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const utcMidnight = Date.UTC(year, month - 1, day);
+  const date = new Date(utcMidnight);
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
   return BigInt(utcMidnight) * 1_000_000n;
 }
 

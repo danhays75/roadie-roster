@@ -59,6 +59,7 @@ type TrainerNote =
    day: DateOnly;
    didWell: text;
    id: nat;
+   isDemo: bool;
    roadieId: RoadieId;
    shift: Shift;
    workOn: text;
@@ -159,6 +160,7 @@ type SignupSubmission =
  record {
    contactSet: ContactSet;
    id: SignupId;
+   isDemo: bool;
    photo: opt PhotoRef;
    profile: RoadieProfile;
    signature: opt SignatureRef;
@@ -254,6 +256,7 @@ type Roadie =
    hireDate: opt Timestamp;
    hiredAt: Timestamp;
    id: RoadieId;
+   isDemo: bool;
    isMinor: bool;
    mainPositionId: PositionId;
    orientationEventId: opt EventId;
@@ -280,6 +283,11 @@ type Result =
  record {
    hasMore: bool;
    rows: vec vec Cell;
+ };
+type PretendDate = 
+ record {
+   day: DateOnly;
+   shift: DemoShift;
  };
 type PositionId = nat;
 type Position = 
@@ -484,8 +492,48 @@ type Email = text;
 type DuplicateMatch = 
  record {
    archived: bool;
+   mainPositionName: text;
    matchedOn: text;
+   name: text;
    roadieId: RoadieId;
+ };
+type DemoStateView = 
+ record {
+   autoOffAt: opt Timestamp;
+   demoRole: DemoRole;
+   demoTrainerStations: vec PositionId;
+   enabled: bool;
+   pretendDate: opt PretendDate;
+   turnedOnAt: opt Timestamp;
+ };
+type DemoShift = 
+ variant {
+   am;
+   pm;
+ };
+type DemoRole = 
+ variant {
+   admin;
+   kiosk;
+   leadership;
+   storeManager;
+   trainer;
+   trainingManager;
+   visitingManager;
+ };
+type DemoDataSummary = 
+ record {
+   attendance: nat;
+   crews: nat;
+   leaders: nat;
+   notes: nat;
+   roadies: nat;
+   signups: nat;
+ };
+type DemoActionResult = 
+ variant {
+   err: text;
+   ok: DemoStateView;
  };
 type DateTime = int;
 type DateOnly = int;
@@ -493,6 +541,8 @@ type CrewId = nat;
 type Crew = 
  record {
    id: CrewId;
+   isDemo: bool;
+   leaderPrincipal: opt principal;
    name: text;
  };
 type ContactSet = 
@@ -530,6 +580,7 @@ type ChangeLogEntry =
    by: principal;
    detail: text;
    id: ChangeLogId;
+   isDemo: bool;
    subjectRoadieId: opt RoadieId;
    touchesContactSet: bool;
  };
@@ -552,6 +603,7 @@ type AttendanceState =
 type AttendanceRecord = 
  record {
    eventId: opt EventId;
+   isDemo: bool;
    recordedAt: Timestamp;
    recordedBy: principal;
    roadieId: RoadieId;
@@ -652,6 +704,9 @@ service : {
    secondPositionId: opt PositionId, crewId: opt CrewId) -> ();
   /// Check a candidate kiosk PIN. Returns true when it matches the stored hash.
   checkKioskPin: (pin: text) -> (bool) query;
+  /// Remove every demo record (Admin, demo mode only). Real records are never
+  /// touched.
+  clearDemoData: () -> (DemoDataSummary);
   /// Create a crew (Admin/Store Manager only).
   createCrew: (name: text) -> (CrewId);
   /// Create a leader talk (Admin/Store Manager only).
@@ -662,6 +717,9 @@ service : {
   createScheduleEvent: (event: ScheduleEvent) -> (EventId);
   /// Create a training group (Admin/Store Manager only).
   createTrainingGroup: (group: TrainingGroup) -> (TrainingGroupId);
+  /// Delete a crew (Admin/Store Manager only). Refuses while any roadie is
+  /// assigned to the crew.
+  deleteCrew: (id: CrewId) -> ();
   /// Delete a position (Admin only).
   deletePosition: (id: PositionId) -> ();
   /// Delete a schedule event (Admin only).
@@ -673,6 +731,7 @@ service : {
   ensureSeeded: () -> (bool);
   execute: (qJson: text) -> (Result) query;
   /// Find duplicate cards matching a submission (Admin/Store Manager only).
+  /// Each match names the matched roadie and their main position.
   findDuplicates: (id: SignupId) -> (vec DuplicateMatch) query;
   /// Return the backend API documentation as Markdown.
   getApiDoc: () -> (text) query;
@@ -693,6 +752,11 @@ service : {
       showedAtOrientation: opt nat;
       stillNeeded: nat;
     }) query;
+  /// Count the demo records currently loaded.
+  getDemoDataSummary: () -> (DemoDataSummary) query;
+  /// Read the current demo state. Any caller, including unregistered users, so
+  /// the banner can render on the sign-in and waiting screens.
+  getDemoState: () -> (DemoStateView) query;
   /// Build the Gift Bags shopping list and printable labels for the selected
   /// filter, across active (non-archived) roadies only. Visible to Admin, Store
   /// Manager and Training Manager. Never includes phone, email or date of birth.
@@ -763,6 +827,8 @@ service : {
   /// Integration sees nothing, and a trainer sees notes only for roadies in
   /// their assigned stations.
   listTrainerNotes: (roadieId: RoadieId) -> (vec TrainerNote) query;
+  /// Seed the demo data set (Admin, demo mode only).
+  loadDemoData: () -> (DemoDataSummary);
   /// Load a store template file, replacing positions, schedule and checklists
   /// (Admin only). Refuses when any roadie exists.
   loadStoreTemplate: (file: StoreTemplateFile) -> (TemplateLoadResult);
@@ -785,10 +851,22 @@ service : {
   /// Save the current store configuration as a template (Admin only).
   saveStoreTemplate: (name: text) -> ();
   schema: () -> (text) query;
+  /// Turn demo mode on or off (Admin only). Turning it on requires the literal
+  /// confirmation "DEMO"; turning it on sets the eight-hour auto-off time.
+  /// Every on/off is written to the change log.
+  setDemoMode: (enabled: bool, confirmation: text) -> (DemoActionResult);
+  /// Set the impersonated demo role and, for a demo NSO Trainer, the stations
+  /// that role may see. Any signed-in caller may choose a demo role while demo
+  /// mode is on.
+  setDemoRole: (role: DemoRole, stations: vec PositionId) ->
+   (DemoActionResult);
   /// Set the kiosk staff PIN (Admin only). Stored hashed; never returned.
   setKioskPin: (pin: text) -> ();
   /// Record per-roadie attendance for a leader talk (Admin/Store Manager only).
   setLeaderTalkAttendance: (id: LeaderTalkId, attendees: vec RoadieId) -> ();
+  /// Set or clear the pretend "now" used while demo mode is on. Null restores
+  /// the real clock.
+  setPretendDate: (pretendDate: opt PretendDate) -> (DemoActionResult);
   /// Submit a new sign-up from the kiosk (Kiosk, Store Manager or Admin only).
   submitSignup: (profile: RoadieProfile, photo: opt PhotoRef, signature:
    opt SignatureRef, contactSet: ContactSet) -> (SignupId);
@@ -802,6 +880,8 @@ service : {
   updateChecklists: (value: Checklists) -> ();
   /// Update a roadie's contact set (Admin/Store Manager only).
   updateContactSet: (id: RoadieId, contactSet: ContactSet) -> ();
+  /// Rename a crew and/or change its leader (Admin/Store Manager only).
+  updateCrew: (id: CrewId, name: text, leaderPrincipal: opt principal) -> ();
   /// Update the signed-in caller's own staff profile on their access grant.
   updateMyStaffProfile: (profile: StaffProfile) -> ();
   /// Update the orientation check-off for a roadie (Admin/Store Manager only).

@@ -28,9 +28,11 @@ module {
   let _defaultTimeZone : Common.TimeZone = "America/Chicago";
 
   /// Submit a new sign-up from the kiosk. Callable by Kiosk, Store Manager or
-  /// Admin; every text field is length-capped.
+  /// Admin; every text field is length-capped. A sign-up submitted while demo
+  /// mode is on is saved as a demo sign-up.
   public func submitSignup(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
     counters : Counters,
     caller : Principal,
@@ -39,7 +41,7 @@ module {
     signature : ?Common.SignatureRef,
     contactSet : Roadie.ContactSet,
   ) : Common.SignupId {
-    let role = Auth.requireRegistered(accessGrants, caller);
+    let role = Auth.requireRegistered(accessGrants, demoState, caller);
     if (role != #kiosk and role != #storeManager and role != #admin) {
       Runtime.trap("Access denied: Kiosk, Store Manager or Admin role required");
     };
@@ -47,26 +49,29 @@ module {
     counters.nextSignupId := id + 1;
     signups.add(id, {
       id;
-      submittedAt = Time.now();
+      submittedAt = effectiveNow(demoState);
       profile = capProfile(profile);
       photo;
       signature;
       contactSet = capContactSet(contactSet);
       status = #pending;
+      isDemo = Auth.demoActive(demoState);
     });
     id;
   };
 
   /// List pending sign-up submissions (Admin/Store Manager only). Full photo
-  /// bytes are never returned; fetch a photo with `getSignupPhoto`.
+  /// bytes are never returned; fetch a photo with `getSignupPhoto`. Demo
+  /// sign-ups are visible only while demo mode is on.
   public func listPendingSignups(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
     caller : Principal,
   ) : [Signup.SignupSubmission] {
-    Auth.requireManager(accessGrants, caller);
+    Auth.requireManager(accessGrants, demoState, caller);
     signups.values()
-      .filter(func(s) = s.status == #pending)
+      .filter(func(s) = s.isDemo == Auth.demoActive(demoState) and s.status == #pending)
       .map(func(s) = { s with photo = null })
       .toArray();
   };
@@ -74,13 +79,19 @@ module {
   /// Read one submission (Admin/Store Manager only).
   public func getSignup(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
     caller : Principal,
     id : Common.SignupId,
   ) : ?Signup.SignupSubmission {
-    Auth.requireManager(accessGrants, caller);
+    Auth.requireManager(accessGrants, demoState, caller);
     switch (signups.get(id)) {
-      case (?s) { ?{ s with photo = null } };
+      case (?s) {
+        if (s.isDemo != Auth.demoActive(demoState)) {
+          return null;
+        };
+        ?{ s with photo = null };
+      };
       case null { null };
     };
   };
@@ -89,30 +100,46 @@ module {
   /// Returns null when the submission has no photo.
   public func getSignupPhoto(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
     caller : Principal,
     id : Common.SignupId,
   ) : ?Common.PhotoRef {
-    Auth.requireManager(accessGrants, caller);
+    Auth.requireManager(accessGrants, demoState, caller);
     switch (signups.get(id)) {
-      case (?s) { s.photo };
+      case (?s) {
+        if (s.isDemo != Auth.demoActive(demoState)) {
+          return null;
+        };
+        s.photo;
+      };
       case null { null };
     };
   };
 
-  /// Find duplicate cards matching a submission's phone or email (Admin/Store Manager only).
+  /// Find duplicate cards matching a submission's phone or email (Admin/Store
+  /// Manager only). Only roadies in the active demo/real partition are
+  /// considered.
   public func findDuplicates(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
     caller : Principal,
     id : Common.SignupId,
   ) : [Signup.DuplicateMatch] {
-    Auth.requireManager(accessGrants, caller);
+    Auth.requireManager(accessGrants, demoState, caller);
     let submission = signups.get(id) ?? Runtime.trap("Signup not found");
+    if (submission.isDemo != Auth.demoActive(demoState)) {
+      Runtime.trap("Signup not found");
+    };
     let phone = submission.contactSet.phone;
     let email = submission.contactSet.email;
     roadies.values().filter(func(r) {
+      if (r.isDemo != Auth.demoActive(demoState)) {
+        return false;
+      };
       switch (r.contactSet) {
         case (?cs) {
           (phone.size() > 0 and cs.phone == phone) or (email.size() > 0 and cs.email == email);
@@ -120,11 +147,27 @@ module {
         case null { false };
       };
     }).map(func(r) {
-      let matchedOn = switch (r.contactSet) {
-        case (?cs) { if (phone.size() > 0 and cs.phone == phone) { "phone" } else { "email" } };
-        case null { "email" };
+      let phoneMatch = switch (r.contactSet) {
+        case (?cs) { phone.size() > 0 and cs.phone == phone };
+        case null { false };
       };
-      { roadieId = r.id; matchedOn; archived = r.status == #archived };
+      let emailMatch = switch (r.contactSet) {
+        case (?cs) { email.size() > 0 and cs.email == email };
+        case null { false };
+      };
+      // Phone takes precedence: a phone match reports "phone" even when the
+      // email also matches. "email" is reported only when the email is the
+      // sole match.
+      let matchedOn = if (phoneMatch) { "phone" } else { "email" };
+      let name = switch (r.profile.preferredName) {
+        case (?p) { if (p.size() > 0) { p } else { r.profile.name } };
+        case null { r.profile.name };
+      };
+      let mainPositionName = switch (positions.get(r.mainPositionId)) {
+        case (?pos) { pos.name };
+        case null { "" };
+      };
+      { roadieId = r.id; name; mainPositionName; matchedOn; archived = r.status == #archived };
     }).toArray();
   };
 
@@ -135,6 +178,7 @@ module {
   /// set; the roadie's own availability signature is preserved.
   public func approveSignup(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
@@ -146,8 +190,11 @@ module {
     decision : Signup.ApprovalDecision,
     signature : Common.SignatureRef,
   ) : Common.RoadieId {
-    Auth.requireManager(accessGrants, caller);
+    Auth.requireManager(accessGrants, demoState, caller);
     let submission = signups.get(id) ?? Runtime.trap("Signup not found");
+    if (submission.isDemo != Auth.demoActive(demoState)) {
+      Runtime.trap("Signup not found");
+    };
     switch (submission.status) {
       case (#pending) {};
       case (_) { Runtime.trap("Signup has already been decided") };
@@ -158,7 +205,7 @@ module {
       case null { null };
     };
     let timeZone = storeInfo.value.timeZone;
-    let now = Time.now();
+    let now = effectiveNow(demoState);
     let dob = submission.contactSet.dateOfBirth;
     if (not Age.meetsMinimumAge(dob, main.minimumAge, now, timeZone)) {
       Runtime.trap("Roadie is below the minimum age for this position");
@@ -201,25 +248,66 @@ module {
       hiredAt = now;
       hireDate = ?submission.submittedAt;
       signedBy = ?caller;
+      isDemo = submission.isDemo;
     });
     signups.add(id, { submission with status = #approved(roadieId) });
-    ignore ChangeLog.record(changeLog, counters, caller, "approveSignup", ?roadieId, true, "Approved signup");
+    logWrite(changeLog, counters, demoState, caller, "approveSignup", ?roadieId, true, "Approved signup");
     roadieId;
   };
 
   /// Reject a pending submission (Admin/Store Manager only).
   public func rejectSignup(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
     caller : Principal,
     id : Common.SignupId,
   ) : () {
-    Auth.requireManager(accessGrants, caller);
+    Auth.requireManager(accessGrants, demoState, caller);
     let submission = signups.get(id) ?? Runtime.trap("Signup not found");
+    if (submission.isDemo != Auth.demoActive(demoState)) {
+      Runtime.trap("Signup not found");
+    };
     signups.add(id, { submission with status = #rejected });
-    ignore ChangeLog.record(changeLog, counters, caller, "rejectSignup", null, false, "Rejected signup");
+    logWrite(changeLog, counters, demoState, caller, "rejectSignup", null, false, "Rejected signup");
+  };
+
+  /// Internal: the effective clock. While demo mode is on with a pretend date
+  /// set, the pretend timestamp is returned; otherwise the real clock.
+  func effectiveNow(demoState : Common.DemoState) : Common.Timestamp {
+    if (not Auth.demoActive(demoState)) {
+      return Time.now();
+    };
+    switch (demoState.pretendDate) {
+      case (?pd) {
+        let hourOffset : Int = switch (pd.shift) {
+          case (#am) { 9 };
+          case (#pm) { 15 };
+        };
+        pd.day + hourOffset * 3_600_000_000_000;
+      };
+      case null { Time.now() };
+    };
+  };
+
+  /// Internal: write a change-log entry into the active partition.
+  func logWrite(
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    demoState : Common.DemoState,
+    by : Principal,
+    action : Text,
+    subjectRoadieId : ?Common.RoadieId,
+    touchesContactSet : Bool,
+    detail : Text,
+  ) : () {
+    if (Auth.demoActive(demoState)) {
+      ignore ChangeLog.recordDemo(changeLog, counters, by, action, subjectRoadieId, touchesContactSet, detail);
+    } else {
+      ignore ChangeLog.record(changeLog, counters, by, action, subjectRoadieId, touchesContactSet, detail);
+    };
   };
 
   /// Internal: cap every free-text field of a profile.

@@ -19,6 +19,27 @@
   container-type: inline-size;
   cursor: pointer;
 }
+.rc.gold {
+  --navy: #1e1a12;
+  --red: #b8892e;
+  --red2: #8a6420;
+  --cream: #fbf3df;
+  --gold: #e8c66a;
+}
+.rc.plat {
+  --navy: #1c2430;
+  --red: #3f5e86;
+  --red2: #2c4566;
+  --cream: #eef1f5;
+  --gold: #c9d3e0;
+}
+.rc.legend {
+  --navy: #0b0b0e;
+  --red: #b22234;
+  --red2: #7d1622;
+  --cream: #f4efe3;
+  --gold: #e8c66a;
+}
 .rc-inner {
   position: relative;
   width: 100%;
@@ -246,7 +267,7 @@
   position: absolute;
   inset: 2.6cqw;
   clip-path: polygon(0 13%, 50% 0, 100% 13%, 100% 100%, 0 100%);
-  background: #2a3550 center / cover no-repeat;
+  background: var(--navy) center / cover no-repeat;
 }
 .rc .shield .ph::after {
   content: "";
@@ -370,7 +391,7 @@
   border-radius: 50%;
   flex: none;
   border: 1.2cqw solid var(--cream);
-  background: #2a3550 center / cover no-repeat;
+  background: var(--navy) center / cover no-repeat;
   box-shadow: 0 0 0 .7cqw var(--navy2);
 }
 .rc .b-body {
@@ -446,7 +467,7 @@
   display: block;
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(180deg, #c8303f, var(--red2));
+  background: linear-gradient(180deg, var(--red), var(--red2));
 }
 .rc .quote {
   position: relative;

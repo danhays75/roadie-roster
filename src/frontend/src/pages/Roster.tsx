@@ -1,86 +1,36 @@
-import type { Roadie, RoadieStatus } from "@/backend";
-import { RoadieStatus as RoadieStatusEnum } from "@/backend";
+import type { Roadie } from "@/backend";
+import { RoadieStatus } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
-import { StatusBadge } from "@/components/StatusBadge";
-import { RoadiePhoto } from "@/components/roadie/RoadiePhoto";
+import { useDashboardCopy } from "@/components/dashboard/copy";
+import {
+  type CardEntry,
+  FullProfileLink,
+  RoadieCardModal,
+} from "@/components/roadie/RoadieCardModal";
+import { RoadieTile } from "@/components/roadie/RoadieTile";
 import { Input } from "@/components/ui/input";
-import { useI18n } from "@/hooks/useI18n";
+import { canArchive, useAccessState } from "@/hooks/useAccess";
 import { useCrews, usePositions, useRoadies } from "@/hooks/useQueries";
-import { roadieStatusLabel } from "@/lib/format";
-import { Link } from "@tanstack/react-router";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useMemo, useState } from "react";
 
-type Filter = "all" | "active" | "archived";
-
-function statusTone(status: RoadieStatus) {
-  if (status === RoadieStatusEnum.archived) return "muted" as const;
-  if (status === RoadieStatusEnum.needsMoreTime) return "pending" as const;
-  return "hired" as const;
-}
-
-function RoadieRow({
-  roadie,
-  positionName,
-  positionCode,
-  crewName,
-}: {
-  roadie: Roadie;
-  positionName: string;
-  positionCode: string;
-  crewName: string;
-}) {
-  const { t } = useI18n();
-  const name = roadie.profile.preferredName || roadie.profile.name;
-  return (
-    <li data-ocid="roster.item">
-      <Link
-        to="/roster/$roadieId"
-        params={{ roadieId: roadie.id.toString() }}
-        data-ocid="roster.item.link"
-        className="flex items-center gap-4 rounded-lg border border-border bg-card p-3 shadow-subtle transition-smooth hover:-translate-y-0.5 hover:shadow-elevated"
-      >
-        <RoadiePhoto
-          id={roadie.id}
-          name={name}
-          ocid="roster.item.photo"
-          className="h-14 w-14 shrink-0"
-        />
-
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-base font-semibold uppercase tracking-wide text-foreground">
-            {name}
-          </p>
-          <p className="truncate text-sm text-muted-foreground">
-            {positionName}
-            {positionCode ? ` · ${positionCode}` : ""}
-          </p>
-          <p className="truncate text-xs text-muted-foreground">
-            {t("roadie.field.crew")}: {crewName}
-          </p>
-        </div>
-
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <StatusBadge
-            tone={statusTone(roadie.status)}
-            ocid="roster.item.status"
-          >
-            {roadieStatusLabel(roadie.status)}
-          </StatusBadge>
-        </div>
-        <span className="sr-only">{t("roster.viewCard")}</span>
-      </Link>
-    </li>
-  );
-}
+/** Which list the card pop-up is navigating within. */
+type CardList = "active" | "former";
 
 export default function RosterPage() {
-  const { t } = useI18n();
+  const { t } = useDashboardCopy();
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
+  const [showFormer, setShowFormer] = useState(false);
+  const [card, setCard] = useState<{ list: CardList; index: number } | null>(
+    null,
+  );
   const { data: roadies, isLoading, isError, refetch } = useRoadies();
   const { data: positions } = usePositions();
   const { data: crews } = useCrews();
+  const access = useAccessState();
+  const role = access.kind === "granted" ? access.grant.role : undefined;
+  const mayOpenFullProfile = canArchive(role);
 
   const positionMap = useMemo(() => {
     const map = new Map<string, { name: string; code: string }>();
@@ -101,13 +51,10 @@ export default function RosterPage() {
     return map;
   }, [crews]);
 
-  const filtered = useMemo(() => {
+  const { active, archived } = useMemo(() => {
     const list = roadies ?? [];
     const q = query.trim().toLowerCase();
-    return list.filter((roadie) => {
-      const archived = roadie.status === RoadieStatusEnum.archived;
-      if (filter === "active" && archived) return false;
-      if (filter === "archived" && !archived) return false;
+    const matches = (roadie: Roadie) => {
       if (!q) return true;
       const name = (
         roadie.profile.preferredName || roadie.profile.name
@@ -116,57 +63,53 @@ export default function RosterPage() {
         positionMap.get(roadie.mainPositionId.toString())?.name ?? ""
       ).toLowerCase();
       return name.includes(q) || position.includes(q);
-    });
-  }, [roadies, query, filter, positionMap]);
+    };
+    return {
+      active: list.filter(
+        (roadie) => roadie.status !== RoadieStatus.archived && matches(roadie),
+      ),
+      archived: list.filter(
+        (roadie) => roadie.status === RoadieStatus.archived && matches(roadie),
+      ),
+    };
+  }, [roadies, query, positionMap]);
 
-  const filters: { key: Filter; label: string }[] = [
-    { key: "all", label: t("roster.filter.all") },
-    { key: "active", label: t("roster.filter.active") },
-    { key: "archived", label: t("roster.filter.archived") },
-  ];
+  const activeEntries: CardEntry[] = useMemo(
+    () => active.map((roadie) => ({ key: roadie.id.toString(), roadie })),
+    [active],
+  );
+  const formerEntries: CardEntry[] = useMemo(
+    () => archived.map((roadie) => ({ key: roadie.id.toString(), roadie })),
+    [archived],
+  );
+
+  const positionNameOf = (roadie: Roadie) =>
+    positionMap.get(roadie.mainPositionId.toString())?.name ??
+    t("roadie.field.none");
+  const crewNameOf = (roadie: Roadie) =>
+    roadie.crewId === undefined
+      ? undefined
+      : crewMap.get(roadie.crewId.toString());
+
+  const hasAny = active.length > 0 || archived.length > 0;
 
   return (
     <div className="space-y-6" data-ocid="roster.page">
       <PageHeader title={t("roster.title")} subtitle={t("roster.subtitle")} />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="w-full sm:max-w-sm">
-          <label htmlFor="roster-search" className="sr-only">
-            {t("roster.search")}
-          </label>
-          <Input
-            id="roster-search"
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t("roster.searchPlaceholder")}
-            data-ocid="roster.search_input"
-            className="touch-target"
-          />
-        </div>
-        <div
-          role="tablist"
-          aria-label={t("roster.title")}
-          className="flex gap-1 rounded-md border border-border bg-card p-1"
-        >
-          {filters.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              role="tab"
-              aria-selected={filter === item.key}
-              data-ocid={`roster.filter.${item.key}.tab`}
-              onClick={() => setFilter(item.key)}
-              className={`touch-target rounded px-3 py-1.5 font-display text-xs font-semibold uppercase tracking-wider transition-colors ${
-                filter === item.key
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+      <div className="w-full sm:max-w-sm">
+        <label htmlFor="roster-search" className="sr-only">
+          {t("roster.search")}
+        </label>
+        <Input
+          id="roster-search"
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={t("roster.searchPlaceholder")}
+          data-ocid="roster.search_input"
+          className="touch-target"
+        />
       </div>
 
       {isLoading && <LoadingState label={t("roster.loading")} />}
@@ -177,31 +120,92 @@ export default function RosterPage() {
         />
       )}
 
-      {!isLoading && !isError && filtered.length === 0 && (
+      {!isLoading && !isError && !hasAny && (
         <EmptyState title={query ? t("roster.empty") : t("roster.emptyAll")} />
       )}
 
-      {filtered.length > 0 && (
-        <ul className="space-y-3" data-ocid="roster.list">
-          {filtered.map((roadie) => {
-            const position = positionMap.get(roadie.mainPositionId.toString());
-            return (
-              <RoadieRow
-                key={roadie.id.toString()}
-                roadie={roadie}
-                positionName={position?.name ?? t("roadie.field.none")}
-                positionCode={position?.code ?? ""}
-                crewName={
-                  roadie.crewId === undefined
-                    ? t("roadie.field.none")
-                    : (crewMap.get(roadie.crewId.toString()) ??
-                      t("roadie.field.none"))
-                }
-              />
-            );
-          })}
+      {active.length > 0 && (
+        <ul
+          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+          data-ocid="roster.list"
+        >
+          {active.map((roadie, index) => (
+            <RoadieTile
+              key={roadie.id.toString()}
+              roadie={roadie}
+              positionName={positionNameOf(roadie)}
+              crewName={crewNameOf(roadie) ?? t("roadie.field.none")}
+              crewLabel={t("roadie.field.crew")}
+              onOpen={() => setCard({ list: "active", index })}
+              ocid="roster.item"
+              statusOcid="roster.item.status"
+              photoOcid="roster.item.photo"
+            />
+          ))}
         </ul>
       )}
+
+      {archived.length > 0 && (
+        <section className="space-y-3" data-ocid="roster.former.section">
+          <button
+            type="button"
+            className="touch-target flex w-full items-center justify-between rounded-md border border-border bg-card px-4 py-2 font-display text-sm font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:bg-muted"
+            aria-expanded={showFormer}
+            data-ocid="roster.former.toggle"
+            onClick={() => setShowFormer((on) => !on)}
+          >
+            {showFormer
+              ? t("dashboard.roster.hideFormer", { count: archived.length })
+              : t("dashboard.roster.showFormer", { count: archived.length })}
+            {showFormer ? (
+              <ChevronUp className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <ChevronDown className="h-4 w-4" aria-hidden="true" />
+            )}
+          </button>
+
+          {showFormer && (
+            <>
+              <h2 className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                {t("dashboard.roster.formerTitle")}
+              </h2>
+              <ul
+                className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+                data-ocid="roster.former.list"
+              >
+                {archived.map((roadie, index) => (
+                  <RoadieTile
+                    key={roadie.id.toString()}
+                    roadie={roadie}
+                    positionName={positionNameOf(roadie)}
+                    onOpen={() => setCard({ list: "former", index })}
+                    ocid="roster.former.item"
+                    statusOcid="roster.former.item.status"
+                    photoOcid="roster.former.item.photo"
+                  />
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      )}
+
+      <RoadieCardModal
+        entries={card?.list === "former" ? formerEntries : activeEntries}
+        index={card?.index ?? 0}
+        open={card !== null}
+        onOpenChange={(next) => {
+          if (!next) setCard(null);
+        }}
+        onIndexChange={(index) =>
+          setCard((current) => (current ? { ...current, index } : current))
+        }
+        renderFullProfile={
+          mayOpenFullProfile
+            ? (entry) => <FullProfileLink entry={entry} />
+            : undefined
+        }
+      />
     </div>
   );
 }

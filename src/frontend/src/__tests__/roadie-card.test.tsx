@@ -11,6 +11,7 @@ const roadie: Roadie = {
   mainPositionId: 0n,
   hiredAt: 0n,
   isMinor: false,
+  isDemo: false,
   profile: { name: "Ada Lovelace", preferredName: "Ada" },
   contactSet: {
     phone: "+1-555-0100",

@@ -152,6 +152,7 @@ describe("StoreLogo renders on every affected surface", () => {
       hiredAt: 0n,
       profile: { name: "Ada Lovelace" },
       isMinor: false,
+      isDemo: false,
     };
 
     renderPageWithActor(
@@ -204,6 +205,7 @@ describe("StoreLogo renders on every affected surface", () => {
       hiredAt: 0n,
       profile: { name: "Ada Lovelace" },
       isMinor: false,
+      isDemo: false,
     };
 
     renderWithActor(
