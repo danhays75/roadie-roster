@@ -6,7 +6,7 @@ import type {
   StoreInfo,
   backendInterface,
 } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import RoadieCardPage from "@/pages/RoadieCard";
 import { screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -31,6 +31,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const CONTACT: ContactSet = {
@@ -58,6 +60,7 @@ const STORE_INFO: StoreInfo = {
   locationName: "Bake",
   timeZone: "America/Chicago",
   storePhone: "+1-555-0199",
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 const ROADIE: Roadie = {
@@ -71,6 +74,7 @@ const ROADIE: Roadie = {
   isDemo: false,
   hiredAt: 0n,
   startDate: 0n,
+  rosterState: RosterState.active,
   profile: {
     name: "Frank George",
     preferredName: "Frank",

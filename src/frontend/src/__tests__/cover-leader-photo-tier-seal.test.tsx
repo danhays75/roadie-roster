@@ -41,6 +41,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const STORE_INFO: StoreInfo = {
@@ -58,6 +60,7 @@ const STORE_INFO: StoreInfo = {
   locationName: "Bake",
   timeZone: "America/Chicago",
   storePhone: "+1-555-0199",
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /** A tiny valid PNG byte sequence, enough for refToDataUrl to build a data URL. */

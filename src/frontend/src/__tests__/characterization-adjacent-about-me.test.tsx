@@ -7,7 +7,7 @@ import type {
   StoreInfo,
   backendInterface,
 } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import { formatDateOnly } from "@/lib/format";
 import KioskPage from "@/pages/Kiosk";
 import RoadieCardPage from "@/pages/RoadieCard";
@@ -123,6 +123,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const CREW: Crew = { id: 7n, name: "Opening Crew", isDemo: false };
@@ -152,6 +154,7 @@ const STORE_INFO: StoreInfo = {
   locationName: "Bake",
   timeZone: "America/Chicago",
   storePhone: "+1-555-0199",
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 const START_DATE = BigInt(Date.UTC(2027, 2, 14)) * 1_000_000n;
@@ -169,6 +172,7 @@ const FULL_ROADIE: Roadie = {
   hiredAt: 0n,
   hireDate: START_DATE,
   startDate: START_DATE,
+  rosterState: RosterState.active,
   profile: {
     name: "Frank George",
     preferredName: "Frank",
@@ -191,6 +195,7 @@ const SPARSE_ROADIE: Roadie = {
   isDemo: false,
   profile: { name: "Bake Lee" },
   contactSet: CONTACT,
+  rosterState: RosterState.pending,
 };
 
 const PHOTO_BYTES = new Uint8Array([1, 2, 3, 4]);

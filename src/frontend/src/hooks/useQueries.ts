@@ -10,6 +10,8 @@ import {
   type DuplicateMatch,
   type EventId,
   type LeaderSummary,
+  type OrientationCheckoff,
+  type OrientationSessionView,
   type PhotoRef,
   type Position,
   type PositionId,
@@ -26,6 +28,7 @@ import {
   type StoreLogos,
   type StoreTemplateFile,
   type Timestamp,
+  type UniformCheckoffView,
   createActor,
 } from "@/backend";
 import { useActor } from "@caffeineai/core-infrastructure";
@@ -1072,6 +1075,161 @@ export function useFullExport() {
     mutationFn: async () => {
       if (!actor) throw new Error("Backend is not ready");
       return actor.buildFullExport();
+    },
+  });
+}
+
+/* ---------------------------------------------------------------------------
+   Orientation
+--------------------------------------------------------------------------- */
+
+/**
+ * The orientation check-in view for one session: assigned roadies with photo,
+ * name, position, crew and paperwork status, plus Present x / y counts.
+ * Readable by Admin, Store Manager, Training Manager and Visiting Manager, so
+ * callers pass `enabled` (typically `canOrientation(role)`) to avoid a trapping
+ * read for other roles.
+ */
+export function useOrientationSessionView(
+  eventId: EventId | undefined,
+  enabled = true,
+) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["orientationSession", eventId?.toString()],
+    queryFn: async (): Promise<OrientationSessionView | null> => {
+      if (!actor || eventId === undefined) return null;
+      return actor.getOrientationSessionView(eventId);
+    },
+    enabled: enabled && !!actor && !isFetching && eventId !== undefined,
+  });
+}
+
+/**
+ * Mark a roadie Present at an orientation session (Admin/Store Manager only).
+ * Idempotent on the backend, so concurrent managers converge. Invalidates the
+ * session view, the dashboard and the roster summary so the counts refresh.
+ */
+export function useMarkPresent() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { roadieId: RoadieId; eventId: EventId }) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.markPresent(args.roadieId, args.eventId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["orientationSession"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
+      void queryClient.invalidateQueries({ queryKey: ["roadies"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Undo a roadie's Present mark at an orientation session (Admin/Store Manager
+ * only). Invalidates the same reads as marking Present.
+ */
+export function useUndoPresent() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { roadieId: RoadieId; eventId: EventId }) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.undoPresent(args.roadieId, args.eventId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["orientationSession"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
+      void queryClient.invalidateQueries({ queryKey: ["roadies"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Move a roadie to another orientation session (Admin/Store Manager only).
+ * Invalidates both the source and target session views plus the roster.
+ */
+export function useMoveRoadieToSession() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { roadieId: RoadieId; eventId: EventId }) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.moveRoadieToSession(args.roadieId, args.eventId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["orientationSession"] });
+      void queryClient.invalidateQueries({ queryKey: ["roadies"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Archive every no-show at a session as NCNS Orientation (Admin/Store Manager
+ * only). Returns the archived roadie ids. Invalidates the session view, the
+ * roster and the dashboard so the archived roadies drop out of the counts.
+ */
+export function useArchiveNoShows() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (eventId: EventId): Promise<RoadieId[]> => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.archiveNoShows(eventId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["orientationSession"] });
+      void queryClient.invalidateQueries({ queryKey: ["roadies"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * The uniform check-off for a roadie: the required items with their checked
+ * state and counts, plus whether the check-off is complete. Readable by Admin
+ * and Store Manager only, so callers pass `enabled` to avoid a trapping read.
+ */
+export function useUniformCheckoff(
+  roadieId: RoadieId | undefined,
+  enabled = true,
+) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["uniformCheckoff", roadieId?.toString()],
+    queryFn: async (): Promise<UniformCheckoffView | null> => {
+      if (!actor || roadieId === undefined) return null;
+      return actor.getUniformCheckoff(roadieId);
+    },
+    enabled: enabled && !!actor && !isFetching && roadieId !== undefined,
+  });
+}
+
+/**
+ * Save the uniform check-off for a roadie (Admin/Store Manager only).
+ * Invalidates the check-off read so the saved state is reflected.
+ */
+export function useSaveUniformCheckoff() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (checkoff: OrientationCheckoff) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.saveUniformCheckoff(checkoff);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["uniformCheckoff"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
     },
   });
 }

@@ -1,5 +1,5 @@
 import type { Position, RosterSummary } from "@/backend";
-import { RoadieStatus } from "@/backend";
+import { RoadieStatus, RosterState } from "@/backend";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -92,6 +92,22 @@ function PositionRow({
   const needed = target - onHand;
   const openSpots = summary ? Number(summary.openSpots) : Math.max(0, needed);
   const over = needed < 0;
+  // Pending and active break the on-hand total down; the position's own roster
+  // read is the fallback while the summary is still loading.
+  const activeCount = summary
+    ? Number(summary.active)
+    : (roster ?? []).filter(
+        (r) =>
+          r.status !== RoadieStatus.archived &&
+          r.rosterState === RosterState.active,
+      ).length;
+  const pendingCount = summary
+    ? Number(summary.pending)
+    : (roster ?? []).filter(
+        (r) =>
+          r.status !== RoadieStatus.archived &&
+          r.rosterState === RosterState.pending,
+      ).length;
 
   const applyDelta = (field: AdjustField, delta: bigint) => {
     setError(null);
@@ -131,6 +147,20 @@ function PositionRow({
                 onHand,
                 target,
               })}
+            </span>
+            <span
+              data-ocid="dashboard.position.counts"
+              className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-medium"
+            >
+              <span className="text-accent">
+                {t("dashboard.position.active", { count: activeCount })}
+              </span>
+              <span className="text-muted-foreground" aria-hidden="true">
+                ·
+              </span>
+              <span className="text-primary">
+                {t("dashboard.position.pending", { count: pendingCount })}
+              </span>
             </span>
           </span>
           <ChevronRight

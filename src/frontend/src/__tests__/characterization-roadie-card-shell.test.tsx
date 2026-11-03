@@ -1,6 +1,6 @@
 import { renderPageWithActor, t } from "@/__tests__/router-test-utils";
 import type { ContactSet, Position, Roadie, backendInterface } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import RoadieCardPage from "@/pages/RoadieCard";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -25,6 +25,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const CONTACT: ContactSet = {
@@ -46,6 +48,7 @@ const ROADIE: Roadie = {
   isMinor: false,
   isDemo: false,
   contactSet: CONTACT,
+  rosterState: RosterState.pending,
 };
 
 function actor(role: Role) {

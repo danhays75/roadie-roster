@@ -12,6 +12,7 @@ mixin (
   signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
   roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
   positions : Map.Map<Common.PositionId, Store.Position>,
+  schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
   storeInfo : { var value : Store.StoreInfo },
   changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
   counters : SignupLib.Counters,
@@ -55,7 +56,7 @@ mixin (
     decision : Signup.ApprovalDecision,
     signature : Common.SignatureRef,
   ) : async Common.RoadieId {
-    SignupLib.approveSignup(accessGrants, demoState, signups, roadies, positions, storeInfo, changeLog, counters, caller, id, decision, signature);
+    SignupLib.approveSignup(accessGrants, demoState, signups, roadies, positions, schedule, storeInfo, changeLog, counters, caller, id, decision, signature);
   };
 
   /// Reject a pending submission (Admin/Store Manager only).

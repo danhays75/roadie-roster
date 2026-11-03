@@ -35,6 +35,7 @@ function adminActor() {
       trainingGroupSize: 5n,
       leaderTalkName: "10 Minutes with Dan",
       leaderTalkSize: 10n,
+      paperworkDueDate: 1_800_000_000_000_000_000n,
     })),
     listPositions: vi.fn<backendInterface["listPositions"]>(async () => []),
     listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),

@@ -32,10 +32,16 @@ import {
   useSchedule,
   useStoreInfo,
   useUpdateScheduleEvent,
+  useUpdateStoreInfo,
 } from "@/hooks/useQueries";
-import { dateToTimestamp, formatTimestamp } from "@/lib/format";
-import { CalendarPlus, Loader2, Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
+import {
+  dateOnlyToDate,
+  dateToDateOnly,
+  dateToTimestamp,
+  formatTimestamp,
+} from "@/lib/format";
+import { CalendarPlus, Loader2, Pencil, Save, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const EVENT_KINDS: EventKind[] = [
   EventKind.deadline,
@@ -95,6 +101,103 @@ function dateTimeToInput(value: bigint, timeZone: string): string {
   // Some ICU builds render midnight as "24"; a datetime-local field expects 00.
   const hour = get("hour") === "24" ? "00" : get("hour");
   return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}`;
+}
+
+/**
+ * The editable paperwork due date. It lives on the store configuration rather
+ * than the schedule, so it saves through `updateStoreInfo` while preserving the
+ * rest of the store record. Read-only while demo mode is on.
+ */
+function PaperworkDueEditor({ readOnly }: { readOnly: boolean }) {
+  const c = useAdminCopy();
+  const { data: storeInfo } = useStoreInfo();
+  const update = useUpdateStoreInfo();
+  const [value, setValue] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  // One-time initialization from the loaded record; never overwrite a draft.
+  useEffect(() => {
+    if (storeInfo && value === "") {
+      const date = dateOnlyToDate(storeInfo.paperworkDueDate);
+      if (date) setValue(date.toISOString().slice(0, 10));
+    }
+  }, [storeInfo, value]);
+
+  const onSave = () => {
+    if (!storeInfo || !value) return;
+    const date = new Date(`${value}T00:00:00Z`);
+    if (Number.isNaN(date.getTime())) return;
+    setSaved(false);
+    update.mutate(
+      { ...storeInfo, paperworkDueDate: dateToDateOnly(date) },
+      { onSuccess: () => setSaved(true) },
+    );
+  };
+
+  return (
+    <AdminSection
+      title={c.schedulePaperworkDueTitle}
+      description={c.schedulePaperworkDueDescription}
+      ocid="admin.schedule.paperwork_due.section"
+    >
+      {readOnly ? (
+        <DemoSettingsNote />
+      ) : (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <FormField
+            label={c.schedulePaperworkDueLabel}
+            htmlFor="paperwork-due"
+            className="sm:max-w-xs"
+          >
+            <Input
+              id="paperwork-due"
+              type="date"
+              data-ocid="admin.schedule.paperwork_due.input"
+              className="touch-target"
+              value={value}
+              onChange={(event) => {
+                setSaved(false);
+                setValue(event.target.value);
+              }}
+            />
+          </FormField>
+          <Button
+            type="button"
+            className="touch-target w-fit"
+            data-ocid="admin.schedule.paperwork_due.save_button"
+            disabled={update.isPending || !value}
+            onClick={onSave}
+          >
+            {update.isPending ? (
+              <Loader2
+                className="mr-2 h-4 w-4 animate-spin"
+                aria-hidden="true"
+              />
+            ) : (
+              <Save className="mr-2 h-4 w-4" aria-hidden="true" />
+            )}
+            {c.schedulePaperworkDueSave}
+          </Button>
+          {saved && (
+            <p
+              className="text-sm font-medium text-accent"
+              data-ocid="admin.schedule.paperwork_due.success_state"
+            >
+              {c.schedulePaperworkDueSaved}
+            </p>
+          )}
+          {update.isError && (
+            <p
+              className="text-sm font-medium text-destructive"
+              data-ocid="admin.schedule.paperwork_due.error_state"
+            >
+              {c.schedulePaperworkDueError}
+            </p>
+          )}
+        </div>
+      )}
+    </AdminSection>
+  );
 }
 
 export function SchedulePanel() {
@@ -170,265 +273,270 @@ export function SchedulePanel() {
   };
 
   return (
-    <AdminSection
-      title={c.scheduleTitle}
-      description={c.scheduleDescription}
-      ocid="admin.schedule.section"
-      action={
-        readOnly ? undefined : (
-          <Button
-            type="button"
-            className="touch-target"
-            data-ocid="admin.schedule.add_button"
-            onClick={openNew}
-          >
-            <CalendarPlus className="mr-2 h-4 w-4" aria-hidden="true" />
-            {c.scheduleAdd}
-          </Button>
-        )
-      }
-    >
-      {readOnly && <DemoSettingsNote />}
-      {schedule.isLoading && (
-        <p className="text-sm text-muted-foreground">{c.scheduleLoading}</p>
-      )}
-      {schedule.isError && (
-        <p className="text-sm text-destructive">{c.scheduleError}</p>
-      )}
-      {!schedule.isLoading && !schedule.isError && events.length === 0 && (
-        <p className="text-sm text-muted-foreground">{c.scheduleEmpty}</p>
-      )}
-
-      {events.length > 0 && (
-        <ul className="space-y-2" data-ocid="admin.schedule.list">
-          {[...events]
-            .sort((a, b) =>
-              a.start < b.start ? -1 : a.start > b.start ? 1 : 0,
-            )
-            .map((event) => {
-              const trainingNumber = trainingDayLabels.get(event.id.toString());
-              return (
-                <li
-                  key={event.id.toString()}
-                  data-ocid="admin.schedule.item"
-                  className="flex flex-col gap-3 rounded-md border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-display text-sm font-semibold uppercase tracking-wide">
-                        {event.name}
-                      </span>
-                      <StatusBadge tone="muted">
-                        {c.scheduleKinds[event.kind]}
-                      </StatusBadge>
-                      {trainingNumber !== undefined && (
-                        <StatusBadge tone="hired">
-                          {fill(c.scheduleTrainingDayLabel, {
-                            number: trainingNumber,
-                          })}
-                        </StatusBadge>
-                      )}
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {formatTimestamp(event.start, timeZone)}
-                      {event.end !== undefined
-                        ? ` – ${formatTimestamp(event.end, timeZone)}`
-                        : ""}
-                    </p>
-                  </div>
-                  {!readOnly && (
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="touch-target"
-                        data-ocid="admin.schedule.edit_button"
-                        onClick={() => openEdit(event)}
-                      >
-                        <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
-                        {c.actionEdit}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="touch-target text-destructive"
-                        data-ocid="admin.schedule.delete_button"
-                        onClick={() => setDeleteTarget(event)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
-                        {c.actionDelete}
-                      </Button>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-        </ul>
-      )}
-
-      <Dialog
-        open={draft !== null}
-        onOpenChange={(open) => {
-          if (!open) setDraft(null);
-        }}
+    <div className="space-y-6">
+      <AdminSection
+        title={c.scheduleTitle}
+        description={c.scheduleDescription}
+        ocid="admin.schedule.section"
+        action={
+          readOnly ? undefined : (
+            <Button
+              type="button"
+              className="touch-target"
+              data-ocid="admin.schedule.add_button"
+              onClick={openNew}
+            >
+              <CalendarPlus className="mr-2 h-4 w-4" aria-hidden="true" />
+              {c.scheduleAdd}
+            </Button>
+          )
+        }
       >
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {isEditing ? c.scheduleEditTitle : c.scheduleAddTitle}
-            </DialogTitle>
-            <DialogDescription>{c.scheduleFormDescription}</DialogDescription>
-          </DialogHeader>
-          {draft && (
-            <form onSubmit={onSubmit} className="space-y-4">
-              <FormField label={c.scheduleName} htmlFor="event-name">
-                <Input
-                  id="event-name"
-                  data-ocid="admin.schedule.name.input"
-                  className="touch-target"
-                  value={draft.name}
-                  onChange={(event) => set("name", event.target.value)}
-                />
-              </FormField>
-              <FormField label={c.scheduleKind} htmlFor="event-kind">
-                <Select
-                  value={draft.kind}
-                  onValueChange={(value) => set("kind", value as EventKind)}
-                >
-                  <SelectTrigger
-                    id="event-kind"
-                    data-ocid="admin.schedule.kind.select"
-                    className="touch-target"
+        {readOnly && <DemoSettingsNote />}
+        {schedule.isLoading && (
+          <p className="text-sm text-muted-foreground">{c.scheduleLoading}</p>
+        )}
+        {schedule.isError && (
+          <p className="text-sm text-destructive">{c.scheduleError}</p>
+        )}
+        {!schedule.isLoading && !schedule.isError && events.length === 0 && (
+          <p className="text-sm text-muted-foreground">{c.scheduleEmpty}</p>
+        )}
+
+        {events.length > 0 && (
+          <ul className="space-y-2" data-ocid="admin.schedule.list">
+            {[...events]
+              .sort((a, b) =>
+                a.start < b.start ? -1 : a.start > b.start ? 1 : 0,
+              )
+              .map((event) => {
+                const trainingNumber = trainingDayLabels.get(
+                  event.id.toString(),
+                );
+                return (
+                  <li
+                    key={event.id.toString()}
+                    data-ocid="admin.schedule.item"
+                    className="flex flex-col gap-3 rounded-md border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EVENT_KINDS.map((kind) => (
-                      <SelectItem key={kind} value={kind}>
-                        {c.scheduleKinds[kind]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormField>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField label={c.scheduleStart} htmlFor="event-start">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-display text-sm font-semibold uppercase tracking-wide">
+                          {event.name}
+                        </span>
+                        <StatusBadge tone="muted">
+                          {c.scheduleKinds[event.kind]}
+                        </StatusBadge>
+                        {trainingNumber !== undefined && (
+                          <StatusBadge tone="hired">
+                            {fill(c.scheduleTrainingDayLabel, {
+                              number: trainingNumber,
+                            })}
+                          </StatusBadge>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {formatTimestamp(event.start, timeZone)}
+                        {event.end !== undefined
+                          ? ` – ${formatTimestamp(event.end, timeZone)}`
+                          : ""}
+                      </p>
+                    </div>
+                    {!readOnly && (
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="touch-target"
+                          data-ocid="admin.schedule.edit_button"
+                          onClick={() => openEdit(event)}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {c.actionEdit}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="touch-target text-destructive"
+                          data-ocid="admin.schedule.delete_button"
+                          onClick={() => setDeleteTarget(event)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {c.actionDelete}
+                        </Button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+          </ul>
+        )}
+
+        <Dialog
+          open={draft !== null}
+          onOpenChange={(open) => {
+            if (!open) setDraft(null);
+          }}
+        >
+          <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>
+                {isEditing ? c.scheduleEditTitle : c.scheduleAddTitle}
+              </DialogTitle>
+              <DialogDescription>{c.scheduleFormDescription}</DialogDescription>
+            </DialogHeader>
+            {draft && (
+              <form onSubmit={onSubmit} className="space-y-4">
+                <FormField label={c.scheduleName} htmlFor="event-name">
                   <Input
-                    id="event-start"
-                    type="datetime-local"
-                    data-ocid="admin.schedule.start.input"
+                    id="event-name"
+                    data-ocid="admin.schedule.name.input"
                     className="touch-target"
-                    value={draft.start}
-                    onChange={(event) => set("start", event.target.value)}
+                    value={draft.name}
+                    onChange={(event) => set("name", event.target.value)}
                   />
                 </FormField>
-                <FormField
-                  label={c.scheduleEnd}
-                  htmlFor="event-end"
-                  hint={c.optional}
-                >
-                  <Input
-                    id="event-end"
-                    type="datetime-local"
-                    data-ocid="admin.schedule.end.input"
-                    className="touch-target"
-                    value={draft.end}
-                    onChange={(event) => set("end", event.target.value)}
-                  />
+                <FormField label={c.scheduleKind} htmlFor="event-kind">
+                  <Select
+                    value={draft.kind}
+                    onValueChange={(value) => set("kind", value as EventKind)}
+                  >
+                    <SelectTrigger
+                      id="event-kind"
+                      data-ocid="admin.schedule.kind.select"
+                      className="touch-target"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EVENT_KINDS.map((kind) => (
+                        <SelectItem key={kind} value={kind}>
+                          {c.scheduleKinds[kind]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormField>
-              </div>
-
-              {mutation.isError && (
-                <p
-                  className="text-sm font-medium text-destructive"
-                  data-ocid="admin.schedule.error_state"
-                >
-                  {c.scheduleSaveError}
-                </p>
-              )}
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="touch-target"
-                  data-ocid="admin.schedule.cancel_button"
-                  onClick={() => setDraft(null)}
-                >
-                  {c.actionCancel}
-                </Button>
-                <Button
-                  type="submit"
-                  className="touch-target"
-                  data-ocid="admin.schedule.save_button"
-                  disabled={
-                    mutation.isPending || !draft.name.trim() || !draft.start
-                  }
-                >
-                  {mutation.isPending && (
-                    <Loader2
-                      className="mr-2 h-4 w-4 animate-spin"
-                      aria-hidden="true"
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <FormField label={c.scheduleStart} htmlFor="event-start">
+                    <Input
+                      id="event-start"
+                      type="datetime-local"
+                      data-ocid="admin.schedule.start.input"
+                      className="touch-target"
+                      value={draft.start}
+                      onChange={(event) => set("start", event.target.value)}
                     />
-                  )}
-                  {c.actionSave}
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
+                  </FormField>
+                  <FormField
+                    label={c.scheduleEnd}
+                    htmlFor="event-end"
+                    hint={c.optional}
+                  >
+                    <Input
+                      id="event-end"
+                      type="datetime-local"
+                      data-ocid="admin.schedule.end.input"
+                      className="touch-target"
+                      value={draft.end}
+                      onChange={(event) => set("end", event.target.value)}
+                    />
+                  </FormField>
+                </div>
 
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{c.scheduleDeleteTitle}</DialogTitle>
-            <DialogDescription>
-              {fill(c.scheduleDeleteBody, { name: deleteTarget?.name ?? "" })}
-            </DialogDescription>
-          </DialogHeader>
-          {remove.isError && (
-            <p
-              className="text-sm font-medium text-destructive"
-              data-ocid="admin.schedule.delete_error_state"
-            >
-              {c.scheduleDeleteBlocked}
-            </p>
-          )}
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              className="touch-target"
-              data-ocid="admin.schedule.delete_cancel_button"
-              onClick={() => setDeleteTarget(null)}
-            >
-              {c.actionCancel}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              className="touch-target"
-              data-ocid="admin.schedule.delete_confirm_button"
-              disabled={remove.isPending}
-              onClick={confirmDelete}
-            >
-              {remove.isPending && (
-                <Loader2
-                  className="mr-2 h-4 w-4 animate-spin"
-                  aria-hidden="true"
-                />
-              )}
-              {c.actionDelete}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </AdminSection>
+                {mutation.isError && (
+                  <p
+                    className="text-sm font-medium text-destructive"
+                    data-ocid="admin.schedule.error_state"
+                  >
+                    {c.scheduleSaveError}
+                  </p>
+                )}
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="touch-target"
+                    data-ocid="admin.schedule.cancel_button"
+                    onClick={() => setDraft(null)}
+                  >
+                    {c.actionCancel}
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="touch-target"
+                    data-ocid="admin.schedule.save_button"
+                    disabled={
+                      mutation.isPending || !draft.name.trim() || !draft.start
+                    }
+                  >
+                    {mutation.isPending && (
+                      <Loader2
+                        className="mr-2 h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {c.actionSave}
+                  </Button>
+                </DialogFooter>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={deleteTarget !== null}
+          onOpenChange={(open) => {
+            if (!open) setDeleteTarget(null);
+          }}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{c.scheduleDeleteTitle}</DialogTitle>
+              <DialogDescription>
+                {fill(c.scheduleDeleteBody, { name: deleteTarget?.name ?? "" })}
+              </DialogDescription>
+            </DialogHeader>
+            {remove.isError && (
+              <p
+                className="text-sm font-medium text-destructive"
+                data-ocid="admin.schedule.delete_error_state"
+              >
+                {c.scheduleDeleteBlocked}
+              </p>
+            )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                className="touch-target"
+                data-ocid="admin.schedule.delete_cancel_button"
+                onClick={() => setDeleteTarget(null)}
+              >
+                {c.actionCancel}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                className="touch-target"
+                data-ocid="admin.schedule.delete_confirm_button"
+                disabled={remove.isPending}
+                onClick={confirmDelete}
+              >
+                {remove.isPending && (
+                  <Loader2
+                    className="mr-2 h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
+                )}
+                {c.actionDelete}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </AdminSection>
+      <PaperworkDueEditor readOnly={readOnly} />
+    </div>
   );
 }

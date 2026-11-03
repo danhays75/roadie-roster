@@ -40,6 +40,7 @@ const STORE: StoreInfo = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /** The actor methods the admin store panel reads and writes. */

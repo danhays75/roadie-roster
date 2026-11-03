@@ -7,7 +7,7 @@ import type {
   StoreInfo,
   backendInterface,
 } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import { formatDateOnly } from "@/lib/format";
 import RoadieCardPage from "@/pages/RoadieCard";
 import { screen, within } from "@testing-library/react";
@@ -38,6 +38,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const SECOND_POSITION: Position = {
@@ -51,6 +53,8 @@ const SECOND_POSITION: Position = {
   shirtsRequired: 1n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const CREW: Crew = { id: 7n, name: "Opening Crew", isDemo: false };
@@ -80,6 +84,7 @@ const STORE_INFO: StoreInfo = {
   locationName: "Bake",
   timeZone: "America/Chicago",
   storePhone: "+1-555-0199",
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /** A fixed start date so the ROADIE SINCE footer has a stable expected value. */
@@ -98,6 +103,7 @@ const FULL_ROADIE: Roadie = {
   isDemo: false,
   hiredAt: 0n,
   startDate: START_DATE,
+  rosterState: RosterState.active,
   profile: {
     name: "Frank George",
     preferredName: "Frank",

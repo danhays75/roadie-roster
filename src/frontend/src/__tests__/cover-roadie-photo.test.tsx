@@ -1,7 +1,7 @@
 import { renderPageWithActor, t } from "@/__tests__/router-test-utils";
 import { setActorForTest } from "@/__tests__/setup";
 import type { Position, Roadie, backendInterface } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import { I18nContext } from "@/hooks/useI18n";
 import type { Locale } from "@/lib/copy";
 import RoadieCardPage from "@/pages/RoadieCard";
@@ -79,6 +79,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 /** A single byte is enough to produce a non-empty data URL. */
@@ -94,6 +96,7 @@ function roadie(overrides: Partial<Roadie> = {}): Roadie {
     isMinor: false,
     isDemo: false,
     profile: { name: "Ada Lovelace", preferredName: "Ada" },
+    rosterState: RosterState.pending,
     ...overrides,
   };
 }

@@ -8,7 +8,7 @@ import type {
   StoreInfo,
   backendInterface,
 } from "@/backend";
-import { DemoRole, House, Role } from "@/backend";
+import { DemoRole, House, Role, UniformItemType } from "@/backend";
 import { AccessPanel } from "@/components/admin/AccessPanel";
 import { ChecklistsPanel } from "@/components/admin/ChecklistsPanel";
 import { PositionsPanel } from "@/components/admin/PositionsPanel";
@@ -44,6 +44,7 @@ const STORE: StoreInfo = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 const SERVERS: Position = {
@@ -57,6 +58,8 @@ const SERVERS: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: true,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const CHECKLISTS: Checklists = {
@@ -66,6 +69,7 @@ const CHECKLISTS: Checklists = {
       text: "Non-slip shoes",
       requiresAlcoholCert: false,
       minorOnly: false,
+      itemType: UniformItemType.checkbox,
     },
   ],
   paperwork: [
@@ -74,6 +78,7 @@ const CHECKLISTS: Checklists = {
       text: "Onboarding",
       requiresAlcoholCert: false,
       minorOnly: false,
+      itemType: UniformItemType.checkbox,
     },
   ],
 };

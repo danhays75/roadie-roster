@@ -30,6 +30,7 @@ const STORE: StoreInfo = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 function grant(role: Role): AccessGrant {
@@ -58,7 +59,9 @@ function actorFor(role: Role) {
     getDashboard: vi.fn<backendInterface["getDashboard"]>(async () => ({
       foh: [],
       boh: [],
+      active: 0n,
       hired: 0n,
+      pending: 0n,
       stillNeeded: 0n,
       buildToTotal: 0n,
     })),

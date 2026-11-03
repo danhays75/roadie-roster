@@ -37,6 +37,7 @@ const STORE: StoreInfo = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 const SERVERS: Position = {
@@ -50,6 +51,8 @@ const SERVERS: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: true,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const CREWS: Crew[] = [

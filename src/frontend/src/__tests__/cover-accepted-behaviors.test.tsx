@@ -8,7 +8,14 @@ import type {
   SignupSubmission,
   backendInterface,
 } from "@/backend";
-import { House, RoadieStatus, Role, Shift, Weekday } from "@/backend";
+import {
+  House,
+  RoadieStatus,
+  Role,
+  RosterState,
+  Shift,
+  Weekday,
+} from "@/backend";
 import { Layout } from "@/components/Layout";
 import { PositionRosterDialog } from "@/components/dashboard/PositionRosterDialog";
 import { KioskSuccess } from "@/components/kiosk/KioskSuccess";
@@ -468,6 +475,8 @@ describe("archived dates show as timestamps in the store time zone", () => {
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: true,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   };
 
   // 2027-02-09T05:59:59Z, which is 2027-02-08 23:59:59 in America/Chicago.
@@ -483,6 +492,7 @@ describe("archived dates show as timestamps in the store time zone", () => {
     isDemo: false,
     archivedReason: { __kind__: "noShow", noShow: null },
     archivedAt: ARCHIVED_AT,
+    rosterState: RosterState.pending,
   };
 
   it("renders the archivedAt instant in the store time zone", async () => {

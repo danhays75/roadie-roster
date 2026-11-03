@@ -1,18 +1,21 @@
 {
-  "overview": "A roadie staffing app for a retail store: sign-ups, approvals, rosters, crews, schedules, checklists and a safe demo mode.",
+  "overview": "Roadie Roster manages hiring, orientation and opening-week staffing for a new store, with a demo mode for safe practice.",
   "features": [
-    "Sign-up and approval flow with role-based access",
-    "Roster, crews, leaders and gift bags",
-    "Schedule, positions, checklists and store template",
-    "Demo mode with per-caller View as roles and real-data protection"
+    "Track roadies through pending and active roster states",
+    "Schedule orientation sessions and assign roadies automatically",
+    "Gate orientation on completed paperwork with a due date",
+    "Check roadies in at orientation with a uniform check-off",
+    "Set per-position uniform defaults for shirts and hats",
+    "Flag and archive no-shows with new archive reasons",
+    "Keep demo data fully separate from real records"
   ],
-  "category": "productivity",
+  "category": "staffing",
   "tags": [
     "staffing",
-    "roster",
+    "hiring",
+    "orientation",
     "retail",
-    "demo-mode",
-    "security"
+    "roster"
   ],
-  "last_updated": "2026-11-03T01:45:51.877Z"
+  "last_updated": "2026-11-03T04:21:57.484Z"
 }

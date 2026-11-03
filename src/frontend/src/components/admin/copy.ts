@@ -57,6 +57,8 @@ export interface AdminCopy {
   positionsAfterOpeningBuildTo: string;
   positionsShirtsRequired: string;
   positionsHatsRequired: string;
+  positionsDefaultShirts: string;
+  positionsDefaultHats: string;
   positionsCrewManager: string;
   positionsNeedsAlcoholCert: string;
   positionsSaveError: string;
@@ -82,6 +84,12 @@ export interface AdminCopy {
   scheduleDeleteTitle: string;
   scheduleDeleteBody: string;
   scheduleDeleteBlocked: string;
+  schedulePaperworkDueTitle: string;
+  schedulePaperworkDueDescription: string;
+  schedulePaperworkDueLabel: string;
+  schedulePaperworkDueSave: string;
+  schedulePaperworkDueSaved: string;
+  schedulePaperworkDueError: string;
   scheduleKinds: Record<EventKind, string>;
 
   checklistsTitle: string;
@@ -95,6 +103,9 @@ export interface AdminCopy {
   checklistsRequiresAlcoholCert: string;
   checklistsMinorOnly: string;
   checklistsToggleHint: string;
+  checklistsItemType: string;
+  checklistsItemTypeCheckbox: string;
+  checklistsItemTypeCount: string;
   checklistsOrientationUniform: string;
   checklistsOrientationUniformHint: string;
   checklistsPaperwork: string;
@@ -207,6 +218,8 @@ const en: AdminCopy = {
   positionsAfterOpeningBuildTo: "After-opening build-to",
   positionsShirtsRequired: "Shirts required",
   positionsHatsRequired: "Hats required",
+  positionsDefaultShirts: "Default shirts",
+  positionsDefaultHats: "Default hats",
   positionsCrewManager: "Crew manager",
   positionsNeedsAlcoholCert: "Needs alcohol certification",
   positionsSaveError: "We couldn't save that position.",
@@ -234,6 +247,13 @@ const en: AdminCopy = {
   scheduleDeleteTitle: "Delete event",
   scheduleDeleteBody: "Delete {name}? This cannot be undone.",
   scheduleDeleteBlocked: "This event has records and cannot be deleted.",
+  schedulePaperworkDueTitle: "Paperwork due date",
+  schedulePaperworkDueDescription:
+    "The date every roadie's paperwork must be complete by.",
+  schedulePaperworkDueLabel: "Paperwork due",
+  schedulePaperworkDueSave: "Save due date",
+  schedulePaperworkDueSaved: "Paperwork due date saved.",
+  schedulePaperworkDueError: "We couldn't save the paperwork due date.",
   scheduleKinds: {
     deadline: "Deadline",
     orientation: "Orientation session",
@@ -256,6 +276,9 @@ const en: AdminCopy = {
   checklistsRequiresAlcoholCert: "Only alcohol positions",
   checklistsMinorOnly: "Only under 18",
   checklistsToggleHint: "Leave both off if the item applies to everyone.",
+  checklistsItemType: "Type",
+  checklistsItemTypeCheckbox: "Checkbox",
+  checklistsItemTypeCount: "Count",
   checklistsOrientationUniform: "Orientation uniform",
   checklistsOrientationUniformHint: "What every roadie brings to orientation.",
   checklistsPaperwork: "Paperwork",
@@ -371,6 +394,8 @@ const es: AdminCopy = {
   positionsAfterOpeningBuildTo: "Meta después de apertura",
   positionsShirtsRequired: "Camisetas requeridas",
   positionsHatsRequired: "Gorras requeridas",
+  positionsDefaultShirts: "Camisetas por defecto",
+  positionsDefaultHats: "Gorras por defecto",
   positionsCrewManager: "Gerente de equipo",
   positionsNeedsAlcoholCert: "Requiere certificación de alcohol",
   positionsSaveError: "No pudimos guardar ese puesto.",
@@ -398,6 +423,13 @@ const es: AdminCopy = {
   scheduleDeleteTitle: "Eliminar evento",
   scheduleDeleteBody: "¿Eliminar {name}? No se puede deshacer.",
   scheduleDeleteBlocked: "Este evento tiene registros y no se puede eliminar.",
+  schedulePaperworkDueTitle: "Fecha límite de papeleo",
+  schedulePaperworkDueDescription:
+    "La fecha en que el papeleo de cada roadie debe estar completo.",
+  schedulePaperworkDueLabel: "Papeleo vence",
+  schedulePaperworkDueSave: "Guardar fecha límite",
+  schedulePaperworkDueSaved: "Fecha límite de papeleo guardada.",
+  schedulePaperworkDueError: "No pudimos guardar la fecha límite de papeleo.",
   scheduleKinds: {
     deadline: "Fecha límite",
     orientation: "Sesión de orientación",
@@ -421,6 +453,9 @@ const es: AdminCopy = {
   checklistsMinorOnly: "Solo menores de 18",
   checklistsToggleHint:
     "Deja ambos desactivados si el artículo aplica a todos.",
+  checklistsItemType: "Tipo",
+  checklistsItemTypeCheckbox: "Casilla",
+  checklistsItemTypeCount: "Cantidad",
   checklistsOrientationUniform: "Uniforme de orientación",
   checklistsOrientationUniformHint: "Lo que cada roadie trae a la orientación.",
   checklistsPaperwork: "Papeleo",

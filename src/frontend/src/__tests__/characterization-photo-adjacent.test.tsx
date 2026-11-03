@@ -1,6 +1,6 @@
 import { renderPageWithActor, t } from "@/__tests__/router-test-utils";
 import type { Position, Roadie, backendInterface } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import RoadieCardPage from "@/pages/RoadieCard";
 import RosterPage from "@/pages/Roster";
 import { screen } from "@testing-library/react";
@@ -26,6 +26,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 /** A roadie with no photo, as the backend returns it to a non-manager. */
@@ -38,6 +40,7 @@ function roadieWithoutPhoto(): Roadie {
     isMinor: false,
     isDemo: false,
     profile: { name: "Ada Lovelace", preferredName: "Ada" },
+    rosterState: RosterState.pending,
   };
 }
 

@@ -43,6 +43,8 @@ interface PositionDraft {
   minimumAge: string;
   shirtsRequired: string;
   hatsRequired: string;
+  defaultShirts: string;
+  defaultHats: string;
   crewManager: string;
 }
 
@@ -56,6 +58,8 @@ function emptyDraft(): PositionDraft {
     minimumAge: "16",
     shirtsRequired: "0",
     hatsRequired: "0",
+    defaultShirts: "3",
+    defaultHats: "2",
     crewManager: "",
   };
 }
@@ -70,6 +74,8 @@ function toDraft(position: Position): PositionDraft {
     minimumAge: position.minimumAge.toString(),
     shirtsRequired: position.shirtsRequired.toString(),
     hatsRequired: position.hatsRequired.toString(),
+    defaultShirts: position.defaultShirts.toString(),
+    defaultHats: position.defaultHats.toString(),
     crewManager: position.crewManager ?? "",
   };
 }
@@ -97,6 +103,8 @@ function toPosition(
     minimumAge: toCount(draft.minimumAge),
     shirtsRequired: toCount(draft.shirtsRequired),
     hatsRequired: toCount(draft.hatsRequired),
+    defaultShirts: toCount(draft.defaultShirts),
+    defaultHats: toCount(draft.defaultHats),
     crewManager: draft.crewManager.trim()
       ? draft.crewManager.trim()
       : undefined,
@@ -501,6 +509,38 @@ export function PositionsPanel() {
                     onChange={(event) =>
                       set("hatsRequired", event.target.value)
                     }
+                  />
+                </FormField>
+                <FormField
+                  label={c.positionsDefaultShirts}
+                  htmlFor="pos-default-shirts"
+                >
+                  <Input
+                    id="pos-default-shirts"
+                    type="number"
+                    min={0}
+                    step={1}
+                    data-ocid="admin.positions.default_shirts.input"
+                    className="touch-target"
+                    value={draft.defaultShirts}
+                    onChange={(event) =>
+                      set("defaultShirts", event.target.value)
+                    }
+                  />
+                </FormField>
+                <FormField
+                  label={c.positionsDefaultHats}
+                  htmlFor="pos-default-hats"
+                >
+                  <Input
+                    id="pos-default-hats"
+                    type="number"
+                    min={0}
+                    step={1}
+                    data-ocid="admin.positions.default_hats.input"
+                    className="touch-target"
+                    value={draft.defaultHats}
+                    onChange={(event) => set("defaultHats", event.target.value)}
                   />
                 </FormField>
                 <FormField

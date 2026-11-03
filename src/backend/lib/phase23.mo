@@ -20,26 +20,22 @@ module {
     var nextChangeLogId : Nat;
   };
 
-  /// Dashboard summary tiles and per-position progress. Demo records count only
-  /// while demo mode is on.
+  /// Dashboard summary tiles and per-position progress. `hired` counts pending
+  /// + active (archived excluded); `active` and `pending` break that down for
+  /// the Hired → Active funnel. Demo records count only while demo mode is on.
   public func getDashboard(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
     caller : Principal,
-  ) : {
-    hired : Nat;
-    buildToTotal : Nat;
-    stillNeeded : Nat;
-    showedAtOrientation : ?Nat;
-    certified : ?Nat;
-    foh : [Store.Position];
-    boh : [Store.Position];
-  } {
+  ) : Phase23.DashboardView {
     ignore Auth.requireReadable(accessGrants, demoState, caller);
     let active = roadies.values().filter(func r = r.isDemo == Auth.demoActive(demoState) and r.status != #archived).toArray();
     let hired = active.size();
+    let activeCount = active.filter(func r = r.rosterState == #active).size();
+    let pendingCount = active.filter(func r = r.rosterState == #pending).size();
+    let certified = active.filter(func r = r.status == #certified).size();
     let allPositions = positions.values().toArray();
     let buildToTotal = allPositions.foldLeft(0, func(acc, p) = acc + p.openingBuildTo);
     let stillNeeded = saturatingSub(buildToTotal, hired);
@@ -47,16 +43,19 @@ module {
     let boh = allPositions.filter(func p = p.house == #boh);
     {
       hired;
+      active = activeCount;
+      pending = pendingCount;
       buildToTotal;
       stillNeeded;
-      showedAtOrientation = null;
-      certified = null;
+      showedAtOrientation = ?activeCount;
+      certified = ?certified;
       foh;
       boh;
     };
   };
 
   /// Read the orientation check-off for a roadie (Admin/Store Manager only).
+  /// Demo check-offs are visible only while demo mode is on.
   public func getOrientationCheckoff(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -65,10 +64,18 @@ module {
     roadieId : Common.RoadieId,
   ) : ?Phase23.OrientationCheckoff {
     Auth.requireManager(accessGrants, demoState, caller);
-    checkoffs.get(roadieId);
+    switch (checkoffs.get(roadieId)) {
+      case (?c) {
+        if (c.isDemo != Auth.demoActive(demoState)) { return null };
+        ?c;
+      };
+      case null { null };
+    };
   };
 
   /// Update the orientation check-off for a roadie (Admin/Store Manager only).
+  /// A check-off written while demo mode is on is a demo check-off; a write to
+  /// the other partition is rejected.
   public func updateOrientationCheckoff(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -79,7 +86,16 @@ module {
     checkoff : Phase23.OrientationCheckoff,
   ) : () {
     Auth.requireManager(accessGrants, demoState, caller);
-    checkoffs.add(checkoff.roadieId, { checkoff with updatedAt = effectiveNow(demoState) });
+    let demo = Auth.demoActive(demoState);
+    switch (checkoffs.get(checkoff.roadieId)) {
+      case (?existing) {
+        if (existing.isDemo != demo) {
+          Runtime.trap("Orientation check-off not found");
+        };
+      };
+      case null {};
+    };
+    checkoffs.add(checkoff.roadieId, { checkoff with updatedAt = effectiveNow(demoState); isDemo = demo });
     logWrite(changeLog, counters, demoState, caller, "updateOrientationCheckoff", ?checkoff.roadieId, false, "Updated orientation check-off");
   };
 
@@ -116,8 +132,282 @@ module {
       .toArray();
   };
 
+  // --- Orientation check-in screen ---
+
+  /// The orientation check-in screen for one session: the session's assigned
+  /// roadies with photo, name, position, crew and paperwork status, plus the
+  /// Present x / y counts. Admin, Store Manager, Training Manager and Visiting
+  /// Manager may read it.
+  public func getOrientationSessionView(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    crews : Map.Map<Common.CrewId, Roadie.Crew>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    checklists : { var value : Store.Checklists },
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
+    caller : Principal,
+    eventId : Common.EventId,
+  ) : ?Phase23.OrientationSessionView {
+    requireOrientationReader(accessGrants, demoState, caller);
+    let event = schedule.get(eventId) ?? Runtime.trap("Orientation session not found");
+    if (event.kind != #orientation) {
+      Runtime.trap("Schedule event is not an orientation session");
+    };
+    let demo = Auth.demoActive(demoState);
+    let now = effectiveNow(demoState);
+    let assigned = roadies.values()
+      .filter(func r = r.isDemo == demo and r.status != #archived and r.orientationEventId == ?eventId)
+      .toArray();
+    let rows = assigned.map(func(r) {
+      let positionName = switch (positions.get(r.mainPositionId)) {
+        case (?p) { p.name };
+        case null { "" };
+      };
+      let crewName = switch (r.crewId) {
+        case (?cid) {
+          switch (crews.get(cid)) {
+            case (?c) { ?c.name };
+            case null { null };
+          };
+        };
+        case null { null };
+      };
+      let present = isPresentAt(attendance, demo, r.id, eventId);
+      let noShow = r.rosterState == #pending and event.start < now;
+      {
+        roadieId = r.id;
+        name = displayName(r);
+        photo = r.photo;
+        positionId = r.mainPositionId;
+        positionName;
+        crewId = r.crewId;
+        crewName;
+        paperworkStatus = paperworkStatusWith(checklists.value, positions, r, visibleCheckoff(checkoffs, demo, r.id));
+        rosterState = r.rosterState;
+        present;
+        noShow;
+      };
+    });
+    let presentCount = rows.filter(func(row) = row.present).size();
+    ?{
+      eventId;
+      name = event.name;
+      start = event.start;
+      end = event.end;
+      presentCount;
+      assignedCount = rows.size();
+      roadies = rows;
+    };
+  };
+
+  /// Mark a roadie Present at an orientation session (Admin/Store Manager
+  /// only). Idempotent: several managers may call it concurrently and the
+  /// result converges. Sets the roadie's roster state to active and records
+  /// attendance.
+  public func markPresent(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    roadieId : Common.RoadieId,
+    eventId : Common.EventId,
+  ) : () {
+    Auth.requireManager(accessGrants, demoState, caller);
+    let roadie = requireVisibleRoadie(roadies, demoState, roadieId);
+    let demo = Auth.demoActive(demoState);
+    let now = effectiveNow(demoState);
+    // Idempotent attendance: update the existing record for this roadie+event
+    // when present, otherwise append one.
+    switch (findAttendance(attendance, demo, roadieId, eventId)) {
+      case (?(key, existing)) {
+        attendance.add(key, { existing with state = #present; recordedAt = now; recordedBy = caller });
+      };
+      case null {
+        let id = counters.nextAttendanceId;
+        counters.nextAttendanceId := id + 1;
+        attendance.add(id, {
+          roadieId;
+          eventId = ?eventId;
+          shift = null;
+          state = #present;
+          recordedAt = now;
+          recordedBy = caller;
+          isDemo = demo;
+        });
+      };
+    };
+    if (roadie.rosterState != #active) {
+      roadies.add(roadieId, { roadie with rosterState = #active });
+    };
+    logWrite(changeLog, counters, demoState, caller, "markPresent", ?roadieId, false, "Marked present at orientation");
+  };
+
+  /// Undo a roadie's Present mark at an orientation session (Admin/Store
+  /// Manager only, logged). Returns the roadie to pending and clears the
+  /// attendance record for that session.
+  public func undoPresent(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    roadieId : Common.RoadieId,
+    eventId : Common.EventId,
+  ) : () {
+    Auth.requireManager(accessGrants, demoState, caller);
+    let roadie = requireVisibleRoadie(roadies, demoState, roadieId);
+    let demo = Auth.demoActive(demoState);
+    removeAttendance(attendance, demo, roadieId, eventId);
+    roadies.add(roadieId, { roadie with rosterState = #pending });
+    logWrite(changeLog, counters, demoState, caller, "undoPresent", ?roadieId, false, "Undid present at orientation");
+  };
+
+  /// Move a roadie to another orientation session (Admin/Store Manager only).
+  public func moveRoadieToSession(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    roadieId : Common.RoadieId,
+    eventId : Common.EventId,
+  ) : () {
+    Auth.requireManager(accessGrants, demoState, caller);
+    let roadie = requireVisibleRoadie(roadies, demoState, roadieId);
+    let event = schedule.get(eventId) ?? Runtime.trap("Orientation session not found");
+    if (event.kind != #orientation) {
+      Runtime.trap("Schedule event is not an orientation session");
+    };
+    roadies.add(roadieId, { roadie with orientationEventId = ?eventId });
+    logWrite(changeLog, counters, demoState, caller, "moveRoadieToSession", ?roadieId, false, "Moved roadie to orientation session");
+  };
+
+  /// Archive every no-show at a session (Admin/Store Manager only): roadies
+  /// still pending and assigned to that session once its date has passed. They
+  /// are archived as NCNS Orientation. Returns the archived roadie ids.
+  public func archiveNoShows(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    eventId : Common.EventId,
+  ) : [Common.RoadieId] {
+    Auth.requireManager(accessGrants, demoState, caller);
+    let event = schedule.get(eventId) ?? Runtime.trap("Orientation session not found");
+    if (event.kind != #orientation) {
+      Runtime.trap("Schedule event is not an orientation session");
+    };
+    let demo = Auth.demoActive(demoState);
+    let now = effectiveNow(demoState);
+    if (event.start >= now) {
+      Runtime.trap("Session has not passed yet");
+    };
+    let noShows = roadies.values()
+      .filter(func r = r.isDemo == demo and r.status != #archived and r.rosterState == #pending and r.orientationEventId == ?eventId)
+      .toArray();
+    for (r in noShows.values()) {
+      roadies.add(r.id, { r with status = #archived; archivedReason = ?#ncnsOrientation; archivedAt = ?now });
+    };
+    logWrite(changeLog, counters, demoState, caller, "archiveNoShows", null, false, "Archived no-shows as NCNS Orientation");
+    noShows.map(func r = r.id);
+  };
+
+  // --- Uniform check-off ---
+
+  /// The uniform check-off for a roadie (Admin/Store Manager only). Locked
+  /// (read-only) until the roadie's paperwork is 100% complete. Shirt and hat
+  /// count items pre-fill from the position defaults.
+  public func getUniformCheckoff(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    checklists : { var value : Store.Checklists },
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    caller : Principal,
+    roadieId : Common.RoadieId,
+  ) : ?Phase23.UniformCheckoffView {
+    Auth.requireManager(accessGrants, demoState, caller);
+    let roadie = requireVisibleRoadie(roadies, demoState, roadieId);
+    let demo = Auth.demoActive(demoState);
+    let stored = switch (checkoffs.get(roadieId)) {
+      case (?c) { if (c.isDemo == demo) { ?c } else { null } };
+      case null { null };
+    };
+    let position = positions.get(roadie.mainPositionId);
+    let items = checklists.value.orientationUniform.map(func(item) {
+      let checked = switch (stored) {
+        case (?c) { c.uniformItems.any(func(t) = t == item.id.toText()) };
+        case null { false };
+      };
+      let count = switch (stored) {
+        case (?c) {
+          switch (c.uniformCounts.find(func((iid, _)) = iid == item.id)) {
+            case (?(_, n)) { n };
+            case null { defaultCount(item, position) };
+          };
+        };
+        case null { defaultCount(item, position) };
+      };
+      {
+        itemId = item.id;
+        text = item.text;
+        itemType = item.itemType;
+        checked;
+        count;
+      };
+    });
+    let missing = items.filter(func(i) = not itemSatisfied(i)).map(func(i) = i.text);
+    let complete = missing.size() == 0;
+    let locked = paperworkStatusWith(checklists.value, positions, roadie, stored) == #incomplete;
+    ?{ roadieId; locked; complete; missing; items };
+  };
+
+  /// Save the uniform check-off for a roadie (Admin/Store Manager only). The
+  /// check-off is locked until the roadie's paperwork is 100% complete.
+  public func saveUniformCheckoff(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    checklists : { var value : Store.Checklists },
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    checkoff : Phase23.OrientationCheckoff,
+  ) : () {
+    Auth.requireManager(accessGrants, demoState, caller);
+    let roadie = requireVisibleRoadie(roadies, demoState, checkoff.roadieId);
+    let demo = Auth.demoActive(demoState);
+    if (paperworkStatusWith(checklists.value, positions, roadie, visibleCheckoff(checkoffs, demo, checkoff.roadieId)) == #incomplete) {
+      Runtime.trap("Paperwork incomplete");
+    };
+    checkoffs.add(checkoff.roadieId, {
+      checkoff with
+      updatedAt = effectiveNow(demoState);
+      isDemo = demo;
+    });
+    logWrite(changeLog, counters, demoState, caller, "saveUniformCheckoff", ?checkoff.roadieId, false, "Saved uniform check-off");
+  };
+
+  // --- Training groups ---
+
   /// Read a training group with its unassigned and off-shift lists (Admin/Store
-  /// Manager/Trainer).
+  /// Manager/Trainer). Demo groups are visible only while demo mode is on.
   public func getTrainingGroup(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -127,9 +417,11 @@ module {
     id : Common.TrainingGroupId,
   ) : ?Phase23.TrainingGroupView {
     ignore Auth.requireReadable(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
     switch (trainingGroups.get(id)) {
       case (?group) {
-        let active = roadies.values().filter(func r = r.isDemo == Auth.demoActive(demoState) and r.status != #archived).toArray();
+        if (group.isDemo != demo) { return null };
+        let active = roadies.values().filter(func r = r.isDemo == demo and r.status != #archived).toArray();
         let unassigned = active.filter(func r =
           r.mainPositionId == group.positionId
           and not group.memberRoadieIds.any(func m = m == r.id)
@@ -144,7 +436,8 @@ module {
     };
   };
 
-  /// Create a training group (Admin/Store Manager only).
+  /// Create a training group (Admin/Store Manager only). A group created while
+  /// demo mode is on is a demo group.
   public func createTrainingGroup(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -157,12 +450,13 @@ module {
     Auth.requireManager(accessGrants, demoState, caller);
     let id = counters.nextTrainingGroupId;
     counters.nextTrainingGroupId := id + 1;
-    trainingGroups.add(id, { group with id });
+    trainingGroups.add(id, { group with id; isDemo = Auth.demoActive(demoState) });
     logWrite(changeLog, counters, demoState, caller, "createTrainingGroup", null, false, "Created training group");
     id;
   };
 
-  /// Update a training group's membership (Admin/Store Manager only).
+  /// Update a training group's membership (Admin/Store Manager only). A write
+  /// to the other partition is rejected.
   public func updateTrainingGroup(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -173,7 +467,8 @@ module {
     group : Phase23.TrainingGroup,
   ) : () {
     Auth.requireManager(accessGrants, demoState, caller);
-    if (not trainingGroups.containsKey(group.id)) {
+    let existing = trainingGroups.get(group.id) ?? Runtime.trap("Training group not found");
+    if (existing.isDemo != Auth.demoActive(demoState)) {
       Runtime.trap("Training group not found");
     };
     trainingGroups.add(group.id, group);
@@ -292,7 +587,8 @@ module {
     };
   };
 
-  /// Create a leader talk (Admin/Store Manager only).
+  /// Create a leader talk (Admin/Store Manager only). A talk created while demo
+  /// mode is on is a demo talk.
   public func createLeaderTalk(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -305,12 +601,13 @@ module {
     Auth.requireManager(accessGrants, demoState, caller);
     let id = counters.nextLeaderTalkId;
     counters.nextLeaderTalkId := id + 1;
-    leaderTalks.add(id, { talk with id });
+    leaderTalks.add(id, { talk with id; isDemo = Auth.demoActive(demoState) });
     logWrite(changeLog, counters, demoState, caller, "createLeaderTalk", null, false, "Created leader talk");
     id;
   };
 
   /// Record per-roadie attendance for a leader talk (Admin/Store Manager only).
+  /// A write to the other partition is rejected.
   public func setLeaderTalkAttendance(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -323,11 +620,16 @@ module {
   ) : () {
     Auth.requireManager(accessGrants, demoState, caller);
     let talk = leaderTalks.get(id) ?? Runtime.trap("Leader talk not found");
+    if (talk.isDemo != Auth.demoActive(demoState)) {
+      Runtime.trap("Leader talk not found");
+    };
     leaderTalks.add(id, { talk with attendees });
     logWrite(changeLog, counters, demoState, caller, "setLeaderTalkAttendance", null, false, "Recorded leader talk attendance");
   };
 
-  /// Record a final sign-off for a roadie (Admin/Store Manager only).
+  /// Record a final sign-off for a roadie (Admin/Store Manager only). A
+  /// sign-off recorded while demo mode is on is a demo sign-off; a write to the
+  /// other partition is rejected.
   public func recordFinalSignOff(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -338,7 +640,16 @@ module {
     signOff : Phase23.FinalSignOff,
   ) : () {
     Auth.requireManager(accessGrants, demoState, caller);
-    finalSignOffs.add(signOff.roadieId, { signOff with signedBy = caller; signedAt = effectiveNow(demoState) });
+    let demo = Auth.demoActive(demoState);
+    switch (finalSignOffs.get(signOff.roadieId)) {
+      case (?existing) {
+        if (existing.isDemo != demo) {
+          Runtime.trap("Final sign-off not found");
+        };
+      };
+      case null {};
+    };
+    finalSignOffs.add(signOff.roadieId, { signOff with signedBy = caller; signedAt = effectiveNow(demoState); isDemo = demo });
     logWrite(changeLog, counters, demoState, caller, "recordFinalSignOff", ?signOff.roadieId, false, "Recorded final sign-off");
   };
 
@@ -367,6 +678,160 @@ module {
     let alert = alerts.get(id) ?? Runtime.trap("Alert not found");
     alerts.add(id, { alert with acknowledged = true });
     logWrite(changeLog, counters, demoState, caller, "acknowledgeAlert", null, false, "Acknowledged alert");
+  };
+
+  // --- Paperwork helpers (shared with the dashboard and roster) ---
+
+  /// Whether a roadie's paperwork is complete, given their stored check-off:
+  /// every paperwork checklist item that applies to them (respecting "Only
+  /// alcohol positions" and "Only under 18") is checked. A roadie with no
+  /// applicable items is complete.
+  public func paperworkStatusWith(
+    checklists : Store.Checklists,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    roadie : Roadie.Roadie,
+    checkoff : ?Phase23.OrientationCheckoff,
+  ) : Phase23.PaperworkStatus {
+    let applicable = applicablePaperwork(checklists, positions, roadie);
+    let checked = switch (checkoff) {
+      case (?c) { c.paperworkItems };
+      case null { [] };
+    };
+    let complete = applicable.all(func(item) = checked.any(func(t) = t == item.id.toText()));
+    if (complete) { #complete } else { #incomplete };
+  };
+
+  /// Internal: the paperwork items that apply to a roadie.
+  func applicablePaperwork(
+    checklists : Store.Checklists,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    roadie : Roadie.Roadie,
+  ) : [Store.ChecklistItem] {
+    let needsAlcohol = switch (positions.get(roadie.mainPositionId)) {
+      case (?p) { p.needsAlcoholCert };
+      case null { false };
+    };
+    checklists.paperwork.filter(func(item) =
+      (not item.requiresAlcoholCert or needsAlcohol) and (not item.minorOnly or roadie.isMinor)
+    );
+  };
+
+  /// Internal: the default count for a count item, from the position defaults
+  /// for shirt and hat items.
+  func defaultCount(item : Store.ChecklistItem, position : ?Store.Position) : Nat {
+    switch (item.itemType) {
+      case (#checkbox) { 0 };
+      case (#count) {
+        let lower = item.text.toLower();
+        if (lower.contains(#text "shirt")) {
+          switch (position) { case (?p) { p.defaultShirts }; case null { 0 } };
+        } else if (lower.contains(#text "hat")) {
+          switch (position) { case (?p) { p.defaultHats }; case null { 0 } };
+        } else {
+          0;
+        };
+      };
+    };
+  };
+
+  /// Internal: whether a uniform item is satisfied.
+  func itemSatisfied(item : Phase23.UniformCheckoffItem) : Bool {
+    switch (item.itemType) {
+      case (#checkbox) { item.checked };
+      case (#count) { item.count > 0 };
+    };
+  };
+
+  /// Internal: the display name for a roadie (preferred name when set).
+  func displayName(roadie : Roadie.Roadie) : Text {
+    switch (roadie.profile.preferredName) {
+      case (?p) { if (p.size() > 0) { p } else { roadie.profile.name } };
+      case null { roadie.profile.name };
+    };
+  };
+
+  /// Internal: the stored check-off for a roadie when it belongs to the active
+  /// partition, otherwise null.
+  func visibleCheckoff(
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    demo : Bool,
+    roadieId : Common.RoadieId,
+  ) : ?Phase23.OrientationCheckoff {
+    switch (checkoffs.get(roadieId)) {
+      case (?c) { if (c.isDemo == demo) { ?c } else { null } };
+      case null { null };
+    };
+  };
+
+  /// Internal: whether a roadie is marked Present at an event.
+  func isPresentAt(
+    attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
+    demo : Bool,
+    roadieId : Common.RoadieId,
+    eventId : Common.EventId,
+  ) : Bool {
+    attendance.values().any(func(a) =
+      a.isDemo == demo and a.roadieId == roadieId and a.eventId == ?eventId and a.state == #present
+    );
+  };
+
+  /// Internal: find the attendance record for a roadie at an event, with its
+  /// map key so callers can update it in place.
+  func findAttendance(
+    attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
+    demo : Bool,
+    roadieId : Common.RoadieId,
+    eventId : Common.EventId,
+  ) : ?(Nat, Phase23.AttendanceRecord) {
+    attendance.entries().find(func((_, a)) =
+      a.isDemo == demo and a.roadieId == roadieId and a.eventId == ?eventId
+    );
+  };
+
+  /// Internal: remove every attendance record for a roadie at an event.
+  func removeAttendance(
+    attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
+    demo : Bool,
+    roadieId : Common.RoadieId,
+    eventId : Common.EventId,
+  ) : () {
+    let doomed = attendance.entries()
+      .filter(func((_, a)) = a.isDemo == demo and a.roadieId == roadieId and a.eventId == ?eventId)
+      .map(func((k, _)) = k)
+      .toArray();
+    for (k in doomed.values()) {
+      attendance.remove(k);
+    };
+  };
+
+  /// Internal: require a caller who may read the orientation check-in screen
+  /// (Admin, Store Manager, Training Manager or Visiting Manager).
+  func requireOrientationReader(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    caller : Principal,
+  ) : () {
+    let role = Auth.requireReadable(accessGrants, demoState, caller);
+    switch (role) {
+      case (#admin or #storeManager or #trainingManager or #visitingManager) {};
+      case (_) {
+        Runtime.trap("Access denied: Admin, Store Manager, Training Manager or Visiting Manager role required");
+      };
+    };
+  };
+
+  /// Internal: fetch a roadie that belongs to the active demo/real partition,
+  /// or trap.
+  func requireVisibleRoadie(
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    demoState : Common.DemoState,
+    id : Common.RoadieId,
+  ) : Roadie.Roadie {
+    let roadie = roadies.get(id) ?? Runtime.trap("Roadie not found");
+    if (roadie.isDemo != Auth.demoActive(demoState)) {
+      Runtime.trap("Roadie not found");
+    };
+    roadie;
   };
 
   /// Internal: the effective clock. While demo mode is on with a pretend date

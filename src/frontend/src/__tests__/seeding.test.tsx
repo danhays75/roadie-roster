@@ -17,6 +17,8 @@ const SERVERS: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: true,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const STORE = {
@@ -34,6 +36,7 @@ const STORE = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /** An Admin grant: only an Admin may seed, so the seeding hook needs one. */
@@ -51,7 +54,9 @@ function emptyDashboardActor() {
     getDashboard: vi.fn<backendInterface["getDashboard"]>(async () => ({
       foh: [],
       boh: [],
+      active: 0n,
       hired: 0n,
+      pending: 0n,
       stillNeeded: 0n,
       buildToTotal: 0n,
     })),
@@ -121,7 +126,9 @@ describe("Seeding when the store has no positions", () => {
     actor.getDashboard = vi.fn<backendInterface["getDashboard"]>(async () => ({
       foh: [SERVERS],
       boh: [],
+      active: 0n,
       hired: 0n,
+      pending: 0n,
       stillNeeded: 65n,
       buildToTotal: 65n,
     }));

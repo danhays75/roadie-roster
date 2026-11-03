@@ -11,7 +11,7 @@ import type {
   StoreInfo,
   backendInterface,
 } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import AdminPage from "@/pages/Admin";
 import ApprovalsPage from "@/pages/Approvals";
 import type { Principal } from "@icp-sdk/core/principal";
@@ -51,6 +51,7 @@ const STORE: StoreInfo = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 const SERVERS: Position = {
@@ -64,6 +65,8 @@ const SERVERS: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: true,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 function grant(
@@ -152,6 +155,7 @@ function roadie(
     hiredAt: 0n,
     isDemo: false,
     profile: { name: `Roadie ${id}` },
+    rosterState: RosterState.pending,
   };
 }
 

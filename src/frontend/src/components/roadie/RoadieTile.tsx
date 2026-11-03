@@ -1,9 +1,24 @@
-import type { ArchiveReason, Roadie } from "@/backend";
-import { RoadieStatus } from "@/backend";
+import type {
+  ArchiveReason,
+  ChecklistItem,
+  DateOnly,
+  OrientationCheckoff,
+  Position,
+  Roadie,
+  RoadieId,
+} from "@/backend";
+import { RoadieStatus, createActor } from "@/backend";
 import { StatusBadge } from "@/components/StatusBadge";
-import { useRoadiePhoto } from "@/hooks/useQueries";
+import {
+  useChecklists,
+  usePositions,
+  useRoadiePhoto,
+  useStoreInfo,
+} from "@/hooks/useQueries";
 import { refToDataUrl, roadieStatusLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useActor } from "@caffeineai/core-infrastructure";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 /** The roadie's initials for the no-photo placeholder, at most two letters. */
@@ -33,6 +48,10 @@ export function archiveReasonLabel(reason: ArchiveReason | undefined): string {
       return "Took another job";
     case "letGo":
       return "Let go";
+    case "ncnsOrientation":
+      return "NCNS Orientation";
+    case "paperworkIncomplete":
+      return "Paperwork Incomplete";
     case "other":
       return reason.other || "Other";
     default:
@@ -41,18 +60,124 @@ export function archiveReasonLabel(reason: ArchiveReason | undefined): string {
 }
 
 /**
+ * Whether a roadie's paperwork is overdue: the store's paperwork due date has
+ * passed and at least one paperwork item that applies to them (respecting
+ * "Only alcohol positions" and "Only under 18") is not checked. Mirrors the
+ * backend's `paperworkStatusWith` so the flag matches the orientation screen.
+ */
+export function paperworkIncomplete(
+  roadie: Roadie,
+  checkoff: OrientationCheckoff | null | undefined,
+  paperworkItems: ChecklistItem[],
+  position: Position | undefined,
+  dueDate: DateOnly | undefined,
+  now: number,
+): boolean {
+  if (dueDate === undefined) return false;
+  if (now <= Number(dueDate / 1_000_000n)) return false;
+  const needsAlcohol = position?.needsAlcoholCert ?? false;
+  const applicable = paperworkItems.filter(
+    (item) =>
+      (!item.requiresAlcoholCert || needsAlcohol) &&
+      (!item.minorOnly || roadie.isMinor),
+  );
+  if (applicable.length === 0) return false;
+  const checked = checkoff?.paperworkItems ?? [];
+  return !applicable.every((item) => checked.includes(item.id.toString()));
+}
+
+/**
+ * The paperwork-overdue flag for each roadie, keyed by roadie id. Reads the
+ * store's paperwork due date, the paperwork checklist and the positions, then
+ * fetches the orientation check-off for the roadies already past the due date
+ * (the check-off read is Admin/Store Manager only, so callers pass `enabled`).
+ * Returns an empty map for callers that may not read check-offs.
+ */
+export function usePaperworkIncompleteMap(
+  roadies: Roadie[],
+  enabled: boolean,
+): Map<string, boolean> {
+  const { actor, isFetching } = useActor(createActor);
+  const { data: storeInfo } = useStoreInfo();
+  const { data: checklists } = useChecklists();
+  const { data: positions } = usePositions();
+
+  const dueDate = storeInfo?.paperworkDueDate;
+  const now = Date.now();
+  const pastDue = useMemo(
+    () =>
+      dueDate === undefined || now <= Number(dueDate / 1_000_000n)
+        ? []
+        : roadies,
+    [roadies, dueDate, now],
+  );
+  const ids = useMemo(() => pastDue.map((r) => r.id), [pastDue]);
+  const idsKey = ids.map((id) => id.toString()).join(",");
+
+  const { data: checkoffs } = useQuery({
+    queryKey: ["orientationCheckoffs", idsKey],
+    queryFn: async (): Promise<Map<string, OrientationCheckoff>> => {
+      if (!actor) return new Map();
+      const entries = await Promise.all(
+        ids.map(async (id: RoadieId) => {
+          const checkoff = await actor.getOrientationCheckoff(id);
+          return [id.toString(), checkoff] as const;
+        }),
+      );
+      const map = new Map<string, OrientationCheckoff>();
+      for (const [key, checkoff] of entries) {
+        if (checkoff) map.set(key, checkoff);
+      }
+      return map;
+    },
+    enabled: enabled && !!actor && !isFetching && ids.length > 0,
+  });
+
+  const positionMap = useMemo(() => {
+    const map = new Map<string, Position>();
+    for (const position of positions ?? []) {
+      map.set(position.id.toString(), position);
+    }
+    return map;
+  }, [positions]);
+
+  return useMemo(() => {
+    const flags = new Map<string, boolean>();
+    if (!enabled || dueDate === undefined) return flags;
+    const items = checklists?.paperwork ?? [];
+    for (const roadie of pastDue) {
+      const key = roadie.id.toString();
+      flags.set(
+        key,
+        paperworkIncomplete(
+          roadie,
+          checkoffs?.get(key),
+          items,
+          positionMap.get(roadie.mainPositionId.toString()),
+          dueDate,
+          now,
+        ),
+      );
+    }
+    return flags;
+  }, [enabled, dueDate, pastDue, checkoffs, checklists, positionMap, now]);
+}
+
+/**
  * A roadie's tile: the photo fills the top at roughly a 4:3 ratio with
  * `object-cover`, or the roadie's initials in navy on cream when no photo is
  * stored. Below the photo sit the name, a status badge, a crew tag when the
  * roadie has a crew, and a MINOR tag when the roadie is a minor. The tile is a
  * button so tapping it opens the shared card pop-up. A former roadie's tile is
- * grayscale and shows the archive reason instead of the status badge.
+ * grayscale and shows the archive reason instead of the status badge. When
+ * `paperworkIncomplete` is set, a red "Paperwork incomplete" flag is shown.
  */
 export function RoadieTile({
   roadie,
   positionName,
   crewName,
   crewLabel,
+  paperworkIncomplete: paperworkFlag,
   onOpen,
   ocid = "roadie.tile",
   statusOcid,
@@ -68,6 +193,8 @@ export function RoadieTile({
    * only when the roadie has a crew.
    */
   crewLabel?: string;
+  /** When true, show the red "Paperwork incomplete" flag on the tile. */
+  paperworkIncomplete?: boolean;
   onOpen: (roadie: Roadie) => void;
   ocid?: string;
   statusOcid?: string;
@@ -144,6 +271,14 @@ export function RoadieTile({
               >
                 {crewLabel ? `${crewLabel}: ${crewName ?? ""}` : crewName}
               </span>
+            )}
+            {paperworkFlag && !isArchived && (
+              <StatusBadge
+                tone="danger"
+                ocid={ocid ? `${ocid}.paperwork` : undefined}
+              >
+                Paperwork incomplete
+              </StatusBadge>
             )}
           </span>
         </span>

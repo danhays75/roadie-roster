@@ -16,6 +16,8 @@ const CASHIER: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 /** A dashboard payload with no configured positions. */
@@ -26,6 +28,8 @@ function emptyDashboard() {
     hired: 0n,
     stillNeeded: 0n,
     buildToTotal: 0n,
+    active: 0n,
+    pending: 0n,
   };
 }
 
@@ -51,6 +55,7 @@ function baseActor() {
       trainingGroupSize: 4n,
       leaderTalkName: "Leader talk",
       leaderTalkSize: 4n,
+      paperworkDueDate: 1_800_000_000_000_000_000n,
     })),
     getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
       grant: undefined,
@@ -97,6 +102,8 @@ describe("DashboardPage states", () => {
       hired: 1n,
       stillNeeded: 3n,
       buildToTotal: 4n,
+      active: 1n,
+      pending: 0n,
     }));
 
     renderPageWithActor(DashboardPage, actor, { path: "/dashboard" });

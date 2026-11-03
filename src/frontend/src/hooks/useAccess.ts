@@ -48,6 +48,17 @@ export const LEADERS_ROLES: Role[] = [
   Role.leadership,
 ];
 
+/**
+ * Roles allowed to see the Orientation check-in surface: the roles that may
+ * read an orientation session view on the backend.
+ */
+export const ORIENTATION_ROLES: Role[] = [
+  Role.admin,
+  Role.storeManager,
+  Role.trainingManager,
+  Role.visitingManager,
+];
+
 /** The full navigation model; each item declares which roles may see it. */
 export const NAV_ITEMS: NavItem[] = [
   { labelKey: "nav.today", to: "/today", allowedRoles: [] },
@@ -55,6 +66,11 @@ export const NAV_ITEMS: NavItem[] = [
   { labelKey: "nav.roster", to: "/roster", allowedRoles: [] },
   { labelKey: "nav.myProfile", to: "/my-profile", allowedRoles: [] },
   { labelKey: "nav.leaders", to: "/leaders", allowedRoles: LEADERS_ROLES },
+  {
+    labelKey: "nav.orientation",
+    to: "/orientation",
+    allowedRoles: ORIENTATION_ROLES,
+  },
   {
     labelKey: "nav.approvals",
     to: "/approvals",
@@ -220,4 +236,9 @@ export function canGiftBags(role: Role | undefined): boolean {
 /** Whether the given role may open the Leaders surface. */
 export function canLeaders(role: Role | undefined): boolean {
   return !!role && LEADERS_ROLES.includes(role);
+}
+
+/** Whether the given role may open the Orientation check-in surface. */
+export function canOrientation(role: Role | undefined): boolean {
+  return !!role && ORIENTATION_ROLES.includes(role);
 }

@@ -1,5 +1,5 @@
 import type { Roadie } from "@/backend";
-import { RoadieStatus } from "@/backend";
+import { RoadieStatus, RosterState } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { useDashboardCopy } from "@/components/dashboard/copy";
@@ -8,19 +8,27 @@ import {
   FullProfileLink,
   RoadieCardModal,
 } from "@/components/roadie/RoadieCardModal";
-import { RoadieTile } from "@/components/roadie/RoadieTile";
+import {
+  RoadieTile,
+  usePaperworkIncompleteMap,
+} from "@/components/roadie/RoadieTile";
 import { Input } from "@/components/ui/input";
 import { canArchive, useAccessState } from "@/hooks/useAccess";
 import { useCrews, usePositions, useRoadies } from "@/hooks/useQueries";
+import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useMemo, useState } from "react";
 
 /** Which list the card pop-up is navigating within. */
-type CardList = "active" | "former";
+type CardList = "pending" | "active" | "former";
+
+/** The Pending / Active tab selection on the roster. */
+type RosterTab = "pending" | "active";
 
 export default function RosterPage() {
   const { t } = useDashboardCopy();
   const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<RosterTab>("active");
   const [showFormer, setShowFormer] = useState(false);
   const [card, setCard] = useState<{ list: CardList; index: number } | null>(
     null,
@@ -51,7 +59,7 @@ export default function RosterPage() {
     return map;
   }, [crews]);
 
-  const { active, archived } = useMemo(() => {
+  const { pending, active, archived } = useMemo(() => {
     const list = roadies ?? [];
     const q = query.trim().toLowerCase();
     const matches = (roadie: Roadie) => {
@@ -64,9 +72,15 @@ export default function RosterPage() {
       ).toLowerCase();
       return name.includes(q) || position.includes(q);
     };
+    const live = list.filter(
+      (roadie) => roadie.status !== RoadieStatus.archived && matches(roadie),
+    );
     return {
-      active: list.filter(
-        (roadie) => roadie.status !== RoadieStatus.archived && matches(roadie),
+      pending: live.filter(
+        (roadie) => roadie.rosterState === RosterState.pending,
+      ),
+      active: live.filter(
+        (roadie) => roadie.rosterState === RosterState.active,
       ),
       archived: list.filter(
         (roadie) => roadie.status === RoadieStatus.archived && matches(roadie),
@@ -74,9 +88,18 @@ export default function RosterPage() {
     };
   }, [roadies, query, positionMap]);
 
-  const activeEntries: CardEntry[] = useMemo(
-    () => active.map((roadie) => ({ key: roadie.id.toString(), roadie })),
-    [active],
+  // The paperwork-overdue flag is computed from the orientation check-off,
+  // which only Admin and Store Manager may read.
+  const paperworkFlags = usePaperworkIncompleteMap(
+    roadies ?? [],
+    canArchive(role),
+  );
+
+  const shown = tab === "pending" ? pending : active;
+
+  const shownEntries: CardEntry[] = useMemo(
+    () => shown.map((roadie) => ({ key: roadie.id.toString(), roadie })),
+    [shown],
   );
   const formerEntries: CardEntry[] = useMemo(
     () => archived.map((roadie) => ({ key: roadie.id.toString(), roadie })),
@@ -91,7 +114,16 @@ export default function RosterPage() {
       ? undefined
       : crewMap.get(roadie.crewId.toString());
 
-  const hasAny = active.length > 0 || archived.length > 0;
+  const hasAny = pending.length > 0 || active.length > 0 || archived.length > 0;
+
+  const tabs: { key: RosterTab; label: string; count: number }[] = [
+    {
+      key: "pending",
+      label: t("roster.filter.pending"),
+      count: pending.length,
+    },
+    { key: "active", label: t("roster.filter.active"), count: active.length },
+  ];
 
   return (
     <div className="space-y-6" data-ocid="roster.page">
@@ -112,6 +144,45 @@ export default function RosterPage() {
         />
       </div>
 
+      <div
+        role="tablist"
+        aria-label={t("roster.title")}
+        className="flex flex-wrap gap-2"
+        data-ocid="roster.tabs"
+      >
+        {tabs.map((entry) => {
+          const selected = tab === entry.key;
+          return (
+            <button
+              key={entry.key}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              data-ocid={`roster.filter.${entry.key}.tab`}
+              onClick={() => setTab(entry.key)}
+              className={cn(
+                "touch-target inline-flex items-center gap-2 rounded-full border px-4 font-display text-sm font-semibold uppercase tracking-wider transition-smooth focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+                selected
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {entry.label}
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[11px] tabular-nums",
+                  selected
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                {entry.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {isLoading && <LoadingState label={t("roster.loading")} />}
       {isError && (
         <ErrorState
@@ -124,19 +195,30 @@ export default function RosterPage() {
         <EmptyState title={query ? t("roster.empty") : t("roster.emptyAll")} />
       )}
 
-      {active.length > 0 && (
+      {!isLoading && !isError && hasAny && shown.length === 0 && (
+        <EmptyState
+          title={
+            tab === "pending"
+              ? t("roster.emptyPending")
+              : t("roster.emptyActive")
+          }
+        />
+      )}
+
+      {shown.length > 0 && (
         <ul
           className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
           data-ocid="roster.list"
         >
-          {active.map((roadie, index) => (
+          {shown.map((roadie, index) => (
             <RoadieTile
               key={roadie.id.toString()}
               roadie={roadie}
               positionName={positionNameOf(roadie)}
               crewName={crewNameOf(roadie) ?? t("roadie.field.none")}
               crewLabel={t("roadie.field.crew")}
-              onOpen={() => setCard({ list: "active", index })}
+              paperworkIncomplete={paperworkFlags.get(roadie.id.toString())}
+              onOpen={() => setCard({ list: tab, index })}
               ocid="roster.item"
               statusOcid="roster.item.status"
               photoOcid="roster.item.photo"
@@ -191,7 +273,7 @@ export default function RosterPage() {
       )}
 
       <RoadieCardModal
-        entries={card?.list === "former" ? formerEntries : activeEntries}
+        entries={card?.list === "former" ? formerEntries : shownEntries}
         index={card?.index ?? 0}
         open={card !== null}
         onOpenChange={(next) => {

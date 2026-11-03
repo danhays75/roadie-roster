@@ -7,7 +7,7 @@ import type {
   StoreInfo,
   backendInterface,
 } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import { Layout } from "@/components/Layout";
 import { StoreLogo } from "@/components/StoreLogo";
 import { StoreInfoPanel } from "@/components/admin/StoreInfoPanel";
@@ -64,6 +64,7 @@ const STORE: StoreInfo = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /** A minimal PNG signature followed by filler bytes. */
@@ -145,6 +146,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const ROADIE: Roadie = {
@@ -155,6 +158,7 @@ const ROADIE: Roadie = {
   profile: { name: "Ada Lovelace" },
   isMinor: false,
   isDemo: false,
+  rosterState: RosterState.pending,
 };
 
 /** The actor methods the dashboard reads. */
@@ -169,6 +173,8 @@ function dashboardActor(logos: {
       hired: 1n,
       stillNeeded: 1n,
       buildToTotal: 2n,
+      active: 1n,
+      pending: 0n,
     })),
     listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),
     getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => STORE),

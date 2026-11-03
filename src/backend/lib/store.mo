@@ -163,6 +163,24 @@ module {
     ignore ChangeLog.record(changeLog, counters, caller, "adjustBuildTo", null, false, "Adjusted build-to for " # position.name);
   };
 
+  /// The next upcoming orientation session: the earliest orientation event
+  /// whose start is at or after `now`. Returns null when none is scheduled.
+  public func nextOrientationEvent(
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    now : Common.Timestamp,
+  ) : ?Store.ScheduleEvent {
+    var best : ?Store.ScheduleEvent = null;
+    for (event in schedule.values()) {
+      if (event.kind == #orientation and event.start >= now) {
+        switch (best) {
+          case (?b) { if (event.start < b.start) { best := ?event } };
+          case null { best := ?event };
+        };
+      };
+    };
+    best;
+  };
+
   /// List the opening schedule (any role except Kiosk).
   public func listSchedule(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
@@ -326,6 +344,8 @@ module {
           afterOpeningBuildTo = p.afterOpeningBuildTo;
           minimumAge = p.minimumAge;
           needsAlcoholCert = p.needsAlcoholCert;
+          defaultShirts = p.defaultShirts;
+          defaultHats = p.defaultHats;
         };
       }).toArray();
       checklists = checklists.value;
@@ -374,6 +394,8 @@ module {
         shirtsRequired = 2;
         hatsRequired = 1;
         crewManager = null;
+        defaultShirts = p.defaultShirts;
+        defaultHats = p.defaultHats;
       });
       nextPositionId += 1;
     };

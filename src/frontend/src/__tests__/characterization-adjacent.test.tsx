@@ -6,7 +6,7 @@ import type {
   ScheduleEvent,
   backendInterface,
 } from "@/backend";
-import { EventKind, House, RoadieStatus, Role } from "@/backend";
+import { EventKind, House, RoadieStatus, Role, RosterState } from "@/backend";
 import { Layout } from "@/components/Layout";
 import { PositionRosterDialog } from "@/components/dashboard/PositionRosterDialog";
 import { KioskSignatureStep } from "@/components/kiosk/KioskSignatureStep";
@@ -227,6 +227,7 @@ describe("SchedulePanel renders and edits seeded events", () => {
     trainingGroupSize: 5n,
     leaderTalkName: "10 Minutes with Dan",
     leaderTalkSize: 10n,
+    paperworkDueDate: 1_800_000_000_000_000_000n,
   };
 
   const SCHEDULE: ScheduleEvent[] = [
@@ -297,6 +298,8 @@ describe("PositionRosterDialog archived section", () => {
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: true,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   };
 
   const ARCHIVED: Roadie = {
@@ -309,6 +312,7 @@ describe("PositionRosterDialog archived section", () => {
     isDemo: false,
     archivedReason: { __kind__: "noShow", noShow: null },
     archivedAt: 1_801_202_400_000_000_000n,
+    rosterState: RosterState.pending,
   };
 
   it("shows the archive reason and a rehire control for a manager", async () => {

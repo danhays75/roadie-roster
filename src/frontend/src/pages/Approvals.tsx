@@ -4,8 +4,6 @@ import {
   type DateOnly,
   type DuplicateMatch,
   EventKind,
-  type House,
-  House as HouseValue,
   type Position,
   type ScheduleEvent,
   type SignupSubmission,
@@ -62,17 +60,14 @@ function upcomingOrientations(schedule: ScheduleEvent[]): ScheduleEvent[] {
     .sort((a, b) => Number(a.start - b.start));
 }
 
-/** The default orientation session for a house, matched by event name. */
-function defaultOrientationId(
-  sessions: ScheduleEvent[],
-  house: House | undefined,
-): string {
-  if (!house) return "";
-  const marker = house === HouseValue.foh ? "foh" : "boh";
-  const match = sessions.find((event) =>
-    event.name.toLowerCase().includes(marker),
-  );
-  return match ? match.id.toString() : "";
+/**
+ * The default orientation session: the next upcoming session, soonest first.
+ * Sessions are already filtered to the future and sorted, so the first one is
+ * the next session regardless of the applicant's house.
+ */
+function defaultOrientationId(sessions: ScheduleEvent[]): string {
+  const next = sessions[0];
+  return next ? next.id.toString() : "";
 }
 
 /**
@@ -211,10 +206,7 @@ function PendingSignupCard({
   const secondPosition = positions.find(
     (position) => position.id.toString() === secondPositionId,
   );
-  const suggestedOrientation = defaultOrientationId(
-    sessions,
-    mainPosition?.house,
-  );
+  const suggestedOrientation = defaultOrientationId(sessions);
 
   const age = useMemo(
     () => ageInTimeZone(signup.contactSet.dateOfBirth, timeZone),

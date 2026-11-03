@@ -19,7 +19,17 @@ module {
     #quitDuringTraining;
     #tookAnotherJob;
     #letGo;
+    #ncnsOrientation;
+    #paperworkIncomplete;
     #other : Text;
+  };
+
+  /// Whether a roadie is still pending (hired, not yet shown up at an
+  /// orientation session) or active (marked Present at an orientation
+  /// session). Archived roadies are excluded from both counts.
+  public type RosterState = {
+    #pending;
+    #active;
   };
 
   /// The contact set — visible only to Admin and Store Manager. Every signature
@@ -89,6 +99,10 @@ module {
     hiredAt : Common.Timestamp;
     hireDate : ?Common.Timestamp;
     signedBy : ?Principal;
+    /// Pending until the roadie is marked Present at an orientation session,
+    /// then active. Archived roadies keep their last state but are excluded
+    /// from every pending/active count.
+    rosterState : RosterState;
     /// True when this card is a demo record. Demo records are invisible while
     /// demo mode is off and never count toward on-hand, build-to, exports,
     /// gift bags or the store template.
@@ -104,13 +118,31 @@ module {
     isDemo : Bool;
   };
 
-  /// Per-position roster counts: on-hand roadies and open spots.
+  /// Per-position roster counts: on-hand roadies and open spots. `onHand`
+  /// counts pending + active roadies (archived excluded); `pending` and
+  /// `active` break that total down.
   public type RosterSummary = {
     positionId : Common.PositionId;
     positionName : Text;
     onHand : Nat;
+    pending : Nat;
+    active : Nat;
     buildTo : Nat;
     openSpots : Nat;
+  };
+
+  /// Pending and active counts for one position or for the whole store.
+  public type RosterCounts = {
+    pending : Nat;
+    active : Nat;
+  };
+
+  /// The Hired → Active funnel shown on the dashboard: everyone hired, how
+  /// many have shown up (active) and how many are still pending.
+  public type RosterFunnel = {
+    hired : Nat;
+    active : Nat;
+    pending : Nat;
   };
 
   /// A single change-log entry. `isDemo` marks entries written while demo mode

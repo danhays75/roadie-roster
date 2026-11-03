@@ -72,35 +72,33 @@ module {
 
   func seedPositions() : [Store.Position] {
     [
-      { id = 0; name = "Servers"; house = #foh; code = "SRV"; openingBuildTo = 65; afterOpeningBuildTo = 65; needsAlcoholCert = true; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 1; name = "Hosts"; house = #foh; code = "HST"; openingBuildTo = 18; afterOpeningBuildTo = 18; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 2; name = "Bartenders"; house = #foh; code = "BAR"; openingBuildTo = 12; afterOpeningBuildTo = 12; needsAlcoholCert = true; minimumAge = 21; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 3; name = "Server assistants"; house = #foh; code = "SA"; openingBuildTo = 12; afterOpeningBuildTo = 12; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 4; name = "To-go"; house = #foh; code = "TG"; openingBuildTo = 10; afterOpeningBuildTo = 10; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 5; name = "Fry / Salad"; house = #boh; code = "FS"; openingBuildTo = 16; afterOpeningBuildTo = 16; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 6; name = "Dish"; house = #boh; code = "DSH"; openingBuildTo = 14; afterOpeningBuildTo = 14; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 7; name = "Pizza"; house = #boh; code = "PIZ"; openingBuildTo = 12; afterOpeningBuildTo = 12; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 8; name = "Broil / Saute"; house = #boh; code = "BRS"; openingBuildTo = 10; afterOpeningBuildTo = 10; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 9; name = "Hot prep"; house = #boh; code = "HP"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 10; name = "Cold prep"; house = #boh; code = "CP"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 11; name = "Point / Build"; house = #boh; code = "PB"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 12; name = "Sear"; house = #boh; code = "SEA"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 13; name = "Expo"; house = #boh; code = "EXP"; openingBuildTo = 6; afterOpeningBuildTo = 6; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 14; name = "Bake"; house = #boh; code = "BAK"; openingBuildTo = 5; afterOpeningBuildTo = 5; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 15; name = "Silverware roller"; house = #boh; code = "SWR"; openingBuildTo = 4; afterOpeningBuildTo = 4; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 16; name = "Meat cutter"; house = #boh; code = "MTC"; openingBuildTo = 3; afterOpeningBuildTo = 3; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
-      { id = 17; name = "DMO prep"; house = #boh; code = "DMO"; openingBuildTo = 3; afterOpeningBuildTo = 3; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null },
+      { id = 0; name = "Servers"; house = #foh; code = "SRV"; openingBuildTo = 65; afterOpeningBuildTo = 65; needsAlcoholCert = true; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 1; name = "Hosts"; house = #foh; code = "HST"; openingBuildTo = 18; afterOpeningBuildTo = 18; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 2; name = "Bartenders"; house = #foh; code = "BAR"; openingBuildTo = 12; afterOpeningBuildTo = 12; needsAlcoholCert = true; minimumAge = 21; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 3; name = "Server assistants"; house = #foh; code = "SA"; openingBuildTo = 12; afterOpeningBuildTo = 12; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 4; name = "To-go"; house = #foh; code = "TG"; openingBuildTo = 10; afterOpeningBuildTo = 10; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 5; name = "Fry / Salad"; house = #boh; code = "FS"; openingBuildTo = 16; afterOpeningBuildTo = 16; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 6; name = "Dish"; house = #boh; code = "DSH"; openingBuildTo = 14; afterOpeningBuildTo = 14; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 7; name = "Pizza"; house = #boh; code = "PIZ"; openingBuildTo = 12; afterOpeningBuildTo = 12; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 8; name = "Broil / Saute"; house = #boh; code = "BRS"; openingBuildTo = 10; afterOpeningBuildTo = 10; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 9; name = "Hot prep"; house = #boh; code = "HP"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 10; name = "Cold prep"; house = #boh; code = "CP"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 11; name = "Point / Build"; house = #boh; code = "PB"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 12; name = "Sear"; house = #boh; code = "SEA"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 13; name = "Expo"; house = #boh; code = "EXP"; openingBuildTo = 6; afterOpeningBuildTo = 6; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 14; name = "Bake"; house = #boh; code = "BAK"; openingBuildTo = 5; afterOpeningBuildTo = 5; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 15; name = "Silverware roller"; house = #boh; code = "SWR"; openingBuildTo = 4; afterOpeningBuildTo = 4; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 16; name = "Meat cutter"; house = #boh; code = "MTC"; openingBuildTo = 3; afterOpeningBuildTo = 3; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 17; name = "DMO prep"; house = #boh; code = "DMO"; openingBuildTo = 3; afterOpeningBuildTo = 3; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
     ];
   };
 
   func seedSchedule() : [Store.ScheduleEvent] {
     [
       { id = 0; kind = #deadline; name = "Paperwork due"; start = 1_801_202_400_000_000_000; end = null },
-      { id = 1; kind = #orientation; name = "Orientation BOH"; start = 1_801_321_200_000_000_000; end = null },
-      { id = 2; kind = #orientation; name = "Orientation FOH"; start = 1_801_335_600_000_000_000; end = null },
+      { id = 1; kind = #orientation; name = "Orientation · Sat Jan 30, 2027, 9:00 AM"; start = 1_801_321_200_000_000_000; end = null },
       { id = 3; kind = #trainingDay; name = "Training Day 1"; start = 1_801_461_600_000_000_000; end = null },
       { id = 4; kind = #trainingDay; name = "Training Day 2"; start = 1_801_548_000_000_000_000; end = null },
-      { id = 5; kind = #orientation; name = "Makeup orientation"; start = 1_801_576_800_000_000_000; end = null },
       { id = 6; kind = #trainingDay; name = "Training Day 3"; start = 1_801_634_400_000_000_000; end = null },
       { id = 7; kind = #trainingDay; name = "Training Day 4"; start = 1_801_720_800_000_000_000; end = null },
       { id = 8; kind = #friendsAndFamily; name = "Friends & Family"; start = 1_801_807_200_000_000_000; end = null },
@@ -112,22 +110,22 @@ module {
 
   func seedOrientationUniform() : [Store.ChecklistItem] {
     [
-      { id = 0; text = "Non-slip shoes"; requiresAlcoholCert = false; minorOnly = false },
-      { id = 1; text = "Dark blue jeans"; requiresAlcoholCert = false; minorOnly = false },
-      { id = 2; text = "Hair"; requiresAlcoholCert = false; minorOnly = false },
-      { id = 3; text = "Piercings"; requiresAlcoholCert = false; minorOnly = false },
-      { id = 4; text = "Smile"; requiresAlcoholCert = false; minorOnly = false },
-      { id = 5; text = "Name tag"; requiresAlcoholCert = false; minorOnly = false },
+      { id = 0; text = "Non-slip shoes"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
+      { id = 1; text = "Dark blue jeans"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
+      { id = 2; text = "Hair"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
+      { id = 3; text = "Piercings"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
+      { id = 4; text = "Smile"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
+      { id = 5; text = "Name tag"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
     ];
   };
 
   func seedPaperwork() : [Store.ChecklistItem] {
     [
-      { id = 0; text = "Onboarding"; requiresAlcoholCert = false; minorOnly = false },
-      { id = 1; text = "Policies & procedures"; requiresAlcoholCert = false; minorOnly = false },
-      { id = 2; text = "Food handler card"; requiresAlcoholCert = false; minorOnly = false },
-      { id = 3; text = "Alcohol cert"; requiresAlcoholCert = true; minorOnly = false },
-      { id = 4; text = "LA employment certificate (LWC confirmation received)"; requiresAlcoholCert = false; minorOnly = true },
+      { id = 0; text = "Onboarding"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
+      { id = 1; text = "Policies & procedures"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
+      { id = 2; text = "Food handler card"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
+      { id = 3; text = "Alcohol cert"; requiresAlcoholCert = true; minorOnly = false; itemType = #checkbox },
+      { id = 4; text = "LA employment certificate (LWC confirmation received)"; requiresAlcoholCert = false; minorOnly = true; itemType = #checkbox },
     ];
   };
 
@@ -149,6 +147,7 @@ module {
       leaderTalkSize = 10;
       logo = null;
       secondaryLogo = null;
+      paperworkDueDate = 1_801_202_400_000_000_000;
     };
   };
 

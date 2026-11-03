@@ -7,7 +7,7 @@ import type {
   StoreInfo,
   backendInterface,
 } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import { ApprovalGate } from "@/components/ApprovalGate";
 import { Layout } from "@/components/Layout";
 import { StoreLogo } from "@/components/StoreLogo";
@@ -65,6 +65,7 @@ const STORE: StoreInfo = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /** A minimal PNG signature followed by filler bytes. */
@@ -256,6 +257,8 @@ describe("main logo still renders on every surface", () => {
       shirtsRequired: 2n,
       hatsRequired: 1n,
       needsAlcoholCert: false,
+      defaultShirts: 3n,
+      defaultHats: 2n,
     };
     const ROADIE: Roadie = {
       id: 1n,
@@ -265,6 +268,7 @@ describe("main logo still renders on every surface", () => {
       profile: { name: "Ada Lovelace" },
       isMinor: false,
       isDemo: false,
+      rosterState: RosterState.pending,
     };
 
     renderPageWithActor(
@@ -276,6 +280,8 @@ describe("main logo still renders on every surface", () => {
           hired: 1n,
           stillNeeded: 1n,
           buildToTotal: 2n,
+          active: 1n,
+          pending: 0n,
         })),
         listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),
         getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(

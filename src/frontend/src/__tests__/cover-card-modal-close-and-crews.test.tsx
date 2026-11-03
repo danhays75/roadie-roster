@@ -7,7 +7,7 @@ import type {
   Roadie,
   backendInterface,
 } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import { PositionRosterDialog } from "@/components/dashboard/PositionRosterDialog";
 import AdminPage from "@/pages/Admin";
 import { screen, waitFor, within } from "@testing-library/react";
@@ -52,6 +52,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const PHOTO_BYTES = new Uint8Array([1, 2, 3, 4]);
@@ -65,6 +67,7 @@ function roadie(overrides: Partial<Roadie> = {}): Roadie {
     isMinor: false,
     isDemo: false,
     profile: { name: "Ada Lovelace", preferredName: "Ada" },
+    rosterState: RosterState.pending,
     ...overrides,
   };
 }
@@ -84,6 +87,7 @@ const STORE_INFO = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 function dialogActor(roster: Roadie[]) {
@@ -199,6 +203,7 @@ describe("position dialog former toggle reveals the archived section", () => {
     isMinor: false,
     isDemo: false,
     archivedReason: { __kind__: "noShow", noShow: null },
+    rosterState: RosterState.pending,
   };
 
   it("reveals the former section with the archive reason and a grayscale tile", async () => {

@@ -335,6 +335,7 @@ module {
         hiredAt = now;
         hireDate = ?openingDate;
         signedBy = null;
+        rosterState = #pending;
         isDemo = true;
       });
       i += 1;
@@ -360,6 +361,10 @@ module {
     crews : Map.Map<Common.CrewId, Roadie.Crew>,
     attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
     trainerNotes : Map.Map<Nat, Phase23.TrainerNote>,
+    orientationCheckoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    trainingGroups : Map.Map<Common.TrainingGroupId, Phase23.TrainingGroup>,
+    leaderTalks : Map.Map<Common.LeaderTalkId, Phase23.LeaderTalk>,
+    finalSignOffs : Map.Map<Common.RoadieId, Phase23.FinalSignOff>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
     caller : Principal,
@@ -376,6 +381,10 @@ module {
     removeWhere(crews, Nat.compare, func(c) = c.isDemo);
     removeWhere(attendance, Nat.compare, func(a) = a.isDemo);
     removeWhere(trainerNotes, Nat.compare, func(n) = n.isDemo);
+    removeWhere(orientationCheckoffs, Nat.compare, func(c) = c.isDemo);
+    removeWhere(trainingGroups, Nat.compare, func(g) = g.isDemo);
+    removeWhere(leaderTalks, Nat.compare, func(t) = t.isDemo);
+    removeWhere(finalSignOffs, Nat.compare, func(s) = s.isDemo);
     removeWhere(accessGrants, Principal.compare, func(g) = isDemoLeader(g));
     ignore ChangeLog.record(changeLog, counters, caller, "clearDemoData", null, false, "Cleared demo data");
     removed;

@@ -45,6 +45,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 function grant(role: Role, staffProfile?: StaffProfile): AccessGrant {
@@ -309,6 +311,7 @@ describe("Leaders page: tier grouping and card pop-up", () => {
         locationName: "Bake",
         timeZone: "America/Chicago",
         storePhone: "+1-555-0199",
+        paperworkDueDate: 1_800_000_000_000_000_000n,
       })),
     };
   }
@@ -426,6 +429,7 @@ describe("leader card: tier ribbon and variant", () => {
         locationName: "Bake",
         timeZone: "America/Chicago",
         storePhone: "+1-555-0199",
+        paperworkDueDate: 1_800_000_000_000_000_000n,
       })),
       getPhoto: vi.fn<backendInterface["getPhoto"]>(async () => null),
     };

@@ -1,6 +1,6 @@
 import { renderPageWithActor } from "@/__tests__/router-test-utils";
 import type { ContactSet, Roadie, backendInterface } from "@/backend";
-import { RoadieStatus, Role } from "@/backend";
+import { RoadieStatus, Role, RosterState } from "@/backend";
 import RoadieCardPage from "@/pages/RoadieCard";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -24,6 +24,7 @@ const ROADIE: Roadie = {
   profile: { name: "Ada Lovelace" },
   isMinor: false,
   isDemo: false,
+  rosterState: RosterState.pending,
 };
 
 /**

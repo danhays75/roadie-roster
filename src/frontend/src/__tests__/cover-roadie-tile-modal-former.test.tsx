@@ -7,7 +7,7 @@ import type {
   Roadie,
   backendInterface,
 } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import { PositionRosterDialog } from "@/components/dashboard/PositionRosterDialog";
 import RosterPage from "@/pages/Roster";
 import { screen, waitFor, within } from "@testing-library/react";
@@ -52,6 +52,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 /** A single byte is enough to produce a non-empty data URL. */
@@ -66,6 +68,7 @@ function roadie(overrides: Partial<Roadie> = {}): Roadie {
     isMinor: false,
     isDemo: false,
     profile: { name: "Ada Lovelace", preferredName: "Ada" },
+    rosterState: RosterState.pending,
     ...overrides,
   };
 }
@@ -85,6 +88,7 @@ const STORE_INFO = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /** The actor methods the position roster dialog reads. */
@@ -219,6 +223,7 @@ describe("Show former (n) toggle reveals archived roadies separately", () => {
     isMinor: false,
     isDemo: false,
     archivedReason: { __kind__: "noShow", noShow: null },
+    rosterState: RosterState.pending,
   };
 
   it("shows the count, the archive reason and a grayscale tile in the former section", async () => {

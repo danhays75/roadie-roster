@@ -11,6 +11,7 @@ import Access "../types/access";
 import Auth "auth";
 import ChangeLog "changelog";
 import Age "age";
+import StoreLib "store";
 
 module {
   public type Counters = {
@@ -182,6 +183,7 @@ module {
     signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     storeInfo : { var value : Store.StoreInfo },
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
@@ -218,6 +220,17 @@ module {
       };
       case null {};
     };
+    // Assign the next upcoming orientation session automatically when the
+    // manager did not pick one; a manager can move the roadie later.
+    let orientationEventId = switch (decision.orientationEventId) {
+      case (?eid) { ?eid };
+      case null {
+        switch (StoreLib.nextOrientationEvent(schedule, now)) {
+          case (?event) { ?event.id };
+          case null { null };
+        };
+      };
+    };
     let roadieId = counters.nextRoadieId;
     counters.nextRoadieId := roadieId + 1;
     // The manager's approval signature is stored separately; the roadie's own
@@ -236,7 +249,7 @@ module {
       secondPositionId = decision.secondPositionId;
       crossTrainedPositionId = null;
       crewId = decision.crewId;
-      orientationEventId = decision.orientationEventId;
+      orientationEventId;
       startDate = decision.startDate;
       status = #hired;
       corporateEmployeeId = null;
@@ -248,6 +261,7 @@ module {
       hiredAt = now;
       hireDate = ?submission.submittedAt;
       signedBy = ?caller;
+      rosterState = #pending;
       isDemo = submission.isDemo;
     });
     signups.add(id, { submission with status = #approved(roadieId) });

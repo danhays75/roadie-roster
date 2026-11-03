@@ -1,6 +1,6 @@
 import { renderPageWithActor, t } from "@/__tests__/router-test-utils";
 import type { Roadie, RoadieProfile } from "@/backend";
-import { House, RoadieStatus } from "@/backend";
+import { House, RoadieStatus, RosterState } from "@/backend";
 import RosterPage from "@/pages/Roster";
 import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -17,6 +17,7 @@ function redactedRoadie(): Roadie {
     hiredAt: 0n,
     isMinor: false,
     isDemo: false,
+    rosterState: RosterState.pending,
   };
 }
 
@@ -36,6 +37,8 @@ describe("RosterPage", () => {
           shirtsRequired: 2n,
           hatsRequired: 1n,
           needsAlcoholCert: false,
+          defaultShirts: 3n,
+          defaultHats: 2n,
         },
       ]),
       listCrews: vi.fn(async () => []),

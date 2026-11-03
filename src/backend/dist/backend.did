@@ -36,6 +36,27 @@ type UserRole =
    guest;
    user;
  };
+type UniformItemType = 
+ variant {
+   checkbox;
+   count;
+ };
+type UniformCheckoffView = 
+ record {
+   complete: bool;
+   items: vec UniformCheckoffItem;
+   locked: bool;
+   missing: vec text;
+   roadieId: RoadieId;
+ };
+type UniformCheckoffItem = 
+ record {
+   checked: bool;
+   count: nat;
+   itemId: nat;
+   itemType: UniformItemType;
+   "text": text;
+ };
 type TrainingGroupView = 
  record {
    group: TrainingGroup;
@@ -47,6 +68,7 @@ type TrainingGroup =
  record {
    day: DateOnly;
    id: TrainingGroupId;
+   isDemo: bool;
    memberRoadieIds: vec RoadieId;
    positionId: PositionId;
    shift: Shift;
@@ -86,6 +108,8 @@ type TemplatePosition =
  record {
    afterOpeningBuildTo: nat;
    code: text;
+   defaultHats: nat;
+   defaultShirts: nat;
    house: House;
    minimumAge: nat;
    name: text;
@@ -123,6 +147,7 @@ type StoreInfo =
    locationName: text;
    logo: opt PhotoRef;
    openingDate: DateOnly;
+   paperworkDueDate: DateOnly;
    pmShiftEnd: TimeOfDay;
    pmShiftStart: TimeOfDay;
    secondaryLogo: opt PhotoRef;
@@ -196,11 +221,18 @@ type ScheduleEvent =
  };
 type RosterSummary = 
  record {
+   active: nat;
    buildTo: nat;
    onHand: nat;
    openSpots: nat;
+   pending: nat;
    positionId: PositionId;
    positionName: text;
+ };
+type RosterState = 
+ variant {
+   active;
+   pending;
  };
 type Role = 
  variant {
@@ -262,6 +294,7 @@ type Roadie =
    orientationEventId: opt EventId;
    photo: opt PhotoRef;
    profile: RoadieProfile;
+   rosterState: RosterState;
    secondPositionId: opt PositionId;
    signedBy: opt principal;
    startDate: opt DateOnly;
@@ -295,6 +328,8 @@ type Position =
    afterOpeningBuildTo: nat;
    code: text;
    crewManager: opt text;
+   defaultHats: nat;
+   defaultShirts: nat;
    hatsRequired: nat;
    house: House;
    id: PositionId;
@@ -318,6 +353,11 @@ type PendingRequestSummary =
    hasProfile: bool;
    requestedAt: Timestamp;
  };
+type PaperworkStatus = 
+ variant {
+   complete;
+   incomplete;
+ };
 type OverviewRow = 
  record {
    hired: nat;
@@ -325,12 +365,41 @@ type OverviewRow =
    positionName: text;
    totalPar: nat;
  };
+type OrientationSessionView = 
+ record {
+   assignedCount: nat;
+   end: opt DateTime;
+   eventId: EventId;
+   name: text;
+   presentCount: nat;
+   roadies: vec OrientationRoadieRow;
+   start: DateTime;
+ };
+type OrientationRoadieRow = 
+ record {
+   crewId: opt CrewId;
+   crewName: opt text;
+   name: text;
+   noShow: bool;
+   paperworkStatus: PaperworkStatus;
+   photo: opt PhotoRef;
+   positionId: PositionId;
+   positionName: text;
+   present: bool;
+   roadieId: RoadieId;
+   rosterState: RosterState;
+ };
 type OrientationCheckoff = 
  record {
    hatsCount: nat;
+   isDemo: bool;
    paperworkItems: vec text;
    roadieId: RoadieId;
    shirtsCount: nat;
+   uniformCounts: vec record {
+                        nat;
+                        nat;
+                      };
    uniformItems: vec text;
    updatedAt: Timestamp;
  };
@@ -345,6 +414,7 @@ type LeaderTalk =
    attendees: vec RoadieId;
    day: DateOnly;
    id: LeaderTalkId;
+   isDemo: bool;
    name: text;
  };
 type LeaderSummary = 
@@ -413,6 +483,7 @@ type GiftBagAnswerCount =
 type FinalSignOff = 
  record {
    futureTrainer: bool;
+   isDemo: bool;
    outcome: SignOffOutcome;
    roadieId: RoadieId;
    signedAt: Timestamp;
@@ -542,6 +613,18 @@ type DemoActionResult =
  };
 type DateTime = int;
 type DateOnly = int;
+type DashboardView = 
+ record {
+   active: nat;
+   boh: vec Position;
+   buildToTotal: nat;
+   certified: opt nat;
+   foh: vec Position;
+   hired: nat;
+   pending: nat;
+   showedAtOrientation: opt nat;
+   stillNeeded: nat;
+ };
 type CrewId = nat;
 type Crew = 
  record {
@@ -573,6 +656,7 @@ type Checklists =
 type ChecklistItem = 
  record {
    id: nat;
+   itemType: UniformItemType;
    minorOnly: bool;
    requiresAlcoholCert: bool;
    "text": text;
@@ -618,8 +702,10 @@ type AttendanceRecord =
 type ArchiveReason = 
  variant {
    letGo;
+   ncnsOrientation;
    noShow;
    other: text;
+   paperworkIncomplete;
    quitDuringTraining;
    tookAnotherJob;
  };
@@ -691,6 +777,9 @@ service : {
    SignatureRef) -> (RoadieId);
   /// Approve a pending user (Admin only).
   approveUser: (request: ApprovalRequest) -> ();
+  /// Archive every no-show at a session as NCNS Orientation (Admin/Store
+  /// Manager only). Returns the archived roadie ids.
+  archiveNoShows: (eventId: EventId) -> (vec RoadieId);
   /// Archive a roadie (Admin/Store Manager only).
   archiveRoadie: (id: RoadieId, reason: ArchiveReason) -> ();
   assignCallerUserRole: (user: principal, role: UserRole) -> ();
@@ -746,17 +835,9 @@ service : {
   /// Read a roadie's contact set. Admin and Store Manager receive the contact
   /// set; every other read-capable role receives an empty array.
   getContactSet: (id: RoadieId) -> (vec ContactSet) query;
-  /// Dashboard summary tiles and per-position progress.
-  getDashboard: () ->
-   (record {
-      boh: vec Position;
-      buildToTotal: nat;
-      certified: opt nat;
-      foh: vec Position;
-      hired: nat;
-      showedAtOrientation: opt nat;
-      stillNeeded: nat;
-    }) query;
+  /// Dashboard summary tiles and per-position progress, including the
+  /// pending/active breakdown and the Hired → Active funnel.
+  getDashboard: () -> (DashboardView) query;
   /// Count the demo records currently loaded.
   getDemoDataSummary: () -> (DemoDataSummary) query;
   /// Read the current demo state for the calling principal. Any caller,
@@ -780,6 +861,11 @@ service : {
   /// Read the orientation check-off for a roadie (Admin/Store Manager only).
   getOrientationCheckoff: (roadieId: RoadieId) ->
    (opt OrientationCheckoff) query;
+  /// The orientation check-in screen for one session: assigned roadies with
+  /// photo, name, position, crew and paperwork status, plus Present x / y
+  /// counts. Admin, Store Manager, Training Manager and Visiting Manager.
+  getOrientationSessionView: (eventId: EventId) ->
+   (opt OrientationSessionView) query;
   /// Read a roadie's photo bytes by id, for a caller allowed to see the roadie.
   /// Returns null when the roadie has no photo or is not visible to the caller.
   getPhoto: (id: RoadieId) -> (opt PhotoRef) query;
@@ -801,6 +887,9 @@ service : {
   getStoreLogo: () -> (StoreLogos) query;
   /// Read a training group with its unassigned and off-shift lists.
   getTrainingGroup: (id: TrainingGroupId) -> (opt TrainingGroupView) query;
+  /// The uniform check-off for a roadie (Admin/Store Manager only). Locked
+  /// until the roadie's paperwork is 100% complete.
+  getUniformCheckoff: (roadieId: RoadieId) -> (opt UniformCheckoffView) query;
   /// True when an Admin has set a kiosk PIN.
   hasKioskPin: () -> (bool) query;
   isCallerAdmin: () -> (bool) query;
@@ -841,11 +930,17 @@ service : {
   /// Load a store template file, replacing positions, schedule and checklists
   /// (Admin only). Refuses when any roadie exists.
   loadStoreTemplate: (file: StoreTemplateFile) -> (TemplateLoadResult);
+  /// Mark a roadie Present at an orientation session (Admin/Store Manager
+  /// only). Idempotent so concurrent managers converge.
+  markPresent: (roadieId: RoadieId, eventId: EventId) -> ();
+  /// Move a roadie to another orientation session (Admin/Store Manager only).
+  moveRoadieToSession: (roadieId: RoadieId, eventId: EventId) -> ();
   /// Record attendance for a roadie (Admin/Store Manager only).
   recordAttendance: ("record": AttendanceRecord) -> ();
   /// Record a final sign-off for a roadie (Admin/Store Manager only).
   recordFinalSignOff: (signOff: FinalSignOff) -> ();
-  /// Rehire an archived roadie (Admin/Store Manager only).
+  /// Rehire an archived roadie (Admin/Store Manager only). Returns the roadie
+  /// to pending and assigns the next upcoming orientation session.
   rehireRoadie: (id: RoadieId, reason: opt text) -> ();
   /// Reject a pending submission (Admin/Store Manager only).
   rejectSignup: (id: SignupId) -> ();
@@ -859,6 +954,8 @@ service : {
   resignAvailability: (id: RoadieId, signature: SignatureRef) -> ();
   /// Save the current store configuration as a template (Admin only).
   saveStoreTemplate: (name: text) -> ();
+  /// Save the uniform check-off for a roadie (Admin/Store Manager only).
+  saveUniformCheckoff: (checkoff: OrientationCheckoff) -> ();
   schema: () -> (text) query;
   /// Turn demo mode on or off (Admin only). Turning it on requires the literal
   /// confirmation "DEMO"; turning it on sets the eight-hour auto-off time.
@@ -882,6 +979,9 @@ service : {
   /// Store the signed-in caller's staff profile on their pending request. The
   /// caller must already have a pending request (created by `requestAccess`).
   submitStaffProfile: (profile: StaffProfile) -> ();
+  /// Undo a roadie's Present mark at an orientation session (Admin/Store
+  /// Manager only, logged). Returns the roadie to pending.
+  undoPresent: (roadieId: RoadieId, eventId: EventId) -> ();
   /// Update a user's access end date (Admin only).
   updateAccessEnd: ("principal": principal, accessEndsAt: opt Timestamp) ->
    ();

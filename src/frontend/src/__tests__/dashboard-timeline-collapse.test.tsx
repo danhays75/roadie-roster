@@ -45,6 +45,8 @@ function baseActor() {
       hired: 0n,
       stillNeeded: 0n,
       buildToTotal: 0n,
+      active: 0n,
+      pending: 0n,
     })),
     listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => SCHEDULE),
     getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => ({
@@ -62,6 +64,7 @@ function baseActor() {
       trainingGroupSize: 5n,
       leaderTalkName: "10 Minutes with Dan",
       leaderTalkSize: 10n,
+      paperworkDueDate: 1_800_000_000_000_000_000n,
     })),
     getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
       grant: undefined,

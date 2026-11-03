@@ -1,6 +1,6 @@
 import { renderPageWithActor } from "@/__tests__/router-test-utils";
 import type { Roadie, backendInterface } from "@/backend";
-import { RoadieStatus, Role } from "@/backend";
+import { RoadieStatus, Role, RosterState } from "@/backend";
 import RoadieCardPage from "@/pages/RoadieCard";
 import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -13,6 +13,7 @@ const roadie: Roadie = {
   isMinor: false,
   isDemo: false,
   profile: { name: "Ada Lovelace", preferredName: "Ada" },
+  rosterState: RosterState.pending,
   contactSet: {
     phone: "+1-555-0100",
     email: "ada@example.com",

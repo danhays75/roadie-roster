@@ -1,9 +1,21 @@
-import type { ChecklistItem, Checklists, RetentionSettings } from "@/backend";
+import {
+  type ChecklistItem,
+  type Checklists,
+  type RetentionSettings,
+  UniformItemType,
+} from "@/backend";
 import { DemoSettingsNote } from "@/components/DemoBanner";
 import { AdminSection, FormField } from "@/components/admin/FormField";
 import { useAdminCopy } from "@/components/admin/useAdminCopy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useDemo } from "@/hooks/useDemo";
 import {
@@ -37,12 +49,14 @@ function ChecklistEditor({
   items,
   onChange,
   ocid,
+  showItemType = false,
 }: {
   title: string;
   description: string;
   items: ChecklistItem[];
   onChange: (items: ChecklistItem[]) => void;
   ocid: string;
+  showItemType?: boolean;
 }) {
   const c = useAdminCopy();
 
@@ -64,6 +78,7 @@ function ChecklistEditor({
         text: "",
         requiresAlcoholCert: false,
         minorOnly: false,
+        itemType: UniformItemType.checkbox,
       },
     ]);
   };
@@ -116,6 +131,34 @@ function ChecklistEditor({
               }
             />
             <div className="flex flex-wrap items-center gap-4">
+              {showItemType && (
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Select
+                    value={item.itemType}
+                    onValueChange={(value) =>
+                      updateItem(item.id, {
+                        itemType: value as UniformItemType,
+                      })
+                    }
+                  >
+                    <SelectTrigger
+                      aria-label={c.checklistsItemType}
+                      data-ocid={`${ocid}.type.select.${index + 1}`}
+                      className="touch-target w-32"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={UniformItemType.checkbox}>
+                        {c.checklistsItemTypeCheckbox}
+                      </SelectItem>
+                      <SelectItem value={UniformItemType.count}>
+                        {c.checklistsItemTypeCount}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </span>
+              )}
               <span className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Switch
                   aria-label={c.checklistsRequiresAlcoholCert}
@@ -249,6 +292,7 @@ export function ChecklistsPanel() {
               description={c.checklistsOrientationUniformHint}
               items={draft.orientationUniform}
               ocid="admin.checklists.uniform"
+              showItemType
               onChange={(items) => {
                 setSaved(false);
                 setDraft((current) =>

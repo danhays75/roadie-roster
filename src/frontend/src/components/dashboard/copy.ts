@@ -10,6 +10,53 @@ const dashboardCopy: Record<string, { en: string; es: string }> = {
     en: "{onHand} on hand · build to {target}",
     es: "{onHand} en plantilla · meta {target}",
   },
+  "dashboard.position.active": {
+    en: "{count} active",
+    es: "{count} activos",
+  },
+  "dashboard.position.pending": {
+    en: "{count} pending",
+    es: "{count} pendientes",
+  },
+  "dashboard.kpi.active": { en: "Active", es: "Activos" },
+  "dashboard.kpi.active.hint": {
+    en: "Showed up at orientation",
+    es: "Se presentaron a la orientación",
+  },
+  "dashboard.kpi.pending": { en: "Pending", es: "Pendientes" },
+  "dashboard.kpi.pending.hint": {
+    en: "Not yet shown up",
+    es: "Aún no se presentan",
+  },
+  "dashboard.funnel.title": {
+    en: "Hired to active funnel",
+    es: "Embudo de contratados a activos",
+  },
+  "dashboard.funnel.hired": {
+    en: "{count} hired",
+    es: "{count} contratados",
+  },
+  "dashboard.funnel.active": {
+    en: "{count} active",
+    es: "{count} activos",
+  },
+  "dashboard.funnel.activeLabel": {
+    en: "{count} active (showed up)",
+    es: "{count} activos (se presentaron)",
+  },
+  "dashboard.funnel.pendingLabel": {
+    en: "{count} pending",
+    es: "{count} pendientes",
+  },
+  "dashboard.funnel.aria": {
+    en: "{hired} hired: {active} active and {pending} pending",
+    es: "{hired} contratados: {active} activos y {pending} pendientes",
+  },
+  "dashboard.alerts.title": { en: "Alerts", es: "Alertas" },
+  "dashboard.alerts.paperwork": {
+    en: "Paperwork incomplete ({count})",
+    es: "Papeleo incompleto ({count})",
+  },
   "dashboard.position.needed": {
     en: "{count} needed",
     es: "Faltan {count}",
@@ -97,6 +144,23 @@ const dashboardCopy: Record<string, { en: string; es: string }> = {
   "dashboard.roster.summary": {
     en: "{onHand} on hand · build to {target}",
     es: "{onHand} en plantilla · meta {target}",
+  },
+  "dashboard.roster.active": {
+    en: "{count} active",
+    es: "{count} activos",
+  },
+  "dashboard.roster.pending": {
+    en: "{count} pending",
+    es: "{count} pendientes",
+  },
+  "roster.filter.pending": { en: "Pending", es: "Pendientes" },
+  "roster.emptyPending": {
+    en: "No pending roadies right now.",
+    es: "No hay roadies pendientes ahora.",
+  },
+  "roster.emptyActive": {
+    en: "No active roadies yet.",
+    es: "Aún no hay roadies activos.",
   },
   "dashboard.roster.loading": {
     en: "Loading roster…",

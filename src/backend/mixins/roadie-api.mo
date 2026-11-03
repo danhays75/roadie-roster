@@ -11,6 +11,7 @@ mixin (
   roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
   crews : Map.Map<Common.CrewId, Roadie.Crew>,
   positions : Map.Map<Common.PositionId, Store.Position>,
+  schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
   changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
   counters : RoadieLib.Counters,
   demoState : Common.DemoState,
@@ -56,9 +57,10 @@ mixin (
     RoadieLib.archiveRoadie(accessGrants, demoState, roadies, changeLog, counters, caller, id, reason);
   };
 
-  /// Rehire an archived roadie (Admin/Store Manager only).
+  /// Rehire an archived roadie (Admin/Store Manager only). Returns the roadie
+  /// to pending and assigns the next upcoming orientation session.
   public shared ({ caller }) func rehireRoadie(id : Common.RoadieId, reason : ?Text) : async () {
-    RoadieLib.rehireRoadie(accessGrants, demoState, roadies, changeLog, counters, caller, id, reason);
+    RoadieLib.rehireRoadie(accessGrants, demoState, roadies, schedule, changeLog, counters, caller, id, reason);
   };
 
   /// Update a roadie's status (Admin/Store Manager only).

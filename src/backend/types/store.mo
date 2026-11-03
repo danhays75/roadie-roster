@@ -19,6 +19,10 @@ module {
     leaderTalkSize : Nat;
     logo : ?Common.PhotoRef;
     secondaryLogo : ?Common.PhotoRef;
+    /// The date by which every roadie's paperwork must be complete. Roadies
+    /// who are not 100% complete after this date get a "Paperwork incomplete"
+    /// flag. Defaults to Jan 29, 2027.
+    paperworkDueDate : Common.DateOnly;
   };
 
   /// The two store logos returned by the public logo query. Both are optional;
@@ -41,6 +45,11 @@ module {
     shirtsRequired : Nat;
     hatsRequired : Nat;
     crewManager : ?Text;
+    /// Default number of shirts and hats given to a roadie in this position,
+    /// pre-filled into the orientation uniform check-off. Part of the store
+    /// template.
+    defaultShirts : Nat;
+    defaultHats : Nat;
   };
 
   /// A single build-to adjustment recorded as a +1/−1 delta.
@@ -72,12 +81,15 @@ module {
     end : ?Common.DateTime;
   };
 
-  /// A checklist item (orientation uniform or paperwork).
+  /// A checklist item (orientation uniform or paperwork). `itemType` is
+  /// `#checkbox` for a simple tick or `#count` for a counted item (for example
+  /// shirts or hats given); paperwork items are always `#checkbox`.
   public type ChecklistItem = {
     id : Nat;
     text : Text;
     requiresAlcoholCert : Bool;
     minorOnly : Bool;
+    itemType : Common.UniformItemType;
   };
 
   /// The two editable checklists.
@@ -113,6 +125,8 @@ module {
     afterOpeningBuildTo : Nat;
     minimumAge : Nat;
     needsAlcoholCert : Bool;
+    defaultShirts : Nat;
+    defaultHats : Nat;
   };
 
   /// A schedule event inside a template file, expressed as whole days relative

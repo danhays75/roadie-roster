@@ -1,5 +1,5 @@
 import type { Position, Roadie } from "@/backend";
-import { RoadieStatus } from "@/backend";
+import { RoadieStatus, RosterState } from "@/backend";
 import { StoreLogo } from "@/components/StoreLogo";
 import { DEFAULT_TIME_ZONE } from "@/components/approvals/timeZone";
 import {
@@ -151,6 +151,14 @@ export function PositionRosterDialog({
     };
   }, [roster]);
 
+  // Pending and active break the on-hand total down for the dialog header.
+  const activeCount = active.filter(
+    (r) => r.rosterState === RosterState.active,
+  ).length;
+  const pendingCount = active.filter(
+    (r) => r.rosterState === RosterState.pending,
+  ).length;
+
   const [showFormer, setShowFormer] = useState(true);
   const [cardIndex, setCardIndex] = useState<number | null>(null);
 
@@ -191,6 +199,17 @@ export function PositionRosterDialog({
               target,
             })}
           </DialogDescription>
+          <div
+            data-ocid="dashboard.roster.counts"
+            className="flex flex-wrap items-center gap-2 pt-1"
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-1 font-display text-[11px] font-semibold uppercase tracking-wider text-accent">
+              {t("dashboard.roster.active", { count: activeCount })}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-display text-[11px] font-semibold uppercase tracking-wider text-primary">
+              {t("dashboard.roster.pending", { count: pendingCount })}
+            </span>
+          </div>
         </DialogHeader>
 
         {isLoading && (

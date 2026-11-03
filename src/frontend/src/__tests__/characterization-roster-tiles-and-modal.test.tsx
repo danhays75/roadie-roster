@@ -1,7 +1,7 @@
 import { renderPageWithActor, t } from "@/__tests__/router-test-utils";
 import { renderWithActor } from "@/__tests__/test-utils";
 import type { Position, Roadie, backendInterface } from "@/backend";
-import { House, RoadieStatus } from "@/backend";
+import { House, RoadieStatus, RosterState } from "@/backend";
 import { PositionRosterDialog } from "@/components/dashboard/PositionRosterDialog";
 import { FlipCard } from "@/components/roadie/FlipCard";
 import RosterPage from "@/pages/Roster";
@@ -41,6 +41,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 /** A single byte is enough to produce a non-empty data URL. */
@@ -55,6 +57,7 @@ function roadie(overrides: Partial<Roadie> = {}): Roadie {
     isMinor: false,
     isDemo: false,
     profile: { name: "Ada Lovelace", preferredName: "Ada" },
+    rosterState: RosterState.pending,
     ...overrides,
   };
 }
@@ -80,6 +83,7 @@ function dialogActor(roster: Roadie[]) {
       trainingGroupSize: 5n,
       leaderTalkName: "10 Minutes with Dan",
       leaderTalkSize: 10n,
+      paperworkDueDate: 1_800_000_000_000_000_000n,
     })),
   };
 }
@@ -204,6 +208,7 @@ describe("position roster dialog keeps its archived-row behavior", () => {
     isDemo: false,
     archivedReason: { __kind__: "noShow", noShow: null },
     archivedAt: ARCHIVED_AT,
+    rosterState: RosterState.pending,
   };
 
   it("shows the archive reason and a rehire control for a manager", async () => {

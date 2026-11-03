@@ -11,6 +11,9 @@ mixin (
   accessGrants : Map.Map<Principal, Access.AccessGrant>,
   roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
   positions : Map.Map<Common.PositionId, Store.Position>,
+  crews : Map.Map<Common.CrewId, Roadie.Crew>,
+  schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+  checklists : { var value : Store.Checklists },
   orientationCheckoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
   attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
   trainingGroups : Map.Map<Common.TrainingGroupId, Phase23.TrainingGroup>,
@@ -22,16 +25,9 @@ mixin (
   counters : Phase23Lib.Counters,
   demoState : Common.DemoState,
 ) {
-  /// Dashboard summary tiles and per-position progress.
-  public query ({ caller }) func getDashboard() : async {
-    hired : Nat;
-    buildToTotal : Nat;
-    stillNeeded : Nat;
-    showedAtOrientation : ?Nat;
-    certified : ?Nat;
-    foh : [Store.Position];
-    boh : [Store.Position];
-  } {
+  /// Dashboard summary tiles and per-position progress, including the
+  /// pending/active breakdown and the Hired → Active funnel.
+  public query ({ caller }) func getDashboard() : async Phase23.DashboardView {
     Phase23Lib.getDashboard(accessGrants, demoState, roadies, positions, caller);
   };
 
@@ -53,6 +49,47 @@ mixin (
   /// List attendance records for an event (Admin/Store Manager only).
   public query ({ caller }) func listAttendanceForEvent(eventId : Common.EventId) : async [Phase23.AttendanceRecord] {
     Phase23Lib.listAttendanceForEvent(accessGrants, demoState, attendance, caller, eventId);
+  };
+
+  /// The orientation check-in screen for one session: assigned roadies with
+  /// photo, name, position, crew and paperwork status, plus Present x / y
+  /// counts. Admin, Store Manager, Training Manager and Visiting Manager.
+  public query ({ caller }) func getOrientationSessionView(eventId : Common.EventId) : async ?Phase23.OrientationSessionView {
+    Phase23Lib.getOrientationSessionView(accessGrants, demoState, roadies, positions, crews, schedule, checklists, orientationCheckoffs, attendance, caller, eventId);
+  };
+
+  /// Mark a roadie Present at an orientation session (Admin/Store Manager
+  /// only). Idempotent so concurrent managers converge.
+  public shared ({ caller }) func markPresent(roadieId : Common.RoadieId, eventId : Common.EventId) : async () {
+    Phase23Lib.markPresent(accessGrants, demoState, roadies, attendance, changeLog, counters, caller, roadieId, eventId);
+  };
+
+  /// Undo a roadie's Present mark at an orientation session (Admin/Store
+  /// Manager only, logged). Returns the roadie to pending.
+  public shared ({ caller }) func undoPresent(roadieId : Common.RoadieId, eventId : Common.EventId) : async () {
+    Phase23Lib.undoPresent(accessGrants, demoState, roadies, attendance, changeLog, counters, caller, roadieId, eventId);
+  };
+
+  /// Move a roadie to another orientation session (Admin/Store Manager only).
+  public shared ({ caller }) func moveRoadieToSession(roadieId : Common.RoadieId, eventId : Common.EventId) : async () {
+    Phase23Lib.moveRoadieToSession(accessGrants, demoState, roadies, schedule, changeLog, counters, caller, roadieId, eventId);
+  };
+
+  /// Archive every no-show at a session as NCNS Orientation (Admin/Store
+  /// Manager only). Returns the archived roadie ids.
+  public shared ({ caller }) func archiveNoShows(eventId : Common.EventId) : async [Common.RoadieId] {
+    Phase23Lib.archiveNoShows(accessGrants, demoState, roadies, schedule, changeLog, counters, caller, eventId);
+  };
+
+  /// The uniform check-off for a roadie (Admin/Store Manager only). Locked
+  /// until the roadie's paperwork is 100% complete.
+  public query ({ caller }) func getUniformCheckoff(roadieId : Common.RoadieId) : async ?Phase23.UniformCheckoffView {
+    Phase23Lib.getUniformCheckoff(accessGrants, demoState, roadies, positions, checklists, orientationCheckoffs, caller, roadieId);
+  };
+
+  /// Save the uniform check-off for a roadie (Admin/Store Manager only).
+  public shared ({ caller }) func saveUniformCheckoff(checkoff : Phase23.OrientationCheckoff) : async () {
+    Phase23Lib.saveUniformCheckoff(accessGrants, demoState, roadies, positions, checklists, orientationCheckoffs, changeLog, counters, caller, checkoff);
   };
 
   /// Read a training group with its unassigned and off-shift lists.

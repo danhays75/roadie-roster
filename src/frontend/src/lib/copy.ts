@@ -13,6 +13,7 @@ export const en: CopyDictionary = {
   "nav.roster": "Roster",
   "nav.myProfile": "My profile",
   "nav.leaders": "Leaders",
+  "nav.orientation": "Orientation",
   "nav.admin": "Admin",
   "nav.approvals": "Approve new hires",
   "nav.kiosk": "Kiosk",
@@ -469,6 +470,11 @@ export const en: CopyDictionary = {
   "today.placeholder.body":
     "The daily view — orientation, training and sign-offs — will live here. For now, use the Dashboard and Roster.",
 
+  "orientation.title": "Orientation",
+  "orientation.placeholder.title": "Orientation check-in is coming soon",
+  "orientation.placeholder.body":
+    "The orientation session check-in — marking Present, moving roadies between sessions and archiving no-shows — will live here.",
+
   "kiosk.title": "Kiosk",
   "kiosk.subtitle": "Self-service sign-up",
   "kiosk.placeholder.title": "Kiosk sign-up",
@@ -589,6 +595,7 @@ export const es: CopyDictionary = {
   "nav.roster": "Plantilla",
   "nav.myProfile": "Mi perfil",
   "nav.leaders": "Líderes",
+  "nav.orientation": "Orientación",
   "nav.admin": "Administración",
   "nav.approvals": "Aprobar nuevos",
   "nav.kiosk": "Quiosco",
@@ -1049,6 +1056,11 @@ export const es: CopyDictionary = {
   "today.placeholder.title": "Hoy llegará pronto",
   "today.placeholder.body":
     "La vista diaria — orientación, entrenamiento y firmas — vivirá aquí. Por ahora, usa el Panel y la Plantilla.",
+
+  "orientation.title": "Orientación",
+  "orientation.placeholder.title": "El registro de orientación llegará pronto",
+  "orientation.placeholder.body":
+    "El registro de la sesión de orientación — marcar Presente, mover roadies entre sesiones y archivar ausencias — vivirá aquí.",
 
   "kiosk.title": "Quiosco",
   "kiosk.subtitle": "Registro de autoservicio",

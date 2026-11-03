@@ -50,6 +50,7 @@ const STORE: StoreInfo = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 function grant(role: Role): AccessGrant {
@@ -136,6 +137,8 @@ describe("demo banner View as picker drives the backend", () => {
           shirtsRequired: 0n,
           hatsRequired: 0n,
           needsAlcoholCert: false,
+          defaultShirts: 3n,
+          defaultHats: 2n,
         },
       ]),
       setDemoRole,

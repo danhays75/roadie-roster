@@ -1,4 +1,4 @@
-import { House } from "@/backend";
+import { House, UniformItemType } from "@/backend";
 import type { Checklists, StoreTemplateFile, TemplatePreview } from "@/backend";
 import { DemoSettingsNote } from "@/components/DemoBanner";
 import { AdminSection, FormField } from "@/components/admin/FormField";
@@ -143,6 +143,10 @@ function parseChecklistItems(value: unknown): Checklists["paperwork"] | null {
       text: raw.text,
       requiresAlcoholCert: raw.requiresAlcoholCert === true,
       minorOnly: raw.minorOnly === true,
+      itemType:
+        raw.itemType === "count"
+          ? UniformItemType.count
+          : UniformItemType.checkbox,
     });
   }
   return items;
@@ -195,6 +199,8 @@ function parseTemplateFile(value: unknown): StoreTemplateFile | null {
       afterOpeningBuildTo,
       minimumAge,
       needsAlcoholCert: raw.needsAlcoholCert === true,
+      defaultHats: toBigInt(raw.defaultHats) ?? 0n,
+      defaultShirts: toBigInt(raw.defaultShirts) ?? 0n,
     });
   }
 

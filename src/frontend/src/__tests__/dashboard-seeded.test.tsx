@@ -1,6 +1,6 @@
 import { renderPageWithActor } from "@/__tests__/router-test-utils";
 import type { Position, Roadie, backendInterface } from "@/backend";
-import { House, RoadieStatus } from "@/backend";
+import { House, RoadieStatus, RosterState } from "@/backend";
 import DashboardPage from "@/pages/Dashboard";
 import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -17,6 +17,8 @@ const SERVERS: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: true,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const FRY: Position = {
@@ -30,6 +32,8 @@ const FRY: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 function roadie(id: bigint, status: RoadieStatus): Roadie {
@@ -41,6 +45,7 @@ function roadie(id: bigint, status: RoadieStatus): Roadie {
     isMinor: false,
     isDemo: false,
     profile: { name: `Roadie ${id}` },
+    rosterState: RosterState.pending,
   };
 }
 
@@ -53,6 +58,8 @@ function baseActor() {
       hired: 1n,
       stillNeeded: 80n,
       buildToTotal: 81n,
+      active: 0n,
+      pending: 1n,
     })),
     listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),
     getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => ({
@@ -70,6 +77,7 @@ function baseActor() {
       trainingGroupSize: 5n,
       leaderTalkName: "10 Minutes with Dan",
       leaderTalkSize: 10n,
+      paperworkDueDate: 1_800_000_000_000_000_000n,
     })),
     getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
       grant: undefined,
@@ -130,6 +138,8 @@ describe("DashboardPage seeded positions", () => {
       hired: 0n,
       stillNeeded: 0n,
       buildToTotal: 0n,
+      active: 0n,
+      pending: 0n,
     }));
 
     renderPageWithActor(DashboardPage, actor, { path: "/dashboard" });

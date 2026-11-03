@@ -107,9 +107,6 @@
 
 ## Learnings
 
-- Crew ids start at 0n (nextCrewId counter), so 0n is a valid crew id and cannot be the add-vs-edit sentinel; use an explicit null id. createCrew(name) cannot set a leader, so persist a chosen leader by chaining createCrew then updateCrew(newId, name, leader).
-- The Crews tab lives in src/frontend/src/components/admin/CrewsPanel.tsx and is registered in src/frontend/src/pages/Admin.tsx, gated to Admin and Store Manager; hooks/useQueries.ts has useCreateCrew/useUpdateCrew/useDeleteCrew.
-- findDuplicates in lib/signup.mo matches phone OR email, includes archived roadies, and populates name, mainPositionName and matchedOn; matchedOn reports 'phone' when the phone matches and 'email' only when the email is the sole match. DuplicateMatch = { roadieId; name; mainPositionName; matchedOn; archived } in types/signup.mo.
 - The Approve sign-up screen is src/frontend/src/pages/Approvals.tsx; PendingSignupCard pre-selects the crew led by the approving user via an effect keyed on loaded crews plus a touched flag, and DuplicateList renders the matched roadie's name, main position, match type and archived state as a link to /roster/$roadieId.
 - RoadieTile (src/frontend/src/components/roadie/RoadieTile.tsx) is the shared roadie tile: photo via useRoadiePhoto(roadie.id) + memoized refToDataUrl, 4:3 object-cover top, navy-on-cream initials fallback, name, status badge, crew tag, MINOR tag, and a grayscale archived variant.
 - RoadieCardModal (src/frontend/src/components/roadie/RoadieCardModal.tsx) is the shared card pop-up: Radix Dialog with FlipCard at 420px max, flip, X/outside/Esc/back-button close via a pushed history entry, swipe/arrow/prev-next navigation, an N of M counter, neighbor photo preload, and a manager-only full-profile link.
@@ -132,3 +129,6 @@
 - Admin.tsx hides the real-settings tabs while demo is on but keeps the Store tab so an Admin can reach the demo switch; activeTab falls back to store if a hidden tab was selected. Panels that self-gate on demo.enabled must place the early return after every hook.
 - Four committed PocketIC tests (test/pocketic/backend-demo.test.ts, test/pocketic/backend-template-and-profile.test.ts, test/pocketic/backend.test.ts) still assert the old global demo role and old getMyAccess tuple shape; they are stale and need updating to the per-caller DemoStateView.demoRole and MyAccessView shapes.
 - The inherited frontend suite has 22 pre-existing failing tests that predate this draft and remain failing; the backend PocketIC lane passes.
+- Demo mode lives in src/backend/lib/demo.mo; every read, list, count and export filters isDemo == Auth.demoActive(demoState).
+- archiveReasonLabel in src/frontend/src/components/roadie/RoadieTile.tsx is shared by the roadie tile and PositionRosterDialog's ArchivedRow; it maps ncnsOrientation and paperworkIncomplete.
+- The inherited frontend suite has pre-existing failing tests that predate this draft; the tester owns src/frontend/src/__tests__/ and test/pocketic/.

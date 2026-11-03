@@ -10,6 +10,7 @@ import Access "../types/access";
 import Auth "auth";
 import ChangeLog "changelog";
 import Age "age";
+import StoreLib "store";
 
 module {
   public type Counters = {
@@ -211,11 +212,14 @@ module {
   };
 
   /// Rehire an archived roadie (Admin/Store Manager only). A non-blank reason
-  /// is always required.
+  /// is always required. The roadie returns to pending and is assigned to the
+  /// next upcoming orientation session; the rehire is logged with who and the
+  /// reason.
   public func rehireRoadie(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
     caller : Principal,
@@ -231,8 +235,19 @@ module {
       Runtime.trap("A rehire reason is required");
     };
     let roadie = requireVisibleRoadie(roadies, demoState, id);
-    roadies.add(id, { roadie with status = #hired; archivedReason = null; archivedAt = null });
-    logWrite(changeLog, counters, demoState, caller, "rehireRoadie", ?id, false, "Rehired roadie");
+    let nextSession = switch (StoreLib.nextOrientationEvent(schedule, effectiveNow(demoState))) {
+      case (?event) { ?event.id };
+      case null { roadie.orientationEventId };
+    };
+    roadies.add(id, {
+      roadie with
+      status = #hired;
+      archivedReason = null;
+      archivedAt = null;
+      rosterState = #pending;
+      orientationEventId = nextSession;
+    });
+    logWrite(changeLog, counters, demoState, caller, "rehireRoadie", ?id, false, "Rehired roadie: " # trimmed);
   };
 
   /// Update a roadie's status (Admin/Store Manager only). This never sets or
@@ -303,11 +318,16 @@ module {
     ignore Auth.requireReadable(accessGrants, demoState, caller);
     let active = roadies.values().filter(func r = r.isDemo == Auth.demoActive(demoState) and r.status != #archived).toArray();
     positions.values().map(func(p) {
-      let onHand = active.filter(func(r) = r.mainPositionId == p.id).size();
+      let forPosition = active.filter(func(r) = r.mainPositionId == p.id);
+      let onHand = forPosition.size();
+      let pending = forPosition.filter(func(r) = r.rosterState == #pending).size();
+      let activeCount = forPosition.filter(func(r) = r.rosterState == #active).size();
       {
         positionId = p.id;
         positionName = p.name;
         onHand;
+        pending;
+        active = activeCount;
         buildTo = p.openingBuildTo;
         openSpots = saturatingSub(p.openingBuildTo, onHand);
       };

@@ -49,8 +49,14 @@ export type ArchiveReason = {
     __kind__: "other";
     other: string;
 } | {
+    __kind__: "paperworkIncomplete";
+    paperworkIncomplete: null;
+} | {
     __kind__: "letGo";
     letGo: null;
+} | {
+    __kind__: "ncnsOrientation";
+    ncnsOrientation: null;
 } | {
     __kind__: "tookAnotherJob";
     tookAnotherJob: null;
@@ -88,6 +94,7 @@ export interface ChecklistItem {
     requiresAlcoholCert: boolean;
     text: string;
     minorOnly: boolean;
+    itemType: UniformItemType;
 }
 export interface Checklists {
     paperwork: Array<ChecklistItem>;
@@ -114,6 +121,17 @@ export interface Crew {
     leaderPrincipal?: Principal;
 }
 export type CrewId = bigint;
+export interface DashboardView {
+    boh: Array<Position>;
+    foh: Array<Position>;
+    active: bigint;
+    hired: bigint;
+    pending: bigint;
+    showedAtOrientation?: bigint;
+    certified?: bigint;
+    stillNeeded: bigint;
+    buildToTotal: bigint;
+}
 export type DateOnly = bigint;
 export type DateTime = bigint;
 export type DemoActionResult = {
@@ -228,6 +246,7 @@ export interface ExportRow {
 }
 export interface FinalSignOff {
     roadieId: RoadieId;
+    isDemo: boolean;
     signedAt: Timestamp;
     signedBy: Principal;
     outcome: SignOffOutcome;
@@ -291,6 +310,7 @@ export interface LeaderTalk {
     id: LeaderTalkId;
     day: DateOnly;
     name: string;
+    isDemo: boolean;
     attendees: Array<RoadieId>;
 }
 export type LeaderTalkId = bigint;
@@ -301,10 +321,34 @@ export interface MyAccessView {
 export interface OrientationCheckoff {
     hatsCount: bigint;
     roadieId: RoadieId;
+    uniformCounts: Array<[bigint, bigint]>;
     paperworkItems: Array<string>;
+    isDemo: boolean;
     updatedAt: Timestamp;
     uniformItems: Array<string>;
     shirtsCount: bigint;
+}
+export interface OrientationRoadieRow {
+    noShow: boolean;
+    roadieId: RoadieId;
+    present: boolean;
+    name: string;
+    positionName: string;
+    positionId: PositionId;
+    crewId?: CrewId;
+    rosterState: RosterState;
+    paperworkStatus: PaperworkStatus;
+    crewName?: string;
+    photo?: PhotoRef;
+}
+export interface OrientationSessionView {
+    end?: DateTime;
+    roadies: Array<OrientationRoadieRow>;
+    eventId: EventId;
+    name: string;
+    assignedCount: bigint;
+    presentCount: bigint;
+    start: DateTime;
 }
 export interface OverviewRow {
     hired: bigint;
@@ -327,6 +371,8 @@ export type PhotoRef = Uint8Array;
 export interface Position {
     id: PositionId;
     openingBuildTo: bigint;
+    defaultHats: bigint;
+    defaultShirts: bigint;
     crewManager?: string;
     house: House;
     afterOpeningBuildTo: bigint;
@@ -370,6 +416,7 @@ export interface Roadie {
     contactSet?: ContactSet;
     isDemo: boolean;
     crewId?: CrewId;
+    rosterState: RosterState;
     signedBy?: Principal;
     birthdayMonthDay?: string;
     isMinor: boolean;
@@ -401,6 +448,8 @@ export interface RoadieProfile {
     weekdayLunch?: boolean;
 }
 export interface RosterSummary {
+    active: bigint;
+    pending: bigint;
     positionName: string;
     buildTo: bigint;
     positionId: PositionId;
@@ -483,6 +532,7 @@ export interface StoreInfo {
     address: string;
     secondaryLogo?: PhotoRef;
     locationName: string;
+    paperworkDueDate: DateOnly;
     timeZone: TimeZone;
     storePhone: Phone;
 }
@@ -508,6 +558,8 @@ export type TemplateLoadResult = {
 };
 export interface TemplatePosition {
     openingBuildTo: bigint;
+    defaultHats: bigint;
+    defaultShirts: bigint;
     house: House;
     afterOpeningBuildTo: bigint;
     minimumAge: bigint;
@@ -545,6 +597,7 @@ export interface TrainerNote {
 export interface TrainingGroup {
     id: TrainingGroupId;
     day: DateOnly;
+    isDemo: boolean;
     trainerPrincipal?: Principal;
     memberRoadieIds: Array<RoadieId>;
     positionId: PositionId;
@@ -555,6 +608,20 @@ export interface TrainingGroupView {
     offThisShift: Array<RoadieId>;
     unassigned: Array<RoadieId>;
     group: TrainingGroup;
+}
+export interface UniformCheckoffItem {
+    itemId: bigint;
+    checked: boolean;
+    count: bigint;
+    text: string;
+    itemType: UniformItemType;
+}
+export interface UniformCheckoffView {
+    roadieId: RoadieId;
+    missing: Array<string>;
+    locked: boolean;
+    complete: boolean;
+    items: Array<UniformCheckoffItem>;
 }
 export type Value = {
     __kind__: "int";
@@ -614,6 +681,10 @@ export enum House {
     boh = "boh",
     foh = "foh"
 }
+export enum PaperworkStatus {
+    incomplete = "incomplete",
+    complete = "complete"
+}
 export enum RoadieStatus {
     active = "active",
     hired = "hired",
@@ -634,9 +705,17 @@ export enum Role {
     storeManager = "storeManager",
     kiosk = "kiosk"
 }
+export enum RosterState {
+    active = "active",
+    pending = "pending"
+}
 export enum Shift {
     am = "am",
     pm = "pm"
+}
+export enum UniformItemType {
+    count = "count",
+    checkbox = "checkbox"
 }
 export enum UserRole {
     admin = "admin",
@@ -684,6 +763,11 @@ export interface backendInterface {
      * / Approve a pending user (Admin only).
      */
     approveUser(request: ApprovalRequest): Promise<void>;
+    /**
+     * / Archive every no-show at a session as NCNS Orientation (Admin/Store
+     * / Manager only). Returns the archived roadie ids.
+     */
+    archiveNoShows(eventId: EventId): Promise<Array<RoadieId>>;
     /**
      * / Archive a roadie (Admin/Store Manager only).
      */
@@ -781,17 +865,10 @@ export interface backendInterface {
      */
     getContactSet(id: RoadieId): Promise<Array<ContactSet>>;
     /**
-     * / Dashboard summary tiles and per-position progress.
+     * / Dashboard summary tiles and per-position progress, including the
+     * / pending/active breakdown and the Hired → Active funnel.
      */
-    getDashboard(): Promise<{
-        boh: Array<Position>;
-        foh: Array<Position>;
-        hired: bigint;
-        showedAtOrientation?: bigint;
-        certified?: bigint;
-        stillNeeded: bigint;
-        buildToTotal: bigint;
-    }>;
+    getDashboard(): Promise<DashboardView>;
     /**
      * / Count the demo records currently loaded.
      */
@@ -826,6 +903,12 @@ export interface backendInterface {
      * / Read the orientation check-off for a roadie (Admin/Store Manager only).
      */
     getOrientationCheckoff(roadieId: RoadieId): Promise<OrientationCheckoff | null>;
+    /**
+     * / The orientation check-in screen for one session: assigned roadies with
+     * / photo, name, position, crew and paperwork status, plus Present x / y
+     * / counts. Admin, Store Manager, Training Manager and Visiting Manager.
+     */
+    getOrientationSessionView(eventId: EventId): Promise<OrientationSessionView | null>;
     /**
      * / Read a roadie's photo bytes by id, for a caller allowed to see the roadie.
      * / Returns null when the roadie has no photo or is not visible to the caller.
@@ -865,6 +948,11 @@ export interface backendInterface {
      * / Read a training group with its unassigned and off-shift lists.
      */
     getTrainingGroup(id: TrainingGroupId): Promise<TrainingGroupView | null>;
+    /**
+     * / The uniform check-off for a roadie (Admin/Store Manager only). Locked
+     * / until the roadie's paperwork is 100% complete.
+     */
+    getUniformCheckoff(roadieId: RoadieId): Promise<UniformCheckoffView | null>;
     /**
      * / True when an Admin has set a kiosk PIN.
      */
@@ -940,6 +1028,15 @@ export interface backendInterface {
      */
     loadStoreTemplate(file: StoreTemplateFile): Promise<TemplateLoadResult>;
     /**
+     * / Mark a roadie Present at an orientation session (Admin/Store Manager
+     * / only). Idempotent so concurrent managers converge.
+     */
+    markPresent(roadieId: RoadieId, eventId: EventId): Promise<void>;
+    /**
+     * / Move a roadie to another orientation session (Admin/Store Manager only).
+     */
+    moveRoadieToSession(roadieId: RoadieId, eventId: EventId): Promise<void>;
+    /**
      * / Record attendance for a roadie (Admin/Store Manager only).
      */
     recordAttendance(record: AttendanceRecord): Promise<void>;
@@ -948,7 +1045,8 @@ export interface backendInterface {
      */
     recordFinalSignOff(signOff: FinalSignOff): Promise<void>;
     /**
-     * / Rehire an archived roadie (Admin/Store Manager only).
+     * / Rehire an archived roadie (Admin/Store Manager only). Returns the roadie
+     * / to pending and assigns the next upcoming orientation session.
      */
     rehireRoadie(id: RoadieId, reason: string | null): Promise<void>;
     /**
@@ -973,6 +1071,10 @@ export interface backendInterface {
      * / Save the current store configuration as a template (Admin only).
      */
     saveStoreTemplate(name: string): Promise<void>;
+    /**
+     * / Save the uniform check-off for a roadie (Admin/Store Manager only).
+     */
+    saveUniformCheckoff(checkoff: OrientationCheckoff): Promise<void>;
     schema(): Promise<string>;
     /**
      * / Turn demo mode on or off (Admin only). Turning it on requires the literal
@@ -1008,6 +1110,11 @@ export interface backendInterface {
      * / caller must already have a pending request (created by `requestAccess`).
      */
     submitStaffProfile(profile: StaffProfile): Promise<void>;
+    /**
+     * / Undo a roadie's Present mark at an orientation session (Admin/Store
+     * / Manager only, logged). Returns the roadie to pending.
+     */
+    undoPresent(roadieId: RoadieId, eventId: EventId): Promise<void>;
     /**
      * / Update a user's access end date (Admin only).
      */

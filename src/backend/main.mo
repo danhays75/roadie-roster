@@ -103,13 +103,16 @@ actor {
     counters,
     demoState,
   );
-  include RoadieApi(accessGrants, roadies, crews, positions, changeLog, counters, demoState);
-  include SignupApi(accessGrants, signups, roadies, positions, storeInfo, changeLog, counters, demoState);
+  include RoadieApi(accessGrants, roadies, crews, positions, schedule, changeLog, counters, demoState);
+  include SignupApi(accessGrants, signups, roadies, positions, schedule, storeInfo, changeLog, counters, demoState);
   include AccessApi(accessGrants, pendingUsers, accessControlState, demoState);
   include Phase23Api(
     accessGrants,
     roadies,
     positions,
+    crews,
+    schedule,
+    checklists,
     orientationCheckoffs,
     attendance,
     trainingGroups,
@@ -134,6 +137,10 @@ actor {
     crews,
     attendance,
     trainerNotes,
+    orientationCheckoffs,
+    trainingGroups,
+    leaderTalks,
+    finalSignOffs,
     positions,
     storeInfo,
     changeLog,
@@ -171,6 +178,8 @@ actor {
           shirtsRequired = 0;
           hatsRequired = 0;
           crewManager = null;
+          defaultShirts = 0;
+          defaultHats = 0;
         })
         .payload("id", func p = p.id)
         .payload("name", func p = p.name)
@@ -180,6 +189,8 @@ actor {
         .payload("afterOpeningBuildTo", func p = p.afterOpeningBuildTo)
         .payload("needsAlcoholCert", func p = p.needsAlcoholCert)
         .payload("minimumAge", func p = p.minimumAge)
+        .payload("defaultShirts", func p = p.defaultShirts)
+        .payload("defaultHats", func p = p.defaultHats)
         .controllerOnly()
         .build(),
       roadies.toEntityManual("roadie", "Roadie", "id")
@@ -220,6 +231,7 @@ actor {
           hiredAt = 0;
           hireDate = null;
           signedBy = null;
+          rosterState = #pending;
           isDemo = false;
         })
         .payload("id", func r = r.id)
@@ -236,6 +248,10 @@ actor {
           case (#archived) "archived";
         })
         .payload("hiredAt", func r = r.hiredAt)
+        .payload("rosterState", func r = switch r.rosterState {
+          case (#pending) "pending";
+          case (#active) "active";
+        })
         .controllerOnly()
         .build(),
       schedule.toEntityManual("scheduleEvent", "ScheduleEvent", "id")
@@ -355,6 +371,7 @@ actor {
           positionId = 0;
           trainerPrincipal = null;
           memberRoadieIds = [];
+          isDemo = false;
         })
         .payload("id", func g = g.id)
         .payload("day", func g = g.day)
@@ -364,7 +381,7 @@ actor {
         .controllerOnly()
         .build(),
       leaderTalks.toEntityManual("leaderTalk", "LeaderTalk", "id")
-        .sample({ id = 0; name = ""; day = 0; attendees = [] })
+        .sample({ id = 0; name = ""; day = 0; attendees = []; isDemo = false })
         .payload("id", func t = t.id)
         .payload("name", func t = t.name)
         .payload("day", func t = t.day)
@@ -412,15 +429,18 @@ actor {
         .sample({
           roadieId = 0;
           uniformItems = [];
+          uniformCounts = [];
           paperworkItems = [];
           shirtsCount = 0;
           hatsCount = 0;
           updatedAt = 0;
+          isDemo = false;
         })
         .payload("roadieId", func c = c.roadieId)
         .payload("shirtsCount", func c = c.shirtsCount)
         .payload("hatsCount", func c = c.hatsCount)
         .payload("updatedAt", func c = c.updatedAt)
+        .payload("isDemo", func c = c.isDemo)
         .controllerOnly()
         .build(),
       attendance.toEntityManual("attendance", "AttendanceRecord", "roadieId")
@@ -469,6 +489,7 @@ actor {
           futureTrainer = false;
           signedBy = Principal.fromText("aaaaa-aa");
           signedAt = 0;
+          isDemo = false;
         })
         .payload("roadieId", func s = s.roadieId)
         .payload("outcome", func s = switch s.outcome {

@@ -7,7 +7,7 @@ import type {
   StoreInfo,
   backendInterface,
 } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import RoadieCardPage from "@/pages/RoadieCard";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -32,6 +32,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const CREW: Crew = { id: 7n, name: "Opening Crew", isDemo: false };
@@ -51,6 +53,7 @@ const STORE_INFO: StoreInfo = {
   locationName: "Bake",
   timeZone: "America/Chicago",
   storePhone: "+1-555-0199",
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 function baseProfile(overrides: Partial<RoadieProfile> = {}): RoadieProfile {
@@ -79,6 +82,7 @@ function roadie(profile: RoadieProfile): Roadie {
     hiredAt: 0n,
     isDemo: false,
     hireDate: BigInt(Date.UTC(2027, 0, 30, 12, 0, 0)) * 1_000_000n,
+    rosterState: RosterState.active,
     profile,
   };
 }

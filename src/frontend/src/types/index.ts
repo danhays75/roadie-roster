@@ -6,6 +6,9 @@ import type {
   DemoStateView,
   LeaderSummary,
   MyAccessView,
+  OrientationCheckoff,
+  OrientationRoadieRow,
+  OrientationSessionView,
   Position,
   PositionId,
   PretendDate,
@@ -14,8 +17,12 @@ import type {
   RoadieProfile,
   RoadieStatus,
   Role,
+  RosterState,
+  RosterSummary,
   StoreInfo,
   Timestamp,
+  UniformCheckoffItem,
+  UniformCheckoffView,
 } from "@/backend";
 
 export type {
@@ -26,6 +33,9 @@ export type {
   DemoStateView,
   LeaderSummary,
   MyAccessView,
+  OrientationCheckoff,
+  OrientationRoadieRow,
+  OrientationSessionView,
   Position,
   PositionId,
   PretendDate,
@@ -34,7 +44,11 @@ export type {
   RoadieProfile,
   RoadieStatus,
   Role,
+  RosterState,
+  RosterSummary,
   StoreInfo,
+  UniformCheckoffItem,
+  UniformCheckoffView,
 };
 
 /**

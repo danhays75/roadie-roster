@@ -1,4 +1,5 @@
-import type { Position, RosterSummary, StoreInfo } from "@/backend";
+import type { Alert, Position, RosterSummary, StoreInfo } from "@/backend";
+import { createActor } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { StoreLogo } from "@/components/StoreLogo";
@@ -7,17 +8,21 @@ import { OpeningTimeline } from "@/components/dashboard/OpeningTimeline";
 import { PositionPanel } from "@/components/dashboard/PositionPanel";
 import { PositionRosterDialog } from "@/components/dashboard/PositionRosterDialog";
 import { useDashboardCopy } from "@/components/dashboard/copy";
+import { usePaperworkIncompleteMap } from "@/components/roadie/RoadieTile";
 import { Button } from "@/components/ui/button";
 import { canArchive, useAccessState } from "@/hooks/useAccess";
 import {
   useDashboard,
+  useRoadies,
   useRosterSummary,
   useSchedule,
   useStoreInfo,
 } from "@/hooks/useQueries";
 import { useSeedWhenEmpty } from "@/hooks/useSeeding";
 import { formatDateOnly } from "@/lib/format";
-import { SlidersHorizontal } from "lucide-react";
+import { useActor } from "@caffeineai/core-infrastructure";
+import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 
 /**
@@ -68,6 +73,73 @@ function DashboardHero({ storeInfo }: { storeInfo: StoreInfo | null }) {
   );
 }
 
+/** The backend alerts store, readable by Admin and Store Manager only. */
+function useAlerts(enabled: boolean) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["alerts"],
+    queryFn: async (): Promise<Alert[]> => {
+      if (!actor) return [];
+      return actor.listAlerts();
+    },
+    enabled: enabled && !!actor && !isFetching,
+  });
+}
+
+/**
+ * The dashboard alerts: a red "Paperwork incomplete" flag for every roadie past
+ * the paperwork due date whose paperwork is not 100% complete, plus any
+ * unacknowledged backend alerts. Rendered only for managers, who are the roles
+ * that may read the check-off and the alerts store.
+ */
+function DashboardAlerts({
+  paperworkNames,
+  alerts,
+}: {
+  paperworkNames: string[];
+  alerts: Alert[];
+}) {
+  const { t } = useDashboardCopy();
+  const openAlerts = alerts.filter((alert) => !alert.acknowledged);
+  if (paperworkNames.length === 0 && openAlerts.length === 0) return null;
+
+  return (
+    <section
+      data-ocid="dashboard.alerts"
+      className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-4"
+    >
+      <h2 className="flex items-center gap-2 font-display text-sm font-bold uppercase tracking-widest text-destructive">
+        <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+        {t("dashboard.alerts.title")}
+      </h2>
+
+      {paperworkNames.length > 0 && (
+        <div
+          data-ocid="dashboard.alerts.paperwork"
+          className="rounded-md border border-destructive/30 bg-card px-3 py-2"
+        >
+          <p className="font-display text-xs font-semibold uppercase tracking-wider text-destructive">
+            {t("dashboard.alerts.paperwork", { count: paperworkNames.length })}
+          </p>
+          <p className="mt-0.5 text-sm text-foreground">
+            {paperworkNames.join(", ")}
+          </p>
+        </div>
+      )}
+
+      {openAlerts.map((alert) => (
+        <p
+          key={alert.id.toString()}
+          data-ocid="dashboard.alerts.item"
+          className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground"
+        >
+          {alert.message}
+        </p>
+      ))}
+    </section>
+  );
+}
+
 export default function DashboardPage() {
   const { t } = useDashboardCopy();
   const access = useAccessState();
@@ -79,6 +151,8 @@ export default function DashboardPage() {
   const { data: schedule } = useSchedule();
   const { data: storeInfo } = useStoreInfo();
   const { data: rosterSummary } = useRosterSummary();
+  const { data: roadies } = useRoadies();
+  const { data: alerts } = useAlerts(canAdjust);
 
   // A fresh install (or a store with no positions yet) is seeded once so the
   // dashboard shows the 18 seeded positions instead of an empty shell.
@@ -93,6 +167,16 @@ export default function DashboardPage() {
     }
     return map;
   }, [rosterSummary]);
+
+  // The paperwork-overdue flag is computed from the orientation check-off,
+  // which only Admin and Store Manager may read.
+  const paperworkFlags = usePaperworkIncompleteMap(roadies ?? [], canAdjust);
+  const paperworkNames = useMemo(() => {
+    if (!canAdjust) return [];
+    return (roadies ?? [])
+      .filter((roadie) => paperworkFlags.get(roadie.id.toString()))
+      .map((roadie) => roadie.profile.preferredName || roadie.profile.name);
+  }, [canAdjust, roadies, paperworkFlags]);
 
   const [adjustMode, setAdjustMode] = useState(false);
   const [selected, setSelected] = useState<Position | null>(null);
@@ -144,8 +228,15 @@ export default function DashboardPage() {
             openingDate={storeInfo?.openingDate ?? null}
           />
 
+          <DashboardAlerts
+            paperworkNames={paperworkNames}
+            alerts={alerts ?? []}
+          />
+
           <KpiTiles
             hired={data.hired}
+            active={data.active}
+            pending={data.pending}
             buildToTotal={data.buildToTotal}
             stillNeeded={data.stillNeeded}
             showedAtOrientation={data.showedAtOrientation}

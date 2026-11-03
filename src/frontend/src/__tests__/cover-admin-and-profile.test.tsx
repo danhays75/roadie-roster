@@ -10,7 +10,7 @@ import type {
   StoreTemplateFile,
   backendInterface,
 } from "@/backend";
-import { EventKind, House, Role } from "@/backend";
+import { EventKind, House, Role, UniformItemType } from "@/backend";
 import { ApprovalGate } from "@/components/ApprovalGate";
 import { I18nContext } from "@/hooks/useI18n";
 import type { Locale } from "@/lib/copy";
@@ -59,6 +59,7 @@ const STORE: StoreInfo = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 const SERVERS: Position = {
@@ -72,6 +73,8 @@ const SERVERS: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: true,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const CHECKLISTS: Checklists = {
@@ -81,6 +84,7 @@ const CHECKLISTS: Checklists = {
       text: "Non-slip shoes",
       requiresAlcoholCert: false,
       minorOnly: false,
+      itemType: UniformItemType.checkbox,
     },
   ],
   paperwork: [
@@ -89,6 +93,7 @@ const CHECKLISTS: Checklists = {
       text: "Onboarding",
       requiresAlcoholCert: false,
       minorOnly: false,
+      itemType: UniformItemType.checkbox,
     },
   ],
 };
@@ -114,6 +119,8 @@ const TEMPLATE_FILE: StoreTemplateFile = {
       afterOpeningBuildTo: 65n,
       minimumAge: 18n,
       needsAlcoholCert: true,
+      defaultShirts: 3n,
+      defaultHats: 2n,
     },
   ],
   schedule: [

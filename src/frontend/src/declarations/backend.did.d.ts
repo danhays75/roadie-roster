@@ -45,7 +45,9 @@ export interface ApprovalRequest {
 export type ArchiveReason = { 'noShow' : null } |
   { 'quitDuringTraining' : null } |
   { 'other' : string } |
+  { 'paperworkIncomplete' : null } |
   { 'letGo' : null } |
+  { 'ncnsOrientation' : null } |
   { 'tookAnotherJob' : null };
 export interface AttendanceRecord {
   'eventId' : [] | [EventId],
@@ -77,6 +79,7 @@ export interface ChecklistItem {
   'requiresAlcoholCert' : boolean,
   'text' : string,
   'minorOnly' : boolean,
+  'itemType' : UniformItemType,
 }
 export interface Checklists {
   'paperwork' : Array<ChecklistItem>,
@@ -103,6 +106,17 @@ export interface Crew {
   'leaderPrincipal' : [] | [Principal],
 }
 export type CrewId = bigint;
+export interface DashboardView {
+  'boh' : Array<Position>,
+  'foh' : Array<Position>,
+  'active' : bigint,
+  'hired' : bigint,
+  'pending' : bigint,
+  'showedAtOrientation' : [] | [bigint],
+  'certified' : [] | [bigint],
+  'stillNeeded' : bigint,
+  'buildToTotal' : bigint,
+}
 export type DateOnly = bigint;
 export type DateTime = bigint;
 export type DemoActionResult = { 'ok' : DemoStateView } |
@@ -199,6 +213,7 @@ export interface ExportRow {
 }
 export interface FinalSignOff {
   'roadieId' : RoadieId,
+  'isDemo' : boolean,
   'signedAt' : Timestamp,
   'signedBy' : Principal,
   'outcome' : SignOffOutcome,
@@ -254,6 +269,7 @@ export interface LeaderTalk {
   'id' : LeaderTalkId,
   'day' : DateOnly,
   'name' : string,
+  'isDemo' : boolean,
   'attendees' : Array<RoadieId>,
 }
 export type LeaderTalkId = bigint;
@@ -264,10 +280,34 @@ export interface MyAccessView {
 export interface OrientationCheckoff {
   'hatsCount' : bigint,
   'roadieId' : RoadieId,
+  'uniformCounts' : Array<[bigint, bigint]>,
   'paperworkItems' : Array<string>,
+  'isDemo' : boolean,
   'updatedAt' : Timestamp,
   'uniformItems' : Array<string>,
   'shirtsCount' : bigint,
+}
+export interface OrientationRoadieRow {
+  'noShow' : boolean,
+  'roadieId' : RoadieId,
+  'present' : boolean,
+  'name' : string,
+  'positionName' : string,
+  'positionId' : PositionId,
+  'crewId' : [] | [CrewId],
+  'rosterState' : RosterState,
+  'paperworkStatus' : PaperworkStatus,
+  'crewName' : [] | [string],
+  'photo' : [] | [PhotoRef],
+}
+export interface OrientationSessionView {
+  'end' : [] | [DateTime],
+  'roadies' : Array<OrientationRoadieRow>,
+  'eventId' : EventId,
+  'name' : string,
+  'assignedCount' : bigint,
+  'presentCount' : bigint,
+  'start' : DateTime,
 }
 export interface OverviewRow {
   'hired' : bigint,
@@ -275,6 +315,8 @@ export interface OverviewRow {
   'positionName' : string,
   'totalPar' : bigint,
 }
+export type PaperworkStatus = { 'incomplete' : null } |
+  { 'complete' : null };
 export interface PendingRequestSummary {
   'hasProfile' : boolean,
   'requestedAt' : Timestamp,
@@ -290,6 +332,8 @@ export type PhotoRef = Uint8Array;
 export interface Position {
   'id' : PositionId,
   'openingBuildTo' : bigint,
+  'defaultHats' : bigint,
+  'defaultShirts' : bigint,
   'crewManager' : [] | [string],
   'house' : House,
   'afterOpeningBuildTo' : bigint,
@@ -322,6 +366,7 @@ export interface Roadie {
   'contactSet' : [] | [ContactSet],
   'isDemo' : boolean,
   'crewId' : [] | [CrewId],
+  'rosterState' : RosterState,
   'signedBy' : [] | [Principal],
   'birthdayMonthDay' : [] | [string],
   'isMinor' : boolean,
@@ -368,7 +413,11 @@ export type Role = { 'integration' : null } |
   { 'visitingManager' : null } |
   { 'storeManager' : null } |
   { 'kiosk' : null };
+export type RosterState = { 'active' : null } |
+  { 'pending' : null };
 export interface RosterSummary {
+  'active' : bigint,
+  'pending' : bigint,
   'positionName' : string,
   'buildTo' : bigint,
   'positionId' : PositionId,
@@ -441,6 +490,7 @@ export interface StoreInfo {
   'address' : string,
   'secondaryLogo' : [] | [PhotoRef],
   'locationName' : string,
+  'paperworkDueDate' : DateOnly,
   'timeZone' : TimeZone,
   'storePhone' : Phone,
 }
@@ -461,6 +511,8 @@ export type TemplateLoadResult = { 'ok' : TemplatePreview } |
   { 'err' : string };
 export interface TemplatePosition {
   'openingBuildTo' : bigint,
+  'defaultHats' : bigint,
+  'defaultShirts' : bigint,
   'house' : House,
   'afterOpeningBuildTo' : bigint,
   'minimumAge' : bigint,
@@ -498,6 +550,7 @@ export interface TrainerNote {
 export interface TrainingGroup {
   'id' : TrainingGroupId,
   'day' : DateOnly,
+  'isDemo' : boolean,
   'trainerPrincipal' : [] | [Principal],
   'memberRoadieIds' : Array<RoadieId>,
   'positionId' : PositionId,
@@ -509,6 +562,22 @@ export interface TrainingGroupView {
   'unassigned' : Array<RoadieId>,
   'group' : TrainingGroup,
 }
+export interface UniformCheckoffItem {
+  'itemId' : bigint,
+  'checked' : boolean,
+  'count' : bigint,
+  'text' : string,
+  'itemType' : UniformItemType,
+}
+export interface UniformCheckoffView {
+  'roadieId' : RoadieId,
+  'missing' : Array<string>,
+  'locked' : boolean,
+  'complete' : boolean,
+  'items' : Array<UniformCheckoffItem>,
+}
+export type UniformItemType = { 'count' : null } |
+  { 'checkbox' : null };
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
@@ -592,6 +661,11 @@ export interface _SERVICE {
    * / Approve a pending user (Admin only).
    */
   'approveUser' : ActorMethod<[ApprovalRequest], undefined>,
+  /**
+   * / Archive every no-show at a session as NCNS Orientation (Admin/Store
+   * / Manager only). Returns the archived roadie ids.
+   */
+  'archiveNoShows' : ActorMethod<[EventId], Array<RoadieId>>,
   /**
    * / Archive a roadie (Admin/Store Manager only).
    */
@@ -692,20 +766,10 @@ export interface _SERVICE {
    */
   'getContactSet' : ActorMethod<[RoadieId], Array<ContactSet>>,
   /**
-   * / Dashboard summary tiles and per-position progress.
+   * / Dashboard summary tiles and per-position progress, including the
+   * / pending/active breakdown and the Hired → Active funnel.
    */
-  'getDashboard' : ActorMethod<
-    [],
-    {
-      'boh' : Array<Position>,
-      'foh' : Array<Position>,
-      'hired' : bigint,
-      'showedAtOrientation' : [] | [bigint],
-      'certified' : [] | [bigint],
-      'stillNeeded' : bigint,
-      'buildToTotal' : bigint,
-    }
-  >,
+  'getDashboard' : ActorMethod<[], DashboardView>,
   /**
    * / Count the demo records currently loaded.
    */
@@ -742,6 +806,15 @@ export interface _SERVICE {
   'getOrientationCheckoff' : ActorMethod<
     [RoadieId],
     [] | [OrientationCheckoff]
+  >,
+  /**
+   * / The orientation check-in screen for one session: assigned roadies with
+   * / photo, name, position, crew and paperwork status, plus Present x / y
+   * / counts. Admin, Store Manager, Training Manager and Visiting Manager.
+   */
+  'getOrientationSessionView' : ActorMethod<
+    [EventId],
+    [] | [OrientationSessionView]
   >,
   /**
    * / Read a roadie's photo bytes by id, for a caller allowed to see the roadie.
@@ -782,6 +855,11 @@ export interface _SERVICE {
    * / Read a training group with its unassigned and off-shift lists.
    */
   'getTrainingGroup' : ActorMethod<[TrainingGroupId], [] | [TrainingGroupView]>,
+  /**
+   * / The uniform check-off for a roadie (Admin/Store Manager only). Locked
+   * / until the roadie's paperwork is 100% complete.
+   */
+  'getUniformCheckoff' : ActorMethod<[RoadieId], [] | [UniformCheckoffView]>,
   /**
    * / True when an Admin has set a kiosk PIN.
    */
@@ -857,6 +935,15 @@ export interface _SERVICE {
    */
   'loadStoreTemplate' : ActorMethod<[StoreTemplateFile], TemplateLoadResult>,
   /**
+   * / Mark a roadie Present at an orientation session (Admin/Store Manager
+   * / only). Idempotent so concurrent managers converge.
+   */
+  'markPresent' : ActorMethod<[RoadieId, EventId], undefined>,
+  /**
+   * / Move a roadie to another orientation session (Admin/Store Manager only).
+   */
+  'moveRoadieToSession' : ActorMethod<[RoadieId, EventId], undefined>,
+  /**
    * / Record attendance for a roadie (Admin/Store Manager only).
    */
   'recordAttendance' : ActorMethod<[AttendanceRecord], undefined>,
@@ -865,7 +952,8 @@ export interface _SERVICE {
    */
   'recordFinalSignOff' : ActorMethod<[FinalSignOff], undefined>,
   /**
-   * / Rehire an archived roadie (Admin/Store Manager only).
+   * / Rehire an archived roadie (Admin/Store Manager only). Returns the roadie
+   * / to pending and assigns the next upcoming orientation session.
    */
   'rehireRoadie' : ActorMethod<[RoadieId, [] | [string]], undefined>,
   /**
@@ -890,6 +978,10 @@ export interface _SERVICE {
    * / Save the current store configuration as a template (Admin only).
    */
   'saveStoreTemplate' : ActorMethod<[string], undefined>,
+  /**
+   * / Save the uniform check-off for a roadie (Admin/Store Manager only).
+   */
+  'saveUniformCheckoff' : ActorMethod<[OrientationCheckoff], undefined>,
   'schema' : ActorMethod<[], string>,
   /**
    * / Turn demo mode on or off (Admin only). Turning it on requires the literal
@@ -931,6 +1023,11 @@ export interface _SERVICE {
    * / caller must already have a pending request (created by `requestAccess`).
    */
   'submitStaffProfile' : ActorMethod<[StaffProfile], undefined>,
+  /**
+   * / Undo a roadie's Present mark at an orientation session (Admin/Store
+   * / Manager only, logged). Returns the roadie to pending.
+   */
+  'undoPresent' : ActorMethod<[RoadieId, EventId], undefined>,
   /**
    * / Update a user's access end date (Admin only).
    */

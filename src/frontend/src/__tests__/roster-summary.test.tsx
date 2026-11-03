@@ -17,6 +17,8 @@ const SERVERS: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: true,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const FRY: Position = {
@@ -30,6 +32,8 @@ const FRY: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 /**
@@ -45,6 +49,8 @@ function baseActor() {
       hired: 3n,
       stillNeeded: 78n,
       buildToTotal: 81n,
+      active: 3n,
+      pending: 0n,
     })),
     listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),
     getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => ({
@@ -62,6 +68,7 @@ function baseActor() {
       trainingGroupSize: 5n,
       leaderTalkName: "10 Minutes with Dan",
       leaderTalkSize: 10n,
+      paperworkDueDate: 1_800_000_000_000_000_000n,
     })),
     getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
       grant: undefined,
@@ -78,6 +85,8 @@ function baseActor() {
             onHand: 1n,
             buildTo: 65n,
             openSpots: 64n,
+            active: 1n,
+            pending: 0n,
           },
           {
             positionId: 5n,
@@ -85,6 +94,8 @@ function baseActor() {
             onHand: 2n,
             buildTo: 16n,
             openSpots: 14n,
+            active: 2n,
+            pending: 0n,
           },
         ] satisfies RosterSummary[],
     ),
@@ -116,6 +127,8 @@ describe("DashboardPage roster summary", () => {
           onHand: 65n,
           buildTo: 65n,
           openSpots: 0n,
+          active: 65n,
+          pending: 0n,
         },
       ],
     );

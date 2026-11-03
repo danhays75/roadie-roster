@@ -21,6 +21,7 @@ import {
   canExport,
   canGiftBags,
   canLeaders,
+  canOrientation,
   useAccessState,
 } from "@/hooks/useAccess";
 import { I18nContext, translate, useI18n } from "@/hooks/useI18n";
@@ -34,6 +35,7 @@ import KioskPage from "@/pages/Kiosk";
 import LeaderCardPage from "@/pages/LeaderCard";
 import LeadersPage from "@/pages/Leaders";
 import MyProfilePage from "@/pages/MyProfile";
+import OrientationPage from "@/pages/Orientation";
 import RoadieCardPage from "@/pages/RoadieCard";
 import RosterPage from "@/pages/Roster";
 import TodayPage from "@/pages/Today";
@@ -311,6 +313,16 @@ function GuardedLeaderCard() {
   );
 }
 
+/** The Orientation check-in surface, blocked for roles that cannot use it. */
+function GuardedOrientation() {
+  const role = useRole();
+  return (
+    <RouteGuard allowed={canOrientation(role)}>
+      <OrientationPage />
+    </RouteGuard>
+  );
+}
+
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
@@ -389,6 +401,12 @@ const leaderCardRoute = createRoute({
   component: GuardedLeaderCard,
 });
 
+const orientationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/orientation",
+  component: GuardedOrientation,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   todayRoute,
@@ -403,6 +421,7 @@ const routeTree = rootRoute.addChildren([
   giftBagsRoute,
   leadersRoute,
   leaderCardRoute,
+  orientationRoute,
 ]);
 
 const router = createRouter({ routeTree });

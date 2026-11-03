@@ -7,7 +7,7 @@ import type {
   StoreInfo,
   backendInterface,
 } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import LeaderCardPage from "@/pages/LeaderCard";
 import LeadersPage from "@/pages/Leaders";
 import RoadieCardPage from "@/pages/RoadieCard";
@@ -45,6 +45,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const STORE_INFO: StoreInfo = {
@@ -62,6 +64,7 @@ const STORE_INFO: StoreInfo = {
   locationName: "Bake",
   timeZone: "America/Chicago",
   storePhone: "+1-555-0199",
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /** A leader summary with a full staff profile and the given role. */
@@ -255,6 +258,7 @@ describe("roadie card: initials placeholder is unaffected by the leader photo ch
     hiredAt: 0n,
     isDemo: false,
     profile: { name: "Frank George", preferredName: "Frank" },
+    rosterState: RosterState.active,
   };
 
   function roadieActor() {

@@ -1,7 +1,7 @@
 import { renderPageWithActor } from "@/__tests__/router-test-utils";
 import { renderWithActor } from "@/__tests__/test-utils";
 import type { PhotoRef, Position, Roadie, backendInterface } from "@/backend";
-import { House, RoadieStatus, Role } from "@/backend";
+import { House, RoadieStatus, Role, RosterState } from "@/backend";
 import { ApprovalGate } from "@/components/ApprovalGate";
 import { Layout } from "@/components/Layout";
 import { StoreLogo } from "@/components/StoreLogo";
@@ -62,6 +62,7 @@ const STORE = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 const POSITION: Position = {
@@ -75,6 +76,8 @@ const POSITION: Position = {
   shirtsRequired: 2n,
   hatsRequired: 1n,
   needsAlcoholCert: false,
+  defaultShirts: 3n,
+  defaultHats: 2n,
 };
 
 const ROADIE: Roadie = {
@@ -85,6 +88,7 @@ const ROADIE: Roadie = {
   profile: { name: "Ada Lovelace" },
   isMinor: false,
   isDemo: false,
+  rosterState: RosterState.pending,
 };
 
 /** The actor methods the header reads. */
@@ -221,7 +225,9 @@ describe("dashboard banner keeps the store name and opening date", () => {
         getDashboard: vi.fn<backendInterface["getDashboard"]>(async () => ({
           foh: [POSITION],
           boh: [],
+          active: 0n,
           hired: 1n,
+          pending: 1n,
           stillNeeded: 1n,
           buildToTotal: 2n,
         })),

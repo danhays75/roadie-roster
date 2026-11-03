@@ -7,7 +7,7 @@ import type {
   StoreInfo,
   backendInterface,
 } from "@/backend";
-import { EventKind, House } from "@/backend";
+import { EventKind, House, UniformItemType } from "@/backend";
 import AdminPage from "@/pages/Admin";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -29,6 +29,7 @@ const STORE: StoreInfo = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
+  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /** Two of the 18 seeded positions, one per house. */
@@ -44,6 +45,8 @@ const POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: true,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 5n,
@@ -56,6 +59,8 @@ const POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
 ];
 
@@ -82,6 +87,7 @@ const CHECKLISTS: Checklists = {
       text: "Non-slip shoes",
       requiresAlcoholCert: false,
       minorOnly: false,
+      itemType: UniformItemType.checkbox,
     },
   ],
   paperwork: [
@@ -90,6 +96,7 @@ const CHECKLISTS: Checklists = {
       text: "Onboarding",
       requiresAlcoholCert: false,
       minorOnly: false,
+      itemType: UniformItemType.checkbox,
     },
   ],
 };

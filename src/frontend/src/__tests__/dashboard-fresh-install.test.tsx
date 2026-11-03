@@ -26,6 +26,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: true,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 1n,
@@ -38,6 +40,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 2n,
@@ -50,6 +54,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: true,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 3n,
@@ -62,6 +68,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 4n,
@@ -74,6 +82,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 5n,
@@ -86,6 +96,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 6n,
@@ -98,6 +110,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 7n,
@@ -110,6 +124,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 8n,
@@ -122,6 +138,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 9n,
@@ -134,6 +152,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 10n,
@@ -146,6 +166,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 11n,
@@ -158,6 +180,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 12n,
@@ -170,6 +194,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 13n,
@@ -182,6 +208,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 14n,
@@ -194,6 +222,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 15n,
@@ -206,6 +236,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 16n,
@@ -218,6 +250,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
   {
     id: 17n,
@@ -230,6 +264,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: false,
+    defaultShirts: 3n,
+    defaultHats: 2n,
   },
 ];
 
@@ -247,6 +283,8 @@ const SEEDED_SUMMARY: RosterSummary[] = SEEDED_POSITIONS.map((position) => ({
   onHand: 0n,
   buildTo: position.openingBuildTo,
   openSpots: position.openingBuildTo,
+  active: 0n,
+  pending: 0n,
 }));
 
 /** The actor the dashboard tree reads for a freshly seeded store. */
@@ -264,6 +302,8 @@ function seededActor() {
       hired: 0n,
       stillNeeded: buildToTotal,
       buildToTotal,
+      active: 0n,
+      pending: 0n,
     })),
     listSchedule: vi.fn<backendInterface["listSchedule"]>(
       async () => SEEDED_SCHEDULE,
@@ -283,6 +323,7 @@ function seededActor() {
       trainingGroupSize: 5n,
       leaderTalkName: "10 Minutes with Dan",
       leaderTalkSize: 10n,
+      paperworkDueDate: 1_800_000_000_000_000_000n,
     })),
     getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
       grant: undefined,

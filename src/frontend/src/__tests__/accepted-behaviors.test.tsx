@@ -2,7 +2,7 @@ import { renderPageWithActor, t } from "@/__tests__/router-test-utils";
 import { setIdentityForTest } from "@/__tests__/setup";
 import { renderWithActor } from "@/__tests__/test-utils";
 import type { AccessGrant, Roadie, backendInterface } from "@/backend";
-import { RoadieStatus, Role } from "@/backend";
+import { RoadieStatus, Role, RosterState } from "@/backend";
 import { Layout } from "@/components/Layout";
 import { ManagerSignaturePad } from "@/components/approvals/ManagerSignaturePad";
 import { KioskSignatureStep } from "@/components/kiosk/KioskSignatureStep";
@@ -213,6 +213,7 @@ describe("roadie card birthday and Minor badge", () => {
     isMinor: true,
     isDemo: false,
     birthdayMonthDay: "03-14",
+    rosterState: RosterState.pending,
   };
 
   it("shows the birthday and Minor badge from the non-sensitive fields", () => {

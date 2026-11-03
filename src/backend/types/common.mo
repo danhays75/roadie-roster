@@ -122,6 +122,13 @@ module {
     #err : ApiError;
   };
 
+  /// The type of an orientation uniform checklist item: a simple checkbox, or
+  /// a counted item (for example shirts or hats given).
+  public type UniformItemType = {
+    #checkbox;
+    #count;
+  };
+
   // --- Demo mode ---
 
   /// The role a signed-in caller impersonates while demo mode is on. Mirrors
