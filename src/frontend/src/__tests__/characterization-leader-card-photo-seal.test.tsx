@@ -97,11 +97,13 @@ function leader(
 function cardActor(leaders: LeaderSummary[]) {
   return {
     getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
-      principal: PRINCIPAL,
-      role: Role.admin,
-      approvedAt: 0n,
-      approvedBy: PRINCIPAL,
-      trainerPositionIds: [],
+      grant: {
+        principal: { toText: () => "aaaaa-aa" } as never,
+        role: Role.admin,
+        approvedAt: 0n,
+        approvedBy: { toText: () => "aaaaa-aa" } as never,
+        trainerPositionIds: [],
+      },
     })),
     listLeaders: vi.fn<backendInterface["listLeaders"]>(async () => leaders),
     listPositions: vi.fn<backendInterface["listPositions"]>(async () => [
@@ -268,11 +270,13 @@ describe("roadie card: initials placeholder is unaffected by the leader photo ch
       getPhoto: vi.fn<backendInterface["getPhoto"]>(async () => null),
       isMinor: vi.fn<backendInterface["isMinor"]>(async () => false),
       getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
-        principal: PRINCIPAL,
-        role: Role.admin,
-        approvedAt: 0n,
-        approvedBy: PRINCIPAL,
-        trainerPositionIds: [],
+        grant: {
+          principal: PRINCIPAL,
+          role: Role.admin,
+          approvedAt: 0n,
+          approvedBy: PRINCIPAL,
+          trainerPositionIds: [],
+        },
       })),
       getContactSet: vi.fn<backendInterface["getContactSet"]>(async () => []),
       getChecklists: vi.fn<backendInterface["getChecklists"]>(async () => ({
@@ -301,11 +305,13 @@ describe("Leaders page: tier grouping is unaffected by the card color change", (
   function leadersActor(leaders: LeaderSummary[]) {
     return {
       getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
-        principal: PRINCIPAL,
-        role: Role.admin,
-        approvedAt: 0n,
-        approvedBy: PRINCIPAL,
-        trainerPositionIds: [],
+        grant: {
+          principal: PRINCIPAL,
+          role: Role.admin,
+          approvedAt: 0n,
+          approvedBy: PRINCIPAL,
+          trainerPositionIds: [],
+        },
       })),
       listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
         async () => [],

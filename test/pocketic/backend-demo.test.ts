@@ -137,7 +137,8 @@ describe("backend Demo mode contract", () => {
   it("answers an empty-state demo read instead of trapping", async () => {
     const state = await admin.getDemoState();
     expect(state.enabled).toBe(false);
-    expect(state.demoRole).toEqual({ admin: null });
+    // `demoRole` is the caller's own optional role: null while demo is off.
+    expect(state.demoRole).toEqual([]);
     expect(state.pretendDate).toEqual([]);
   });
 
@@ -274,12 +275,13 @@ describe("backend Demo mode contract", () => {
     stranger.setIdentity(strangerIdentity);
     await expect(stranger.listRoadies()).resolves.toHaveLength(40);
 
+    // The demo role is stored per caller, so the stranger chooses their own.
     // A demo Kiosk login cannot read the roster, matching the real role.
-    await admin.setDemoRole({ kiosk: null }, []);
+    await stranger.setDemoRole({ kiosk: null }, []);
     await expect(stranger.listRoadies()).rejects.toThrow();
 
     // A demo Trainer cannot read contact info, matching the real role.
-    await admin.setDemoRole({ trainer: null }, [0n]);
+    await stranger.setDemoRole({ trainer: null }, [0n]);
     const trainerView = await stranger.listRoadies();
     expect(trainerView.length).toBeGreaterThan(0);
     // A redacted contact set is an empty Candid optional, not a value.

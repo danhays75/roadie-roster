@@ -144,11 +144,13 @@ describe("header keeps the store name and location as the subtitle", () => {
       Page,
       {
         getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
-          principal: { toText: () => "aaaaa-aa" } as never,
-          role: Role.admin,
-          approvedAt: 0n,
-          approvedBy: { toText: () => "aaaaa-aa" } as never,
-          trainerPositionIds: [],
+          grant: {
+            principal: { toText: () => "aaaaa-aa" } as never,
+            role: Role.admin,
+            approvedAt: 0n,
+            approvedBy: { toText: () => "aaaaa-aa" } as never,
+            trainerPositionIds: [],
+          },
         })),
         listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
           async () => [],
@@ -182,11 +184,13 @@ describe("main logo still renders on every surface", () => {
       Page,
       {
         getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
-          principal: { toText: () => "aaaaa-aa" } as never,
-          role: Role.admin,
-          approvedAt: 0n,
-          approvedBy: { toText: () => "aaaaa-aa" } as never,
-          trainerPositionIds: [],
+          grant: {
+            principal: { toText: () => "aaaaa-aa" } as never,
+            role: Role.admin,
+            approvedAt: 0n,
+            approvedBy: { toText: () => "aaaaa-aa" } as never,
+            trainerPositionIds: [],
+          },
         })),
         listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
           async () => [],
@@ -218,7 +222,9 @@ describe("main logo still renders on every surface", () => {
 
   it("renders the uploaded main logo on the sign-in/waiting screen", async () => {
     renderWithActor(wrap(<ApprovalGate />), {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => null),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: undefined,
+      })),
       requestAccess: vi.fn<backendInterface["requestAccess"]>(
         async () => false,
       ),
@@ -275,7 +281,9 @@ describe("main logo still renders on every surface", () => {
         getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(
           async () => STORE,
         ),
-        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => null),
+        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+          grant: undefined,
+        })),
         listRosterForPosition: vi.fn<backendInterface["listRosterForPosition"]>(
           async () => [ROADIE],
         ),

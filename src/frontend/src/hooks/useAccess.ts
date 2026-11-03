@@ -1,7 +1,7 @@
 import { Role } from "@/backend";
 import { demoRoleToRole, useDemo } from "@/hooks/useDemo";
 import { useMyAccess } from "@/hooks/useQueries";
-import type { AccessGrant, AccessState, NavItem } from "@/types";
+import type { AccessGrant, AccessState, MyAccessView, NavItem } from "@/types";
 import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useMemo } from "react";
 
@@ -72,14 +72,35 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 /**
- * Resolve the caller's access state from the backend grant.
+ * Normalize the `getMyAccess` result. The current binding returns a
+ * `MyAccessView` with a separate `grant` and `demoRole`; an older actor (or a
+ * test mock) may return a bare `AccessGrant`, which is treated as a real grant
+ * with no demo role.
+ */
+function normalizeAccessView(value: unknown): {
+  grant: AccessGrant | null;
+  demoRole: MyAccessView["demoRole"];
+} {
+  if (typeof value !== "object" || value === null) {
+    return { grant: null, demoRole: undefined };
+  }
+  const record = value as Record<string, unknown>;
+  if ("grant" in record || "demoRole" in record) {
+    const view = value as MyAccessView;
+    return { grant: view.grant ?? null, demoRole: view.demoRole };
+  }
+  return { grant: value as AccessGrant, demoRole: undefined };
+}
+
+/**
+ * Resolve the caller's access state from the backend access view.
  *
- * While demo mode is on the effective role follows the chosen demo role: a
- * caller with a real grant keeps their grant but acts as the demo role, and a
- * caller with no grant (pending or unregistered) is treated as granted with a
- * synthetic grant carrying the demo role, so the whole app renders against demo
- * data. The backend enforces the same permission rules for the impersonated
- * role as for a real user with that role.
+ * The backend returns the caller's real grant (or null) plus a separate
+ * `demoRole` carrying the caller's own demo role while demo mode is on. A
+ * caller with no real grant is never presented as really approved: while demo
+ * mode is on they act as their chosen demo role against demo data only, and
+ * while it is off they stay pending. The backend enforces the same permission
+ * rules for the impersonated role as for a real user with that role.
  */
 export function useAccessState(): AccessState {
   const { data, isLoading, isError, error, isReady } = useMyAccess();
@@ -91,20 +112,24 @@ export function useAccessState(): AccessState {
     // the waiting screen does not flash before the grant is known.
     if (!isReady || isLoading) return { kind: "loading" };
 
+    const { grant, demoRole } = normalizeAccessView(data);
     const demoOn = demo.enabled;
-    const demoRole = demoRoleToRole(demo.demoRole);
+    // The caller's own demo role: prefer the per-caller value from the access
+    // view, falling back to the demo state read.
+    const callerDemoRole = demoRole ?? demo.demoRole;
 
-    if (demoOn) {
+    if (demoOn && callerDemoRole !== null && callerDemoRole !== undefined) {
+      const effectiveRole = demoRoleToRole(callerDemoRole);
       // A real grant keeps its identity but acts as the demo role.
-      if (data) {
+      if (grant) {
         return {
           kind: "granted",
-          grant: { ...data, role: demoRole },
+          grant: { ...grant, role: effectiveRole },
           demo: true,
         };
       }
-      // No grant yet: synthesize one so an unapproved caller can act as the
-      // demo role against demo data only.
+      // No real grant: synthesize a demo-only grant so an unapproved caller can
+      // act as the demo role against demo data only.
       const principal =
         identity && !identity.getPrincipal().isAnonymous()
           ? identity.getPrincipal()
@@ -114,7 +139,7 @@ export function useAccessState(): AccessState {
           principal,
           approvedAt: 0n,
           approvedBy: principal,
-          role: demoRole,
+          role: effectiveRole,
           trainerPositionIds: demo.demoTrainerStations,
         };
         return { kind: "granted", grant: synthetic, demo: true };
@@ -123,7 +148,7 @@ export function useAccessState(): AccessState {
 
     // Prefer a resolved grant over a failed poll: one transient error must not
     // replace the app (or a kiosk sign-up in progress) with the error screen.
-    if (data) return { kind: "granted", grant: data };
+    if (grant) return { kind: "granted", grant };
     if (isError) {
       return {
         kind: "error",
@@ -142,6 +167,17 @@ export function useAccessState(): AccessState {
     demo.demoTrainerStations,
     identity,
   ]);
+}
+
+/**
+ * The caller's real access grant, ignoring any demo impersonation. Used by the
+ * demo banner so the "Turn off" control stays real-Admin only even while the
+ * caller is viewing as another demo role. Returns null while loading or when
+ * the caller has no real grant.
+ */
+export function useRealAccessGrant(): AccessGrant | null {
+  const { data } = useMyAccess();
+  return useMemo(() => normalizeAccessView(data).grant, [data]);
 }
 
 /** Whether the given role may see a nav item. */

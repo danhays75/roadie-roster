@@ -163,9 +163,9 @@ function grant(role: Role, staffProfile?: StaffProfile): AccessGrant {
 /** The actor methods the admin page tree reads across its tabs. */
 function baseActor() {
   return {
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.admin, PROFILE),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.admin, PROFILE),
+    })),
     getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => STORE),
     listPositions: vi.fn<backendInterface["listPositions"]>(async () => [
       SERVERS,
@@ -436,9 +436,9 @@ describe("post-sign-in profile form", () => {
   }
 
   it("shows the 'Tell us who you are' form before the waiting screen", async () => {
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(
-      async () => null,
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: undefined,
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );
@@ -468,9 +468,9 @@ describe("post-sign-in profile form", () => {
 
   it("carries the submitted profile onto the pending request", async () => {
     const user = userEvent.setup();
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(
-      async () => null,
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: undefined,
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );
@@ -526,9 +526,9 @@ describe("access grants show names and titles with an admin-only Show ID", () =>
     const user = userEvent.setup();
     const actor = {
       ...baseActor(),
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin, PROFILE),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin, PROFILE),
+      })),
       listAccessGrants: vi.fn<backendInterface["listAccessGrants"]>(
         async () => [grant(Role.storeManager, PROFILE)],
       ),
@@ -555,9 +555,9 @@ describe("access grants show names and titles with an admin-only Show ID", () =>
     const user = userEvent.setup();
     const actor = {
       ...baseActor(),
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin, PROFILE),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin, PROFILE),
+      })),
       listAccessGrants: vi.fn<backendInterface["listAccessGrants"]>(
         async () => [grant(Role.storeManager)],
       ),
@@ -577,9 +577,9 @@ describe("My profile editor", () => {
     >(async () => {});
     const actor = {
       ...baseActor(),
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.storeManager, PROFILE),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.storeManager, PROFILE),
+      })),
       updateMyStaffProfile,
     };
     renderPageWithActor(MyProfilePage, actor, { path: "/my-profile" });

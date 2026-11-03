@@ -327,10 +327,10 @@ describe("backend store template and staff profile contract", () => {
   it("lets a caller update their own profile without losing access", async () => {
     await member.updateMyStaffProfile(staffProfile("Member Updated", "Manager"));
 
-    const grant = await member.getMyAccess();
-    expect(grant[0]?.staffProfile[0]?.fullName).toBe("Member Updated");
+    const view = await member.getMyAccess();
+    expect(view.grant[0]?.staffProfile[0]?.fullName).toBe("Member Updated");
     // The role is unchanged: updating the profile never drops access.
-    expect(grant[0]?.role).toEqual({ storeManager: null });
+    expect(view.grant[0]?.role).toEqual({ storeManager: null });
   });
 
   it("rejects updateMyStaffProfile for a caller with no grant", async () => {

@@ -51,7 +51,7 @@ module {
     caller : Principal,
     info : Store.StoreInfo,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     storeInfo.value := info;
     ignore ChangeLog.record(changeLog, counters, caller, "updateStoreInfo", null, false, "Updated store info");
   };
@@ -77,7 +77,7 @@ module {
     caller : Principal,
     position : Store.Position,
   ) : Common.PositionId {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     let id = counters.nextPositionId;
     counters.nextPositionId := id + 1;
     positions.add(id, { position with id });
@@ -95,7 +95,7 @@ module {
     caller : Principal,
     position : Store.Position,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     if (not positions.containsKey(position.id)) {
       Runtime.trap("Position not found");
     };
@@ -114,7 +114,7 @@ module {
     caller : Principal,
     id : Common.PositionId,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     let position = positions.get(id) ?? Runtime.trap("Position not found");
     let referenced = roadies.values().any(func(r) =
       r.isDemo == Auth.demoActive(demoState) and (r.mainPositionId == id or r.secondPositionId == ?id or r.crossTrainedPositionId == ?id)
@@ -139,7 +139,7 @@ module {
     openingDelta : Int,
     afterOpeningDelta : Int,
   ) : () {
-    Auth.requireManager(accessGrants, demoState, caller);
+    Auth.requireRealSettingsManager(accessGrants, demoState, caller);
     let position = positions.get(positionId) ?? Runtime.trap("Position not found");
     let newOpening = position.openingBuildTo.toInt() + openingDelta;
     let newAfter = position.afterOpeningBuildTo.toInt() + afterOpeningDelta;
@@ -184,7 +184,7 @@ module {
     caller : Principal,
     event : Store.ScheduleEvent,
   ) : Common.EventId {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     let id = counters.nextEventId;
     counters.nextEventId := id + 1;
     schedule.add(id, { event with id });
@@ -202,7 +202,7 @@ module {
     caller : Principal,
     event : Store.ScheduleEvent,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     if (not schedule.containsKey(event.id)) {
       Runtime.trap("Schedule event not found");
     };
@@ -222,7 +222,7 @@ module {
     caller : Principal,
     id : Common.EventId,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     let event = schedule.get(id) ?? Runtime.trap("Schedule event not found");
     let referencedByRoadie = roadies.values().any(func(r) = r.isDemo == Auth.demoActive(demoState) and r.orientationEventId == ?id);
     let referencedByAttendance = attendance.values().any(func(a) = a.isDemo == Auth.demoActive(demoState) and a.eventId == ?id);
@@ -254,7 +254,7 @@ module {
     caller : Principal,
     value : Store.Checklists,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     checklists.value := value;
     ignore ChangeLog.record(changeLog, counters, caller, "updateChecklists", null, false, "Updated checklists");
   };
@@ -280,7 +280,7 @@ module {
     caller : Principal,
     settings : Store.RetentionSettings,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     retention.value := settings;
     ignore ChangeLog.record(changeLog, counters, caller, "updateRetentionSettings", null, false, "Updated retention settings");
   };
@@ -302,7 +302,7 @@ module {
     checklists : { var value : Store.Checklists },
     caller : Principal,
   ) : Store.StoreTemplateFile {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     let opening = storeInfo.value.openingDate;
     {
       version = 1;
@@ -352,7 +352,7 @@ module {
     caller : Principal,
     file : Store.StoreTemplateFile,
   ) : Store.TemplateLoadResult {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     // Demo records never block a template load; only real roadies do.
     if (roadies.values().any(func r = not r.isDemo)) {
       return #err("Cannot load a template once roadies exist");
@@ -426,7 +426,7 @@ module {
     caller : Principal,
     name : Text,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     storeTemplates.add(name, {
       name;
       schedule = schedule.values().toArray();

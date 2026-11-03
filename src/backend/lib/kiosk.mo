@@ -21,8 +21,8 @@ module {
   /// bare digest of a short numeric PIN.
   let salt : Text = "roadie-roster-kiosk-pin-v1";
 
-  /// Set the kiosk staff PIN (Admin only). The PIN is hashed before storage;
-  /// the plaintext is never persisted.
+  /// Set the kiosk staff PIN (real Admin only, refused while demo mode is on).
+  /// The PIN is hashed before storage; the plaintext is never persisted.
   public func setKioskPin(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -30,7 +30,7 @@ module {
     caller : Principal,
     pin : Text,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     if (pin.size() == 0) {
       Runtime.trap("Kiosk PIN must not be empty");
     };

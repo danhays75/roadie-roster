@@ -99,9 +99,9 @@ function dialogActor(roster: Roadie[]) {
       POSITION,
     ]),
     listCrews: vi.fn<backendInterface["listCrews"]>(async () => []),
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.admin),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.admin),
+    })),
   };
 }
 
@@ -238,9 +238,9 @@ describe("Crews member list opens the shared card pop-up", () => {
 
   function adminActor(roadies: Roadie[]) {
     return {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(
         async () => STORE_INFO,
       ),

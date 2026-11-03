@@ -73,9 +73,9 @@ describe("approvals badge counts pending sign-ups", () => {
 
   it("shows the pending sign-ups count on the approvals link for an admin", async () => {
     const actor = {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       listPendingSignups: vi.fn<backendInterface["listPendingSignups"]>(
         async () => [pendingSignup(1n), pendingSignup(2n), pendingSignup(3n)],
       ),
@@ -91,9 +91,9 @@ describe("approvals badge counts pending sign-ups", () => {
 
   it("hides the badge when there are no pending sign-ups", async () => {
     const actor = {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       listPendingSignups: vi.fn<backendInterface["listPendingSignups"]>(
         async () => [],
       ),
@@ -109,9 +109,9 @@ describe("approvals badge counts pending sign-ups", () => {
 
   it("loads the pending-users queue only for an admin", async () => {
     const adminActor = {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       listPendingSignups: vi.fn<backendInterface["listPendingSignups"]>(
         async () => [],
       ),
@@ -150,9 +150,9 @@ describe("kiosk staff PIN is checked against the stored value", () => {
     // real App router so the PIN dialog is exercised as shipped.
     const App = (await import("@/App")).default;
     renderWithActor(<App />, {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.kiosk),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.kiosk),
+      })),
       checkKioskPin,
     } satisfies Pick<backendInterface, "getMyAccess" | "checkKioskPin">);
 

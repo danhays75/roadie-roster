@@ -48,9 +48,9 @@ function grant(role: Role, staffProfile?: StaffProfile): AccessGrant {
 
 describe("ApprovalGate: profile form is limited to leader roles", () => {
   it("sends a granted kiosk user with no profile straight to the app", async () => {
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.kiosk),
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.kiosk),
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );
@@ -80,9 +80,9 @@ describe("ApprovalGate: profile form is limited to leader roles", () => {
   });
 
   it("sends a granted integration user with no profile straight to the app", async () => {
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.integration),
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.integration),
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );
@@ -111,9 +111,9 @@ describe("ApprovalGate: profile form is limited to leader roles", () => {
   });
 
   it("still shows the profile form to a granted leader with no profile", async () => {
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.storeManager),
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.storeManager),
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );
@@ -151,9 +151,9 @@ describe("ApprovalGate: profile form is limited to leader roles", () => {
 
 describe("ApprovalGate: pending user with a profile skips the form after reload", () => {
   it("goes straight to the waiting screen when getMyPendingRequest reports hasProfile", async () => {
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(
-      async () => null,
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: undefined,
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );
@@ -182,9 +182,9 @@ describe("ApprovalGate: pending user with a profile skips the form after reload"
   });
 
   it("still shows the profile form when the pending request has no profile", async () => {
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(
-      async () => null,
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: undefined,
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );

@@ -100,9 +100,9 @@ function allData(): GiftBagsData {
 
 function actor(role: Role, data: GiftBagsData = allData()) {
   return {
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(role),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(role),
+    })),
     listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
       async () => [],
     ),

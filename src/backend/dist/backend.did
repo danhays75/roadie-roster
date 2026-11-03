@@ -334,6 +334,11 @@ type OrientationCheckoff =
    uniformItems: vec text;
    updatedAt: Timestamp;
  };
+type MyAccessView = 
+ record {
+   demoRole: opt DemoRole;
+   grant: opt AccessGrant;
+ };
 type LeaderTalkId = nat;
 type LeaderTalk = 
  record {
@@ -500,7 +505,7 @@ type DuplicateMatch =
 type DemoStateView = 
  record {
    autoOffAt: opt Timestamp;
-   demoRole: DemoRole;
+   demoRole: opt DemoRole;
    demoTrainerStations: vec PositionId;
    enabled: bool;
    pretendDate: opt PretendDate;
@@ -754,16 +759,20 @@ service : {
     }) query;
   /// Count the demo records currently loaded.
   getDemoDataSummary: () -> (DemoDataSummary) query;
-  /// Read the current demo state. Any caller, including unregistered users, so
-  /// the banner can render on the sign-in and waiting screens.
+  /// Read the current demo state for the calling principal. Any caller,
+  /// including unregistered users, so the banner can render on the sign-in and
+  /// waiting screens. `demoRole` and `demoTrainerStations` describe the
+  /// caller's own demo role.
   getDemoState: () -> (DemoStateView) query;
   /// Build the Gift Bags shopping list and printable labels for the selected
   /// filter, across active (non-archived) roadies only. Visible to Admin, Store
   /// Manager and Training Manager. Never includes phone, email or date of birth.
   getGiftBags: (filter: GiftBagFilter) -> (GiftBagsData) query;
-  /// Read the caller's own access grant. Returns null until an Admin has
+  /// Read the caller's own access view: their real grant (or null) plus a
+  /// separate `demoRole` carrying the caller's own demo role while demo mode is
+  /// on, or null when demo mode is off. Returns null grant until an Admin has
   /// approved the caller, so the frontend keeps showing the waiting screen.
-  getMyAccess: () -> (opt AccessGrant) query;
+  getMyAccess: () -> (MyAccessView) query;
   /// Read the caller's own pending access request, if any. Returns null when
   /// the caller has no pending entry; otherwise the requestedAt of that pending
   /// entry and hasProfile = true when a staff profile has been submitted.

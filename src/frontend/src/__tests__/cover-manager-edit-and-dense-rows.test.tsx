@@ -121,9 +121,9 @@ function statefulActor(initial: Roadie, role: Role = Role.storeManager) {
       getStoreLogo: vi.fn<backendInterface["getStoreLogo"]>(async () => ({})),
       getPhoto: vi.fn<backendInterface["getPhoto"]>(async () => null),
       isMinor: vi.fn<backendInterface["isMinor"]>(async () => false),
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(role),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(role),
+      })),
       getContactSet: vi.fn<backendInterface["getContactSet"]>(async () => []),
       getChecklists: vi.fn<backendInterface["getChecklists"]>(async () => ({
         paperwork: [],

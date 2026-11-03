@@ -40,10 +40,12 @@ mixin (
     };
   };
 
-  /// Read the current demo state. Any caller, including unregistered users, so
-  /// the banner can render on the sign-in and waiting screens.
-  public query func getDemoState() : async Common.DemoStateView {
-    DemoLib.getDemoState(demoState);
+  /// Read the current demo state for the calling principal. Any caller,
+  /// including unregistered users, so the banner can render on the sign-in and
+  /// waiting screens. `demoRole` and `demoTrainerStations` describe the
+  /// caller's own demo role.
+  public query ({ caller }) func getDemoState() : async Common.DemoStateView {
+    DemoLib.getDemoState(demoState, caller);
   };
 
   /// Turn demo mode on or off (Admin only). Turning it on requires the literal

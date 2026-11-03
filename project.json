@@ -1,21 +1,18 @@
 {
-  "overview": "Roadie Roster is a store roadie onboarding and roster app with a demo mode for safe rehearsals.",
+  "overview": "A roadie staffing app for a retail store: sign-ups, approvals, rosters, crews, schedules, checklists and a safe demo mode.",
   "features": [
-    "Admin-only Demo mode switch with DEMO confirmation and 8-hour auto-off",
-    "Sticky orange demo banner on every screen with Turn off, View as and Pretend it's controls",
-    "Strict separation of demo records from real records across roadies, sign-ups, crews, leaders, check-ins and notes",
-    "View as role picker that enforces the chosen role's permissions against demo data",
-    "Load and clear demo data with about 40 roadies, crews, leaders and pending sign-ups",
-    "Pretend date that overrides now for schedules, countdowns, the Today screen, check-in availability and age math",
-    "Sign as Test button on signature pads in demo mode",
-    "Kiosk sign-ups saved as demo sign-ups in demo mode"
+    "Sign-up and approval flow with role-based access",
+    "Roster, crews, leaders and gift bags",
+    "Schedule, positions, checklists and store template",
+    "Demo mode with per-caller View as roles and real-data protection"
   ],
   "category": "productivity",
   "tags": [
+    "staffing",
     "roster",
-    "onboarding",
+    "retail",
     "demo-mode",
-    "store-management"
+    "security"
   ],
-  "last_updated": "2026-11-02T23:26:35.113Z"
+  "last_updated": "2026-11-03T01:45:51.877Z"
 }

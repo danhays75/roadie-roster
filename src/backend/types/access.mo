@@ -57,6 +57,16 @@ module {
     staffProfile : ?StaffProfile;
   };
 
+  /// The caller's own access view: their **real** grant (unchanged, or null
+  /// when they hold none) plus a separate `demoRole` carrying the caller's own
+  /// demo role while demo mode is on, or null when demo mode is off. Keeping
+  /// the demo role separate means a caller with no real grant is never
+  /// presented as really approved.
+  public type MyAccessView = {
+    grant : ?AccessGrant;
+    demoRole : ?Common.DemoRole;
+  };
+
   /// A pending access request shown on the approval screen.
   public type PendingUser = {
     principal : Principal;

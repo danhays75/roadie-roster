@@ -13,12 +13,12 @@ import Access "../types/access";
 import Auth "auth";
 import ChangeLog "changelog";
 
-/// Demo-mode domain logic. Demo mode is off by default; only an Admin may turn
-/// it on, and turning it on requires the literal confirmation "DEMO". It turns
-/// itself off automatically eight hours after it was turned on. Demo records
-/// are stored alongside real records and separated by an `isDemo` flag, so
-/// while demo mode is on every query and export returns only demo records, and
-/// while it is off demo records are invisible everywhere.
+/// Demo-mode domain logic. Demo mode is off by default; only a real Admin may
+/// turn it on, and turning it on requires the literal confirmation "DEMO". It
+/// turns itself off automatically eight hours after it was turned on. Demo
+/// records are stored alongside real records and separated by an `isDemo` flag,
+/// so while demo mode is on every query and export returns only demo records,
+/// and while it is off demo records are invisible everywhere.
 module {
   /// The counters the demo seeder advances so seeded demo records do not
   /// collide with real ones.
@@ -65,8 +65,8 @@ module {
   /// Persist the auto-off when the eight-hour window has elapsed. Called from
   /// every update path so the stored flag catches up with the computed view.
   /// The automatic off is written to the change log with the system actor as
-  /// `who`, and the pretend date and demo role are cleared, exactly like a
-  /// manual off.
+  /// `who`, and the pretend date and every caller's demo role are cleared,
+  /// exactly like a manual off.
   func refreshAutoOff(
     demoState : Common.DemoState,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
@@ -112,39 +112,43 @@ module {
     refreshAutoOff(demoState, changeLog, counters, now);
   };
 
-  /// Clear the demo-mode flags, the pretend date and the demo role. Shared by
-  /// the manual off and the automatic off so both leave the same clean state.
+  /// Clear the demo-mode flags, the pretend date and every caller's stored demo
+  /// role. Shared by the manual off and the automatic off so both leave the
+  /// same clean state.
   func turnOff(demoState : Common.DemoState) {
     demoState.enabled := false;
     demoState.turnedOnAt := null;
     demoState.autoOffAt := null;
     demoState.pretendDate := null;
-    demoState.demoRole := #admin;
-    demoState.demoTrainerStations := [];
+    demoState.demoRoles.clear();
   };
 
-  /// Build the shared view of the demo state.
-  func toView(demoState : Common.DemoState, now : Int) : Demo.DemoStateView {
+  /// Build the shared view of the demo state for one caller. `demoRole` and
+  /// `demoTrainerStations` describe that caller's own demo role, or null/empty
+  /// when demo mode is off or the caller is anonymous.
+  func toView(demoState : Common.DemoState, caller : Principal, now : Int) : Demo.DemoStateView {
     {
       enabled = isOn(demoState, now);
       turnedOnAt = demoState.turnedOnAt;
       autoOffAt = demoState.autoOffAt;
       pretendDate = demoState.pretendDate;
-      demoRole = demoState.demoRole;
-      demoTrainerStations = demoState.demoTrainerStations;
+      demoRole = Auth.demoRoleFor(demoState, caller);
+      demoTrainerStations = Auth.demoTrainerStationsFor(demoState, caller);
     };
   };
 
-  /// Read the current demo state as a shared view. Any caller, including
-  /// unregistered users, so the banner can render on the sign-in and waiting
-  /// screens.
-  public func getDemoState(demoState : Common.DemoState) : Demo.DemoStateView {
-    toView(demoState, Time.now());
+  /// Read the current demo state as a shared view for the calling principal.
+  /// Any caller, including unregistered users, so the banner can render on the
+  /// sign-in and waiting screens.
+  public func getDemoState(demoState : Common.DemoState, caller : Principal) : Demo.DemoStateView {
+    toView(demoState, caller, Time.now());
   };
 
-  /// Turn demo mode on or off. Turning it on requires the literal confirmation
-  /// "DEMO" and an Admin caller; turning it on sets the eight-hour auto-off
-  /// time. Every on/off is written to the change log.
+  /// Turn demo mode on or off. Both directions require a **real** Admin grant
+  /// (demo impersonation is ignored). Turning it on requires the literal
+  /// confirmation "DEMO" and sets the eight-hour auto-off time; turning it on
+  /// while it is already on is refused, so the eight-hour window cannot be
+  /// extended. Every on/off is written to the change log.
   public func setDemoMode(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -158,6 +162,9 @@ module {
     let now = Time.now();
     refreshAutoOff(demoState, changeLog, counters, now);
     if (enabled) {
+      if (isOn(demoState, now)) {
+        return #err("Demo mode is already on");
+      };
       if (confirmation != confirmWord) {
         return #err("Type DEMO to confirm");
       };
@@ -169,13 +176,15 @@ module {
       turnOff(demoState);
       ignore ChangeLog.record(changeLog, counters, caller, "demoModeOff", null, false, "Demo mode turned off");
     };
-    #ok(toView(demoState, now));
+    #ok(toView(demoState, caller, now));
   };
 
-  /// Set the impersonated demo role and, for a demo NSO Trainer, the stations
-  /// that role may see. Any signed-in caller may choose a demo role while demo
-  /// mode is on; the backend enforces the same permission rules for the
-  /// impersonated role as for a real user with that role.
+  /// Set the calling principal's own impersonated demo role and, for a demo NSO
+  /// Trainer, the stations that role may see. Any signed-in caller may choose a
+  /// demo role while demo mode is on; the choice is stored per caller, so it
+  /// changes only the choosing caller's view. The backend enforces the same
+  /// permission rules for the impersonated role as for a real user with that
+  /// role.
   public func setDemoRole(
     demoState : Common.DemoState,
     caller : Principal,
@@ -189,9 +198,8 @@ module {
     if (not isOn(demoState, now)) {
       return #err("Demo mode is off");
     };
-    demoState.demoRole := role;
-    demoState.demoTrainerStations := stations;
-    #ok(toView(demoState, now));
+    demoState.demoRoles.add(caller, { role; stations });
+    #ok(toView(demoState, caller, now));
   };
 
   /// Set or clear the pretend "now" used while demo mode is on. Null restores
@@ -209,7 +217,7 @@ module {
       return #err("Demo mode is off");
     };
     demoState.pretendDate := pretendDate;
-    #ok(toView(demoState, now));
+    #ok(toView(demoState, caller, now));
   };
 
   /// Count the demo records currently loaded, so the admin UI can show what
@@ -242,11 +250,11 @@ module {
     };
   };
 
-  /// Seed the demo data set (Admin, demo mode only): about 40 roadies spread
-  /// across positions with illustrated avatars and full About Me answers, a mix
-  /// of statuses, 2 minors and 2 archived; 3 crews; 4 leaders; and 3 pending
-  /// kiosk sign-ups including one phone duplicate. Returns the new counts.
-  /// Idempotent: loading again does not duplicate the seed.
+  /// Seed the demo data set (real Admin, demo mode only): about 40 roadies
+  /// spread across positions with illustrated avatars and full About Me
+  /// answers, a mix of statuses, 2 minors and 2 archived; 3 crews; 4 leaders;
+  /// and 3 pending kiosk sign-ups including one phone duplicate. Returns the
+  /// new counts. Idempotent: loading again does not duplicate the seed.
   public func loadDemoData(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -342,8 +350,8 @@ module {
     getDemoDataSummary(accessGrants, roadies, signups, crews, attendance, trainerNotes);
   };
 
-  /// Remove every demo record (Admin, demo mode only). Real records are never
-  /// touched. Returns the counts that were removed.
+  /// Remove every demo record (real Admin, demo mode only). Real records are
+  /// never touched. Returns the counts that were removed.
   public func clearDemoData(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,

@@ -124,8 +124,8 @@ describe("backend access, signup and export contract", () => {
   });
 
   it("makes the first caller an admin", async () => {
-    const grant = await admin.getMyAccess();
-    expect(grant[0]?.role).toEqual({ admin: null });
+    const view = await admin.getMyAccess();
+    expect(view.grant[0]?.role).toEqual({ admin: null });
   });
 
   it("rejects every read for a Kiosk login but allows a sign-up", async () => {

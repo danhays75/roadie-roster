@@ -61,9 +61,9 @@ const PROFILE: StaffProfile = {
 describe("ApprovalGate: adjacent pending and granted behavior", () => {
   it("shows the profile form to a pending caller, then the waiting screen after submit", async () => {
     const user = userEvent.setup();
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(
-      async () => null,
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: undefined,
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );
@@ -116,9 +116,9 @@ describe("ApprovalGate: adjacent pending and granted behavior", () => {
   });
 
   it("renders the app chrome for a granted caller who already has a profile", async () => {
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.storeManager, PROFILE),
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.storeManager, PROFILE),
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );

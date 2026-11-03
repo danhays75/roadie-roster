@@ -31,11 +31,13 @@ function actor(role: Role) {
     listCrews: vi.fn<backendInterface["listCrews"]>(async () => []),
     isMinor: vi.fn<backendInterface["isMinor"]>(async () => false),
     getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
-      principal: { toText: () => "aaaaa-aa" } as never,
-      role,
-      approvedAt: 0n,
-      approvedBy: { toText: () => "aaaaa-aa" } as never,
-      trainerPositionIds: [],
+      grant: {
+        principal: { toText: () => "aaaaa-aa" } as never,
+        role,
+        approvedAt: 0n,
+        approvedBy: { toText: () => "aaaaa-aa" } as never,
+        trainerPositionIds: [],
+      },
     })),
     getContactSet: vi.fn<backendInterface["getContactSet"]>(async () =>
       roadie.contactSet ? [roadie.contactSet] : [],

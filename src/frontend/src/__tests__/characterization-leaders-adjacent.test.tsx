@@ -128,9 +128,9 @@ function cardActor(roadie: Roadie) {
     getStoreLogo: vi.fn<backendInterface["getStoreLogo"]>(async () => ({})),
     getPhoto: vi.fn<backendInterface["getPhoto"]>(async () => null),
     isMinor: vi.fn<backendInterface["isMinor"]>(async () => roadie.isMinor),
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.admin),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.admin),
+    })),
     getContactSet: vi.fn<backendInterface["getContactSet"]>(async () => []),
     getChecklists: vi.fn<backendInterface["getChecklists"]>(async () => ({
       paperwork: [],
@@ -256,9 +256,9 @@ describe("staff profile form: adjacent behavior", () => {
       backendInterface["updateMyStaffProfile"]
     >(async () => {});
     const actor = {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.storeManager, PROFILE),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.storeManager, PROFILE),
+      })),
       listPositions: vi.fn<backendInterface["listPositions"]>(async () => []),
       updateMyStaffProfile,
     };
@@ -378,9 +378,9 @@ function allData(): GiftBagsData {
 
 function giftBagsActor(role: Role, data: GiftBagsData = allData()) {
   return {
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(role),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(role),
+    })),
     listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
       async () => [],
     ),

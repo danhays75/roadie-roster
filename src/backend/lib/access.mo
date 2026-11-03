@@ -16,12 +16,20 @@ module {
   /// Nanoseconds in one second.
   let nsPerSecond : Int = 1_000_000_000;
 
-  /// Read the caller's own access grant, if any.
+  /// Read the caller's own access view: their **real** grant unchanged (or null
+  /// when they hold none) plus a separate `demoRole` carrying the caller's own
+  /// demo role while demo mode is on, or null when demo mode is off. Keeping
+  /// the demo role separate means a caller with no real grant is never
+  /// presented as really approved.
   public func getMyAccess(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
     caller : Principal,
-  ) : ?Access.AccessGrant {
-    accessGrants.get(caller);
+  ) : Access.MyAccessView {
+    {
+      grant = accessGrants.get(caller);
+      demoRole = Auth.demoRoleFor(demoState, caller);
+    };
   };
 
   /// Bootstrap the first app Admin.
@@ -99,7 +107,8 @@ module {
     accessGrants.add(caller, { grant with staffProfile = ?profile });
   };
 
-  /// List pending access requests (Admin only).
+  /// List pending access requests (Admin only). While demo mode is on, only
+  /// demo pending requests are returned; real ones are never exposed.
   public func listPendingUsers(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -107,17 +116,21 @@ module {
     caller : Principal,
   ) : [Access.PendingUser] {
     Auth.requireAdmin(accessGrants, demoState, caller);
+    if (Auth.demoActive(demoState)) {
+      return [];
+    };
     pendingUsers.values().toArray();
   };
 
-  /// List all access grants (Admin only).
+  /// List all access grants (Admin only). While demo mode is on, only demo
+  /// leaders are returned; real grants are never exposed.
   public func listAccessGrants(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     caller : Principal,
   ) : [Access.AccessGrant] {
     Auth.requireAdmin(accessGrants, demoState, caller);
-    accessGrants.values().toArray();
+    accessGrants.values().filter(func(g) = Auth.isDemoLeader(g) == Auth.demoActive(demoState)).toArray();
   };
 
   /// List the leaders shown on the Leaders page: the manager, trainer and
@@ -199,9 +212,9 @@ module {
     { profile with workPhone = null; workEmail = null };
   };
 
-  /// Approve a pending user with a role and options (Admin only). An Admin
-  /// grant is always stored with no end date, so an admin can never be
-  /// end-dated into lockout.
+  /// Approve a pending user with a role and options (real Admin only, refused
+  /// while demo mode is on). An Admin grant is always stored with no end date,
+  /// so an admin can never be end-dated into lockout.
   public func approveUser(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -209,7 +222,7 @@ module {
     caller : Principal,
     request : Access.ApprovalRequest,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     if (not pendingUsers.containsKey(request.principal)) {
       Runtime.trap("No pending request for this principal");
     };
@@ -231,8 +244,9 @@ module {
     });
   };
 
-  /// Change an existing user's role (Admin only). Refuses any change that would
-  /// leave zero active admins, including demoting the last admin.
+  /// Change an existing user's role (real Admin only, refused while demo mode
+  /// is on). Refuses any change that would leave zero active admins, including
+  /// demoting the last admin.
   public func updateUserRole(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -240,7 +254,7 @@ module {
     principal : Principal,
     role : Common.Role,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     let grant = accessGrants.get(principal) ?? Runtime.trap("Access grant not found");
     if (grant.role == #admin and role != #admin and isActiveAdmin(grant) and countAdmins(accessGrants) <= 1) {
       Runtime.trap("Cannot demote the last active admin");
@@ -253,7 +267,8 @@ module {
     accessGrants.add(principal, { grant with role; accessEndsAt });
   };
 
-  /// Update a user's trainer stations (Admin only).
+  /// Update a user's trainer stations (real Admin only, refused while demo mode
+  /// is on).
   public func updateTrainerStations(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -261,14 +276,15 @@ module {
     principal : Principal,
     positionIds : [Common.PositionId],
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     let grant = accessGrants.get(principal) ?? Runtime.trap("Access grant not found");
     accessGrants.add(principal, { grant with trainerPositionIds = positionIds });
   };
 
-  /// Update a user's access end date (Admin only). Refuses ANY end date (past
-  /// or future) on the last active admin, so the last admin can never be
-  /// end-dated into lockout. An Admin grant is always stored with no end date.
+  /// Update a user's access end date (real Admin only, refused while demo mode
+  /// is on). Refuses ANY end date (past or future) on the last active admin, so
+  /// the last admin can never be end-dated into lockout. An Admin grant is
+  /// always stored with no end date.
   public func updateAccessEnd(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -276,7 +292,7 @@ module {
     principal : Principal,
     accessEndsAt : ?Common.Timestamp,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     let grant = accessGrants.get(principal) ?? Runtime.trap("Access grant not found");
     if (grant.role == #admin) {
       // An admin can never be end-dated at all.
@@ -289,14 +305,15 @@ module {
     accessGrants.add(principal, { grant with accessEndsAt });
   };
 
-  /// Remove a user's access (Admin only); the last admin cannot be removed.
+  /// Remove a user's access (real Admin only, refused while demo mode is on);
+  /// the last admin cannot be removed.
   public func removeUser(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     caller : Principal,
     principal : Principal,
   ) : () {
-    Auth.requireAdmin(accessGrants, demoState, caller);
+    Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     let grant = accessGrants.get(principal) ?? Runtime.trap("Access grant not found");
     if (grant.role == #admin and isActiveAdmin(grant) and countAdmins(accessGrants) <= 1) {
       Runtime.trap("Cannot remove the last active admin");

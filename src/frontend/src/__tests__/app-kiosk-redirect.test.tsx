@@ -45,9 +45,9 @@ function grant(role: Role): AccessGrant {
 /** The actor methods the app shell reads on the default route. */
 function actorFor(role: Role) {
   return {
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(role),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(role),
+    })),
     requestAccess: vi.fn<backendInterface["requestAccess"]>(async () => false),
     bootstrapAdmin: vi.fn<backendInterface["bootstrapAdmin"]>(
       async () => false,

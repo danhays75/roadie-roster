@@ -57,9 +57,9 @@ function emptyDashboardActor() {
     })),
     listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),
     getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => STORE),
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(
-      async () => ADMIN_GRANT,
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: ADMIN_GRANT,
+    })),
     listRosterForPosition: vi.fn<backendInterface["listRosterForPosition"]>(
       async () => [],
     ),
@@ -92,9 +92,9 @@ function emptyAdminActor() {
       async () => [],
     ),
     adminCount: vi.fn<backendInterface["adminCount"]>(async () => 1n),
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(
-      async () => ADMIN_GRANT,
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: ADMIN_GRANT,
+    })),
     ensureSeeded: vi.fn<backendInterface["ensureSeeded"]>(async () => true),
   };
 }

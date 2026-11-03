@@ -107,13 +107,6 @@
 
 ## Learnings
 
-- The backend exposes getMyPendingRequest() : ?{ requestedAt : Timestamp; hasProfile : Bool } (query deriving the caller principal) in mixins/access-api.mo over lib/access.mo, typed as PendingRequestSummary in types/access.mo; hooks/useQueries.ts has useMyPendingRequest.
-- Leader cards resolve their photo from leader.staffProfile.photo via refToDataUrl in FlipCard.tsx; the roadie path still uses useRoadiePhoto(roadie?.id).
-- roadieCard.css tier variants re-color via .rc.gold/.rc.plat/.rc.legend variable overrides; base .rc rules read var(--navy/--red/--cream/--gold).
-- StoreSeal's accessible name is the bare store number (aria-label={String(storeNumber)}), not 'Store <n>', so tests match the number exactly.
-- LeaderTile in pages/Leaders.tsx renders leader.staffProfile.photo via a memoized refToDataUrl with an initials fallback, marked data-ocid=leaders.item.photo.
-- A stored photo is raw bytes with no content type; build its preview data URL from the detected magic-number MIME type, not a hardcoded image/jpeg.
-- Crews are stored in main.mo as crews : Map.Map<Common.CrewId, Roadie.Crew>; Crew={id,name,leaderPrincipal} lives in types/roadie.mo, with migration src/backend/migrations/00000009_000000.mo adding leaderPrincipal. createCrew/updateCrew/deleteCrew/listCrews live in lib/roadie.mo and are exposed via mixins/roadie-api.mo; all crew writes require Admin or Store Manager and deleteCrew refuses while any roadie is assigned.
 - Crew ids start at 0n (nextCrewId counter), so 0n is a valid crew id and cannot be the add-vs-edit sentinel; use an explicit null id. createCrew(name) cannot set a leader, so persist a chosen leader by chaining createCrew then updateCrew(newId, name, leader).
 - The Crews tab lives in src/frontend/src/components/admin/CrewsPanel.tsx and is registered in src/frontend/src/pages/Admin.tsx, gated to Admin and Store Manager; hooks/useQueries.ts has useCreateCrew/useUpdateCrew/useDeleteCrew.
 - findDuplicates in lib/signup.mo matches phone OR email, includes archived roadies, and populates name, mainPositionName and matchedOn; matchedOn reports 'phone' when the phone matches and 'email' only when the email is the sole match. DuplicateMatch = { roadieId; name; mainPositionName; matchedOn; archived } in types/signup.mo.
@@ -132,3 +125,10 @@
 - The admin demo switch is src/frontend/src/components/admin/DemoModePanel.tsx rendered by components/admin/StoreInfoPanel.tsx; the Sign as Test button is in components/kiosk/KioskSignatureStep.tsx and components/approvals/ManagerSignaturePad.tsx.
 - pretendDateToInstant in src/frontend/src/lib/format.ts maps a PretendDate (UTC day + AM/PM) to a JS Date; OpeningTimeline's useNow and Kiosk's effectiveNow consume it while demo mode is on.
 - The inherited suite has 22 pre-existing failing tests that predate this draft and remain failing; the demo mode work added passing tests without changing them.
+- The per-caller demo role lives in demoState.demoRoles : Map<Principal, DemoRoleEntry> in src/backend/types/common.mo, with migration src/backend/migrations/00000011_000000.mo dropping the old global demoRole/demoTrainerStations; Auth.demoRoleFor defaults a signed-in caller with no entry to #admin and returns null for anonymous.
+- Auth.requireRealSettingsAdmin/requireRealSettingsManager call requireRealAdmin/Manager first, then trap 'Turn off demo mode to change real settings' while demoActive; they guard approveUser, updateUserRole, removeUser, updateAccessEnd, updateTrainerStations, setKioskPin, updateStoreInfo, position/schedule/checklist/retention writes, adjustBuildTo and the store template writes, while reads keep requireReadable.
+- getMyAccess returns MyAccessView { grant : ?AccessGrant; demoRole : ?DemoRole }; hooks/useAccess.ts normalizeAccessView tolerates a bare AccessGrant so inherited mocks keep passing.
+- listAccessGrants filters isDemoLeader(g) == demoActive(demoState) and listPendingUsers returns [] while demo is on, so real grants and pending requests never leak.
+- Admin.tsx hides the real-settings tabs while demo is on but keeps the Store tab so an Admin can reach the demo switch; activeTab falls back to store if a hidden tab was selected. Panels that self-gate on demo.enabled must place the early return after every hook.
+- Four committed PocketIC tests (test/pocketic/backend-demo.test.ts, test/pocketic/backend-template-and-profile.test.ts, test/pocketic/backend.test.ts) still assert the old global demo role and old getMyAccess tuple shape; they are stale and need updating to the per-caller DemoStateView.demoRole and MyAccessView shapes.
+- The inherited frontend suite has 22 pre-existing failing tests that predate this draft and remain failing; the backend PocketIC lane passes.

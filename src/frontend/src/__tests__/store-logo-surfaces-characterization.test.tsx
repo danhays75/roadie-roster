@@ -78,11 +78,13 @@ describe("StoreLogo renders on every affected surface", () => {
       Page,
       {
         getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
-          principal: { toText: () => "aaaaa-aa" } as never,
-          role: Role.admin,
-          approvedAt: 0n,
-          approvedBy: { toText: () => "aaaaa-aa" } as never,
-          trainerPositionIds: [],
+          grant: {
+            principal: { toText: () => "aaaaa-aa" } as never,
+            role: Role.admin,
+            approvedAt: 0n,
+            approvedBy: { toText: () => "aaaaa-aa" } as never,
+            trainerPositionIds: [],
+          },
         })),
         listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
           async () => [],
@@ -112,7 +114,9 @@ describe("StoreLogo renders on every affected surface", () => {
 
   it("renders the uploaded logo on the sign-in/waiting screen", async () => {
     renderWithActor(wrap(<ApprovalGate />), {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => null),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: undefined,
+      })),
       requestAccess: vi.fn<backendInterface["requestAccess"]>(
         async () => false,
       ),
@@ -169,7 +173,9 @@ describe("StoreLogo renders on every affected surface", () => {
         getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(
           async () => STORE,
         ),
-        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => null),
+        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+          grant: undefined,
+        })),
         listRosterForPosition: vi.fn<backendInterface["listRosterForPosition"]>(
           async () => [ROADIE],
         ),

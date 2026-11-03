@@ -247,8 +247,8 @@ describe("My profile: leader About Me fields", () => {
       backendInterface["updateMyStaffProfile"]
     >(async () => {});
     const actor = {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.storeManager, {
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.storeManager, {
           fullName: "Jordan Rivera",
           preferredName: "Jordan",
           title: "Manager",
@@ -259,7 +259,7 @@ describe("My profile: leader About Me fields", () => {
           hometown: "Bake",
           favoriteSnack: "Snickers",
         }),
-      ),
+      })),
       listPositions: vi.fn<backendInterface["listPositions"]>(async () => []),
       updateMyStaffProfile,
     };
@@ -283,9 +283,9 @@ describe("My profile: leader About Me fields", () => {
 describe("Leaders page: tier grouping and card pop-up", () => {
   function leadersActor(leaders: LeaderSummary[]) {
     return {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
         async () => [],
       ),
@@ -404,9 +404,9 @@ describe("Leaders page: tier grouping and card pop-up", () => {
 describe("leader card: tier ribbon and variant", () => {
   function cardActor(leaders: LeaderSummary[]) {
     return {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       listLeaders: vi.fn<backendInterface["listLeaders"]>(async () => leaders),
       listPositions: vi.fn<backendInterface["listPositions"]>(async () => [
         POSITION,
@@ -546,9 +546,9 @@ describe("Gift Bags: roadies and leaders filter", () => {
 
   function actor() {
     return {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
         async () => [],
       ),
@@ -608,9 +608,9 @@ describe("Leaders nav visibility", () => {
 
   function navActor(role: Role) {
     return {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(role),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(role),
+      })),
       listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
         async () => [],
       ),

@@ -110,9 +110,9 @@ function leader(
 
 function cardActor(leaders: LeaderSummary[]) {
   return {
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.admin),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.admin),
+    })),
     listLeaders: vi.fn<backendInterface["listLeaders"]>(async () => leaders),
     listPositions: vi.fn<backendInterface["listPositions"]>(async () => [
       POSITION,
@@ -224,9 +224,9 @@ describe("leader card: scalloped bottle-cap store seal", () => {
 describe("Leaders grid: leader photo on the tile", () => {
   function leadersActor(leaders: LeaderSummary[]) {
     return {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
         async () => [],
       ),
@@ -286,8 +286,8 @@ describe("My profile: staff photo preview", () => {
 
   it("shows the seeded staff photo in the preview", async () => {
     const actor = {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.storeManager, {
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.storeManager, {
           fullName: "Jordan Rivera",
           preferredName: "Jordan",
           title: "Manager",
@@ -297,7 +297,7 @@ describe("My profile: staff photo preview", () => {
           trainerPositionIds: [],
           photo: PHOTO_BYTES,
         }),
-      ),
+      })),
       listPositions: vi.fn<backendInterface["listPositions"]>(async () => []),
       updateMyStaffProfile: vi.fn<backendInterface["updateMyStaffProfile"]>(
         async () => {},

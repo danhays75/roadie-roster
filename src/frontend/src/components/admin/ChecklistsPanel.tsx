@@ -1,9 +1,11 @@
 import type { ChecklistItem, Checklists, RetentionSettings } from "@/backend";
+import { DemoSettingsNote } from "@/components/DemoBanner";
 import { AdminSection, FormField } from "@/components/admin/FormField";
 import { useAdminCopy } from "@/components/admin/useAdminCopy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { useDemo } from "@/hooks/useDemo";
 import {
   useChecklists,
   useRetentionSettings,
@@ -157,6 +159,7 @@ function ChecklistEditor({
 
 export function ChecklistsPanel() {
   const c = useAdminCopy();
+  const demo = useDemo();
   const checklists = useChecklists();
   const updateChecklists = useUpdateChecklists();
   const retention = useRetentionSettings();
@@ -204,6 +207,29 @@ export function ChecklistsPanel() {
         : current,
     );
   };
+
+  // While demo mode is on the checklist and retention edit controls are hidden:
+  // they change real settings, which demo mode must not touch.
+  if (demo.enabled) {
+    return (
+      <div className="space-y-6">
+        <AdminSection
+          title={c.checklistsTitle}
+          description={c.checklistsDescription}
+          ocid="admin.checklists.section"
+        >
+          <DemoSettingsNote />
+        </AdminSection>
+        <AdminSection
+          title={c.retentionTitle}
+          description={c.retentionDescription}
+          ocid="admin.retention.section"
+        >
+          <DemoSettingsNote />
+        </AdminSection>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -277,7 +277,7 @@ module {
       case (#integration) { false };
       case (#trainer) {
         let stations = if (Auth.demoActive(demoState)) {
-          demoState.demoTrainerStations;
+          Auth.demoTrainerStationsFor(demoState, caller);
         } else {
           switch (accessGrants.get(caller)) {
             case (?grant) { grant.trainerPositionIds };

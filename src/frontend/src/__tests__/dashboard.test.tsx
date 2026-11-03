@@ -52,7 +52,9 @@ function baseActor() {
       leaderTalkName: "Leader talk",
       leaderTalkSize: 4n,
     })),
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => null),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: undefined,
+    })),
     listRosterForPosition: vi.fn<backendInterface["listRosterForPosition"]>(
       async () => [],
     ),

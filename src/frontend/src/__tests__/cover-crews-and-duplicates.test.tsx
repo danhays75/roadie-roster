@@ -158,9 +158,9 @@ function roadie(
 /** The actor methods the admin page tree reads across its tabs. */
 function adminActor(role: Role, crews: Crew[], roadies: Roadie[] = []) {
   return {
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(role),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(role),
+    })),
     getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => STORE),
     listPositions: vi.fn<backendInterface["listPositions"]>(async () => [
       SERVERS,
@@ -206,9 +206,9 @@ function approvalsActor(
   duplicates: DuplicateMatch[] = [],
 ) {
   return {
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.storeManager, approver),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.storeManager, approver),
+    })),
     listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
       async () => [],
     ),

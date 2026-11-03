@@ -33,9 +33,9 @@ function wrap(ui: React.ReactElement) {
 
 describe("ApprovalGate", () => {
   it("shows the waiting-for-approval screen for a signed-in user without a grant", async () => {
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(
-      async () => null,
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: undefined,
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );
@@ -71,9 +71,9 @@ describe("ApprovalGate", () => {
   });
 
   it("persists the first admin's grant by bootstrapping once for a signed-in caller", async () => {
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(
-      async () => null,
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: undefined,
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );
@@ -115,9 +115,9 @@ describe("ApprovalGate", () => {
   });
 
   it("renders the app chrome for a caller who already holds a grant", async () => {
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.admin),
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.admin),
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );

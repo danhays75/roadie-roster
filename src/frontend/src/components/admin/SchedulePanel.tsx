@@ -1,4 +1,5 @@
 import { EventKind, type ScheduleEvent } from "@/backend";
+import { DemoSettingsNote } from "@/components/DemoBanner";
 import { StatusBadge } from "@/components/StatusBadge";
 import { AdminSection, FormField } from "@/components/admin/FormField";
 import { fill } from "@/components/admin/copy";
@@ -24,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useDemo } from "@/hooks/useDemo";
 import {
   useCreateScheduleEvent,
   useDeleteScheduleEvent,
@@ -97,6 +99,7 @@ function dateTimeToInput(value: bigint, timeZone: string): string {
 
 export function SchedulePanel() {
   const c = useAdminCopy();
+  const demo = useDemo();
   const schedule = useSchedule();
   const { data: storeInfo } = useStoreInfo();
   const timeZone = storeInfo?.timeZone || DEFAULT_TIME_ZONE;
@@ -105,6 +108,10 @@ export function SchedulePanel() {
   const remove = useDeleteScheduleEvent();
   const [draft, setDraft] = useState<EventDraft | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ScheduleEvent | null>(null);
+
+  // While demo mode is on the schedule edit controls are hidden: they change
+  // real settings, which demo mode must not touch. The list stays readable.
+  const readOnly = demo.enabled;
 
   const events = schedule.data ?? [];
   const isEditing = draft !== null && draft.id !== 0n;
@@ -168,17 +175,20 @@ export function SchedulePanel() {
       description={c.scheduleDescription}
       ocid="admin.schedule.section"
       action={
-        <Button
-          type="button"
-          className="touch-target"
-          data-ocid="admin.schedule.add_button"
-          onClick={openNew}
-        >
-          <CalendarPlus className="mr-2 h-4 w-4" aria-hidden="true" />
-          {c.scheduleAdd}
-        </Button>
+        readOnly ? undefined : (
+          <Button
+            type="button"
+            className="touch-target"
+            data-ocid="admin.schedule.add_button"
+            onClick={openNew}
+          >
+            <CalendarPlus className="mr-2 h-4 w-4" aria-hidden="true" />
+            {c.scheduleAdd}
+          </Button>
+        )
       }
     >
+      {readOnly && <DemoSettingsNote />}
       {schedule.isLoading && (
         <p className="text-sm text-muted-foreground">{c.scheduleLoading}</p>
       )}
@@ -226,28 +236,30 @@ export function SchedulePanel() {
                         : ""}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="touch-target"
-                      data-ocid="admin.schedule.edit_button"
-                      onClick={() => openEdit(event)}
-                    >
-                      <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
-                      {c.actionEdit}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="touch-target text-destructive"
-                      data-ocid="admin.schedule.delete_button"
-                      onClick={() => setDeleteTarget(event)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
-                      {c.actionDelete}
-                    </Button>
-                  </div>
+                  {!readOnly && (
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="touch-target"
+                        data-ocid="admin.schedule.edit_button"
+                        onClick={() => openEdit(event)}
+                      >
+                        <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+                        {c.actionEdit}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="touch-target text-destructive"
+                        data-ocid="admin.schedule.delete_button"
+                        onClick={() => setDeleteTarget(event)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                        {c.actionDelete}
+                      </Button>
+                    </div>
+                  )}
                 </li>
               );
             })}

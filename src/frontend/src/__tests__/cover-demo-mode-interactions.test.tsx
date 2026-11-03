@@ -84,9 +84,9 @@ describe("demo banner View as picker drives the backend", () => {
       okResult(demoState({ enabled: true, demoRole: DemoRole.kiosk })),
     );
     renderWithActor(<DemoBanner />, {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
         demoState({ enabled: true }),
       ),
@@ -118,9 +118,9 @@ describe("demo banner View as picker drives the backend", () => {
       ),
     );
     renderWithActor(<DemoBanner />, {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
         demoState({ enabled: true, demoRole: DemoRole.trainer }),
       ),
@@ -164,9 +164,9 @@ describe("demo banner Pretend it's picker drives the backend", () => {
       okResult(demoState({ enabled: true })),
     );
     renderWithActor(<DemoBanner />, {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
         demoState({ enabled: true }),
       ),
@@ -194,9 +194,9 @@ describe("demo banner Pretend it's picker drives the backend", () => {
       okResult(demoState({ enabled: true })),
     );
     renderWithActor(<DemoBanner />, {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
         demoState({
           enabled: true,
@@ -220,9 +220,9 @@ describe("demo banner Pretend it's picker drives the backend", () => {
 describe("Admin demo data buttons drive the backend", () => {
   function adminActor(state: DemoStateView) {
     return {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => STORE),
       listPositions: vi.fn<backendInterface["listPositions"]>(async () => []),
       listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),

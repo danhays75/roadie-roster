@@ -101,9 +101,9 @@ function dialogActor(roster: Roadie[]) {
       POSITION,
     ]),
     listCrews: vi.fn<backendInterface["listCrews"]>(async () => []),
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.admin),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.admin),
+    })),
   };
 }
 
@@ -116,9 +116,9 @@ function rosterActor(roadies: Roadie[]) {
     ]),
     listCrews: vi.fn<backendInterface["listCrews"]>(async () => []),
     getPhoto: vi.fn<backendInterface["getPhoto"]>(async () => PHOTO_BYTES),
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.admin),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.admin),
+    })),
   };
 }
 
@@ -292,9 +292,9 @@ describe("Leaders page tiles open the shared card pop-up", () => {
     const user = userEvent.setup();
     const actor = {
       listLeaders: vi.fn<backendInterface["listLeaders"]>(async () => [LEADER]),
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(
         async () => STORE_INFO,
       ),

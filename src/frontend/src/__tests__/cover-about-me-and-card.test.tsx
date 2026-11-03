@@ -99,11 +99,13 @@ function cardActor(roadie: Roadie) {
     getPhoto: vi.fn<backendInterface["getPhoto"]>(async () => null),
     isMinor: vi.fn<backendInterface["isMinor"]>(async () => roadie.isMinor),
     getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
-      principal: { toText: () => "aaaaa-aa" } as never,
-      role: Role.admin,
-      approvedAt: 0n,
-      approvedBy: { toText: () => "aaaaa-aa" } as never,
-      trainerPositionIds: [],
+      grant: {
+        principal: { toText: () => "aaaaa-aa" } as never,
+        role: Role.admin,
+        approvedAt: 0n,
+        approvedBy: { toText: () => "aaaaa-aa" } as never,
+        trainerPositionIds: [],
+      },
     })),
     getContactSet: vi.fn<backendInterface["getContactSet"]>(async () => []),
     getChecklists: vi.fn<backendInterface["getChecklists"]>(async () => ({

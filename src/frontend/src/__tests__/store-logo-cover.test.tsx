@@ -177,9 +177,9 @@ describe("StoreLogo on the kiosk welcome screen", () => {
 
 describe("StoreLogo on the waiting screen", () => {
   it("shows the uploaded logo for a signed-in caller awaiting approval", async () => {
-    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(
-      async () => null,
-    );
+    const getMyAccess = vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: undefined,
+    }));
     const requestAccess = vi.fn<backendInterface["requestAccess"]>(
       async () => false,
     );

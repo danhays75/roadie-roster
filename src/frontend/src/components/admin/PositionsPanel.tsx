@@ -1,4 +1,5 @@
 import { House, type Position } from "@/backend";
+import { DemoSettingsNote } from "@/components/DemoBanner";
 import { StatusBadge } from "@/components/StatusBadge";
 import { AdminSection, FormField } from "@/components/admin/FormField";
 import { fill } from "@/components/admin/copy";
@@ -22,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useDemo } from "@/hooks/useDemo";
 import { useI18n } from "@/hooks/useI18n";
 import {
   useCreatePosition,
@@ -205,10 +207,12 @@ function BuildToStepper({
 
 function PositionRow({
   position,
+  readOnly,
   onEdit,
   onDelete,
 }: {
   position: Position;
+  readOnly: boolean;
   onEdit: (position: Position) => void;
   onDelete: (position: Position) => void;
 }) {
@@ -256,65 +260,74 @@ function PositionRow({
             age: position.minimumAge.toString(),
           })}
         </p>
-        <div
-          className="mt-2 max-w-xs space-y-1.5 rounded-md border border-border bg-muted/30 p-2"
-          data-ocid="admin.positions.build_to.panel"
-        >
-          <BuildToStepper
-            label={c.positionsOpeningBuildTo}
-            value={Number(position.openingBuildTo)}
-            disabled={adjust.isPending}
-            onDelta={(delta) => applyDelta("opening", delta)}
-            ocid="admin.positions.opening_build_to"
-          />
-          <BuildToStepper
-            label={c.positionsAfterOpeningBuildTo}
-            value={Number(position.afterOpeningBuildTo)}
-            disabled={adjust.isPending}
-            onDelta={(delta) => applyDelta("afterOpening", delta)}
-            ocid="admin.positions.after_opening_build_to"
-          />
-          {error && (
-            <p className="text-xs text-destructive" role="alert">
-              {error}
-            </p>
-          )}
+        {!readOnly && (
+          <div
+            className="mt-2 max-w-xs space-y-1.5 rounded-md border border-border bg-muted/30 p-2"
+            data-ocid="admin.positions.build_to.panel"
+          >
+            <BuildToStepper
+              label={c.positionsOpeningBuildTo}
+              value={Number(position.openingBuildTo)}
+              disabled={adjust.isPending}
+              onDelta={(delta) => applyDelta("opening", delta)}
+              ocid="admin.positions.opening_build_to"
+            />
+            <BuildToStepper
+              label={c.positionsAfterOpeningBuildTo}
+              value={Number(position.afterOpeningBuildTo)}
+              disabled={adjust.isPending}
+              onDelta={(delta) => applyDelta("afterOpening", delta)}
+              ocid="admin.positions.after_opening_build_to"
+            />
+            {error && (
+              <p className="text-xs text-destructive" role="alert">
+                {error}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+      {!readOnly && (
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="touch-target"
+            data-ocid="admin.positions.edit_button"
+            onClick={() => onEdit(position)}
+          >
+            <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+            {c.actionEdit}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="touch-target text-destructive"
+            data-ocid="admin.positions.delete_button"
+            onClick={() => onDelete(position)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+            {c.actionDelete}
+          </Button>
         </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="touch-target"
-          data-ocid="admin.positions.edit_button"
-          onClick={() => onEdit(position)}
-        >
-          <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
-          {c.actionEdit}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="touch-target text-destructive"
-          data-ocid="admin.positions.delete_button"
-          onClick={() => onDelete(position)}
-        >
-          <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
-          {c.actionDelete}
-        </Button>
-      </div>
+      )}
     </li>
   );
 }
 
 export function PositionsPanel() {
   const c = useAdminCopy();
+  const demo = useDemo();
   const positions = usePositions();
   const create = useCreatePosition();
   const update = useUpdatePosition();
   const remove = useDeletePosition();
   const [draft, setDraft] = useState<PositionDraft | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Position | null>(null);
+
+  // While demo mode is on the position edit controls are hidden: they change
+  // real settings, which demo mode must not touch. The list stays readable.
+  const readOnly = demo.enabled;
 
   const isEditing = draft !== null && draft.id !== 0n;
   const mutation = isEditing ? update : create;
@@ -351,17 +364,20 @@ export function PositionsPanel() {
       description={c.positionsDescription}
       ocid="admin.positions.section"
       action={
-        <Button
-          type="button"
-          className="touch-target"
-          data-ocid="admin.positions.add_button"
-          onClick={() => setDraft(emptyDraft())}
-        >
-          <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-          {c.positionsAdd}
-        </Button>
+        readOnly ? undefined : (
+          <Button
+            type="button"
+            className="touch-target"
+            data-ocid="admin.positions.add_button"
+            onClick={() => setDraft(emptyDraft())}
+          >
+            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+            {c.positionsAdd}
+          </Button>
+        )
       }
     >
+      {readOnly && <DemoSettingsNote />}
       {positions.isLoading && (
         <p className="text-sm text-muted-foreground">{c.positionsLoading}</p>
       )}
@@ -380,6 +396,7 @@ export function PositionsPanel() {
             <PositionRow
               key={position.id.toString()}
               position={position}
+              readOnly={readOnly}
               onEdit={(target) => setDraft(toDraft(target))}
               onDelete={setDeleteTarget}
             />

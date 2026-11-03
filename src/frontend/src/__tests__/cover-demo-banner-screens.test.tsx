@@ -90,9 +90,9 @@ describe("the demo banner reaches every screen while demo mode is on", () => {
     renderPageWithActor(
       Shell,
       {
-        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-          grant(Role.admin),
-        ),
+        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+          grant: grant(Role.admin),
+        })),
         getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
           demoState({ enabled: true }),
         ),
@@ -118,9 +118,9 @@ describe("the demo banner reaches every screen while demo mode is on", () => {
         <KioskPage />
       </ApprovalGate>,
       {
-        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-          grant(Role.kiosk),
-        ),
+        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+          grant: grant(Role.kiosk),
+        })),
         getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
           demoState({ enabled: true }),
         ),
@@ -140,7 +140,9 @@ describe("the demo banner reaches every screen while demo mode is on", () => {
         <p>app chrome</p>
       </ApprovalGate>,
       {
-        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => null),
+        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+          grant: undefined,
+        })),
         getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
           demoState({ enabled: true }),
         ),
@@ -180,9 +182,9 @@ describe("the demo banner reaches every screen while demo mode is on", () => {
     renderPageWithActor(
       Shell,
       {
-        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-          grant(Role.admin),
-        ),
+        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+          grant: grant(Role.admin),
+        })),
         getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
           demoState(),
         ),

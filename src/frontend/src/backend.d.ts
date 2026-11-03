@@ -135,7 +135,7 @@ export interface DemoStateView {
     autoOffAt?: Timestamp;
     turnedOnAt?: Timestamp;
     pretendDate?: PretendDate;
-    demoRole: DemoRole;
+    demoRole?: DemoRole;
     enabled: boolean;
     demoTrainerStations: Array<PositionId>;
 }
@@ -294,6 +294,10 @@ export interface LeaderTalk {
     attendees: Array<RoadieId>;
 }
 export type LeaderTalkId = bigint;
+export interface MyAccessView {
+    demoRole?: DemoRole;
+    grant?: AccessGrant;
+}
 export interface OrientationCheckoff {
     hatsCount: bigint;
     roadieId: RoadieId;
@@ -793,8 +797,10 @@ export interface backendInterface {
      */
     getDemoDataSummary(): Promise<DemoDataSummary>;
     /**
-     * / Read the current demo state. Any caller, including unregistered users, so
-     * / the banner can render on the sign-in and waiting screens.
+     * / Read the current demo state for the calling principal. Any caller,
+     * / including unregistered users, so the banner can render on the sign-in and
+     * / waiting screens. `demoRole` and `demoTrainerStations` describe the
+     * / caller's own demo role.
      */
     getDemoState(): Promise<DemoStateView>;
     /**
@@ -804,10 +810,12 @@ export interface backendInterface {
      */
     getGiftBags(filter: GiftBagFilter): Promise<GiftBagsData>;
     /**
-     * / Read the caller's own access grant. Returns null until an Admin has
+     * / Read the caller's own access view: their real grant (or null) plus a
+     * / separate `demoRole` carrying the caller's own demo role while demo mode is
+     * / on, or null when demo mode is off. Returns null grant until an Admin has
      * / approved the caller, so the frontend keeps showing the waiting screen.
      */
-    getMyAccess(): Promise<AccessGrant | null>;
+    getMyAccess(): Promise<MyAccessView>;
     /**
      * / Read the caller's own pending access request, if any. Returns null when
      * / the caller has no pending entry; otherwise the requestedAt of that pending

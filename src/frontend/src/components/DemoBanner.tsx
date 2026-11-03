@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAccessState } from "@/hooks/useAccess";
+import { useRealAccessGrant } from "@/hooks/useAccess";
 import { DEMO_ROLE_OPTIONS, useDemo } from "@/hooks/useDemo";
 import { useI18n } from "@/hooks/useI18n";
 import { usePositions } from "@/hooks/useQueries";
@@ -47,17 +47,24 @@ function roleLabelKey(role: DemoRole): string {
   return `demo.banner.role.${role}`;
 }
 
+/** Placeholder shown in the "View as" picker before a demo role is chosen. */
+const CHOOSE_ROLE_LABEL: Record<"en" | "es", string> = {
+  en: "Choose a role",
+  es: "Elige un rol",
+};
+
 /**
- * The "View as" picker: choose the impersonated demo role, and for a demo NSO
- * Trainer the stations that role may see. Any signed-in caller may choose a
- * demo role while demo mode is on.
+ * The "View as" picker: choose the caller's own impersonated demo role, and for
+ * a demo NSO Trainer the stations that role may see. Any signed-in caller may
+ * choose a demo role while demo mode is on; the choice is per-caller.
  */
 function ViewAsPicker() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const demo = useDemo();
   const { data: positions } = usePositions();
   const [open, setOpen] = useState(false);
   const [stations, setStations] = useState<bigint[]>(demo.demoTrainerStations);
+  const chooseRole = CHOOSE_ROLE_LABEL[locale === "es" ? "es" : "en"];
 
   // Keep the local station draft in step with the backend state while the
   // popover is closed, so a change made elsewhere is reflected on reopen.
@@ -90,7 +97,7 @@ function ViewAsPicker() {
           <Eye className="h-4 w-4" aria-hidden="true" />
           <span className="hidden sm:inline">{t("demo.banner.viewAs")}:</span>
           <span className="font-semibold">
-            {t(roleLabelKey(demo.demoRole))}
+            {demo.demoRole ? t(roleLabelKey(demo.demoRole)) : chooseRole}
           </span>
         </Button>
       </PopoverTrigger>
@@ -102,7 +109,7 @@ function ViewAsPicker() {
         <div className="space-y-1.5">
           <Label htmlFor="demo-role-select">{t("demo.banner.viewAs")}</Label>
           <Select
-            value={demo.demoRole}
+            value={demo.demoRole ?? undefined}
             onValueChange={(value) => demo.setRole(value as DemoRole, stations)}
           >
             <SelectTrigger
@@ -110,7 +117,7 @@ function ViewAsPicker() {
               data-ocid="demo.view_as.select"
               className="touch-target w-full"
             >
-              <SelectValue />
+              <SelectValue placeholder={chooseRole} />
             </SelectTrigger>
             <SelectContent>
               {DEMO_ROLE_OPTIONS.map((option) => (
@@ -320,7 +327,7 @@ function PretendDatePicker() {
 export function DemoBanner() {
   const { t } = useI18n();
   const demo = useDemo();
-  const access = useAccessState();
+  const realGrant = useRealAccessGrant();
   const hosted = useContext(DemoBannerHosted);
   const ref = useRef<HTMLElement>(null);
 
@@ -346,9 +353,9 @@ export function DemoBanner() {
 
   if (!demo.enabled || hosted) return null;
 
-  // Only an Admin may turn demo mode off. While demo mode is on the effective
-  // role is the chosen demo role, so an Admin demo role sees the control.
-  const isAdmin = access.kind === "granted" && access.grant.role === Role.admin;
+  // Only a real Admin may turn demo mode off. The effective role while demo
+  // mode is on is the chosen demo role, so the real grant is checked instead.
+  const isAdmin = realGrant?.role === Role.admin;
 
   return (
     <section
@@ -411,5 +418,30 @@ export function DemoBannerHost({ children }: { children: ReactNode }) {
         {children}
       </DemoBannerHosted.Provider>
     </>
+  );
+}
+
+/** The note shown where a real-settings control is hidden while demo is on. */
+const DEMO_SETTINGS_NOTE: Record<"en" | "es", string> = {
+  en: "Turn off demo mode to change real settings.",
+  es: "Desactiva el modo demo para cambiar la configuración real.",
+};
+
+/**
+ * The note shown in place of a real-settings control while demo mode is on.
+ * Renders nothing while demo mode is off, so a panel can mount it
+ * unconditionally and keep its normal controls when demo is off.
+ */
+export function DemoSettingsNote() {
+  const { locale } = useI18n();
+  const demo = useDemo();
+  if (!demo.enabled) return null;
+  return (
+    <p
+      data-ocid="demo.settings_note"
+      className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
+    >
+      {DEMO_SETTINGS_NOTE[locale === "es" ? "es" : "en"]}
+    </p>
   );
 }

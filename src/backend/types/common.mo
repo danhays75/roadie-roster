@@ -1,4 +1,6 @@
 import Storage "mo:caffeineai-object-storage/Storage";
+import Map "mo:core/Map";
+import Principal "mo:core/Principal";
 
 module {
   /// Nanoseconds since the Unix epoch, signed (matches `Time.now()`).
@@ -148,28 +150,39 @@ module {
     shift : DemoShift;
   };
 
+  /// One caller's chosen demo role and, for a demo NSO Trainer, the stations
+  /// that role may see. Stored per caller so one person's "View as" choice
+  /// never changes anyone else's view.
+  public type DemoRoleEntry = {
+    role : DemoRole;
+    stations : [PositionId];
+  };
+
   /// The persisted demo-mode state. `enabled` is off by default; `turnedOnAt`
   /// and `autoOffAt` are set when demo mode is turned on and `autoOffAt` is
   /// eight hours later. `pretendDate` overrides "now" for schedule windows,
   /// countdowns, the Today screen, check-in availability and age math.
-  /// `demoRole` is the impersonated role; `demoTrainerStations` are the
-  /// stations a demo NSO Trainer may see.
+  /// `demoRoles` holds each signed-in caller's own chosen demo role and
+  /// stations; a caller with no entry defaults to demo Admin. The map is
+  /// cleared when demo mode turns off.
   public type DemoState = {
     var enabled : Bool;
     var turnedOnAt : ?Timestamp;
     var autoOffAt : ?Timestamp;
     var pretendDate : ?PretendDate;
-    var demoRole : DemoRole;
-    var demoTrainerStations : [PositionId];
+    var demoRoles : Map.Map<Principal, DemoRoleEntry>;
   };
 
-  /// A read-only view of the demo state returned to the frontend.
+  /// A read-only view of the demo state returned to the frontend. `demoRole`
+  /// and `demoTrainerStations` describe the *requesting* caller's own demo
+  /// role, or null/empty when demo mode is off or the caller has not chosen
+  /// one.
   public type DemoStateView = {
     enabled : Bool;
     turnedOnAt : ?Timestamp;
     autoOffAt : ?Timestamp;
     pretendDate : ?PretendDate;
-    demoRole : DemoRole;
+    demoRole : ?DemoRole;
     demoTrainerStations : [PositionId];
   };
 

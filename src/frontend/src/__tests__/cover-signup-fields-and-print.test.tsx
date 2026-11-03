@@ -214,9 +214,9 @@ function giftBagsData(): GiftBagsData {
 
 function giftBagsActor() {
   return {
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(Role.admin),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(Role.admin),
+    })),
     listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
       async () => [],
     ),

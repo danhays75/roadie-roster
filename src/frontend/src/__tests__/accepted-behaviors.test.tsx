@@ -268,7 +268,9 @@ describe("approvals role gating", () => {
       linkedRoadieId: undefined,
     };
     return {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => grant),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant,
+      })),
       getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(
         async () => ({ timeZone: "America/Chicago" }) as never,
       ),
@@ -315,7 +317,9 @@ describe("roadie card route guard", () => {
       getRoadie: vi.fn<backendInterface["getRoadie"]>(async () => null),
       listPositions: vi.fn<backendInterface["listPositions"]>(async () => []),
       listCrews: vi.fn<backendInterface["listCrews"]>(async () => []),
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => null),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: undefined,
+      })),
     };
     renderPageWithActor(RoadieCardPage, actor, {
       path: "/roster/$roadieId",
@@ -341,7 +345,7 @@ describe("sign out is reachable", () => {
       clear: vi.fn(),
     });
     const actor = {
-      getMyAccess: vi.fn(async () => null),
+      getMyAccess: vi.fn(async () => ({ grant: undefined })),
       listPendingUsers: vi.fn(async () => []),
     };
     // Layout uses router links, so mount it through the router helper.

@@ -5,6 +5,7 @@ import type {
   DemoRole,
   DemoStateView,
   LeaderSummary,
+  MyAccessView,
   Position,
   PositionId,
   PretendDate,
@@ -24,6 +25,7 @@ export type {
   DemoRole,
   DemoStateView,
   LeaderSummary,
+  MyAccessView,
   Position,
   PositionId,
   PretendDate,
@@ -36,16 +38,15 @@ export type {
 };
 
 /**
- * The demo state as the app consumes it: the backend view plus a resolved
- * `effectiveRole`. While demo mode is on the effective role is the chosen demo
- * role; while it is off it is the caller's real grant role (or undefined when
- * the caller has no grant).
+ * The demo state as the app consumes it: the backend view plus the caller's own
+ * demo role. `demoRole` is the caller's own impersonated role while demo mode is
+ * on, or null while it is off (or before the caller has chosen one).
  */
 export interface DemoState {
   /** Whether demo mode is currently on. */
   enabled: boolean;
-  /** The impersonated role while demo mode is on. */
-  demoRole: DemoRole;
+  /** The caller's own impersonated role while demo mode is on, else null. */
+  demoRole: DemoRole | null;
   /** The stations a demo NSO Trainer may see. */
   demoTrainerStations: PositionId[];
   /** The pretend "now" (date + AM/PM), or null to use the real clock. */

@@ -88,9 +88,9 @@ function demoState(overrides: Partial<DemoStateView> = {}): DemoStateView {
 /** The actor methods the Admin Store settings tab reads and writes. */
 function adminActor(role: Role = Role.admin, state = demoState()) {
   return {
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-      grant(role),
-    ),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: grant(role),
+    })),
     getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => STORE),
     listPositions: vi.fn<backendInterface["listPositions"]>(async () => []),
     listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),
@@ -215,9 +215,9 @@ describe("Admin Store settings demo mode switch", () => {
 describe("sticky demo banner", () => {
   it("renders nothing while demo mode is off", async () => {
     renderWithActor(<DemoBanner />, {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
         demoState(),
       ),
@@ -234,9 +234,9 @@ describe("sticky demo banner", () => {
       ok: demoState(),
     }));
     renderWithActor(<DemoBanner />, {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
         demoState({ enabled: true }),
       ),
@@ -261,9 +261,9 @@ describe("sticky demo banner", () => {
     // While demo mode is on the effective role is the chosen demo role, so a
     // non-admin demo role does not see the Admin-only Turn off control.
     renderWithActor(<DemoBanner />, {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.storeManager),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.storeManager),
+      })),
       getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
         demoState({ enabled: true, demoRole: DemoRole.kiosk }),
       ),
@@ -278,9 +278,9 @@ describe("sticky demo banner", () => {
   it("offers the View as picker with every demo role", async () => {
     const user = userEvent.setup();
     renderWithActor(<DemoBanner />, {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
         demoState({ enabled: true }),
       ),
@@ -310,9 +310,9 @@ describe("sticky demo banner", () => {
 
   it("shows the pretend date in the banner once it is set", async () => {
     renderWithActor(<DemoBanner />, {
-      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () =>
-        grant(Role.admin),
-      ),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
       getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
         demoState({
           enabled: true,

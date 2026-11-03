@@ -1,10 +1,12 @@
 import { House } from "@/backend";
 import type { Checklists, StoreTemplateFile, TemplatePreview } from "@/backend";
+import { DemoSettingsNote } from "@/components/DemoBanner";
 import { AdminSection, FormField } from "@/components/admin/FormField";
 import { useAdminCopy } from "@/components/admin/useAdminCopy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { canAdmin, useAccessState } from "@/hooks/useAccess";
+import { useDemo } from "@/hooks/useDemo";
 import { useI18n } from "@/hooks/useI18n";
 import {
   useDownloadStoreTemplate,
@@ -257,6 +259,7 @@ export function TemplatePanel() {
   const { locale } = useI18n();
   const copy = TEMPLATE_ACTION_COPY[locale === "es" ? "es" : "en"];
   const access = useAccessState();
+  const demo = useDemo();
   const isAdmin = access.kind === "granted" && canAdmin(access.grant.role);
 
   const save = useSaveStoreTemplate();
@@ -273,6 +276,20 @@ export function TemplatePanel() {
   const [preview, setPreview] = useState<TemplatePreview | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadSuccess, setLoadSuccess] = useState(false);
+
+  // While demo mode is on the store template controls are hidden: they change
+  // real settings, which demo mode must not touch.
+  if (demo.enabled) {
+    return (
+      <AdminSection
+        title={c.templateTitle}
+        description={c.templateDescription}
+        ocid="admin.template.section"
+      >
+        <DemoSettingsNote />
+      </AdminSection>
+    );
+  }
 
   const onSubmit = (event: React.FormEvent) => {
     event.preventDefault();

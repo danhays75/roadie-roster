@@ -46,14 +46,14 @@ export function demoRoleToRole(role: DemoRole): Role {
   }
 }
 
-/** The demo state with a resolved effective role, or null while it loads. */
+/** The demo state with the caller's own demo role, or null while it loads. */
 export interface DemoController {
   /** The current demo state, or null while it is still loading. */
   state: DemoState | null;
   /** Whether demo mode is on. */
   enabled: boolean;
-  /** The chosen demo role while demo mode is on. */
-  demoRole: DemoRole;
+  /** The caller's own impersonated role while demo mode is on, else null. */
+  demoRole: DemoRole | null;
   /** The stations a demo NSO Trainer may see. */
   demoTrainerStations: bigint[];
   /** The pretend "now" (date + AM/PM), or null to use the real clock. */
@@ -64,7 +64,7 @@ export interface DemoController {
   autoOffAt: bigint | null;
   /** Turn demo mode on or off (Admin only). */
   setEnabled: (enabled: boolean, confirmation: string) => void;
-  /** Choose the impersonated demo role. */
+  /** Choose the caller's own impersonated demo role. */
   setRole: (role: DemoRole, stations: bigint[]) => void;
   /** Set or clear the pretend "now". */
   setPretendDate: (pretendDate: DemoState["pretendDate"]) => void;
@@ -77,7 +77,9 @@ export interface DemoController {
 /**
  * The demo mode data layer. Reads the demo state (readable by any caller,
  * including unregistered users) and exposes the actions the banner drives.
- * Every action is a backend call; the backend enforces who may perform it.
+ * `demoRole` is the caller's own impersonated role, so two callers can view
+ * different roles at once. Every action is a backend call; the backend enforces
+ * who may perform it.
  */
 export function useDemo(): DemoController {
   const { data } = useDemoState();
@@ -89,7 +91,7 @@ export function useDemo(): DemoController {
     if (!data) return null;
     return {
       enabled: data.enabled,
-      demoRole: data.demoRole,
+      demoRole: data.demoRole ?? null,
       demoTrainerStations: data.demoTrainerStations,
       pretendDate: data.pretendDate ?? null,
       turnedOnAt: data.turnedOnAt ?? null,
@@ -108,7 +110,7 @@ export function useDemo(): DemoController {
   return {
     state,
     enabled: state?.enabled ?? false,
-    demoRole: state?.demoRole ?? DemoRole.admin,
+    demoRole: state?.demoRole ?? null,
     demoTrainerStations: state?.demoTrainerStations ?? [],
     pretendDate: state?.pretendDate ?? null,
     turnedOnAt: state?.turnedOnAt ?? null,

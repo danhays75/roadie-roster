@@ -48,18 +48,57 @@ module {
     };
   };
 
+  /// The demo role a signed-in caller is currently impersonating, or null when
+  /// demo mode is off, the caller is anonymous, or the caller has not chosen a
+  /// role. A signed-in caller with no stored entry defaults to demo Admin.
+  public func demoRoleFor(
+    demoState : Common.DemoState,
+    caller : Principal,
+  ) : ?Common.DemoRole {
+    if (caller.isAnonymous()) {
+      return null;
+    };
+    if (not demoActive(demoState)) {
+      return null;
+    };
+    switch (demoState.demoRoles.get(caller)) {
+      case (?entry) { ?entry.role };
+      case null { ?#admin };
+    };
+  };
+
+  /// The demo trainer stations for a signed-in caller, or an empty array when
+  /// demo mode is off, the caller is anonymous, or the caller has no stored
+  /// entry.
+  public func demoTrainerStationsFor(
+    demoState : Common.DemoState,
+    caller : Principal,
+  ) : [Common.PositionId] {
+    if (caller.isAnonymous() or not demoActive(demoState)) {
+      return [];
+    };
+    switch (demoState.demoRoles.get(caller)) {
+      case (?entry) { entry.stations };
+      case null { [] };
+    };
+  };
+
   /// The effective role of a caller, or null when unregistered/expired. While
-  /// demo mode is on, any signed-in caller (even one not yet approved) acts as
-  /// the chosen demo role.
+  /// demo mode is on, a **signed-in** caller (even one not yet approved) acts
+  /// as their own chosen demo role; an anonymous caller always gets null, even
+  /// while demo mode is on.
   public func effectiveRole(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     caller : Principal,
   ) : ?Common.Role {
-    if (demoActive(demoState)) {
-      return ?demoRoleToRole(demoState.demoRole);
+    if (caller.isAnonymous()) {
+      return null;
     };
-    realRole(accessGrants, caller);
+    switch (demoRoleFor(demoState, caller)) {
+      case (?role) { ?demoRoleToRole(role) };
+      case null { realRole(accessGrants, caller) };
+    };
   };
 
   /// The caller's real role from their access grant, or null when
@@ -82,7 +121,7 @@ module {
   };
 
   /// True when the caller is a registered, non-expired Admin. While demo mode
-  /// is on, the impersonated demo role is consulted.
+  /// is on, the caller's own impersonated demo role is consulted.
   public func isAdmin(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -95,7 +134,7 @@ module {
   };
 
   /// True when the caller is Admin or Store Manager. While demo mode is on, the
-  /// impersonated demo role is consulted.
+  /// caller's own impersonated demo role is consulted.
   public func isManager(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -108,8 +147,8 @@ module {
   };
 
   /// True when the caller may read the contact set (Admin or Store Manager).
-  /// While demo mode is on, the impersonated demo role is consulted, so a demo
-  /// Trainer really cannot see contact info.
+  /// While demo mode is on, the caller's own impersonated demo role is
+  /// consulted, so a demo Trainer really cannot see contact info.
   public func canSeeContactSet(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -119,7 +158,7 @@ module {
   };
 
   /// True when the caller is a Kiosk login (reads are rejected). While demo
-  /// mode is on, the impersonated demo role is consulted.
+  /// mode is on, the caller's own impersonated demo role is consulted.
   public func isKiosk(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -131,8 +170,9 @@ module {
     };
   };
 
-  /// Require a registered caller; trap otherwise. While demo mode is on, any
-  /// signed-in caller acts as the chosen demo role.
+  /// Require a registered caller; trap otherwise. While demo mode is on, a
+  /// signed-in caller acts as their own chosen demo role; an anonymous caller
+  /// is always unregistered.
   public func requireRegistered(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -142,8 +182,8 @@ module {
       ?? Runtime.trap("Access denied: caller is not registered or access has ended");
   };
 
-  /// Require Admin; trap otherwise. While demo mode is on, the impersonated
-  /// demo role is consulted.
+  /// Require Admin; trap otherwise. While demo mode is on, the caller's own
+  /// impersonated demo role is consulted.
   public func requireAdmin(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -174,8 +214,54 @@ module {
     };
   };
 
+  /// Require the caller's *real* Admin or Store Manager role, ignoring any
+  /// impersonated demo role.
+  public func requireRealManager(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    caller : Principal,
+  ) : () {
+    switch (realRole(accessGrants, caller)) {
+      case (?role) {
+        if (role != #admin and role != #storeManager) {
+          Runtime.trap("Access denied: Admin or Store Manager role required");
+        };
+      };
+      case null {
+        Runtime.trap("Access denied: Admin or Store Manager role required");
+      };
+    };
+  };
+
+  /// Require a real Admin grant and refuse while demo mode is on. Applied to
+  /// every write that changes real, shared settings so a demo impersonation can
+  /// never mutate real data.
+  public func requireRealSettingsAdmin(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    caller : Principal,
+  ) : () {
+    requireRealAdmin(accessGrants, caller);
+    if (demoActive(demoState)) {
+      Runtime.trap("Turn off demo mode to change real settings");
+    };
+  };
+
+  /// Require a real Admin or Store Manager grant and refuse while demo mode is
+  /// on. Applied to every write that changes real, shared settings so a demo
+  /// impersonation can never mutate real data.
+  public func requireRealSettingsManager(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    caller : Principal,
+  ) : () {
+    requireRealManager(accessGrants, caller);
+    if (demoActive(demoState)) {
+      Runtime.trap("Turn off demo mode to change real settings");
+    };
+  };
+
   /// Require Admin or Store Manager; trap otherwise. While demo mode is on, the
-  /// impersonated demo role is consulted.
+  /// caller's own impersonated demo role is consulted.
   public func requireManager(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -187,7 +273,8 @@ module {
   };
 
   /// Require a read-capable caller (any role except Kiosk); trap otherwise.
-  /// While demo mode is on, the impersonated demo role is consulted.
+  /// While demo mode is on, the caller's own impersonated demo role is
+  /// consulted.
   public func requireReadable(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,

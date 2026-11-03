@@ -46,10 +46,12 @@ mixin (
     AccessLib.bootstrapAdmin(accessGrants, accessControlState, caller);
   };
 
-  /// Read the caller's own access grant. Returns null until an Admin has
+  /// Read the caller's own access view: their real grant (or null) plus a
+  /// separate `demoRole` carrying the caller's own demo role while demo mode is
+  /// on, or null when demo mode is off. Returns null grant until an Admin has
   /// approved the caller, so the frontend keeps showing the waiting screen.
-  public query ({ caller }) func getMyAccess() : async ?Access.AccessGrant {
-    AccessLib.getMyAccess(accessGrants, caller);
+  public query ({ caller }) func getMyAccess() : async Access.MyAccessView {
+    AccessLib.getMyAccess(accessGrants, demoState, caller);
   };
 
   /// Read the caller's own pending access request, if any. Returns null when

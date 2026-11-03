@@ -101,11 +101,13 @@ function actor(logos: { logo?: Uint8Array; secondaryLogo?: Uint8Array }) {
     getPhoto: vi.fn<backendInterface["getPhoto"]>(async () => null),
     isMinor: vi.fn<backendInterface["isMinor"]>(async () => ROADIE.isMinor),
     getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
-      principal: { toText: () => "aaaaa-aa" } as never,
-      role: Role.admin,
-      approvedAt: 0n,
-      approvedBy: { toText: () => "aaaaa-aa" } as never,
-      trainerPositionIds: [],
+      grant: {
+        principal: { toText: () => "aaaaa-aa" } as never,
+        role: Role.admin,
+        approvedAt: 0n,
+        approvedBy: { toText: () => "aaaaa-aa" } as never,
+        trainerPositionIds: [],
+      },
     })),
     getContactSet: vi.fn<backendInterface["getContactSet"]>(async () => [
       CONTACT,

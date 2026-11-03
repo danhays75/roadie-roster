@@ -172,7 +172,9 @@ function dashboardActor(logos: {
     })),
     listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),
     getStoreInfo: vi.fn<backendInterface["getStoreInfo"]>(async () => STORE),
-    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => null),
+    getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+      grant: undefined,
+    })),
     listRosterForPosition: vi.fn<backendInterface["listRosterForPosition"]>(
       async () => [ROADIE],
     ),
@@ -196,11 +198,13 @@ describe("header title text", () => {
       Page,
       {
         getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
-          principal: { toText: () => "aaaaa-aa" } as never,
-          role: Role.admin,
-          approvedAt: 0n,
-          approvedBy: { toText: () => "aaaaa-aa" } as never,
-          trainerPositionIds: [],
+          grant: {
+            principal: { toText: () => "aaaaa-aa" } as never,
+            role: Role.admin,
+            approvedAt: 0n,
+            approvedBy: { toText: () => "aaaaa-aa" } as never,
+            trainerPositionIds: [],
+          },
         })),
         listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
           async () => [],
@@ -233,11 +237,13 @@ describe("header shows only the main logo", () => {
       Page,
       {
         getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
-          principal: { toText: () => "aaaaa-aa" } as never,
-          role: Role.admin,
-          approvedAt: 0n,
-          approvedBy: { toText: () => "aaaaa-aa" } as never,
-          trainerPositionIds: [],
+          grant: {
+            principal: { toText: () => "aaaaa-aa" } as never,
+            role: Role.admin,
+            approvedAt: 0n,
+            approvedBy: { toText: () => "aaaaa-aa" } as never,
+            trainerPositionIds: [],
+          },
         })),
         listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
           async () => [],
@@ -275,11 +281,13 @@ describe("header shows only the main logo", () => {
       Page,
       {
         getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
-          principal: { toText: () => "aaaaa-aa" } as never,
-          role: Role.admin,
-          approvedAt: 0n,
-          approvedBy: { toText: () => "aaaaa-aa" } as never,
-          trainerPositionIds: [],
+          grant: {
+            principal: { toText: () => "aaaaa-aa" } as never,
+            role: Role.admin,
+            approvedAt: 0n,
+            approvedBy: { toText: () => "aaaaa-aa" } as never,
+            trainerPositionIds: [],
+          },
         })),
         listPendingUsers: vi.fn<backendInterface["listPendingUsers"]>(
           async () => [],

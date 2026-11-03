@@ -47,7 +47,7 @@ const EMPTY_EXPORT: ExportData = {
 
 function actorFor(role: Role) {
   return {
-    getMyAccess: vi.fn(async () => grant(role)),
+    getMyAccess: vi.fn(async () => ({ grant: grant(role) })),
     buildShareableExport: vi.fn(async () => EMPTY_EXPORT),
     buildFullExport: vi.fn(async () => EMPTY_EXPORT),
   };

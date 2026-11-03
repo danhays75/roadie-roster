@@ -1,4 +1,5 @@
 import { type AccessGrant, Role, createActor } from "@/backend";
+import { DemoSettingsNote } from "@/components/DemoBanner";
 import { AdminSection } from "@/components/admin/FormField";
 import { useAdminCopy } from "@/components/admin/useAdminCopy";
 import { TrainerStationsPicker } from "@/components/approvals/TrainerStationsPicker";
@@ -21,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAccessState } from "@/hooks/useAccess";
+import { useDemo } from "@/hooks/useDemo";
 import { useI18n } from "@/hooks/useI18n";
 import {
   useAccessGrants,
@@ -574,6 +576,7 @@ export function AccessPanel() {
   const { t } = useI18n();
   const c = useAdminCopy();
   const access = useAccessState();
+  const demo = useDemo();
   const viewerRole = access.kind === "granted" ? access.grant.role : undefined;
   const isAdmin = viewerRole === Role.admin;
   const canSeeContact =
@@ -581,6 +584,20 @@ export function AccessPanel() {
   const grants = useAccessGrants();
   const adminCount = useAdminCount();
   const { data: storeInfo } = useStoreInfo();
+
+  // While demo mode is on the real access grants and the Kiosk PIN are hidden:
+  // they change real settings, which demo mode must not touch.
+  if (demo.enabled) {
+    return (
+      <AdminSection
+        title={t("admin.section.access")}
+        description={c.accessDescription}
+        ocid="admin.access.section"
+      >
+        <DemoSettingsNote />
+      </AdminSection>
+    );
+  }
 
   return (
     <AdminSection

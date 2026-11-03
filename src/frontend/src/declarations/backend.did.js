@@ -323,7 +323,7 @@ export const DemoStateView = IDL.Record({
   'autoOffAt' : IDL.Opt(Timestamp),
   'turnedOnAt' : IDL.Opt(Timestamp),
   'pretendDate' : IDL.Opt(PretendDate),
-  'demoRole' : DemoRole,
+  'demoRole' : IDL.Opt(DemoRole),
   'enabled' : IDL.Bool,
   'demoTrainerStations' : IDL.Vec(PositionId),
 });
@@ -377,6 +377,10 @@ export const AccessGrant = IDL.Record({
   'staffProfile' : IDL.Opt(StaffProfile),
   'trainerPositionIds' : IDL.Vec(PositionId),
   'accessEndsAt' : IDL.Opt(Timestamp),
+});
+export const MyAccessView = IDL.Record({
+  'demoRole' : IDL.Opt(DemoRole),
+  'grant' : IDL.Opt(AccessGrant),
 });
 export const PendingRequestSummary = IDL.Record({
   'hasProfile' : IDL.Bool,
@@ -662,7 +666,7 @@ export const idlService = IDL.Service({
   'getDemoDataSummary' : IDL.Func([], [DemoDataSummary], ['query']),
   'getDemoState' : IDL.Func([], [DemoStateView], ['query']),
   'getGiftBags' : IDL.Func([GiftBagFilter], [GiftBagsData], ['query']),
-  'getMyAccess' : IDL.Func([], [IDL.Opt(AccessGrant)], ['query']),
+  'getMyAccess' : IDL.Func([], [MyAccessView], ['query']),
   'getMyPendingRequest' : IDL.Func(
       [],
       [IDL.Opt(PendingRequestSummary)],
@@ -1074,7 +1078,7 @@ export const idlFactory = ({ IDL }) => {
     'autoOffAt' : IDL.Opt(Timestamp),
     'turnedOnAt' : IDL.Opt(Timestamp),
     'pretendDate' : IDL.Opt(PretendDate),
-    'demoRole' : DemoRole,
+    'demoRole' : IDL.Opt(DemoRole),
     'enabled' : IDL.Bool,
     'demoTrainerStations' : IDL.Vec(PositionId),
   });
@@ -1128,6 +1132,10 @@ export const idlFactory = ({ IDL }) => {
     'staffProfile' : IDL.Opt(StaffProfile),
     'trainerPositionIds' : IDL.Vec(PositionId),
     'accessEndsAt' : IDL.Opt(Timestamp),
+  });
+  const MyAccessView = IDL.Record({
+    'demoRole' : IDL.Opt(DemoRole),
+    'grant' : IDL.Opt(AccessGrant),
   });
   const PendingRequestSummary = IDL.Record({
     'hasProfile' : IDL.Bool,
@@ -1417,7 +1425,7 @@ export const idlFactory = ({ IDL }) => {
     'getDemoDataSummary' : IDL.Func([], [DemoDataSummary], ['query']),
     'getDemoState' : IDL.Func([], [DemoStateView], ['query']),
     'getGiftBags' : IDL.Func([GiftBagFilter], [GiftBagsData], ['query']),
-    'getMyAccess' : IDL.Func([], [IDL.Opt(AccessGrant)], ['query']),
+    'getMyAccess' : IDL.Func([], [MyAccessView], ['query']),
     'getMyPendingRequest' : IDL.Func(
         [],
         [IDL.Opt(PendingRequestSummary)],
