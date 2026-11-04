@@ -17,6 +17,11 @@
 - Roadie shirt and hat sizes are not contact information and are visible to leaders
 - Keep demo-mode partitioning and the requireReal* guards on every new uniform write
 - Do not touch tests and change nothing outside the uniforms batch
+- The roadie card front badge is always the drawn scalloped StoreSeal with the store number; never a logo badge
+- The card back has no ROADIE STATS section and no Favorite movie row; the back order is Hometown, Crew, Day off, Favorite team, Favorite candy, Favorite drink, Favorite color, Fun fact, Hired, then MY GOAL
+- The card front keeps the MINOR tag but never a birthday tag
+- Position uniforms use one field set: shirtType, shirtQty, hatType, hatQty
+- Never change app behavior to satisfy outdated tests
 
 ## Accepted Requirements
 
@@ -112,12 +117,6 @@
 
 ## Learnings
 
-- getMyAccess returns MyAccessView { grant : ?AccessGrant; demoRole : ?DemoRole }; hooks/useAccess.ts normalizeAccessView tolerates a bare AccessGrant so inherited mocks keep passing.
-- listAccessGrants filters isDemoLeader(g) == demoActive(demoState) and listPendingUsers returns [] while demo is on, so real grants and pending requests never leak.
-- Admin.tsx hides the real-settings tabs while demo is on but keeps the Store tab so an Admin can reach the demo switch; activeTab falls back to store if a hidden tab was selected. Panels that self-gate on demo.enabled must place the early return after every hook.
-- Four committed PocketIC tests (test/pocketic/backend-demo.test.ts, test/pocketic/backend-template-and-profile.test.ts, test/pocketic/backend.test.ts) still assert the old global demo role and old getMyAccess tuple shape; they are stale and need updating to the per-caller DemoStateView.demoRole and MyAccessView shapes.
-- The inherited frontend suite has 22 pre-existing failing tests that predate this draft and remain failing; the backend PocketIC lane passes.
-- Demo mode lives in src/backend/lib/demo.mo; every read, list, count and export filters isDemo == Auth.demoActive(demoState).
 - archiveReasonLabel in src/frontend/src/components/roadie/RoadieTile.tsx is shared by the roadie tile and PositionRosterDialog's ArchivedRow; it maps ncnsOrientation and paperworkIncomplete.
 - The inherited frontend suite has pre-existing failing tests that predate this draft; the tester owns src/frontend/src/__tests__/ and test/pocketic/.
 - Orientation check-off writes are split: saveUniformCheckoff(roadieId, uniformItems, uniformCounts) writes only uniform fields and setPaperworkItems(roadieId, paperworkItems) writes only paperworkItems, so neither clobbers the other; both create the record with the active isDemo when missing.
@@ -137,3 +136,9 @@
 - Position uniform defaults (shirtType/shirtQty/hatType/hatQty) round-trip through TemplatePosition in both download and load.
 - Roadie shirt/hat sizes live in profile, not the contact set, so redact() leaves them visible to read-capable roles.
 - FlipCard's bottle-cap badge aria-label is the static t('roadie.card.badge') copy, not the async store number; the front badge order is secondary logo, then main logo, then the drawn StoreSeal.
+- FlipCard's front badge is always the drawn StoreSeal with the store number; StoreBadge, StatBar, the ROADIE STATS section and the birthday tag were removed, and roadieCard.css dropped .tag.birthday/.stats/.h/.stat/.bar while keeping .cap/.cap .seal.
+- The card back table order is Hometown, Crew, Day off, Favorite team, Favorite snack, Favorite drink, Favorite color, Fun fact, Shirt size, Hat size, Hired, then MY GOAL.
+- Position and TemplatePosition carry only shirtType, shirtQty, hatType, hatQty; migration 00000015 folds defaultShirts/defaultHats into shirtQty/hatQty only where the surviving qty is 0, then drops the legacy pair.
+- getUniformOrder builds rows from the cartesian product of in-scope item labels and curve/real sizes, so a house filter with zero hired roadies still returns every item/size row with hired 0.
+- getUniformOrder projectedCount sums (unfilled + missingSize) * qty across in-scope positions, then applies the curve once with (units * percent + 50) / 100; withBuffer rounds up per row; UniformOrderView.totals is one row per item (item/hired/projected/orderTotal).
+- defaultCount in phase23.mo matches a count item's text containing 'shirt' or 'hat' to pre-fill from the position's shirtQty/hatQty.

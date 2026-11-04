@@ -79,8 +79,6 @@ const SERVERS: Position = {
   minimumAge: 18n,
   shirtsRequired: 2n,
   hatsRequired: 1n,
-  defaultShirts: 3n,
-  defaultHats: 2n,
   needsAlcoholCert: true,
   shirtType: "Polo",
   shirtQty: 2n,

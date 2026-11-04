@@ -48,8 +48,6 @@ interface PositionDraft {
   minimumAge: string;
   shirtsRequired: string;
   hatsRequired: string;
-  defaultShirts: string;
-  defaultHats: string;
   shirtType: string;
   shirtQty: string;
   hatType: string;
@@ -67,8 +65,6 @@ function emptyDraft(): PositionDraft {
     minimumAge: "16",
     shirtsRequired: "0",
     hatsRequired: "0",
-    defaultShirts: "3",
-    defaultHats: "2",
     shirtType: "",
     shirtQty: "0",
     hatType: "",
@@ -87,8 +83,6 @@ function toDraft(position: Position): PositionDraft {
     minimumAge: position.minimumAge.toString(),
     shirtsRequired: position.shirtsRequired.toString(),
     hatsRequired: position.hatsRequired.toString(),
-    defaultShirts: position.defaultShirts.toString(),
-    defaultHats: position.defaultHats.toString(),
     shirtType: position.shirtType,
     shirtQty: position.shirtQty.toString(),
     hatType: position.hatType,
@@ -120,8 +114,6 @@ function toPosition(
     minimumAge: toCount(draft.minimumAge),
     shirtsRequired: toCount(draft.shirtsRequired),
     hatsRequired: toCount(draft.hatsRequired),
-    defaultShirts: toCount(draft.defaultShirts),
-    defaultHats: toCount(draft.defaultHats),
     shirtType: draft.shirtType.trim(),
     shirtQty: toCount(draft.shirtQty),
     hatType: draft.hatType.trim(),
@@ -133,6 +125,9 @@ function toPosition(
 }
 
 const BUILD_TO_MAX = 999;
+
+/** The heading for the single per-position uniform group. */
+const UNIFORM_GROUP_LABEL = "Uniform";
 
 /**
  * A build-to target shown as an editable number input flanked by +1/−1
@@ -543,85 +538,73 @@ export function PositionsPanel() {
                     }
                   />
                 </FormField>
-                <FormField
-                  label={c.positionsDefaultShirts}
-                  htmlFor="pos-default-shirts"
+                <fieldset
+                  className="sm:col-span-2 rounded-md border border-border bg-muted/30 p-3"
+                  data-ocid="admin.positions.uniform.panel"
                 >
-                  <Input
-                    id="pos-default-shirts"
-                    type="number"
-                    min={0}
-                    step={1}
-                    data-ocid="admin.positions.default_shirts.input"
-                    className="touch-target"
-                    value={draft.defaultShirts}
-                    onChange={(event) =>
-                      set("defaultShirts", event.target.value)
-                    }
-                  />
-                </FormField>
-                <FormField
-                  label={c.positionsDefaultHats}
-                  htmlFor="pos-default-hats"
-                >
-                  <Input
-                    id="pos-default-hats"
-                    type="number"
-                    min={0}
-                    step={1}
-                    data-ocid="admin.positions.default_hats.input"
-                    className="touch-target"
-                    value={draft.defaultHats}
-                    onChange={(event) => set("defaultHats", event.target.value)}
-                  />
-                </FormField>
-                <FormField
-                  label={c.positionsShirtType}
-                  htmlFor="pos-shirt-type"
-                >
-                  <Input
-                    id="pos-shirt-type"
-                    data-ocid="admin.positions.shirt_type.input"
-                    className="touch-target"
-                    placeholder={c.positionsShirtTypePlaceholder}
-                    value={draft.shirtType}
-                    onChange={(event) => set("shirtType", event.target.value)}
-                  />
-                </FormField>
-                <FormField label={c.positionsShirtQty} htmlFor="pos-shirt-qty">
-                  <Input
-                    id="pos-shirt-qty"
-                    type="number"
-                    min={0}
-                    step={1}
-                    data-ocid="admin.positions.shirt_qty.input"
-                    className="touch-target"
-                    value={draft.shirtQty}
-                    onChange={(event) => set("shirtQty", event.target.value)}
-                  />
-                </FormField>
-                <FormField label={c.positionsHatType} htmlFor="pos-hat-type">
-                  <Input
-                    id="pos-hat-type"
-                    data-ocid="admin.positions.hat_type.input"
-                    className="touch-target"
-                    placeholder={c.positionsHatTypePlaceholder}
-                    value={draft.hatType}
-                    onChange={(event) => set("hatType", event.target.value)}
-                  />
-                </FormField>
-                <FormField label={c.positionsHatQty} htmlFor="pos-hat-qty">
-                  <Input
-                    id="pos-hat-qty"
-                    type="number"
-                    min={0}
-                    step={1}
-                    data-ocid="admin.positions.hat_qty.input"
-                    className="touch-target"
-                    value={draft.hatQty}
-                    onChange={(event) => set("hatQty", event.target.value)}
-                  />
-                </FormField>
+                  <legend className="px-1 font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    {UNIFORM_GROUP_LABEL}
+                  </legend>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormField
+                      label={c.positionsShirtType}
+                      htmlFor="pos-shirt-type"
+                    >
+                      <Input
+                        id="pos-shirt-type"
+                        data-ocid="admin.positions.shirt_type.input"
+                        className="touch-target"
+                        placeholder={c.positionsShirtTypePlaceholder}
+                        value={draft.shirtType}
+                        onChange={(event) =>
+                          set("shirtType", event.target.value)
+                        }
+                      />
+                    </FormField>
+                    <FormField
+                      label={c.positionsShirtQty}
+                      htmlFor="pos-shirt-qty"
+                    >
+                      <Input
+                        id="pos-shirt-qty"
+                        type="number"
+                        min={0}
+                        step={1}
+                        data-ocid="admin.positions.shirt_qty.input"
+                        className="touch-target"
+                        value={draft.shirtQty}
+                        onChange={(event) =>
+                          set("shirtQty", event.target.value)
+                        }
+                      />
+                    </FormField>
+                    <FormField
+                      label={c.positionsHatType}
+                      htmlFor="pos-hat-type"
+                    >
+                      <Input
+                        id="pos-hat-type"
+                        data-ocid="admin.positions.hat_type.input"
+                        className="touch-target"
+                        placeholder={c.positionsHatTypePlaceholder}
+                        value={draft.hatType}
+                        onChange={(event) => set("hatType", event.target.value)}
+                      />
+                    </FormField>
+                    <FormField label={c.positionsHatQty} htmlFor="pos-hat-qty">
+                      <Input
+                        id="pos-hat-qty"
+                        type="number"
+                        min={0}
+                        step={1}
+                        data-ocid="admin.positions.hat_qty.input"
+                        className="touch-target"
+                        value={draft.hatQty}
+                        onChange={(event) => set("hatQty", event.target.value)}
+                      />
+                    </FormField>
+                  </div>
+                </fieldset>
                 <FormField
                   label={c.positionsCrewManager}
                   htmlFor="pos-crew-manager"

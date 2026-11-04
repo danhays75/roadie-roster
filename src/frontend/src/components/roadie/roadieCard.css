@@ -370,19 +370,6 @@
   right: 2.2cqw;
   background: var(--gold);
 }
-.rc .tag.birthday {
-  top: 8.4cqw;
-  left: auto;
-  right: 2.2cqw;
-  background: var(--cream);
-  color: var(--red);
-  border: .5cqw solid var(--red);
-}
-.rc .stats {
-  display: flex;
-  flex-direction: column;
-  gap: .4cqw;
-}
 .rc .b-top {
   display: flex;
   align-items: center;
@@ -449,38 +436,6 @@
 .rc .row span:last-child {
   text-align: right;
   color: #26324a;
-}
-.rc .h {
-  font-family: "Archivo Black", sans-serif;
-  color: var(--navy);
-  font-size: 4.8cqw;
-  text-transform: uppercase;
-  margin: 0;
-}
-.rc .stat {
-  display: grid;
-  grid-template-columns: 26cqw 1fr;
-  align-items: center;
-  gap: 2cqw;
-  font-weight: 600;
-  font-size: 3.8cqw;
-  color: var(--navy2);
-  text-transform: uppercase;
-  margin-top: .8cqw;
-}
-.rc .bar {
-  height: 4cqw;
-  border: .7cqw solid var(--navy);
-  border-radius: 99px;
-  padding: .6cqw;
-  box-sizing: border-box;
-  background: #fff;
-}
-.rc .bar i {
-  display: block;
-  height: 100%;
-  border-radius: 99px;
-  background: linear-gradient(180deg, var(--red), var(--red2));
 }
 .rc .quote {
   position: relative;

@@ -37,8 +37,6 @@ describe("RosterPage", () => {
           shirtsRequired: 2n,
           hatsRequired: 1n,
           needsAlcoholCert: false,
-          defaultShirts: 3n,
-          defaultHats: 2n,
           shirtType: "Polo",
           shirtQty: 2n,
           hatType: "Cap",

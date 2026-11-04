@@ -137,8 +137,6 @@ describe("demo banner View as picker drives the backend", () => {
           shirtsRequired: 0n,
           hatsRequired: 0n,
           needsAlcoholCert: false,
-          defaultShirts: 3n,
-          defaultHats: 2n,
           shirtType: "Polo",
           shirtQty: 2n,
           hatType: "Cap",

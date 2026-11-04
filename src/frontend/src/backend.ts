@@ -423,8 +423,6 @@ export type PhotoRef = Uint8Array;
 export interface Position {
     id: PositionId;
     openingBuildTo: bigint;
-    defaultHats: bigint;
-    defaultShirts: bigint;
     crewManager?: string;
     house: House;
     afterOpeningBuildTo: bigint;
@@ -622,8 +620,6 @@ export type TemplateLoadResult = {
 };
 export interface TemplatePosition {
     openingBuildTo: bigint;
-    defaultHats: bigint;
-    defaultShirts: bigint;
     house: House;
     afterOpeningBuildTo: bigint;
     minimumAge: bigint;
@@ -707,10 +703,17 @@ export interface UniformOrderRow {
     size: string;
     projected: bigint;
 }
+export interface UniformOrderTotalsRow {
+    hired: bigint;
+    item: string;
+    orderTotal: bigint;
+    projected: bigint;
+}
 export interface UniformOrderView {
     rows: Array<UniformOrderRow>;
     filter: UniformHouseFilter;
     sizeUnknown: Array<UniformSizeUnknownRow>;
+    totals: Array<UniformOrderTotalsRow>;
     bufferPercent: bigint;
 }
 export interface UniformSettings {
@@ -1340,7 +1343,7 @@ export interface backendInterface {
      */
     updateUserRole(principal: Principal, role: Role): Promise<void>;
 }
-import type { AccessGrant as _AccessGrant, ApprovalDecision as _ApprovalDecision, ApprovalRequest as _ApprovalRequest, ArchiveReason as _ArchiveReason, AttendanceRecord as _AttendanceRecord, AttendanceState as _AttendanceState, AvailabilitySlot as _AvailabilitySlot, Cell as _Cell, ChangeLogEntry as _ChangeLogEntry, ChangeLogId as _ChangeLogId, ChecklistItem as _ChecklistItem, Checklists as _Checklists, ContactSet as _ContactSet, Crew as _Crew, CrewId as _CrewId, DashboardView as _DashboardView, DateOnly as _DateOnly, DateTime as _DateTime, DemoActionResult as _DemoActionResult, DemoRole as _DemoRole, DemoShift as _DemoShift, DemoStateView as _DemoStateView, Email as _Email, Error as _Error, EventId as _EventId, EventKind as _EventKind, ExportData as _ExportData, ExportRow as _ExportRow, FinalSignOff as _FinalSignOff, GiftBagAnswerCount as _GiftBagAnswerCount, GiftBagCategory as _GiftBagCategory, GiftBagFilter as _GiftBagFilter, GiftBagGroup as _GiftBagGroup, GiftBagLabel as _GiftBagLabel, GiftBagsData as _GiftBagsData, HatSize as _HatSize, House as _House, LeaderSummary as _LeaderSummary, MyAccessView as _MyAccessView, OrientationCheckoff as _OrientationCheckoff, OrientationRoadieRow as _OrientationRoadieRow, OrientationSessionOption as _OrientationSessionOption, OrientationSessionView as _OrientationSessionView, OverviewRow as _OverviewRow, PaperworkStatus as _PaperworkStatus, PendingRequestSummary as _PendingRequestSummary, PendingUser as _PendingUser, PersonName as _PersonName, Phone as _Phone, PhotoRef as _PhotoRef, Position as _Position, PositionId as _PositionId, PretendDate as _PretendDate, Result as _Result, Result__1 as _Result__1, Roadie as _Roadie, RoadieId as _RoadieId, RoadieProfile as _RoadieProfile, RoadieStatus as _RoadieStatus, Role as _Role, RosterState as _RosterState, ScheduleEvent as _ScheduleEvent, Shift as _Shift, ShirtSize as _ShirtSize, SignOffOutcome as _SignOffOutcome, SignatureRef as _SignatureRef, SignupId as _SignupId, SignupStatus as _SignupStatus, SignupSubmission as _SignupSubmission, StaffProfile as _StaffProfile, StoreInfo as _StoreInfo, StoreLogos as _StoreLogos, StoreTemplateFile as _StoreTemplateFile, TemplateLoadResult as _TemplateLoadResult, TemplatePosition as _TemplatePosition, TemplatePreview as _TemplatePreview, TemplateScheduleEvent as _TemplateScheduleEvent, TimeOfDay as _TimeOfDay, TimeZone as _TimeZone, Timestamp as _Timestamp, TrainerNote as _TrainerNote, TrainingGroup as _TrainingGroup, TrainingGroupId as _TrainingGroupId, TrainingGroupView as _TrainingGroupView, UnassignedRoadieRow as _UnassignedRoadieRow, UniformCheckoffItem as _UniformCheckoffItem, UniformCheckoffView as _UniformCheckoffView, UniformHouseFilter as _UniformHouseFilter, UniformItemType as _UniformItemType, UniformOrderRow as _UniformOrderRow, UniformOrderView as _UniformOrderView, UniformSizeUnknownRow as _UniformSizeUnknownRow, UserRole as _UserRole, Value as _Value, Weekday as _Weekday, _ImmutableObjectStorageRefillInformation as __ImmutableObjectStorageRefillInformation, _ImmutableObjectStorageRefillResult as __ImmutableObjectStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { AccessGrant as _AccessGrant, ApprovalDecision as _ApprovalDecision, ApprovalRequest as _ApprovalRequest, ArchiveReason as _ArchiveReason, AttendanceRecord as _AttendanceRecord, AttendanceState as _AttendanceState, AvailabilitySlot as _AvailabilitySlot, Cell as _Cell, ChangeLogEntry as _ChangeLogEntry, ChangeLogId as _ChangeLogId, ChecklistItem as _ChecklistItem, Checklists as _Checklists, ContactSet as _ContactSet, Crew as _Crew, CrewId as _CrewId, DashboardView as _DashboardView, DateOnly as _DateOnly, DateTime as _DateTime, DemoActionResult as _DemoActionResult, DemoRole as _DemoRole, DemoShift as _DemoShift, DemoStateView as _DemoStateView, Email as _Email, Error as _Error, EventId as _EventId, EventKind as _EventKind, ExportData as _ExportData, ExportRow as _ExportRow, FinalSignOff as _FinalSignOff, GiftBagAnswerCount as _GiftBagAnswerCount, GiftBagCategory as _GiftBagCategory, GiftBagFilter as _GiftBagFilter, GiftBagGroup as _GiftBagGroup, GiftBagLabel as _GiftBagLabel, GiftBagsData as _GiftBagsData, HatSize as _HatSize, House as _House, LeaderSummary as _LeaderSummary, MyAccessView as _MyAccessView, OrientationCheckoff as _OrientationCheckoff, OrientationRoadieRow as _OrientationRoadieRow, OrientationSessionOption as _OrientationSessionOption, OrientationSessionView as _OrientationSessionView, OverviewRow as _OverviewRow, PaperworkStatus as _PaperworkStatus, PendingRequestSummary as _PendingRequestSummary, PendingUser as _PendingUser, PersonName as _PersonName, Phone as _Phone, PhotoRef as _PhotoRef, Position as _Position, PositionId as _PositionId, PretendDate as _PretendDate, Result as _Result, Result__1 as _Result__1, Roadie as _Roadie, RoadieId as _RoadieId, RoadieProfile as _RoadieProfile, RoadieStatus as _RoadieStatus, Role as _Role, RosterState as _RosterState, ScheduleEvent as _ScheduleEvent, Shift as _Shift, ShirtSize as _ShirtSize, SignOffOutcome as _SignOffOutcome, SignatureRef as _SignatureRef, SignupId as _SignupId, SignupStatus as _SignupStatus, SignupSubmission as _SignupSubmission, StaffProfile as _StaffProfile, StoreInfo as _StoreInfo, StoreLogos as _StoreLogos, StoreTemplateFile as _StoreTemplateFile, TemplateLoadResult as _TemplateLoadResult, TemplatePosition as _TemplatePosition, TemplatePreview as _TemplatePreview, TemplateScheduleEvent as _TemplateScheduleEvent, TimeOfDay as _TimeOfDay, TimeZone as _TimeZone, Timestamp as _Timestamp, TrainerNote as _TrainerNote, TrainingGroup as _TrainingGroup, TrainingGroupId as _TrainingGroupId, TrainingGroupView as _TrainingGroupView, UnassignedRoadieRow as _UnassignedRoadieRow, UniformCheckoffItem as _UniformCheckoffItem, UniformCheckoffView as _UniformCheckoffView, UniformHouseFilter as _UniformHouseFilter, UniformItemType as _UniformItemType, UniformOrderRow as _UniformOrderRow, UniformOrderTotalsRow as _UniformOrderTotalsRow, UniformOrderView as _UniformOrderView, UniformSizeUnknownRow as _UniformSizeUnknownRow, UserRole as _UserRole, Value as _Value, Weekday as _Weekday, _ImmutableObjectStorageRefillInformation as __ImmutableObjectStorageRefillInformation, _ImmutableObjectStorageRefillResult as __ImmutableObjectStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _immutableObjectStorageBlobsAreLive(arg0: Array<Uint8Array>): Promise<Array<boolean>> {
@@ -3854,17 +3857,20 @@ function from_candid_record_n169(_uploadFile: (file: ExternalBlob) => Promise<Ui
     rows: Array<_UniformOrderRow>;
     filter: _UniformHouseFilter;
     sizeUnknown: Array<_UniformSizeUnknownRow>;
+    totals: Array<_UniformOrderTotalsRow>;
     bufferPercent: bigint;
 }): {
     rows: Array<UniformOrderRow>;
     filter: UniformHouseFilter;
     sizeUnknown: Array<UniformSizeUnknownRow>;
+    totals: Array<UniformOrderTotalsRow>;
     bufferPercent: bigint;
 } {
     return {
         rows: value.rows,
         filter: from_candid_UniformHouseFilter_n170(_uploadFile, _downloadFile, value.filter),
         sizeUnknown: value.sizeUnknown,
+        totals: value.totals,
         bufferPercent: value.bufferPercent
     };
 }
@@ -4245,8 +4251,6 @@ function from_candid_record_n55(_uploadFile: (file: ExternalBlob) => Promise<Uin
 }
 function from_candid_record_n60(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     openingBuildTo: bigint;
-    defaultHats: bigint;
-    defaultShirts: bigint;
     house: _House;
     afterOpeningBuildTo: bigint;
     minimumAge: bigint;
@@ -4259,8 +4263,6 @@ function from_candid_record_n60(_uploadFile: (file: ExternalBlob) => Promise<Uin
     needsAlcoholCert: boolean;
 }): {
     openingBuildTo: bigint;
-    defaultHats: bigint;
-    defaultShirts: bigint;
     house: House;
     afterOpeningBuildTo: bigint;
     minimumAge: bigint;
@@ -4274,8 +4276,6 @@ function from_candid_record_n60(_uploadFile: (file: ExternalBlob) => Promise<Uin
 } {
     return {
         openingBuildTo: value.openingBuildTo,
-        defaultHats: value.defaultHats,
-        defaultShirts: value.defaultShirts,
         house: from_candid_House_n61(_uploadFile, _downloadFile, value.house),
         afterOpeningBuildTo: value.afterOpeningBuildTo,
         minimumAge: value.minimumAge,
@@ -4435,8 +4435,6 @@ function from_candid_record_n87(_uploadFile: (file: ExternalBlob) => Promise<Uin
 function from_candid_record_n90(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: _PositionId;
     openingBuildTo: bigint;
-    defaultHats: bigint;
-    defaultShirts: bigint;
     crewManager: [] | [string];
     house: _House;
     afterOpeningBuildTo: bigint;
@@ -4453,8 +4451,6 @@ function from_candid_record_n90(_uploadFile: (file: ExternalBlob) => Promise<Uin
 }): {
     id: PositionId;
     openingBuildTo: bigint;
-    defaultHats: bigint;
-    defaultShirts: bigint;
     crewManager?: string;
     house: House;
     afterOpeningBuildTo: bigint;
@@ -4472,8 +4468,6 @@ function from_candid_record_n90(_uploadFile: (file: ExternalBlob) => Promise<Uin
     return {
         id: value.id,
         openingBuildTo: value.openingBuildTo,
-        defaultHats: value.defaultHats,
-        defaultShirts: value.defaultShirts,
         crewManager: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.crewManager)),
         house: from_candid_House_n61(_uploadFile, _downloadFile, value.house),
         afterOpeningBuildTo: value.afterOpeningBuildTo,
@@ -5361,8 +5355,6 @@ function to_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8
 }
 function to_candid_record_n210(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     openingBuildTo: bigint;
-    defaultHats: bigint;
-    defaultShirts: bigint;
     house: House;
     afterOpeningBuildTo: bigint;
     minimumAge: bigint;
@@ -5375,8 +5367,6 @@ function to_candid_record_n210(_uploadFile: (file: ExternalBlob) => Promise<Uint
     needsAlcoholCert: boolean;
 }): {
     openingBuildTo: bigint;
-    defaultHats: bigint;
-    defaultShirts: bigint;
     house: _House;
     afterOpeningBuildTo: bigint;
     minimumAge: bigint;
@@ -5390,8 +5380,6 @@ function to_candid_record_n210(_uploadFile: (file: ExternalBlob) => Promise<Uint
 } {
     return {
         openingBuildTo: value.openingBuildTo,
-        defaultHats: value.defaultHats,
-        defaultShirts: value.defaultShirts,
         house: to_candid_House_n45(_uploadFile, _downloadFile, value.house),
         afterOpeningBuildTo: value.afterOpeningBuildTo,
         minimumAge: value.minimumAge,
@@ -5677,8 +5665,6 @@ function to_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
 function to_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: PositionId;
     openingBuildTo: bigint;
-    defaultHats: bigint;
-    defaultShirts: bigint;
     crewManager?: string;
     house: House;
     afterOpeningBuildTo: bigint;
@@ -5695,8 +5681,6 @@ function to_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8
 }): {
     id: _PositionId;
     openingBuildTo: bigint;
-    defaultHats: bigint;
-    defaultShirts: bigint;
     crewManager: [] | [string];
     house: _House;
     afterOpeningBuildTo: bigint;
@@ -5714,8 +5698,6 @@ function to_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     return {
         id: value.id,
         openingBuildTo: value.openingBuildTo,
-        defaultHats: value.defaultHats,
-        defaultShirts: value.defaultShirts,
         crewManager: value.crewManager ? candid_some(value.crewManager) : candid_none(),
         house: to_candid_House_n45(_uploadFile, _downloadFile, value.house),
         afterOpeningBuildTo: value.afterOpeningBuildTo,

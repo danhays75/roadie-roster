@@ -338,8 +338,6 @@ export type PhotoRef = Uint8Array;
 export interface Position {
   'id' : PositionId,
   'openingBuildTo' : bigint,
-  'defaultHats' : bigint,
-  'defaultShirts' : bigint,
   'crewManager' : [] | [string],
   'house' : House,
   'afterOpeningBuildTo' : bigint,
@@ -526,8 +524,6 @@ export type TemplateLoadResult = { 'ok' : TemplatePreview } |
   { 'err' : string };
 export interface TemplatePosition {
   'openingBuildTo' : bigint,
-  'defaultHats' : bigint,
-  'defaultShirts' : bigint,
   'house' : House,
   'afterOpeningBuildTo' : bigint,
   'minimumAge' : bigint,
@@ -616,10 +612,17 @@ export interface UniformOrderRow {
   'size' : string,
   'projected' : bigint,
 }
+export interface UniformOrderTotalsRow {
+  'hired' : bigint,
+  'item' : string,
+  'orderTotal' : bigint,
+  'projected' : bigint,
+}
 export interface UniformOrderView {
   'rows' : Array<UniformOrderRow>,
   'filter' : UniformHouseFilter,
   'sizeUnknown' : Array<UniformSizeUnknownRow>,
+  'totals' : Array<UniformOrderTotalsRow>,
   'bufferPercent' : bigint,
 }
 export interface UniformSettings {

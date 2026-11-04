@@ -200,8 +200,6 @@ export const House = IDL.Variant({ 'boh' : IDL.Null, 'foh' : IDL.Null });
 export const Position = IDL.Record({
   'id' : PositionId,
   'openingBuildTo' : IDL.Nat,
-  'defaultHats' : IDL.Nat,
-  'defaultShirts' : IDL.Nat,
   'crewManager' : IDL.Opt(IDL.Text),
   'house' : House,
   'afterOpeningBuildTo' : IDL.Nat,
@@ -251,8 +249,6 @@ export const TemplateScheduleEvent = IDL.Record({
 });
 export const TemplatePosition = IDL.Record({
   'openingBuildTo' : IDL.Nat,
-  'defaultHats' : IDL.Nat,
-  'defaultShirts' : IDL.Nat,
   'house' : House,
   'afterOpeningBuildTo' : IDL.Nat,
   'minimumAge' : IDL.Nat,
@@ -601,10 +597,17 @@ export const UniformSizeUnknownRow = IDL.Record({
   'missingHat' : IDL.Bool,
   'missingShirt' : IDL.Bool,
 });
+export const UniformOrderTotalsRow = IDL.Record({
+  'hired' : IDL.Nat,
+  'item' : IDL.Text,
+  'orderTotal' : IDL.Nat,
+  'projected' : IDL.Nat,
+});
 export const UniformOrderView = IDL.Record({
   'rows' : IDL.Vec(UniformOrderRow),
   'filter' : UniformHouseFilter,
   'sizeUnknown' : IDL.Vec(UniformSizeUnknownRow),
+  'totals' : IDL.Vec(UniformOrderTotalsRow),
   'bufferPercent' : IDL.Nat,
 });
 export const SizeCurveEntry = IDL.Record({
@@ -1118,8 +1121,6 @@ export const idlFactory = ({ IDL }) => {
   const Position = IDL.Record({
     'id' : PositionId,
     'openingBuildTo' : IDL.Nat,
-    'defaultHats' : IDL.Nat,
-    'defaultShirts' : IDL.Nat,
     'crewManager' : IDL.Opt(IDL.Text),
     'house' : House,
     'afterOpeningBuildTo' : IDL.Nat,
@@ -1169,8 +1170,6 @@ export const idlFactory = ({ IDL }) => {
   });
   const TemplatePosition = IDL.Record({
     'openingBuildTo' : IDL.Nat,
-    'defaultHats' : IDL.Nat,
-    'defaultShirts' : IDL.Nat,
     'house' : House,
     'afterOpeningBuildTo' : IDL.Nat,
     'minimumAge' : IDL.Nat,
@@ -1513,10 +1512,17 @@ export const idlFactory = ({ IDL }) => {
     'missingHat' : IDL.Bool,
     'missingShirt' : IDL.Bool,
   });
+  const UniformOrderTotalsRow = IDL.Record({
+    'hired' : IDL.Nat,
+    'item' : IDL.Text,
+    'orderTotal' : IDL.Nat,
+    'projected' : IDL.Nat,
+  });
   const UniformOrderView = IDL.Record({
     'rows' : IDL.Vec(UniformOrderRow),
     'filter' : UniformHouseFilter,
     'sizeUnknown' : IDL.Vec(UniformSizeUnknownRow),
+    'totals' : IDL.Vec(UniformOrderTotalsRow),
     'bufferPercent' : IDL.Nat,
   });
   const SizeCurveEntry = IDL.Record({ 'size' : IDL.Text, 'percent' : IDL.Nat });

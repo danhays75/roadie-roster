@@ -137,9 +137,18 @@ describe("backend uniforms contract", () => {
     const boh = await admin.getUniformOrder({ boh: null });
     expect(foh.filter).toEqual({ foh: null });
     expect(boh.filter).toEqual({ boh: null });
-    // Every FOH and BOH row is also present in the All order.
+    // Every FOH and BOH row's item and size also appears in the All order. The
+    // All order aggregates every house, so its counts are at least the house's
+    // for the same item and size (the item label falls back to a generic
+    // "Shirt"/"Hat" when a position's type text is blank, so the same label can
+    // span both houses).
     for (const row of [...foh.rows, ...boh.rows]) {
-      expect(all.rows).toContainEqual(row);
+      const match = all.rows.find(
+        (candidate) => candidate.item === row.item && candidate.size === row.size,
+      );
+      expect(match).toBeDefined();
+      expect(match!.hired).toBeGreaterThanOrEqual(row.hired);
+      expect(match!.projected).toBeGreaterThanOrEqual(row.projected);
     }
   });
 

@@ -189,8 +189,6 @@ actor {
           shirtsRequired = 0;
           hatsRequired = 0;
           crewManager = null;
-          defaultShirts = 0;
-          defaultHats = 0;
           shirtType = "";
           shirtQty = 0;
           hatType = "";
@@ -204,8 +202,6 @@ actor {
         .payload("afterOpeningBuildTo", func p = p.afterOpeningBuildTo)
         .payload("needsAlcoholCert", func p = p.needsAlcoholCert)
         .payload("minimumAge", func p = p.minimumAge)
-        .payload("defaultShirts", func p = p.defaultShirts)
-        .payload("defaultHats", func p = p.defaultHats)
         .payload("shirtType", func p = p.shirtType)
         .payload("shirtQty", func p = p.shirtQty)
         .payload("hatType", func p = p.hatType)

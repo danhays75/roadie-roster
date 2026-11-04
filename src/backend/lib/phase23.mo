@@ -893,9 +893,9 @@ module {
       case (#count) {
         let lower = item.text.toLower();
         if (lower.contains(#text "shirt")) {
-          switch (position) { case (?p) { p.defaultShirts }; case null { 0 } };
+          switch (position) { case (?p) { p.shirtQty }; case null { 0 } };
         } else if (lower.contains(#text "hat")) {
-          switch (position) { case (?p) { p.defaultHats }; case null { 0 } };
+          switch (position) { case (?p) { p.hatQty }; case null { 0 } };
         } else {
           0;
         };

@@ -33274,8 +33274,6 @@ var House$1 = Variant({
 var Position = Record({
 	"id": PositionId,
 	"openingBuildTo": Nat,
-	"defaultHats": Nat,
-	"defaultShirts": Nat,
 	"crewManager": Opt(Text),
 	"house": House$1,
 	"afterOpeningBuildTo": Nat,
@@ -33325,8 +33323,6 @@ var TemplateScheduleEvent = Record({
 });
 var TemplatePosition = Record({
 	"openingBuildTo": Nat,
-	"defaultHats": Nat,
-	"defaultShirts": Nat,
 	"house": House$1,
 	"afterOpeningBuildTo": Nat,
 	"minimumAge": Nat,
@@ -33677,10 +33673,17 @@ var UniformSizeUnknownRow = Record({
 	"missingHat": Bool,
 	"missingShirt": Bool
 });
+var UniformOrderTotalsRow = Record({
+	"hired": Nat,
+	"item": Text,
+	"orderTotal": Nat,
+	"projected": Nat
+});
 var UniformOrderView = Record({
 	"rows": Vec(UniformOrderRow),
 	"filter": UniformHouseFilter$1,
 	"sizeUnknown": Vec(UniformSizeUnknownRow),
+	"totals": Vec(UniformOrderTotalsRow),
 	"bufferPercent": Nat
 });
 var SizeCurveEntry = Record({
@@ -34135,8 +34138,6 @@ var idlFactory = ({ IDL }) => {
 	const Position = IDL.Record({
 		"id": PositionId,
 		"openingBuildTo": IDL.Nat,
-		"defaultHats": IDL.Nat,
-		"defaultShirts": IDL.Nat,
 		"crewManager": IDL.Opt(IDL.Text),
 		"house": House,
 		"afterOpeningBuildTo": IDL.Nat,
@@ -34186,8 +34187,6 @@ var idlFactory = ({ IDL }) => {
 	});
 	const TemplatePosition = IDL.Record({
 		"openingBuildTo": IDL.Nat,
-		"defaultHats": IDL.Nat,
-		"defaultShirts": IDL.Nat,
 		"house": House,
 		"afterOpeningBuildTo": IDL.Nat,
 		"minimumAge": IDL.Nat,
@@ -34542,10 +34541,17 @@ var idlFactory = ({ IDL }) => {
 		"missingHat": IDL.Bool,
 		"missingShirt": IDL.Bool
 	});
+	const UniformOrderTotalsRow = IDL.Record({
+		"hired": IDL.Nat,
+		"item": IDL.Text,
+		"orderTotal": IDL.Nat,
+		"projected": IDL.Nat
+	});
 	const UniformOrderView = IDL.Record({
 		"rows": IDL.Vec(UniformOrderRow),
 		"filter": UniformHouseFilter,
 		"sizeUnknown": IDL.Vec(UniformSizeUnknownRow),
+		"totals": IDL.Vec(UniformOrderTotalsRow),
 		"bufferPercent": IDL.Nat
 	});
 	const SizeCurveEntry = IDL.Record({
@@ -36681,6 +36687,7 @@ function from_candid_record_n169(_uploadFile, _downloadFile, value) {
 		rows: value.rows,
 		filter: from_candid_UniformHouseFilter_n170(_uploadFile, _downloadFile, value.filter),
 		sizeUnknown: value.sizeUnknown,
+		totals: value.totals,
 		bufferPercent: value.bufferPercent
 	};
 }
@@ -36840,8 +36847,6 @@ function from_candid_record_n55(_uploadFile, _downloadFile, value) {
 function from_candid_record_n60(_uploadFile, _downloadFile, value) {
 	return {
 		openingBuildTo: value.openingBuildTo,
-		defaultHats: value.defaultHats,
-		defaultShirts: value.defaultShirts,
 		house: from_candid_House_n61(_uploadFile, _downloadFile, value.house),
 		afterOpeningBuildTo: value.afterOpeningBuildTo,
 		minimumAge: value.minimumAge,
@@ -36920,8 +36925,6 @@ function from_candid_record_n90(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		openingBuildTo: value.openingBuildTo,
-		defaultHats: value.defaultHats,
-		defaultShirts: value.defaultShirts,
 		crewManager: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.crewManager)),
 		house: from_candid_House_n61(_uploadFile, _downloadFile, value.house),
 		afterOpeningBuildTo: value.afterOpeningBuildTo,
@@ -37372,8 +37375,6 @@ function to_candid_record_n21(_uploadFile, _downloadFile, value) {
 function to_candid_record_n210(_uploadFile, _downloadFile, value) {
 	return {
 		openingBuildTo: value.openingBuildTo,
-		defaultHats: value.defaultHats,
-		defaultShirts: value.defaultShirts,
 		house: to_candid_House_n45(_uploadFile, _downloadFile, value.house),
 		afterOpeningBuildTo: value.afterOpeningBuildTo,
 		minimumAge: value.minimumAge,
@@ -37498,8 +37499,6 @@ function to_candid_record_n44(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		openingBuildTo: value.openingBuildTo,
-		defaultHats: value.defaultHats,
-		defaultShirts: value.defaultShirts,
 		crewManager: value.crewManager ? candid_some(value.crewManager) : candid_none(),
 		house: to_candid_House_n45(_uploadFile, _downloadFile, value.house),
 		afterOpeningBuildTo: value.afterOpeningBuildTo,
@@ -56218,6 +56217,7 @@ var adminCopy = {
 		uniformsColumnHired: "Hired",
 		uniformsColumnProjected: "Projected",
 		uniformsColumnOrderTotal: "Order total",
+		uniformsColumnTotal: "Total",
 		uniformsSizeUnknownTitle: "Size unknown",
 		uniformsSizeUnknownHint: "Roadies missing a shirt or hat size. Set their size so the order is complete.",
 		uniformsSizeUnknownMissingShirt: "Missing shirt size",
@@ -56431,6 +56431,7 @@ var adminCopy = {
 		uniformsColumnHired: "Contratados",
 		uniformsColumnProjected: "Proyectados",
 		uniformsColumnOrderTotal: "Total del pedido",
+		uniformsColumnTotal: "Total",
 		uniformsSizeUnknownTitle: "Talla desconocida",
 		uniformsSizeUnknownHint: "Roadies sin talla de camiseta o gorra. Define su talla para completar el pedido.",
 		uniformsSizeUnknownMissingShirt: "Falta talla de camiseta",
@@ -58047,10 +58048,10 @@ function initialsOf$5(name) {
 	return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 /**
-* The inline SVG store seal that replaces the uploaded logo in the card's top
-* banner. A red disc with a cream ring carries the store number and three white
-* stars, matching the reference card. The store number is the accessible name,
-* so assistive tech reads the seal as the store number rather than as an image.
+* The inline SVG store seal that is always the card's top-banner badge. A red
+* disc with a cream ring carries the store number and three white stars,
+* matching the reference card. The store number is the accessible name, so
+* assistive tech reads the seal as the store number rather than as an image.
 */
 function StoreSeal({ storeNumber, label }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", {
@@ -58105,51 +58106,6 @@ function StoreSeal({ storeNumber, label }) {
 				children: "★ ★ ★"
 			})
 		]
-	});
-}
-/**
-* The front-face top-banner badge. An uploaded secondary logo wins, then the
-* uploaded main logo, and only when neither exists does the drawn bottle-cap
-* store seal stand in. The uploaded logos keep their own aspect ratio; the
-* bottle-cap is square.
-*/
-function StoreBadge({ storeNumber }) {
-	const { t } = useI18n();
-	const { data: logos } = useStoreLogo();
-	const secondaryUrl = (0, import_react.useMemo)(() => refToDataUrl(logos?.secondaryLogo), [logos?.secondaryLogo]);
-	const mainUrl = (0, import_react.useMemo)(() => refToDataUrl(logos?.logo), [logos?.logo]);
-	if (secondaryUrl) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-		src: secondaryUrl,
-		alt: "Store secondary logo",
-		"data-ocid": "store.logo.secondary",
-		className: "h-full w-auto max-w-full object-contain"
-	});
-	if (mainUrl) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-		src: mainUrl,
-		alt: "Store logo",
-		"data-ocid": "store.logo",
-		className: "h-full w-auto max-w-full object-contain"
-	});
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreSeal, {
-		storeNumber,
-		label: t("roadie.card.badge")
-	});
-}
-/**
-* One ROADIE STATS bar. A bar with a known value fills proportionally; a bar
-* with no data yet shows the "Coming soon" label instead of an empty track.
-*/
-function StatBar({ label, value }) {
-	const { t } = useI18n();
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "stat",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: label }), value === null ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-			className: "text-[3.4cqw] normal-case",
-			children: t("roadie.card.comingSoon")
-		}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-			className: "bar",
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { style: { width: `${Math.round(value * 100)}%` } })
-		})]
 	});
 }
 /**
@@ -58331,9 +58287,6 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 	const openingTeamFooter = `${t("roadie.card.openingTeam")} ★ ${storeNumber ? `#${storeNumber} ` : ""}${storeCity ?? t("roadie.field.none")}`;
 	const leaderFooter = trainerFooter ?? openingTeamFooter;
 	const roadieBackFooter = `${storeNumber ? `#${storeNumber} ` : ""}${t("roadie.card.openingCrew").toUpperCase()}${openingDate ? ` · ${openingDate.toUpperCase()}` : ""}`;
-	const orientationProgress = roadie?.rosterState === RosterState.active ? 1 : null;
-	const certifiedProgress = roadie?.status === RoadieStatus.certified ? 1 : null;
-	const trainingProgress = null;
 	const profileRows = [
 		{
 			label: t("roadie.field.hometown"),
@@ -58354,10 +58307,6 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 		{
 			label: t("roadie.field.favoriteSnack"),
 			value: about?.favoriteSnack
-		},
-		{
-			label: t("roadie.field.favoriteMovie"),
-			value: roadieProfile?.favoriteMovie
 		},
 		{
 			label: t("roadie.field.favoriteDrink"),
@@ -58419,7 +58368,10 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 									children: t("roadie.card.tlc")
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 									className: "cap",
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreBadge, { storeNumber: storeNumber ?? "" })
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreSeal, {
+										storeNumber: storeNumber ?? "",
+										label: t("roadie.card.badge")
+									})
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -58447,12 +58399,6 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 										className: "tag minor",
 										"data-ocid": "roadie.minor_badge",
 										children: "MINOR"
-									}),
-									isMinor && roadie?.birthdayMonthDay && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "tag birthday",
-										"data-ocid": "roadie.birthday_badge",
-										"aria-label": t("roadie.card.birthdayBadge"),
-										children: roadie.birthdayMonthDay
 									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 										className: "shield",
@@ -58550,27 +58496,6 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 											label: t("roadie.card.here"),
 											value: `${arrival ?? "—"} – ${departure ?? "—"}`
 										})]
-									}),
-									!isLeader && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-										className: "stats",
-										children: [
-											/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
-												className: "h",
-												children: t("roadie.card.stats")
-											}),
-											/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatBar, {
-												label: t("roadie.card.stat.orientation"),
-												value: orientationProgress
-											}),
-											/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatBar, {
-												label: t("roadie.card.stat.training"),
-												value: trainingProgress
-											}),
-											/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatBar, {
-												label: t("roadie.card.stat.certified"),
-												value: certifiedProgress
-											})
-										]
 									}),
 									about?.goalHere && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 										className: "quote",
@@ -59561,8 +59486,6 @@ function emptyDraft() {
 		minimumAge: "16",
 		shirtsRequired: "0",
 		hatsRequired: "0",
-		defaultShirts: "3",
-		defaultHats: "2",
 		shirtType: "",
 		shirtQty: "0",
 		hatType: "",
@@ -59580,8 +59503,6 @@ function toDraft$2(position) {
 		minimumAge: position.minimumAge.toString(),
 		shirtsRequired: position.shirtsRequired.toString(),
 		hatsRequired: position.hatsRequired.toString(),
-		defaultShirts: position.defaultShirts.toString(),
-		defaultHats: position.defaultHats.toString(),
 		shirtType: position.shirtType,
 		shirtQty: position.shirtQty.toString(),
 		hatType: position.hatType,
@@ -59607,8 +59528,6 @@ function toPosition(draft, openingBuildTo, afterOpeningBuildTo) {
 		minimumAge: toCount(draft.minimumAge),
 		shirtsRequired: toCount(draft.shirtsRequired),
 		hatsRequired: toCount(draft.hatsRequired),
-		defaultShirts: toCount(draft.defaultShirts),
-		defaultHats: toCount(draft.defaultHats),
 		shirtType: draft.shirtType.trim(),
 		shirtQty: toCount(draft.shirtQty),
 		hatType: draft.hatType.trim(),
@@ -59617,6 +59536,8 @@ function toPosition(draft, openingBuildTo, afterOpeningBuildTo) {
 	};
 }
 var BUILD_TO_MAX = 999;
+/** The heading for the single per-position uniform group. */
+var UNIFORM_GROUP_LABEL = "Uniform";
 /**
 * A build-to target shown as an editable number input flanked by +1/−1
 * steppers. The steppers save a single-unit delta; typing an absolute value
@@ -59977,85 +59898,69 @@ function PositionsPanel() {
 											onChange: (event) => set("hatsRequired", event.target.value)
 										})
 									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-										label: c.positionsDefaultShirts,
-										htmlFor: "pos-default-shirts",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											id: "pos-default-shirts",
-											type: "number",
-											min: 0,
-											step: 1,
-											"data-ocid": "admin.positions.default_shirts.input",
-											className: "touch-target",
-											value: draft.defaultShirts,
-											onChange: (event) => set("defaultShirts", event.target.value)
-										})
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-										label: c.positionsDefaultHats,
-										htmlFor: "pos-default-hats",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											id: "pos-default-hats",
-											type: "number",
-											min: 0,
-											step: 1,
-											"data-ocid": "admin.positions.default_hats.input",
-											className: "touch-target",
-											value: draft.defaultHats,
-											onChange: (event) => set("defaultHats", event.target.value)
-										})
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-										label: c.positionsShirtType,
-										htmlFor: "pos-shirt-type",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											id: "pos-shirt-type",
-											"data-ocid": "admin.positions.shirt_type.input",
-											className: "touch-target",
-											placeholder: c.positionsShirtTypePlaceholder,
-											value: draft.shirtType,
-											onChange: (event) => set("shirtType", event.target.value)
-										})
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-										label: c.positionsShirtQty,
-										htmlFor: "pos-shirt-qty",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											id: "pos-shirt-qty",
-											type: "number",
-											min: 0,
-											step: 1,
-											"data-ocid": "admin.positions.shirt_qty.input",
-											className: "touch-target",
-											value: draft.shirtQty,
-											onChange: (event) => set("shirtQty", event.target.value)
-										})
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-										label: c.positionsHatType,
-										htmlFor: "pos-hat-type",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											id: "pos-hat-type",
-											"data-ocid": "admin.positions.hat_type.input",
-											className: "touch-target",
-											placeholder: c.positionsHatTypePlaceholder,
-											value: draft.hatType,
-											onChange: (event) => set("hatType", event.target.value)
-										})
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-										label: c.positionsHatQty,
-										htmlFor: "pos-hat-qty",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											id: "pos-hat-qty",
-											type: "number",
-											min: 0,
-											step: 1,
-											"data-ocid": "admin.positions.hat_qty.input",
-											className: "touch-target",
-											value: draft.hatQty,
-											onChange: (event) => set("hatQty", event.target.value)
-										})
+									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("fieldset", {
+										className: "sm:col-span-2 rounded-md border border-border bg-muted/30 p-3",
+										"data-ocid": "admin.positions.uniform.panel",
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("legend", {
+											className: "px-1 font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+											children: UNIFORM_GROUP_LABEL
+										}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+											className: "grid grid-cols-1 gap-4 sm:grid-cols-2",
+											children: [
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+													label: c.positionsShirtType,
+													htmlFor: "pos-shirt-type",
+													children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+														id: "pos-shirt-type",
+														"data-ocid": "admin.positions.shirt_type.input",
+														className: "touch-target",
+														placeholder: c.positionsShirtTypePlaceholder,
+														value: draft.shirtType,
+														onChange: (event) => set("shirtType", event.target.value)
+													})
+												}),
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+													label: c.positionsShirtQty,
+													htmlFor: "pos-shirt-qty",
+													children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+														id: "pos-shirt-qty",
+														type: "number",
+														min: 0,
+														step: 1,
+														"data-ocid": "admin.positions.shirt_qty.input",
+														className: "touch-target",
+														value: draft.shirtQty,
+														onChange: (event) => set("shirtQty", event.target.value)
+													})
+												}),
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+													label: c.positionsHatType,
+													htmlFor: "pos-hat-type",
+													children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+														id: "pos-hat-type",
+														"data-ocid": "admin.positions.hat_type.input",
+														className: "touch-target",
+														placeholder: c.positionsHatTypePlaceholder,
+														value: draft.hatType,
+														onChange: (event) => set("hatType", event.target.value)
+													})
+												}),
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+													label: c.positionsHatQty,
+													htmlFor: "pos-hat-qty",
+													children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+														id: "pos-hat-qty",
+														type: "number",
+														min: 0,
+														step: 1,
+														"data-ocid": "admin.positions.hat_qty.input",
+														className: "touch-target",
+														value: draft.hatQty,
+														onChange: (event) => set("hatQty", event.target.value)
+													})
+												})
+											]
+										})]
 									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
 										label: c.positionsCrewManager,
@@ -61632,8 +61537,6 @@ function parseTemplateFile(value) {
 			afterOpeningBuildTo,
 			minimumAge,
 			needsAlcoholCert: raw.needsAlcoholCert === true,
-			defaultHats: toBigInt(raw.defaultHats) ?? 0n,
-			defaultShirts: toBigInt(raw.defaultShirts) ?? 0n,
 			shirtType: typeof raw.shirtType === "string" ? raw.shirtType : "",
 			shirtQty: toBigInt(raw.shirtQty) ?? 0n,
 			hatType: typeof raw.hatType === "string" ? raw.hatType : "",
@@ -95045,6 +94948,10 @@ function groupOrderRows(rows) {
 	}
 	return groups;
 }
+/** The backend's per-item totals row for one item, if present. */
+function totalsForItem(totals, item) {
+	return totals.find((row) => row.item === item);
+}
 /** The sum of a size curve's percentages. */
 function curveTotal(entries) {
 	return entries.reduce((total, entry) => total + Number(entry.percent), 0);
@@ -95083,7 +94990,8 @@ function uniformOrderFilename(now) {
 var ORDER_SHEET = "Uniform order";
 /**
 * Build the uniform order workbook: a header block with the store name and
-* date, then one row per item and size with hired, projected and order totals.
+* date, then one row per item and size with hired, projected and order totals,
+* followed by the backend's per-item totals row.
 */
 function buildUniformOrderWorkbook(order, storeName, dateLabel) {
 	const workbook = new import_exceljs_min.default.Workbook();
@@ -95127,13 +95035,26 @@ function buildUniformOrderWorkbook(order, storeName, dateLabel) {
 		"Order total"
 	]);
 	header.font = { bold: true };
-	for (const group of groupOrderRows(order.rows)) for (const row of group.rows) sheet.addRow([
-		row.item,
-		row.size,
-		Number(row.hired),
-		Number(row.projected),
-		Number(row.orderTotal)
-	]);
+	for (const group of groupOrderRows(order.rows)) {
+		for (const row of group.rows) sheet.addRow([
+			row.item,
+			row.size,
+			Number(row.hired),
+			Number(row.projected),
+			Number(row.orderTotal)
+		]);
+		const totals = totalsForItem(order.totals, group.item);
+		if (totals) {
+			const totalsRow = sheet.addRow([
+				totals.item,
+				"Total",
+				Number(totals.hired),
+				Number(totals.projected),
+				Number(totals.orderTotal)
+			]);
+			totalsRow.font = { bold: true };
+		}
+	}
 	sheet.views = [{
 		state: "frozen",
 		ySplit: 4
@@ -95246,7 +95167,7 @@ function CurveEditor({ label, entries, editable, onChange }) {
 	});
 }
 /** The order table for one item (Shirts or Hats). */
-function OrderTable({ item, rows }) {
+function OrderTable({ item, rows, totals }) {
 	const copy = useAdminCopy();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		"data-ocid": `uniforms.order.${item.toLowerCase()}`,
@@ -95258,48 +95179,73 @@ function OrderTable({ item, rows }) {
 			className: "mt-3 overflow-x-auto",
 			children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("table", {
 				className: "w-full border-collapse text-sm",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("thead", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", {
-					className: "border-b border-border text-left",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
-							className: "py-1.5 pr-2 font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-							children: copy.uniformsColumnSize
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
-							className: "py-1.5 px-2 text-right font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-							children: copy.uniformsColumnHired
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
-							className: "py-1.5 px-2 text-right font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-							children: copy.uniformsColumnProjected
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
-							className: "py-1.5 pl-2 text-right font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-							children: copy.uniformsColumnOrderTotal
-						})
-					]
-				}) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("tbody", { children: rows.map((row, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", {
-					"data-ocid": `uniforms.order.${item.toLowerCase()}.row.${index + 1}`,
-					className: "border-b border-border/60 last:border-0",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
-							className: "py-1.5 pr-2 text-foreground",
-							children: row.size
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
-							className: "py-1.5 px-2 text-right font-mono tabular-nums text-foreground",
-							children: row.hired.toString()
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
-							className: "py-1.5 px-2 text-right font-mono tabular-nums text-foreground",
-							children: row.projected.toString()
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
-							className: "py-1.5 pl-2 text-right font-mono font-semibold tabular-nums text-foreground",
-							children: row.orderTotal.toString()
-						})
-					]
-				}, `${row.item}-${row.size}`)) })]
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("thead", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", {
+						className: "border-b border-border text-left",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
+								className: "py-1.5 pr-2 font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+								children: copy.uniformsColumnSize
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
+								className: "py-1.5 px-2 text-right font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+								children: copy.uniformsColumnHired
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
+								className: "py-1.5 px-2 text-right font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+								children: copy.uniformsColumnProjected
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
+								className: "py-1.5 pl-2 text-right font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+								children: copy.uniformsColumnOrderTotal
+							})
+						]
+					}) }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("tbody", { children: rows.map((row, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", {
+						"data-ocid": `uniforms.order.${item.toLowerCase()}.row.${index + 1}`,
+						className: "border-b border-border/60 last:border-0",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+								className: "py-1.5 pr-2 text-foreground",
+								children: row.size
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+								className: "py-1.5 px-2 text-right font-mono tabular-nums text-foreground",
+								children: row.hired.toString()
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+								className: "py-1.5 px-2 text-right font-mono tabular-nums text-foreground",
+								children: row.projected.toString()
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+								className: "py-1.5 pl-2 text-right font-mono font-semibold tabular-nums text-foreground",
+								children: row.orderTotal.toString()
+							})
+						]
+					}, `${row.item}-${row.size}`)) }),
+					totals && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("tfoot", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", {
+						"data-ocid": `uniforms.order.${item.toLowerCase()}.totals`,
+						className: "border-t-2 border-border font-semibold",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+								className: "py-1.5 pr-2 font-display text-xs uppercase tracking-widest text-foreground",
+								children: copy.uniformsColumnTotal
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+								className: "py-1.5 px-2 text-right font-mono tabular-nums text-foreground",
+								children: totals.hired.toString()
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+								className: "py-1.5 px-2 text-right font-mono tabular-nums text-foreground",
+								children: totals.projected.toString()
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+								className: "py-1.5 pl-2 text-right font-mono tabular-nums text-foreground",
+								children: totals.orderTotal.toString()
+							})
+						]
+					}) })
+				]
 			})
 		})]
 	});
@@ -95609,7 +95555,8 @@ function UniformsPage() {
 								className: "grid gap-4 md:grid-cols-2",
 								children: groups.map((group) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(OrderTable, {
 									item: group.item,
-									rows: group.rows
+									rows: group.rows,
+									totals: totalsForItem(order.totals, group.item)
 								}, group.item))
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {

@@ -54,6 +54,14 @@ type UniformOrderView =
    filter: UniformHouseFilter;
    rows: vec UniformOrderRow;
    sizeUnknown: vec UniformSizeUnknownRow;
+   totals: vec UniformOrderTotalsRow;
+ };
+type UniformOrderTotalsRow = 
+ record {
+   hired: nat;
+   item: text;
+   orderTotal: nat;
+   projected: nat;
  };
 type UniformOrderRow = 
  record {
@@ -151,8 +159,6 @@ type TemplatePosition =
  record {
    afterOpeningBuildTo: nat;
    code: text;
-   defaultHats: nat;
-   defaultShirts: nat;
    hatQty: nat;
    hatType: text;
    house: House;
@@ -385,8 +391,6 @@ type Position =
    afterOpeningBuildTo: nat;
    code: text;
    crewManager: opt text;
-   defaultHats: nat;
-   defaultShirts: nat;
    hatQty: nat;
    hatType: text;
    hatsRequired: nat;

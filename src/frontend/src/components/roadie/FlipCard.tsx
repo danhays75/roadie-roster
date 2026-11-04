@@ -3,14 +3,12 @@ import {
   type LeaderSummary,
   type Position,
   type Roadie,
-  RoadieStatus,
   Role,
-  RosterState,
 } from "@/backend";
 import { hatSizeLabel } from "@/components/kiosk/copy";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/hooks/useI18n";
-import { useRoadiePhoto, useStoreInfo, useStoreLogo } from "@/hooks/useQueries";
+import { useRoadiePhoto, useStoreInfo } from "@/hooks/useQueries";
 import {
   formatDateOnly,
   formatDateOnlyMonthDay,
@@ -31,10 +29,10 @@ function initialsOf(name: string): string {
 }
 
 /**
- * The inline SVG store seal that replaces the uploaded logo in the card's top
- * banner. A red disc with a cream ring carries the store number and three white
- * stars, matching the reference card. The store number is the accessible name,
- * so assistive tech reads the seal as the store number rather than as an image.
+ * The inline SVG store seal that is always the card's top-banner badge. A red
+ * disc with a cream ring carries the store number and three white stars,
+ * matching the reference card. The store number is the accessible name, so
+ * assistive tech reads the seal as the store number rather than as an image.
  */
 function StoreSeal({
   storeNumber,
@@ -77,72 +75,6 @@ function StoreSeal({
         ★ ★ ★
       </text>
     </svg>
-  );
-}
-
-/**
- * The front-face top-banner badge. An uploaded secondary logo wins, then the
- * uploaded main logo, and only when neither exists does the drawn bottle-cap
- * store seal stand in. The uploaded logos keep their own aspect ratio; the
- * bottle-cap is square.
- */
-function StoreBadge({ storeNumber }: { storeNumber: string }) {
-  const { t } = useI18n();
-  const { data: logos } = useStoreLogo();
-  const secondaryUrl = useMemo(
-    () => refToDataUrl(logos?.secondaryLogo),
-    [logos?.secondaryLogo],
-  );
-  const mainUrl = useMemo(() => refToDataUrl(logos?.logo), [logos?.logo]);
-
-  if (secondaryUrl) {
-    return (
-      <img
-        src={secondaryUrl}
-        alt="Store secondary logo"
-        data-ocid="store.logo.secondary"
-        className="h-full w-auto max-w-full object-contain"
-      />
-    );
-  }
-  if (mainUrl) {
-    return (
-      <img
-        src={mainUrl}
-        alt="Store logo"
-        data-ocid="store.logo"
-        className="h-full w-auto max-w-full object-contain"
-      />
-    );
-  }
-  return <StoreSeal storeNumber={storeNumber} label={t("roadie.card.badge")} />;
-}
-
-/**
- * One ROADIE STATS bar. A bar with a known value fills proportionally; a bar
- * with no data yet shows the "Coming soon" label instead of an empty track.
- */
-function StatBar({
-  label,
-  value,
-}: {
-  label: string;
-  value: number | null;
-}) {
-  const { t } = useI18n();
-  return (
-    <div className="stat">
-      <span>{label}</span>
-      {value === null ? (
-        <span className="text-[3.4cqw] normal-case">
-          {t("roadie.card.comingSoon")}
-        </span>
-      ) : (
-        <span className="bar">
-          <i style={{ width: `${Math.round(value * 100)}%` }} />
-        </span>
-      )}
-    </div>
   );
 }
 
@@ -340,26 +272,12 @@ export function FlipCard({
     "roadie.card.openingCrew",
   ).toUpperCase()}${openingDate ? ` · ${openingDate.toUpperCase()}` : ""}`;
 
-  // ROADIE STATS: a roadie's orientation bar fills once they are checked in
-  // (rosterState active), the certified bar fills once their status is
-  // certified, and the training bar has no data source yet so it always shows
-  // "Coming soon". A leader has no roadie stats, so the section is roadie-only.
-  const orientationProgress =
-    roadie?.rosterState === RosterState.active ? 1 : null;
-  const certifiedProgress =
-    roadie?.status === RoadieStatus.certified ? 1 : null;
-  const trainingProgress: number | null = null;
-
   const profileRows = [
     { label: t("roadie.field.hometown"), value: about?.hometown },
     { label: t("roadie.field.crew"), value: crew?.name },
     { label: t("roadie.field.dayOff"), value: about?.hobbies },
     { label: t("roadie.field.favoriteTeam"), value: about?.favoriteTeam },
     { label: t("roadie.field.favoriteSnack"), value: about?.favoriteSnack },
-    {
-      label: t("roadie.field.favoriteMovie"),
-      value: roadieProfile?.favoriteMovie,
-    },
     { label: t("roadie.field.favoriteDrink"), value: about?.favoriteDrink },
     { label: t("roadie.field.favoriteColor"), value: about?.favoriteColor },
     { label: t("roadie.field.funFact"), value: about?.funFact },
@@ -406,7 +324,10 @@ export function FlipCard({
               <div className="f-top">
                 <div className="wordmark">{t("roadie.card.tlc")}</div>
                 <div className="cap">
-                  <StoreBadge storeNumber={storeNumber ?? ""} />
+                  <StoreSeal
+                    storeNumber={storeNumber ?? ""}
+                    label={t("roadie.card.badge")}
+                  />
                 </div>
               </div>
 
@@ -436,16 +357,6 @@ export function FlipCard({
                 {isMinor && (
                   <span className="tag minor" data-ocid="roadie.minor_badge">
                     MINOR
-                  </span>
-                )}
-
-                {isMinor && roadie?.birthdayMonthDay && (
-                  <span
-                    className="tag birthday"
-                    data-ocid="roadie.birthday_badge"
-                    aria-label={t("roadie.card.birthdayBadge")}
-                  >
-                    {roadie.birthdayMonthDay}
                   </span>
                 )}
 
@@ -565,24 +476,6 @@ export function FlipCard({
                         value={`${arrival ?? "—"} – ${departure ?? "—"}`}
                       />
                     )}
-                  </div>
-                )}
-
-                {!isLeader && (
-                  <div className="stats">
-                    <h3 className="h">{t("roadie.card.stats")}</h3>
-                    <StatBar
-                      label={t("roadie.card.stat.orientation")}
-                      value={orientationProgress}
-                    />
-                    <StatBar
-                      label={t("roadie.card.stat.training")}
-                      value={trainingProgress}
-                    />
-                    <StatBar
-                      label={t("roadie.card.stat.certified")}
-                      value={certifiedProgress}
-                    />
                   </div>
                 )}
 

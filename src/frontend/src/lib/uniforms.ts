@@ -2,6 +2,7 @@ import type {
   SizeCurve,
   SizeCurveEntry,
   UniformOrderRow,
+  UniformOrderTotalsRow,
   UniformOrderView,
   UniformSettings,
   UniformSizeUnknownRow,
@@ -76,6 +77,14 @@ export function groupOrderRows(rows: UniformOrderRow[]): UniformItemGroup[] {
   return groups;
 }
 
+/** The backend's per-item totals row for one item, if present. */
+export function totalsForItem(
+  totals: UniformOrderTotalsRow[],
+  item: string,
+): UniformOrderTotalsRow | undefined {
+  return totals.find((row) => row.item === item);
+}
+
 /** The sum of a size curve's percentages. */
 export function curveTotal(entries: SizeCurveEntry[]): number {
   return entries.reduce((total, entry) => total + Number(entry.percent), 0);
@@ -132,7 +141,8 @@ const ORDER_SHEET = "Uniform order";
 
 /**
  * Build the uniform order workbook: a header block with the store name and
- * date, then one row per item and size with hired, projected and order totals.
+ * date, then one row per item and size with hired, projected and order totals,
+ * followed by the backend's per-item totals row.
  */
 export function buildUniformOrderWorkbook(
   order: UniformOrderView,
@@ -175,6 +185,17 @@ export function buildUniformOrderWorkbook(
         Number(row.projected),
         Number(row.orderTotal),
       ]);
+    }
+    const totals = totalsForItem(order.totals, group.item);
+    if (totals) {
+      const totalsRow = sheet.addRow([
+        totals.item,
+        "Total",
+        Number(totals.hired),
+        Number(totals.projected),
+        Number(totals.orderTotal),
+      ]);
+      totalsRow.font = { bold: true };
     }
   }
 

@@ -45,11 +45,6 @@ module {
     shirtsRequired : Nat;
     hatsRequired : Nat;
     crewManager : ?Text;
-    /// Default number of shirts and hats given to a roadie in this position,
-    /// pre-filled into the orientation uniform check-off. Part of the store
-    /// template.
-    defaultShirts : Nat;
-    defaultHats : Nat;
     /// Uniform defaults for this position: the shirt type (free text) and how
     /// many shirts, and the hat type (free text) and how many hats. Quantities
     /// accept 0. Part of the store template.
@@ -132,8 +127,6 @@ module {
     afterOpeningBuildTo : Nat;
     minimumAge : Nat;
     needsAlcoholCert : Bool;
-    defaultShirts : Nat;
-    defaultHats : Nat;
     shirtType : Text;
     shirtQty : Nat;
     hatType : Text;
@@ -240,12 +233,22 @@ module {
     missingHat : Bool;
   };
 
-  /// The uniform order for one house filter: the per-item-and-size rows plus
-  /// the roadies missing a size.
+  /// The per-item totals row of the uniform order: the Hired, Projected and
+  /// Order total summed across every size of one item.
+  public type UniformOrderTotalsRow = {
+    item : Text;
+    hired : Nat;
+    projected : Nat;
+    orderTotal : Nat;
+  };
+
+  /// The uniform order for one house filter: the per-item-and-size rows, the
+  /// per-item totals rows, plus the roadies missing a size.
   public type UniformOrderView = {
     filter : UniformHouseFilter;
     bufferPercent : Nat;
     rows : [UniformOrderRow];
+    totals : [UniformOrderTotalsRow];
     sizeUnknown : [UniformSizeUnknownRow];
   };
 };

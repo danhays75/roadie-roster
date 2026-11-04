@@ -346,8 +346,6 @@ module {
           afterOpeningBuildTo = p.afterOpeningBuildTo;
           minimumAge = p.minimumAge;
           needsAlcoholCert = p.needsAlcoholCert;
-          defaultShirts = p.defaultShirts;
-          defaultHats = p.defaultHats;
           shirtType = p.shirtType;
           shirtQty = p.shirtQty;
           hatType = p.hatType;
@@ -400,8 +398,6 @@ module {
         shirtsRequired = 2;
         hatsRequired = 1;
         crewManager = null;
-        defaultShirts = p.defaultShirts;
-        defaultHats = p.defaultHats;
         shirtType = p.shirtType;
         shirtQty = p.shirtQty;
         hatType = p.hatType;
@@ -581,10 +577,28 @@ module {
         missingHat = r.profile.hatSize == null;
       });
 
+    let rowArray = rows.toArray();
+    let totals = List.empty<Store.UniformOrderTotalsRow>();
+    for (item in shirtItems.values()) {
+      var h = 0; var p = 0; var o = 0;
+      for (row in rowArray.values()) {
+        if (row.item == item) { h += row.hired; p += row.projected; o += row.orderTotal };
+      };
+      totals.add({ item; hired = h; projected = p; orderTotal = o });
+    };
+    for (item in hatItems.values()) {
+      var h = 0; var p = 0; var o = 0;
+      for (row in rowArray.values()) {
+        if (row.item == item) { h += row.hired; p += row.projected; o += row.orderTotal };
+      };
+      totals.add({ item; hired = h; projected = p; orderTotal = o });
+    };
+
     {
       filter;
       bufferPercent = buffer;
-      rows = rows.toArray();
+      rows = rowArray;
+      totals = totals.toArray();
       sizeUnknown;
     };
   };
@@ -666,10 +680,13 @@ module {
     total;
   };
 
-  /// Internal: the Projected count for one item and size: each in-scope
-  /// position's unfilled build-to slots, split by the size curve's percentage
-  /// for that size and multiplied by the position's quantity for the item,
-  /// rounded to the nearest whole unit.
+  /// Internal: the Projected count for one item and size. For each in-scope
+  /// position, the units to project are its unfilled build-to slots plus any
+  /// hired roadie at that position who is missing the item's size (their items
+  /// are projected by the curve exactly as an unfilled slot is). Those units
+  /// are multiplied by the position's quantity for the item and summed across
+  /// every in-scope position FIRST; the size curve's percentage is then applied
+  /// once and the result rounded once, half up.
   func projectedCount(
     inScope : [Store.Position],
     hired : [Roadie.Roadie],
@@ -683,17 +700,21 @@ module {
       case null { 0 };
     };
     if (percent == 0) { return 0 };
-    var total = 0;
+    var units = 0;
     for (p in inScope.values()) {
       let qty = if (shirts) { p.shirtQty } else { p.hatQty };
       let itemName = itemLabel(if (shirts) { p.shirtType } else { p.hatType }, shirts);
       if (qty > 0 and itemName == item) {
         let hiredHere = hired.filter(func r = r.mainPositionId == p.id).size();
         let unfilled = saturatingSub(p.openingBuildTo, hiredHere);
-        total += (unfilled * percent * qty + 50) / 100;
+        let missingSize = hired.filter(func r =
+          r.mainPositionId == p.id
+          and (if (shirts) { r.profile.shirtSize == null } else { r.profile.hatSize == null })
+        ).size();
+        units += (unfilled + missingSize) * qty;
       };
     };
-    total;
+    (units * percent + 50) / 100;
   };
 
   /// Internal: the Order total for one row: (Hired + Projected) with the buffer

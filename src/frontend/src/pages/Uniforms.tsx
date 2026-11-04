@@ -1,6 +1,7 @@
 import type {
   SizeCurveEntry,
   UniformHouseFilter,
+  UniformOrderTotalsRow,
   UniformOrderView,
   UniformSettings,
 } from "@/backend";
@@ -34,6 +35,7 @@ import {
   groupOrderRows,
   normalizeSettings,
   sizeUnknownReasonKey,
+  totalsForItem,
   uniformOrderFilename,
 } from "@/lib/uniforms";
 import { cn } from "@/lib/utils";
@@ -136,9 +138,11 @@ function CurveEditor({
 function OrderTable({
   item,
   rows,
+  totals,
 }: {
   item: string;
   rows: UniformOrderView["rows"];
+  totals: UniformOrderTotalsRow | undefined;
 }) {
   const copy = useAdminCopy();
 
@@ -188,6 +192,27 @@ function OrderTable({
               </tr>
             ))}
           </tbody>
+          {totals && (
+            <tfoot>
+              <tr
+                data-ocid={`uniforms.order.${item.toLowerCase()}.totals`}
+                className="border-t-2 border-border font-semibold"
+              >
+                <td className="py-1.5 pr-2 font-display text-xs uppercase tracking-widest text-foreground">
+                  {copy.uniformsColumnTotal}
+                </td>
+                <td className="py-1.5 px-2 text-right font-mono tabular-nums text-foreground">
+                  {totals.hired.toString()}
+                </td>
+                <td className="py-1.5 px-2 text-right font-mono tabular-nums text-foreground">
+                  {totals.projected.toString()}
+                </td>
+                <td className="py-1.5 pl-2 text-right font-mono tabular-nums text-foreground">
+                  {totals.orderTotal.toString()}
+                </td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
     </section>
@@ -568,6 +593,7 @@ export default function UniformsPage() {
                     key={group.item}
                     item={group.item}
                     rows={group.rows}
+                    totals={totalsForItem(order.totals, group.item)}
                   />
                 ))}
               </div>

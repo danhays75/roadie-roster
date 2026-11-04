@@ -340,8 +340,6 @@ describe("PositionRosterDialog archived section", () => {
     shirtsRequired: 2n,
     hatsRequired: 1n,
     needsAlcoholCert: true,
-    defaultShirts: 3n,
-    defaultHats: 2n,
     shirtType: "Polo",
     shirtQty: 2n,
     hatType: "Cap",

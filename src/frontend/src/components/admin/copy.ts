@@ -184,6 +184,7 @@ export interface AdminCopy {
   uniformsColumnHired: string;
   uniformsColumnProjected: string;
   uniformsColumnOrderTotal: string;
+  uniformsColumnTotal: string;
   uniformsSizeUnknownTitle: string;
   uniformsSizeUnknownHint: string;
   uniformsSizeUnknownMissingShirt: string;
@@ -423,6 +424,7 @@ const en: AdminCopy = {
   uniformsColumnHired: "Hired",
   uniformsColumnProjected: "Projected",
   uniformsColumnOrderTotal: "Order total",
+  uniformsColumnTotal: "Total",
   uniformsSizeUnknownTitle: "Size unknown",
   uniformsSizeUnknownHint:
     "Roadies missing a shirt or hat size. Set their size so the order is complete.",
@@ -669,6 +671,7 @@ const es: AdminCopy = {
   uniformsColumnHired: "Contratados",
   uniformsColumnProjected: "Proyectados",
   uniformsColumnOrderTotal: "Total del pedido",
+  uniformsColumnTotal: "Total",
   uniformsSizeUnknownTitle: "Talla desconocida",
   uniformsSizeUnknownHint:
     "Roadies sin talla de camiseta o gorra. Define su talla para completar el pedido.",

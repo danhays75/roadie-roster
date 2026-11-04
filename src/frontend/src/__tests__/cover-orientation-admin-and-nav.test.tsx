@@ -68,8 +68,6 @@ const SERVERS: Position = {
   minimumAge: 18n,
   shirtsRequired: 2n,
   hatsRequired: 1n,
-  defaultShirts: 3n,
-  defaultHats: 2n,
   needsAlcoholCert: true,
   shirtType: "Polo",
   shirtQty: 2n,
@@ -219,8 +217,8 @@ describe("Admin > Schedule paperwork due date", () => {
   });
 });
 
-describe("Admin > Positions default shirts and hats", () => {
-  it("lets an admin edit the default shirts and hats on a position", async () => {
+describe("Admin > Positions uniform defaults", () => {
+  it("lets an admin edit the shirt and hat type and quantity on a position", async () => {
     const user = userEvent.setup();
     const actor = adminActor();
     renderPageWithActor(AdminPage, actor, { path: "/admin" });
@@ -228,24 +226,24 @@ describe("Admin > Positions default shirts and hats", () => {
     await user.click(await screen.findByTestId("admin.positions.tab"));
     await user.click(await screen.findByTestId("admin.positions.edit_button"));
 
-    const shirts = await screen.findByTestId(
-      "admin.positions.default_shirts.input",
+    const shirtQty = await screen.findByTestId(
+      "admin.positions.shirt_qty.input",
     );
-    const hats = screen.getByTestId("admin.positions.default_hats.input");
-    // The seeded defaults are 3 shirts and 2 hats.
-    expect(shirts).toHaveValue(3);
-    expect(hats).toHaveValue(2);
+    const hatQty = screen.getByTestId("admin.positions.hat_qty.input");
+    // The seeded uniform defaults are 2 shirts and 1 hat.
+    expect(shirtQty).toHaveValue(2);
+    expect(hatQty).toHaveValue(1);
 
-    fireEvent.change(shirts, { target: { value: "4" } });
-    fireEvent.change(hats, { target: { value: "5" } });
-    expect(shirts).toHaveValue(4);
-    expect(hats).toHaveValue(5);
+    fireEvent.change(shirtQty, { target: { value: "4" } });
+    fireEvent.change(hatQty, { target: { value: "5" } });
+    expect(shirtQty).toHaveValue(4);
+    expect(hatQty).toHaveValue(5);
     await user.click(screen.getByTestId("admin.positions.save_button"));
 
     await waitFor(() => expect(actor.updatePosition).toHaveBeenCalledTimes(1));
     const saved = actor.updatePosition.mock.calls[0][0];
-    expect(saved.defaultShirts).toBe(4n);
-    expect(saved.defaultHats).toBe(5n);
+    expect(saved.shirtQty).toBe(4n);
+    expect(saved.hatQty).toBe(5n);
   });
 });
 
