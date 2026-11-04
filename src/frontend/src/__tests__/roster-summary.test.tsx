@@ -110,14 +110,13 @@ describe("DashboardPage roster summary", () => {
   it("shows on-hand counts and open spots from the backend summary", async () => {
     renderPageWithActor(DashboardPage, baseActor(), { path: "/dashboard" });
 
-    // Servers: 1 on hand of a 65 build-to, so 64 spots remain open.
-    expect(
-      await screen.findByText("1 on hand · build to 65"),
-    ).toBeInTheDocument();
+    // Servers: 1 on hand of a 65 build-to, so 64 spots remain open. The
+    // accepted rework shows one "N hired · need M" line per position row.
+    expect(await screen.findByText("1 hired · need 64")).toBeInTheDocument();
     expect(screen.getByText("64 needed")).toBeInTheDocument();
 
     // Fry / Salad: 2 on hand of a 16 build-to, so 14 spots remain open.
-    expect(screen.getByText("2 on hand · build to 16")).toBeInTheDocument();
+    expect(screen.getByText("2 hired · need 14")).toBeInTheDocument();
     expect(screen.getByText("14 needed")).toBeInTheDocument();
   });
 
@@ -139,9 +138,7 @@ describe("DashboardPage roster summary", () => {
 
     renderPageWithActor(DashboardPage, actor, { path: "/dashboard" });
 
-    expect(
-      await screen.findByText("65 on hand · build to 65"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("65 hired · need 0")).toBeInTheDocument();
     expect(screen.getByText("Filled")).toBeInTheDocument();
   });
 });

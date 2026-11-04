@@ -314,7 +314,7 @@ function dashboardActor() {
 }
 
 describe("Dashboard keeps its KPI tiles and adjust-mode toggle", () => {
-  it("renders the hired, build-to and still-needed tiles from the dashboard read", async () => {
+  it("renders the hired and still-needed tiles and the build-to progress bar from the dashboard read", async () => {
     renderPageWithActor(DashboardPage, dashboardActor(), {
       path: "/dashboard",
     });
@@ -322,8 +322,10 @@ describe("Dashboard keeps its KPI tiles and adjust-mode toggle", () => {
     expect(await screen.findByTestId("dashboard.kpi.hired")).toHaveTextContent(
       "3",
     );
-    expect(screen.getByTestId("dashboard.kpi.build_to")).toHaveTextContent(
-      "65",
+    // The accepted rework replaces the separate build-to tile with one hiring
+    // progress bar reading "Hired X of Y", where Y is the build-to total.
+    expect(screen.getByTestId("dashboard.progress")).toHaveTextContent(
+      "Hired 3 of 65",
     );
     expect(screen.getByTestId("dashboard.kpi.still_needed")).toHaveTextContent(
       "62",

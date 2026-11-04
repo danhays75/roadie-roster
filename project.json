@@ -1,20 +1,18 @@
 {
-  "overview": "Roadie Roster is a store staffing app for opening a new location: it tracks positions, roadie sign-ups, orientation, crews, leaders, gift bags and now uniform ordering.",
+  "overview": "A store hiring dashboard for tracking roadie recruitment, orientation and certification progress.",
   "features": [
-    "Position uniform defaults with shirt and hat type and quantity",
-    "Roadie shirt and hat sizes collected at kiosk sign-up and editable by managers",
-    "Size curve percentages used to project sizes for unfilled positions",
-    "Uniform order page with Hired, Projected and Order total columns and All/FOH/BOH filters",
-    "Excel download and letter-size print of the uniform order",
-    "Demo mode keeps demo and real uniform data separate"
+    "One hiring progress bar showing hired of build-to",
+    "Always-shown HIRED and STILL NEEDED tiles",
+    "SHOWED UP tile that appears during the orientation window",
+    "CERTIFIED tile that appears after final sign-off",
+    "Per-position rows with hired and needed counts"
   ],
   "category": "productivity",
   "tags": [
-    "staffing",
-    "retail",
-    "operations",
-    "uniforms",
-    "roster"
+    "hiring",
+    "dashboard",
+    "roster",
+    "retail"
   ],
-  "last_updated": "2026-11-03T13:53:54.249Z"
+  "last_updated": "2026-11-04T06:34:22.873Z"
 }

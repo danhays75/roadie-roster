@@ -1,14 +1,23 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Clock,
-  Target,
-  UserCheck,
-  Users,
-} from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { CheckCircle2, Target, UserCheck, type Users } from "lucide-react";
 import { useDashboardCopy } from "./copy";
+
+/**
+ * The orientation window, derived from the schedule and the store's paperwork
+ * due date, with the demo "Pretend it's" date already applied to `now`. The
+ * window opens on the paperwork due date and closes on the final sign-off
+ * date; `afterOrientation` and `afterSignOff` gate the later summary lines.
+ */
+export interface OrientationWindow {
+  /** Whether now falls inside the paperwork-due-to-sign-off window. */
+  isOpen: boolean;
+  /** Whether now is at or after the orientation session date. */
+  afterOrientation: boolean;
+  /** Whether now is at or after the final sign-off date. */
+  afterSignOff: boolean;
+}
 
 interface Tile {
   key: string;
@@ -17,169 +26,154 @@ interface Tile {
   hintKey: string;
   icon: typeof Users;
   tone: "primary" | "accent" | "muted";
+  /** An extra line under the value, e.g. the showed-up/waiting split. */
+  detail?: string;
+  /** A link rendered under the value, e.g. the no-shows link. */
+  link?: { to: string; label: string };
 }
 
 /**
- * The Hired → Active funnel: everyone hired, how many have shown up (active)
- * and how many are still pending. The bar splits hired into its active and
- * pending parts so the "showed up" share reads at a glance.
+ * The single hiring progress bar: "Hired X of Y", filled to hired/build-to.
+ * X is everyone hired (pending + active, archived excluded) and Y is the
+ * build-to total, so the bar reads how close the store is to its target.
  */
-function HiredFunnel({
+function HiringProgress({
   hired,
-  active,
-  pending,
+  buildToTotal,
 }: {
   hired: number;
-  active: number;
-  pending: number;
+  buildToTotal: number;
 }) {
   const { t } = useDashboardCopy();
-  const total = Math.max(hired, 1);
-  const activePct = Math.round((active / total) * 100);
-  const pendingPct = Math.round((pending / total) * 100);
+  const total = Math.max(buildToTotal, 1);
+  const pct = Math.min(100, Math.round((hired / total) * 100));
 
   return (
     <Card
-      data-ocid="dashboard.funnel"
+      data-ocid="dashboard.progress"
       className="animate-fade-rise rounded-lg border-border py-4 shadow-subtle"
     >
       <CardContent className="px-4">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <span className="font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            {t("dashboard.funnel.title")}
+            {t("dashboard.progress.title", { hired, total: buildToTotal })}
           </span>
-          <span className="flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-foreground">
-            <span data-ocid="dashboard.funnel.hired">
-              {t("dashboard.funnel.hired", { count: hired })}
-            </span>
-            <ArrowRight
-              className="h-4 w-4 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span data-ocid="dashboard.funnel.active" className="text-accent">
-              {t("dashboard.funnel.active", { count: active })}
-            </span>
+          <span className="font-display text-sm font-bold tabular-nums text-foreground">
+            {pct}%
           </span>
         </div>
 
         <div
-          className="mt-3 flex h-3 w-full overflow-hidden rounded-full bg-muted"
-          role="img"
-          aria-label={t("dashboard.funnel.aria", {
+          className="mt-3 h-3 w-full overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          tabIndex={0}
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={t("dashboard.progress.aria", {
             hired,
-            active,
-            pending,
+            total: buildToTotal,
           })}
         >
           <span
-            className="h-full bg-accent transition-all"
-            style={{ width: `${activePct}%` }}
+            className="block h-full rounded-full bg-primary transition-all"
+            style={{ width: `${pct}%` }}
           />
-          <span
-            className="h-full bg-primary transition-all"
-            style={{ width: `${pendingPct}%` }}
-          />
-        </div>
-
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span
-              className="h-2.5 w-2.5 rounded-full bg-accent"
-              aria-hidden="true"
-            />
-            {t("dashboard.funnel.activeLabel", { count: active })}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span
-              className="h-2.5 w-2.5 rounded-full bg-primary"
-              aria-hidden="true"
-            />
-            {t("dashboard.funnel.pendingLabel", { count: pending })}
-          </span>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-/** The headline hiring tiles plus the Hired → Active funnel. */
+/** The headline hiring tiles plus the single hiring progress bar. */
 export function KpiTiles({
   hired,
   active,
   pending,
   buildToTotal,
   stillNeeded,
-  showedAtOrientation,
   certified,
+  window,
 }: {
   hired: bigint;
   active: bigint;
   pending: bigint;
   buildToTotal: bigint;
   stillNeeded: bigint;
-  showedAtOrientation?: bigint;
   certified?: bigint;
+  window: OrientationWindow;
 }) {
   const { t } = useDashboardCopy();
+
+  const hiredCount = Number(hired);
+  const activeCount = Number(active);
+  const pendingCount = Number(pending);
+  const certifiedCount = Number(certified ?? 0n);
 
   const tiles: Tile[] = [
     {
       key: "hired",
       labelKey: "dashboard.kpi.hired",
-      value: hired.toString(),
+      value: hiredCount.toString(),
       hintKey: "dashboard.kpi.hired.hint",
       icon: UserCheck,
       tone: "accent",
-    },
-    {
-      key: "active",
-      labelKey: "dashboard.kpi.active",
-      value: active.toString(),
-      hintKey: "dashboard.kpi.active.hint",
-      icon: CheckCircle2,
-      tone: "accent",
-    },
-    {
-      key: "pending",
-      labelKey: "dashboard.kpi.pending",
-      value: pending.toString(),
-      hintKey: "dashboard.kpi.pending.hint",
-      icon: Clock,
-      tone: "primary",
-    },
-    {
-      key: "build_to",
-      labelKey: "dashboard.kpi.buildTo",
-      value: buildToTotal.toString(),
-      hintKey: "dashboard.kpi.buildTo.hint",
-      icon: Target,
-      tone: "primary",
+      // During the orientation window the hired tile also breaks the count
+      // into who has shown up and who is still waiting.
+      detail: window.isOpen
+        ? t("dashboard.kpi.hired.showedWaiting", {
+            showed: activeCount,
+            waiting: pendingCount,
+          })
+        : undefined,
     },
     {
       key: "still_needed",
       labelKey: "dashboard.kpi.stillNeeded",
       value: stillNeeded.toString(),
-      hintKey: "dashboard.kpi.stillNeeded.hint",
-      icon: Users,
+      hintKey: "dashboard.kpi.stillNeeded.toReach",
+      icon: Target,
       tone: "primary",
     },
-    {
-      key: "orientation",
-      labelKey: "dashboard.kpi.showedAtOrientation",
-      value: showedAtOrientation?.toString() ?? "—",
-      hintKey: "dashboard.kpi.orientation.hint",
-      icon: Clock,
-      tone: "muted",
-    },
-    {
+  ];
+
+  // The showed-up tile appears only once the orientation window opens; after
+  // the orientation date it also links to the no-shows on the Orientation
+  // screen.
+  if (window.isOpen) {
+    tiles.push({
+      key: "showed_up",
+      labelKey: "dashboard.kpi.showedUp",
+      value: t("dashboard.kpi.showedUp.value", {
+        active: activeCount,
+        hired: hiredCount,
+      }),
+      hintKey: "dashboard.kpi.showedUp.hint",
+      icon: CheckCircle2,
+      tone: "accent",
+      link: window.afterOrientation
+        ? {
+            to: "/orientation",
+            label: t("dashboard.kpi.showedUp.noShows", { count: pendingCount }),
+          }
+        : undefined,
+    });
+  }
+
+  // The certified tile appears only once the final sign-off date has passed.
+  if (window.afterSignOff) {
+    tiles.push({
       key: "certified",
       labelKey: "dashboard.kpi.certified",
-      value: certified?.toString() ?? "—",
+      value: t("dashboard.kpi.certified.value", {
+        certified: certifiedCount,
+        hired: hiredCount,
+      }),
       hintKey: "dashboard.kpi.certified.hint",
       icon: CheckCircle2,
       tone: "muted",
-    },
-  ];
+    });
+  }
 
   const toneClasses: Record<Tile["tone"], string> = {
     primary: "bg-primary/10 text-primary",
@@ -189,11 +183,7 @@ export function KpiTiles({
 
   return (
     <div className="space-y-3">
-      <HiredFunnel
-        hired={Number(hired)}
-        active={Number(active)}
-        pending={Number(pending)}
-      />
+      <HiringProgress hired={hiredCount} buildToTotal={Number(buildToTotal)} />
       <div
         className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4"
         data-ocid="dashboard.kpi.list"
@@ -224,8 +214,25 @@ export function KpiTiles({
                   {tile.value}
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {t(tile.hintKey)}
+                  {t(tile.hintKey, { total: Number(buildToTotal) })}
                 </p>
+                {tile.detail && (
+                  <p
+                    data-ocid={`dashboard.kpi.${tile.key}.detail`}
+                    className="mt-1 text-xs font-medium text-accent"
+                  >
+                    {tile.detail}
+                  </p>
+                )}
+                {tile.link && (
+                  <Link
+                    to={tile.link.to}
+                    data-ocid={`dashboard.kpi.${tile.key}.link`}
+                    className="mt-1 inline-block text-xs font-semibold text-primary underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    {tile.link.label}
+                  </Link>
+                )}
               </CardContent>
             </Card>
           );

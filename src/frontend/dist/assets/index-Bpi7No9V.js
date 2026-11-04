@@ -46984,6 +46984,7 @@ function useSetDemoMode() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["demoState"] });
 			queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+			queryClient.invalidateQueries();
 		}
 	});
 }
@@ -47020,6 +47021,7 @@ function useSetPretendDate() {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["demoState"] });
+			queryClient.invalidateQueries();
 		}
 	});
 }
@@ -57454,9 +57456,9 @@ function ChecklistsPanel() {
 * the foundation. Falls back to English for any locale without a translation.
 */
 var dashboardCopy = {
-	"dashboard.position.onHandOf": {
-		en: "{onHand} on hand · build to {target}",
-		es: "{onHand} en plantilla · meta {target}"
+	"dashboard.position.hiredNeed": {
+		en: "{hired} hired · need {need}",
+		es: "{hired} contratados · faltan {need}"
 	},
 	"dashboard.position.active": {
 		en: "{count} active",
@@ -57466,45 +57468,41 @@ var dashboardCopy = {
 		en: "{count} pending",
 		es: "{count} pendientes"
 	},
-	"dashboard.kpi.active": {
-		en: "Active",
-		es: "Activos"
+	"dashboard.progress.title": {
+		en: "Hired {hired} of {total}",
+		es: "Contratados {hired} de {total}"
 	},
-	"dashboard.kpi.active.hint": {
-		en: "Showed up at orientation",
-		es: "Se presentaron a la orientación"
+	"dashboard.progress.aria": {
+		en: "{hired} hired of a build-to of {total}",
+		es: "{hired} contratados de una meta de {total}"
 	},
-	"dashboard.kpi.pending": {
-		en: "Pending",
-		es: "Pendientes"
+	"dashboard.kpi.hired.showedWaiting": {
+		en: "{showed} showed up · {waiting} waiting",
+		es: "{showed} se presentaron · {waiting} en espera"
 	},
-	"dashboard.kpi.pending.hint": {
-		en: "Not yet shown up",
-		es: "Aún no se presentan"
+	"dashboard.kpi.stillNeeded.toReach": {
+		en: "to reach {total}",
+		es: "para llegar a {total}"
 	},
-	"dashboard.funnel.title": {
-		en: "Hired to active funnel",
-		es: "Embudo de contratados a activos"
+	"dashboard.kpi.showedUp": {
+		en: "Showed up",
+		es: "Se presentaron"
 	},
-	"dashboard.funnel.hired": {
-		en: "{count} hired",
-		es: "{count} contratados"
+	"dashboard.kpi.showedUp.hint": {
+		en: "Active of hired",
+		es: "Activos de contratados"
 	},
-	"dashboard.funnel.active": {
-		en: "{count} active",
-		es: "{count} activos"
+	"dashboard.kpi.showedUp.value": {
+		en: "{active} of {hired}",
+		es: "{active} de {hired}"
 	},
-	"dashboard.funnel.activeLabel": {
-		en: "{count} active (showed up)",
-		es: "{count} activos (se presentaron)"
+	"dashboard.kpi.showedUp.noShows": {
+		en: "{count} no-shows",
+		es: "{count} no se presentaron"
 	},
-	"dashboard.funnel.pendingLabel": {
-		en: "{count} pending",
-		es: "{count} pendientes"
-	},
-	"dashboard.funnel.aria": {
-		en: "{hired} hired: {active} active and {pending} pending",
-		es: "{hired} contratados: {active} activos y {pending} pendientes"
+	"dashboard.kpi.certified.value": {
+		en: "{certified} of {hired} certified",
+		es: "{certified} de {hired} certificados"
 	},
 	"dashboard.alerts.title": {
 		en: "Alerts",
@@ -57566,21 +57564,13 @@ var dashboardCopy = {
 		en: "On hand now",
 		es: "En plantilla ahora"
 	},
-	"dashboard.kpi.buildTo.hint": {
-		en: "Opening target",
-		es: "Meta de apertura"
-	},
 	"dashboard.kpi.stillNeeded.hint": {
 		en: "To reach build-to",
 		es: "Para llegar a la meta"
 	},
-	"dashboard.kpi.orientation.hint": {
-		en: "Awaiting phase",
-		es: "Fase pendiente"
-	},
 	"dashboard.kpi.certified.hint": {
-		en: "Awaiting phase",
-		es: "Fase pendiente"
+		en: "Final sign-off",
+		es: "Firma final"
 	},
 	"dashboard.adjust.mode": {
 		en: "Adjust build to",
@@ -96792,142 +96782,101 @@ function CardContent({ className, ...props }) {
 //#endregion
 //#region src/components/dashboard/KpiTiles.tsx
 /**
-* The Hired → Active funnel: everyone hired, how many have shown up (active)
-* and how many are still pending. The bar splits hired into its active and
-* pending parts so the "showed up" share reads at a glance.
+* The single hiring progress bar: "Hired X of Y", filled to hired/build-to.
+* X is everyone hired (pending + active, archived excluded) and Y is the
+* build-to total, so the bar reads how close the store is to its target.
 */
-function HiredFunnel({ hired, active, pending }) {
+function HiringProgress({ hired, buildToTotal }) {
 	const { t } = useDashboardCopy();
-	const total = Math.max(hired, 1);
-	const activePct = Math.round(active / total * 100);
-	const pendingPct = Math.round(pending / total * 100);
+	const pct = Math.min(100, Math.round(hired / Math.max(buildToTotal, 1) * 100));
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
-		"data-ocid": "dashboard.funnel",
+		"data-ocid": "dashboard.progress",
 		className: "animate-fade-rise rounded-lg border-border py-4 shadow-subtle",
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
 			className: "px-4",
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex flex-wrap items-center gap-x-3 gap-y-1",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-						children: t("dashboard.funnel.title")
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-						className: "flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-foreground",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								"data-ocid": "dashboard.funnel.hired",
-								children: t("dashboard.funnel.hired", { count: hired })
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRight, {
-								className: "h-4 w-4 text-muted-foreground",
-								"aria-hidden": "true"
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								"data-ocid": "dashboard.funnel.active",
-								className: "text-accent",
-								children: t("dashboard.funnel.active", { count: active })
-							})
-						]
-					})]
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "mt-3 flex h-3 w-full overflow-hidden rounded-full bg-muted",
-					role: "img",
-					"aria-label": t("dashboard.funnel.aria", {
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+					children: t("dashboard.progress.title", {
 						hired,
-						active,
-						pending
-					}),
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "h-full bg-accent transition-all",
-						style: { width: `${activePct}%` }
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "h-full bg-primary transition-all",
-						style: { width: `${pendingPct}%` }
-					})]
+						total: buildToTotal
+					})
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+					className: "font-display text-sm font-bold tabular-nums text-foreground",
+					children: [pct, "%"]
+				})]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "mt-3 h-3 w-full overflow-hidden rounded-full bg-muted",
+				role: "progressbar",
+				tabIndex: 0,
+				"aria-valuenow": pct,
+				"aria-valuemin": 0,
+				"aria-valuemax": 100,
+				"aria-label": t("dashboard.progress.aria", {
+					hired,
+					total: buildToTotal
 				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-						className: "flex items-center gap-1.5",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "h-2.5 w-2.5 rounded-full bg-accent",
-							"aria-hidden": "true"
-						}), t("dashboard.funnel.activeLabel", { count: active })]
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-						className: "flex items-center gap-1.5",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "h-2.5 w-2.5 rounded-full bg-primary",
-							"aria-hidden": "true"
-						}), t("dashboard.funnel.pendingLabel", { count: pending })]
-					})]
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					className: "block h-full rounded-full bg-primary transition-all",
+					style: { width: `${pct}%` }
 				})
-			]
+			})]
 		})
 	});
 }
-/** The headline hiring tiles plus the Hired → Active funnel. */
-function KpiTiles({ hired, active, pending, buildToTotal, stillNeeded, showedAtOrientation, certified }) {
+/** The headline hiring tiles plus the single hiring progress bar. */
+function KpiTiles({ hired, active, pending, buildToTotal, stillNeeded, certified, window }) {
 	const { t } = useDashboardCopy();
-	const tiles = [
-		{
-			key: "hired",
-			labelKey: "dashboard.kpi.hired",
-			value: hired.toString(),
-			hintKey: "dashboard.kpi.hired.hint",
-			icon: UserCheck,
-			tone: "accent"
-		},
-		{
-			key: "active",
-			labelKey: "dashboard.kpi.active",
-			value: active.toString(),
-			hintKey: "dashboard.kpi.active.hint",
-			icon: CircleCheck,
-			tone: "accent"
-		},
-		{
-			key: "pending",
-			labelKey: "dashboard.kpi.pending",
-			value: pending.toString(),
-			hintKey: "dashboard.kpi.pending.hint",
-			icon: Clock,
-			tone: "primary"
-		},
-		{
-			key: "build_to",
-			labelKey: "dashboard.kpi.buildTo",
-			value: buildToTotal.toString(),
-			hintKey: "dashboard.kpi.buildTo.hint",
-			icon: Target,
-			tone: "primary"
-		},
-		{
-			key: "still_needed",
-			labelKey: "dashboard.kpi.stillNeeded",
-			value: stillNeeded.toString(),
-			hintKey: "dashboard.kpi.stillNeeded.hint",
-			icon: Users,
-			tone: "primary"
-		},
-		{
-			key: "orientation",
-			labelKey: "dashboard.kpi.showedAtOrientation",
-			value: showedAtOrientation?.toString() ?? "—",
-			hintKey: "dashboard.kpi.orientation.hint",
-			icon: Clock,
-			tone: "muted"
-		},
-		{
-			key: "certified",
-			labelKey: "dashboard.kpi.certified",
-			value: certified?.toString() ?? "—",
-			hintKey: "dashboard.kpi.certified.hint",
-			icon: CircleCheck,
-			tone: "muted"
-		}
-	];
+	const hiredCount = Number(hired);
+	const activeCount = Number(active);
+	const pendingCount = Number(pending);
+	const certifiedCount = Number(certified ?? 0n);
+	const tiles = [{
+		key: "hired",
+		labelKey: "dashboard.kpi.hired",
+		value: hiredCount.toString(),
+		hintKey: "dashboard.kpi.hired.hint",
+		icon: UserCheck,
+		tone: "accent",
+		detail: window.isOpen ? t("dashboard.kpi.hired.showedWaiting", {
+			showed: activeCount,
+			waiting: pendingCount
+		}) : void 0
+	}, {
+		key: "still_needed",
+		labelKey: "dashboard.kpi.stillNeeded",
+		value: stillNeeded.toString(),
+		hintKey: "dashboard.kpi.stillNeeded.toReach",
+		icon: Target,
+		tone: "primary"
+	}];
+	if (window.isOpen) tiles.push({
+		key: "showed_up",
+		labelKey: "dashboard.kpi.showedUp",
+		value: t("dashboard.kpi.showedUp.value", {
+			active: activeCount,
+			hired: hiredCount
+		}),
+		hintKey: "dashboard.kpi.showedUp.hint",
+		icon: CircleCheck,
+		tone: "accent",
+		link: window.afterOrientation ? {
+			to: "/orientation",
+			label: t("dashboard.kpi.showedUp.noShows", { count: pendingCount })
+		} : void 0
+	});
+	if (window.afterSignOff) tiles.push({
+		key: "certified",
+		labelKey: "dashboard.kpi.certified",
+		value: t("dashboard.kpi.certified.value", {
+			certified: certifiedCount,
+			hired: hiredCount
+		}),
+		hintKey: "dashboard.kpi.certified.hint",
+		icon: CircleCheck,
+		tone: "muted"
+	});
 	const toneClasses = {
 		primary: "bg-primary/10 text-primary",
 		accent: "bg-accent/10 text-accent",
@@ -96935,10 +96884,9 @@ function KpiTiles({ hired, active, pending, buildToTotal, stillNeeded, showedAtO
 	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-3",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(HiredFunnel, {
-			hired: Number(hired),
-			active: Number(active),
-			pending: Number(pending)
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(HiringProgress, {
+			hired: hiredCount,
+			buildToTotal: Number(buildToTotal)
 		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 			className: "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4",
 			"data-ocid": "dashboard.kpi.list",
@@ -96969,7 +96917,18 @@ function KpiTiles({ hired, active, pending, buildToTotal, stillNeeded, showedAtO
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 								className: "mt-0.5 text-xs text-muted-foreground",
-								children: t(tile.hintKey)
+								children: t(tile.hintKey, { total: Number(buildToTotal) })
+							}),
+							tile.detail && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								"data-ocid": `dashboard.kpi.${tile.key}.detail`,
+								className: "mt-1 text-xs font-medium text-accent",
+								children: tile.detail
+							}),
+							tile.link && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
+								to: tile.link.to,
+								"data-ocid": `dashboard.kpi.${tile.key}.link`,
+								className: "mt-1 inline-block text-xs font-semibold text-primary underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+								children: tile.link.label
 							})
 						]
 					})
@@ -96997,7 +96956,7 @@ function eventKindLabel(kind) {
 * pretend date, that instant is returned instead of the real clock so the
 * countdown and schedule windows follow the pretend date.
 */
-function useNow(pretendInstant, intervalMs = 6e4) {
+function useNow$1(pretendInstant, intervalMs = 6e4) {
 	const [now, setNow] = (0, import_react.useState)(() => Date.now());
 	(0, import_react.useEffect)(() => {
 		const id = window.setInterval(() => setNow(Date.now()), intervalMs);
@@ -97051,7 +97010,7 @@ function OpeningTimeline({ events, openingDate }) {
 	const { data: storeInfo } = useStoreInfo();
 	const demo = useDemo();
 	const timeZone = storeInfo?.timeZone;
-	const now = useNow((0, import_react.useMemo)(() => {
+	const now = useNow$1((0, import_react.useMemo)(() => {
 		if (!demo.enabled || !demo.pretendDate) return null;
 		return pretendDateToInstant(demo.pretendDate)?.getTime() ?? null;
 	}, [demo.enabled, demo.pretendDate]));
@@ -97268,7 +97227,7 @@ function AdjustStepper({ label, value, disabled, onDelta, ocid }) {
 		})]
 	});
 }
-function PositionRow({ position, summary, adjustMode, canAdjust, onOpenRoster }) {
+function PositionRow({ position, summary, adjustMode, canAdjust, showSplit, onOpenRoster }) {
 	const { t } = useDashboardCopy();
 	const { data: roster } = useRosterForPosition(position.id);
 	const adjust = useAdjustBuildTo();
@@ -97310,12 +97269,12 @@ function PositionRow({ position, summary, adjustMode, canAdjust, onOpenRoster })
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								className: "block text-xs text-muted-foreground",
-								children: t("dashboard.position.onHandOf", {
-									onHand,
-									target
+								children: t("dashboard.position.hiredNeed", {
+									hired: onHand,
+									need: Math.max(0, needed)
 								})
 							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+							showSplit && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 								"data-ocid": "dashboard.position.counts",
 								className: "mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-medium",
 								children: [
@@ -97398,7 +97357,7 @@ function PositionRow({ position, summary, adjustMode, canAdjust, onOpenRoster })
 	});
 }
 /** One house panel (front of house / back of house) with its position rows. */
-function PositionPanel({ titleKey, positions, summaryByPosition, adjustMode, canAdjust, onOpenRoster, ocid }) {
+function PositionPanel({ titleKey, positions, summaryByPosition, adjustMode, canAdjust, showSplit, onOpenRoster, ocid }) {
 	const { t } = useDashboardCopy();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
 		"data-ocid": ocid,
@@ -97418,6 +97377,7 @@ function PositionPanel({ titleKey, positions, summaryByPosition, adjustMode, can
 					summary: summaryByPosition.get(position.id.toString()),
 					adjustMode,
 					canAdjust,
+					showSplit,
 					onOpenRoster
 				}, position.id.toString()))
 			})]
@@ -97685,6 +97645,52 @@ function useAlerts(enabled) {
 	});
 }
 /**
+* The current instant, refreshed on an interval. When demo mode supplies a
+* pretend date, that instant is returned instead of the real clock so the
+* orientation window follows the pretend date.
+*/
+function useNow(pretendInstant, intervalMs = 6e4) {
+	const [now, setNow] = (0, import_react.useState)(() => Date.now());
+	(0, import_react.useEffect)(() => {
+		const id = window.setInterval(() => setNow(Date.now()), intervalMs);
+		return () => window.clearInterval(id);
+	}, [intervalMs]);
+	return pretendInstant ?? now;
+}
+/**
+* The orientation window, derived from the schedule and the store's paperwork
+* due date. The window opens on the paperwork due date and closes on the final
+* sign-off date; the orientation session date marks the point after which
+* no-shows are counted. All three dates respect the demo "Pretend it's" date
+* through `now`.
+*/
+function useOrientationWindow(events, paperworkDueDate, now) {
+	return (0, import_react.useMemo)(() => {
+		const dueInstant = paperworkDueDate ? dateOnlyToDate(paperworkDueDate)?.getTime() ?? null : null;
+		let orientationInstant = null;
+		let signOffInstant = null;
+		for (const event of events) {
+			const date = timestampToDate(event.start);
+			if (!date) continue;
+			const time = date.getTime();
+			if (event.kind === EventKind.orientation) {
+				if (orientationInstant === null || time < orientationInstant) orientationInstant = time;
+			} else if (event.kind === EventKind.signOff) {
+				if (signOffInstant === null || time > signOffInstant) signOffInstant = time;
+			}
+		}
+		return {
+			isOpen: dueInstant !== null && now >= dueInstant && (signOffInstant === null || now <= signOffInstant),
+			afterOrientation: orientationInstant !== null && now >= orientationInstant,
+			afterSignOff: signOffInstant !== null && now >= signOffInstant
+		};
+	}, [
+		events,
+		paperworkDueDate,
+		now
+	]);
+}
+/**
 * The dashboard alerts: a red "Paperwork incomplete" flag for every roadie past
 * the paperwork due date whose paperwork is not 100% complete, plus any
 * unacknowledged backend alerts. Rendered only for managers, who are the roles
@@ -97736,6 +97742,12 @@ function DashboardPage() {
 	const { data: rosterSummary } = useRosterSummary();
 	const { data: roadies } = useRoadies();
 	const { data: alerts } = useAlerts(canAdjust);
+	const demo = useDemo();
+	const now = useNow((0, import_react.useMemo)(() => {
+		if (!demo.enabled || !demo.pretendDate) return null;
+		return pretendDateToInstant(demo.pretendDate)?.getTime() ?? null;
+	}, [demo.enabled, demo.pretendDate]));
+	const orientationWindow = useOrientationWindow(schedule ?? [], storeInfo?.paperworkDueDate, now);
 	const hasNoPositions = !!data && data.foh.length === 0 && data.boh.length === 0;
 	useSeedWhenEmpty(!!data, hasNoPositions);
 	const summaryByPosition = (0, import_react.useMemo)(() => {
@@ -97800,8 +97812,8 @@ function DashboardPage() {
 					pending: data.pending,
 					buildToTotal: data.buildToTotal,
 					stillNeeded: data.stillNeeded,
-					showedAtOrientation: data.showedAtOrientation,
-					certified: data.certified
+					certified: data.certified,
+					window: orientationWindow
 				}),
 				adjustMode && canAdjust && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-foreground",
@@ -97816,6 +97828,7 @@ function DashboardPage() {
 						summaryByPosition,
 						adjustMode,
 						canAdjust,
+						showSplit: orientationWindow.isOpen,
 						onOpenRoster: openRoster,
 						ocid: "dashboard.foh.section"
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PositionPanel, {
@@ -97824,6 +97837,7 @@ function DashboardPage() {
 						summaryByPosition,
 						adjustMode,
 						canAdjust,
+						showSplit: orientationWindow.isOpen,
 						onOpenRoster: openRoster,
 						ocid: "dashboard.boh.section"
 					})]

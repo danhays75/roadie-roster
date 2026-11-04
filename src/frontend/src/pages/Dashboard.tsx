@@ -1,9 +1,12 @@
 import type { Alert, Position, RosterSummary, StoreInfo } from "@/backend";
-import { createActor } from "@/backend";
+import { EventKind, createActor } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { StoreLogo } from "@/components/StoreLogo";
-import { KpiTiles } from "@/components/dashboard/KpiTiles";
+import {
+  KpiTiles,
+  type OrientationWindow,
+} from "@/components/dashboard/KpiTiles";
 import { OpeningTimeline } from "@/components/dashboard/OpeningTimeline";
 import { PositionPanel } from "@/components/dashboard/PositionPanel";
 import { PositionRosterDialog } from "@/components/dashboard/PositionRosterDialog";
@@ -11,6 +14,7 @@ import { useDashboardCopy } from "@/components/dashboard/copy";
 import { usePaperworkIncompleteMap } from "@/components/roadie/RoadieTile";
 import { Button } from "@/components/ui/button";
 import { canArchive, useAccessState } from "@/hooks/useAccess";
+import { useDemo } from "@/hooks/useDemo";
 import {
   useDashboard,
   useRoadies,
@@ -19,11 +23,16 @@ import {
   useStoreInfo,
 } from "@/hooks/useQueries";
 import { useSeedWhenEmpty } from "@/hooks/useSeeding";
-import { formatDateOnly } from "@/lib/format";
+import {
+  dateOnlyToDate,
+  formatDateOnly,
+  pretendDateToInstant,
+  timestampToDate,
+} from "@/lib/format";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, SlidersHorizontal } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 /**
  * The dashboard hero banner: a navy panel with the red-and-white flag stripe,
@@ -84,6 +93,68 @@ function useAlerts(enabled: boolean) {
     },
     enabled: enabled && !!actor && !isFetching,
   });
+}
+
+/**
+ * The current instant, refreshed on an interval. When demo mode supplies a
+ * pretend date, that instant is returned instead of the real clock so the
+ * orientation window follows the pretend date.
+ */
+function useNow(pretendInstant: number | null, intervalMs = 60_000): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), intervalMs);
+    return () => window.clearInterval(id);
+  }, [intervalMs]);
+  return pretendInstant ?? now;
+}
+
+/**
+ * The orientation window, derived from the schedule and the store's paperwork
+ * due date. The window opens on the paperwork due date and closes on the final
+ * sign-off date; the orientation session date marks the point after which
+ * no-shows are counted. All three dates respect the demo "Pretend it's" date
+ * through `now`.
+ */
+function useOrientationWindow(
+  events: { kind: EventKind; start: bigint }[],
+  paperworkDueDate: bigint | undefined,
+  now: number,
+): OrientationWindow {
+  return useMemo(() => {
+    const dueInstant = paperworkDueDate
+      ? (dateOnlyToDate(paperworkDueDate)?.getTime() ?? null)
+      : null;
+
+    let orientationInstant: number | null = null;
+    let signOffInstant: number | null = null;
+    for (const event of events) {
+      const date = timestampToDate(event.start);
+      if (!date) continue;
+      const time = date.getTime();
+      if (event.kind === EventKind.orientation) {
+        if (orientationInstant === null || time < orientationInstant) {
+          orientationInstant = time;
+        }
+      } else if (event.kind === EventKind.signOff) {
+        if (signOffInstant === null || time > signOffInstant) {
+          signOffInstant = time;
+        }
+      }
+    }
+
+    const isOpen =
+      dueInstant !== null &&
+      now >= dueInstant &&
+      (signOffInstant === null || now <= signOffInstant);
+
+    return {
+      isOpen,
+      afterOrientation:
+        orientationInstant !== null && now >= orientationInstant,
+      afterSignOff: signOffInstant !== null && now >= signOffInstant,
+    };
+  }, [events, paperworkDueDate, now]);
 }
 
 /**
@@ -153,6 +224,20 @@ export default function DashboardPage() {
   const { data: rosterSummary } = useRosterSummary();
   const { data: roadies } = useRoadies();
   const { data: alerts } = useAlerts(canAdjust);
+
+  // The orientation window follows the demo "Pretend it's" date when demo mode
+  // supplies one, so the summary phases move with the pretend date.
+  const demo = useDemo();
+  const pretendInstant = useMemo(() => {
+    if (!demo.enabled || !demo.pretendDate) return null;
+    return pretendDateToInstant(demo.pretendDate)?.getTime() ?? null;
+  }, [demo.enabled, demo.pretendDate]);
+  const now = useNow(pretendInstant);
+  const orientationWindow = useOrientationWindow(
+    schedule ?? [],
+    storeInfo?.paperworkDueDate,
+    now,
+  );
 
   // A fresh install (or a store with no positions yet) is seeded once so the
   // dashboard shows the 18 seeded positions instead of an empty shell.
@@ -239,8 +324,8 @@ export default function DashboardPage() {
             pending={data.pending}
             buildToTotal={data.buildToTotal}
             stillNeeded={data.stillNeeded}
-            showedAtOrientation={data.showedAtOrientation}
             certified={data.certified}
+            window={orientationWindow}
           />
 
           {adjustMode && canAdjust && (
@@ -262,6 +347,7 @@ export default function DashboardPage() {
                 summaryByPosition={summaryByPosition}
                 adjustMode={adjustMode}
                 canAdjust={canAdjust}
+                showSplit={orientationWindow.isOpen}
                 onOpenRoster={openRoster}
                 ocid="dashboard.foh.section"
               />
@@ -271,6 +357,7 @@ export default function DashboardPage() {
                 summaryByPosition={summaryByPosition}
                 adjustMode={adjustMode}
                 canAdjust={canAdjust}
+                showSplit={orientationWindow.isOpen}
                 onOpenRoster={openRoster}
                 ocid="dashboard.boh.section"
               />

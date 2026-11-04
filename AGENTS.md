@@ -108,6 +108,15 @@
 - While demo mode is on the banner has a Pretend it's picker (date plus AM/PM) that overrides now for schedule windows, countdowns, the Today screen, check-in availability and age math, and the pretend date is shown in the banner
 - In demo mode only, every signature pad shows a Sign as Test button that fills in a sample signature
 - In demo mode, kiosk sign-ups are saved as demo sign-ups
+- Remove the separate Pending tile, the 'Showed at orientation' tile, the 'Build-to total' tile and the top bar's active/pending legend
+- One hiring progress bar reading 'Hired X of Y' filled to hired/build-to, hired = pending + active with archived excluded
+- Always-shown HIRED tile with the hired count and, during the orientation window only, a line 'X showed up · Y waiting'
+- Always-shown STILL NEEDED tile with build-to minus hired and the subtitle 'to reach <build-to>'
+- SHOWED UP tile hidden until the orientation window opens (Paperwork due date through final sign-off date), then 'X of Y' (active of hired), and after the orientation date 'Z no-shows' linking to the Orientation screen
+- CERTIFIED tile hidden until the final sign-off date, then 'X of Y certified'
+- Per-position rows show one line 'N hired · need M' plus the NEEDED badge, with the pending/active split only during the orientation window
+- All dates come from the schedule and respect the demo 'Pretend it's' date
+- Keep the countdown card, the timeline and the per-position lists; do not touch tests
 
 ## Verified Commands
 
@@ -117,11 +126,6 @@
 
 ## Learnings
 
-- archiveReasonLabel in src/frontend/src/components/roadie/RoadieTile.tsx is shared by the roadie tile and PositionRosterDialog's ArchivedRow; it maps ncnsOrientation and paperworkIncomplete.
-- The inherited frontend suite has pre-existing failing tests that predate this draft; the tester owns src/frontend/src/__tests__/ and test/pocketic/.
-- Orientation check-off writes are split: saveUniformCheckoff(roadieId, uniformItems, uniformCounts) writes only uniform fields and setPaperworkItems(roadieId, paperworkItems) writes only paperworkItems, so neither clobbers the other; both create the record with the active isDemo when missing.
-- Auth.requireOrientationStaff (admin, storeManager, trainingManager, visitingManager) guards getOrientationSessionView, markPresent, getUniformCheckoff and saveUniformCheckoff; undoPresent, moveRoadieToSession, archiveNoShows, rehire and the paperwork override stay Admin/Store Manager only.
-- markPresent(roadieId, eventId, overrideReason : ?Text) traps 'Paperwork incomplete' unless an Admin or Store Manager supplies a non-empty reason, which is logged as 'Marked present with paperwork override: <reason>', and rejects archived roadies with 'Roadie is archived; rehire first'.
 - Orientation.tsx separates canPresent (canOrientation, includes trainingManager/visitingManager) from canManage (canArchive, Admin/Store Manager only) so the Present button is enabled for orientation staff while archive/move/undo/override stay manager-only.
 - Roster.tsx defaults to an All tab (Pending + Active together) and passes rosterStateLabel to RoadieTile only on the All tab; the CardList type includes 'all'.
 - ManagerTab.tsx wires the paperwork checkboxes to setPaperworkItems with applicable-item filtering, a 'Paperwork n of m' count and a Complete badge; useSetPaperworkItems invalidates roster, orientation session and alerts.
@@ -142,3 +146,8 @@
 - getUniformOrder builds rows from the cartesian product of in-scope item labels and curve/real sizes, so a house filter with zero hired roadies still returns every item/size row with hired 0.
 - getUniformOrder projectedCount sums (unfilled + missingSize) * qty across in-scope positions, then applies the curve once with (units * percent + 50) / 100; withBuffer rounds up per row; UniformOrderView.totals is one row per item (item/hired/projected/orderTotal).
 - defaultCount in phase23.mo matches a count item's text containing 'shirt' or 'hat' to pre-fill from the position's shirtQty/hatQty.
+- The Dashboard summary derives its orientation window from StoreInfo.paperworkDueDate through the latest EventKind.signOff schedule event, with the earliest EventKind.orientation event marking the no-show point; the demo pretend instant is substituted for now.
+- KpiTiles pushes HIRED and STILL NEEDED unconditionally and SHOWED UP and CERTIFIED conditionally on window.isOpen and afterSignOff; the old funnel legend, Pending tile, Build-to total tile and Showed-at-orientation tile were removed.
+- Dashboard-local components/dashboard/copy.ts supplies the new KPI keys; shared lib/copy.ts still holds the base hired/stillNeeded/certified labels.
+- PositionPanel rows read 'N hired · need M' with the NEEDED badge, and the pending/active split renders only when showSplit (orientation window open).
+- The demo pretend-date and demo-mode mutations in src/frontend/src/hooks/useQueries.ts call queryClient.invalidateQueries() with no arguments on success, so every screen refetches when the pretend date changes or demo mode toggles.

@@ -629,34 +629,44 @@ function dashboardActor() {
   };
 }
 
-describe("Dashboard Pending and Active counts", () => {
-  it("shows Pending and Active tiles and the Hired to Active funnel", async () => {
+describe("Dashboard hiring summary", () => {
+  it("shows one hiring progress bar and the HIRED and STILL NEEDED tiles", async () => {
     renderPageWithActor(DashboardPage, dashboardActor(), {
       path: "/dashboard",
     });
 
-    expect(await screen.findByTestId("dashboard.kpi.active")).toHaveTextContent(
-      "3",
+    // The accepted rework removes the separate Pending/Active tiles and the
+    // Hired → Active funnel in favor of one hiring progress bar plus the
+    // always-shown HIRED and STILL NEEDED tiles.
+    expect(await screen.findByTestId("dashboard.progress")).toHaveTextContent(
+      "Hired 5 of 65",
     );
-    expect(screen.getByTestId("dashboard.kpi.pending")).toHaveTextContent("2");
-
-    const funnel = screen.getByTestId("dashboard.funnel");
+    expect(screen.getByTestId("dashboard.kpi.hired")).toHaveTextContent("5");
+    expect(screen.getByTestId("dashboard.kpi.still_needed")).toHaveTextContent(
+      "60",
+    );
     expect(
-      within(funnel).getByTestId("dashboard.funnel.hired"),
-    ).toHaveTextContent("5");
+      screen.queryByTestId("dashboard.kpi.active"),
+    ).not.toBeInTheDocument();
     expect(
-      within(funnel).getByTestId("dashboard.funnel.active"),
-    ).toHaveTextContent("3");
+      screen.queryByTestId("dashboard.kpi.pending"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dashboard.funnel")).not.toBeInTheDocument();
   });
 
-  it("shows both Pending and Active counts on a position row", async () => {
+  it("shows one hired/need line on a position row outside the orientation window", async () => {
     renderPageWithActor(DashboardPage, dashboardActor(), {
       path: "/dashboard",
     });
 
-    const counts = await screen.findByTestId("dashboard.position.counts");
-    expect(counts).toHaveTextContent("3");
-    expect(counts).toHaveTextContent("2");
+    // The store's paperwork due date is in the past but there is no schedule,
+    // so the orientation window is closed and the pending/active split is
+    // hidden; the row shows the single "N hired · need M" line.
+    const row = await screen.findByTestId("dashboard.position.item");
+    expect(row).toHaveTextContent("5 hired · need 60");
+    expect(
+      screen.queryByTestId("dashboard.position.counts"),
+    ).not.toBeInTheDocument();
   });
 });
 

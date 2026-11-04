@@ -387,12 +387,14 @@ describe("DashboardPage fresh-install seed", () => {
     }
   });
 
-  it("shows the 218 build-to total and the still-needed KPI", async () => {
+  it("shows the 218 build-to total in the hiring progress bar and the still-needed KPI", async () => {
     renderPageWithActor(DashboardPage, seededActor(), { path: "/dashboard" });
 
-    expect(
-      await screen.findByTestId("dashboard.kpi.build_to"),
-    ).toHaveTextContent("218");
+    // The accepted rework replaces the separate build-to tile with one hiring
+    // progress bar reading "Hired X of Y", where Y is the build-to total.
+    expect(await screen.findByTestId("dashboard.progress")).toHaveTextContent(
+      "Hired 0 of 218",
+    );
     expect(screen.getByTestId("dashboard.kpi.still_needed")).toHaveTextContent(
       "218",
     );

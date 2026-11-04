@@ -65,12 +65,14 @@ function PositionRow({
   summary,
   adjustMode,
   canAdjust,
+  showSplit,
   onOpenRoster,
 }: {
   position: Position;
   summary?: RosterSummary;
   adjustMode: boolean;
   canAdjust: boolean;
+  showSplit: boolean;
   onOpenRoster: (position: Position) => void;
 }) {
   const { t } = useDashboardCopy();
@@ -143,25 +145,27 @@ function PositionRow({
               {position.name}
             </span>
             <span className="block text-xs text-muted-foreground">
-              {t("dashboard.position.onHandOf", {
-                onHand,
-                target,
+              {t("dashboard.position.hiredNeed", {
+                hired: onHand,
+                need: Math.max(0, needed),
               })}
             </span>
-            <span
-              data-ocid="dashboard.position.counts"
-              className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-medium"
-            >
-              <span className="text-accent">
-                {t("dashboard.position.active", { count: activeCount })}
+            {showSplit && (
+              <span
+                data-ocid="dashboard.position.counts"
+                className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-medium"
+              >
+                <span className="text-accent">
+                  {t("dashboard.position.active", { count: activeCount })}
+                </span>
+                <span className="text-muted-foreground" aria-hidden="true">
+                  ·
+                </span>
+                <span className="text-primary">
+                  {t("dashboard.position.pending", { count: pendingCount })}
+                </span>
               </span>
-              <span className="text-muted-foreground" aria-hidden="true">
-                ·
-              </span>
-              <span className="text-primary">
-                {t("dashboard.position.pending", { count: pendingCount })}
-              </span>
-            </span>
+            )}
           </span>
           <ChevronRight
             className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
@@ -253,6 +257,7 @@ export function PositionPanel({
   summaryByPosition,
   adjustMode,
   canAdjust,
+  showSplit,
   onOpenRoster,
   ocid,
 }: {
@@ -261,6 +266,7 @@ export function PositionPanel({
   summaryByPosition: Map<string, RosterSummary>;
   adjustMode: boolean;
   canAdjust: boolean;
+  showSplit: boolean;
   onOpenRoster: (position: Position) => void;
   ocid: string;
 }) {
@@ -287,6 +293,7 @@ export function PositionPanel({
                 summary={summaryByPosition.get(position.id.toString())}
                 adjustMode={adjustMode}
                 canAdjust={canAdjust}
+                showSplit={showSplit}
                 onOpenRoster={onOpenRoster}
               />
             ))}

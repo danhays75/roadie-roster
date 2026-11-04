@@ -402,6 +402,9 @@ export function useSetDemoMode() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["demoState"] });
       void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+      // Turning demo mode on/off changes what every screen shows, so refetch
+      // every query (dashboard tiles, countdown, Today, Orientation, roster).
+      void queryClient.invalidateQueries();
     },
   });
 }
@@ -445,6 +448,9 @@ export function useSetPretendDate() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["demoState"] });
+      // The pretend date overrides "now" for every screen, so refetch every
+      // query (dashboard tiles, countdown, Today, Orientation, roster).
+      void queryClient.invalidateQueries();
     },
   });
 }

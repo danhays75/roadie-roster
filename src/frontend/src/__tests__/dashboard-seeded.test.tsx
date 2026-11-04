@@ -104,12 +104,14 @@ describe("DashboardPage seeded positions", () => {
     expect(screen.getByText("Fry / Salad")).toBeInTheDocument();
   });
 
-  it("shows the build-to total and still-needed KPI tiles", async () => {
+  it("shows the build-to total in the hiring progress bar and the still-needed KPI", async () => {
     renderPageWithActor(DashboardPage, baseActor(), { path: "/dashboard" });
 
-    expect(
-      await screen.findByTestId("dashboard.kpi.build_to"),
-    ).toHaveTextContent("81");
+    // The accepted rework replaces the separate build-to tile with one hiring
+    // progress bar reading "Hired X of Y", where Y is the build-to total.
+    expect(await screen.findByTestId("dashboard.progress")).toHaveTextContent(
+      "Hired 1 of 81",
+    );
     expect(screen.getByTestId("dashboard.kpi.still_needed")).toHaveTextContent(
       "80",
     );
@@ -128,9 +130,8 @@ describe("DashboardPage seeded positions", () => {
 
     renderPageWithActor(DashboardPage, actor, { path: "/dashboard" });
 
-    expect(
-      await screen.findByText("1 on hand · build to 65"),
-    ).toBeInTheDocument();
+    // The accepted rework shows one "N hired · need M" line per position row.
+    expect(await screen.findByText("1 hired · need 64")).toBeInTheDocument();
     expect(screen.getByText("64 needed")).toBeInTheDocument();
   });
 

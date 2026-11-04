@@ -6,9 +6,9 @@ import { useI18n } from "@/hooks/useI18n";
  * the foundation. Falls back to English for any locale without a translation.
  */
 const dashboardCopy: Record<string, { en: string; es: string }> = {
-  "dashboard.position.onHandOf": {
-    en: "{onHand} on hand · build to {target}",
-    es: "{onHand} en plantilla · meta {target}",
+  "dashboard.position.hiredNeed": {
+    en: "{hired} hired · need {need}",
+    es: "{hired} contratados · faltan {need}",
   },
   "dashboard.position.active": {
     en: "{count} active",
@@ -18,39 +18,38 @@ const dashboardCopy: Record<string, { en: string; es: string }> = {
     en: "{count} pending",
     es: "{count} pendientes",
   },
-  "dashboard.kpi.active": { en: "Active", es: "Activos" },
-  "dashboard.kpi.active.hint": {
-    en: "Showed up at orientation",
-    es: "Se presentaron a la orientación",
+  "dashboard.progress.title": {
+    en: "Hired {hired} of {total}",
+    es: "Contratados {hired} de {total}",
   },
-  "dashboard.kpi.pending": { en: "Pending", es: "Pendientes" },
-  "dashboard.kpi.pending.hint": {
-    en: "Not yet shown up",
-    es: "Aún no se presentan",
+  "dashboard.progress.aria": {
+    en: "{hired} hired of a build-to of {total}",
+    es: "{hired} contratados de una meta de {total}",
   },
-  "dashboard.funnel.title": {
-    en: "Hired to active funnel",
-    es: "Embudo de contratados a activos",
+  "dashboard.kpi.hired.showedWaiting": {
+    en: "{showed} showed up · {waiting} waiting",
+    es: "{showed} se presentaron · {waiting} en espera",
   },
-  "dashboard.funnel.hired": {
-    en: "{count} hired",
-    es: "{count} contratados",
+  "dashboard.kpi.stillNeeded.toReach": {
+    en: "to reach {total}",
+    es: "para llegar a {total}",
   },
-  "dashboard.funnel.active": {
-    en: "{count} active",
-    es: "{count} activos",
+  "dashboard.kpi.showedUp": { en: "Showed up", es: "Se presentaron" },
+  "dashboard.kpi.showedUp.hint": {
+    en: "Active of hired",
+    es: "Activos de contratados",
   },
-  "dashboard.funnel.activeLabel": {
-    en: "{count} active (showed up)",
-    es: "{count} activos (se presentaron)",
+  "dashboard.kpi.showedUp.value": {
+    en: "{active} of {hired}",
+    es: "{active} de {hired}",
   },
-  "dashboard.funnel.pendingLabel": {
-    en: "{count} pending",
-    es: "{count} pendientes",
+  "dashboard.kpi.showedUp.noShows": {
+    en: "{count} no-shows",
+    es: "{count} no se presentaron",
   },
-  "dashboard.funnel.aria": {
-    en: "{hired} hired: {active} active and {pending} pending",
-    es: "{hired} contratados: {active} activos y {pending} pendientes",
+  "dashboard.kpi.certified.value": {
+    en: "{certified} of {hired} certified",
+    es: "{certified} de {hired} certificados",
   },
   "dashboard.alerts.title": { en: "Alerts", es: "Alertas" },
   "dashboard.alerts.paperwork": {
@@ -94,21 +93,13 @@ const dashboardCopy: Record<string, { en: string; es: string }> = {
     es: "Aún no se han añadido eventos al calendario.",
   },
   "dashboard.kpi.hired.hint": { en: "On hand now", es: "En plantilla ahora" },
-  "dashboard.kpi.buildTo.hint": {
-    en: "Opening target",
-    es: "Meta de apertura",
-  },
   "dashboard.kpi.stillNeeded.hint": {
     en: "To reach build-to",
     es: "Para llegar a la meta",
   },
-  "dashboard.kpi.orientation.hint": {
-    en: "Awaiting phase",
-    es: "Fase pendiente",
-  },
   "dashboard.kpi.certified.hint": {
-    en: "Awaiting phase",
-    es: "Fase pendiente",
+    en: "Final sign-off",
+    es: "Firma final",
   },
   "dashboard.adjust.mode": { en: "Adjust build to", es: "Ajustar meta" },
   "dashboard.adjust.done": { en: "Done adjusting", es: "Terminar ajuste" },
