@@ -33276,19 +33276,16 @@ var Position = Record({
 	"openingBuildTo": Nat,
 	"defaultHats": Nat,
 	"defaultShirts": Nat,
-	"crewManager": Opt(Text),
 	"house": House$1,
 	"afterOpeningBuildTo": Nat,
 	"minimumAge": Nat,
 	"code": Text,
 	"name": Text,
 	"shirtQty": Nat,
-	"shirtsRequired": Nat,
 	"shirtType": Text,
 	"hatType": Text,
 	"hatQty": Nat,
-	"needsAlcoholCert": Bool,
-	"hatsRequired": Nat
+	"needsAlcoholCert": Bool
 });
 var DateTime = Int;
 var EventKind$1 = Variant({
@@ -33651,7 +33648,6 @@ var StoreInfo = Record({
 	"address": Text,
 	"secondaryLogo": Opt(PhotoRef),
 	"locationName": Text,
-	"paperworkDueDate": DateOnly,
 	"timeZone": TimeZone,
 	"storePhone": Phone
 });
@@ -34194,19 +34190,16 @@ var idlFactory = ({ IDL }) => {
 		"openingBuildTo": IDL.Nat,
 		"defaultHats": IDL.Nat,
 		"defaultShirts": IDL.Nat,
-		"crewManager": IDL.Opt(IDL.Text),
 		"house": House,
 		"afterOpeningBuildTo": IDL.Nat,
 		"minimumAge": IDL.Nat,
 		"code": IDL.Text,
 		"name": IDL.Text,
 		"shirtQty": IDL.Nat,
-		"shirtsRequired": IDL.Nat,
 		"shirtType": IDL.Text,
 		"hatType": IDL.Text,
 		"hatQty": IDL.Nat,
-		"needsAlcoholCert": IDL.Bool,
-		"hatsRequired": IDL.Nat
+		"needsAlcoholCert": IDL.Bool
 	});
 	const DateTime = IDL.Int;
 	const EventKind = IDL.Variant({
@@ -34573,7 +34566,6 @@ var idlFactory = ({ IDL }) => {
 		"address": IDL.Text,
 		"secondaryLogo": IDL.Opt(PhotoRef),
 		"locationName": IDL.Text,
-		"paperworkDueDate": DateOnly,
 		"timeZone": TimeZone,
 		"storePhone": Phone
 	});
@@ -36859,7 +36851,6 @@ function from_candid_record_n163(_uploadFile, _downloadFile, value) {
 		address: value.address,
 		secondaryLogo: record_opt_to_undefined(from_candid_opt_n120(_uploadFile, _downloadFile, value.secondaryLogo)),
 		locationName: value.locationName,
-		paperworkDueDate: value.paperworkDueDate,
 		timeZone: value.timeZone,
 		storePhone: value.storePhone
 	};
@@ -37150,19 +37141,16 @@ function from_candid_record_n88(_uploadFile, _downloadFile, value) {
 		openingBuildTo: value.openingBuildTo,
 		defaultHats: value.defaultHats,
 		defaultShirts: value.defaultShirts,
-		crewManager: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.crewManager)),
 		house: from_candid_House_n59(_uploadFile, _downloadFile, value.house),
 		afterOpeningBuildTo: value.afterOpeningBuildTo,
 		minimumAge: value.minimumAge,
 		code: value.code,
 		name: value.name,
 		shirtQty: value.shirtQty,
-		shirtsRequired: value.shirtsRequired,
 		shirtType: value.shirtType,
 		hatType: value.hatType,
 		hatQty: value.hatQty,
-		needsAlcoholCert: value.needsAlcoholCert,
-		hatsRequired: value.hatsRequired
+		needsAlcoholCert: value.needsAlcoholCert
 	};
 }
 function from_candid_record_n90(_uploadFile, _downloadFile, value) {
@@ -37736,7 +37724,6 @@ function to_candid_record_n259(_uploadFile, _downloadFile, value) {
 		address: value.address,
 		secondaryLogo: value.secondaryLogo ? candid_some(value.secondaryLogo) : candid_none(),
 		locationName: value.locationName,
-		paperworkDueDate: value.paperworkDueDate,
 		timeZone: value.timeZone,
 		storePhone: value.storePhone
 	};
@@ -37750,19 +37737,16 @@ function to_candid_record_n44(_uploadFile, _downloadFile, value) {
 		openingBuildTo: value.openingBuildTo,
 		defaultHats: value.defaultHats,
 		defaultShirts: value.defaultShirts,
-		crewManager: value.crewManager ? candid_some(value.crewManager) : candid_none(),
 		house: to_candid_House_n45(_uploadFile, _downloadFile, value.house),
 		afterOpeningBuildTo: value.afterOpeningBuildTo,
 		minimumAge: value.minimumAge,
 		code: value.code,
 		name: value.name,
 		shirtQty: value.shirtQty,
-		shirtsRequired: value.shirtsRequired,
 		shirtType: value.shirtType,
 		hatType: value.hatType,
 		hatQty: value.hatQty,
-		needsAlcoholCert: value.needsAlcoholCert,
-		hatsRequired: value.hatsRequired
+		needsAlcoholCert: value.needsAlcoholCert
 	};
 }
 function to_candid_record_n47(_uploadFile, _downloadFile, value) {
@@ -56801,12 +56785,6 @@ var adminCopy = {
 		scheduleDeleteTitle: "Delete event",
 		scheduleDeleteBody: "Delete {name}? This cannot be undone.",
 		scheduleDeleteBlocked: "This event has records and cannot be deleted.",
-		schedulePaperworkDueTitle: "Paperwork due date",
-		schedulePaperworkDueDescription: "The date every roadie's paperwork must be complete by.",
-		schedulePaperworkDueLabel: "Paperwork due",
-		schedulePaperworkDueSave: "Save due date",
-		schedulePaperworkDueSaved: "Paperwork due date saved.",
-		schedulePaperworkDueError: "We couldn't save the paperwork due date.",
 		scheduleMoveEveryone: "Move everyone",
 		scheduleMoveEveryoneTitle: "Move everyone to another session",
 		scheduleMoveEveryoneBody: "Move every roadie from {name} to another orientation session. The source session can then be deleted.",
@@ -57015,12 +56993,6 @@ var adminCopy = {
 		scheduleDeleteTitle: "Eliminar evento",
 		scheduleDeleteBody: "¿Eliminar {name}? No se puede deshacer.",
 		scheduleDeleteBlocked: "Este evento tiene registros y no se puede eliminar.",
-		schedulePaperworkDueTitle: "Fecha límite de papeleo",
-		schedulePaperworkDueDescription: "La fecha en que el papeleo de cada roadie debe estar completo.",
-		schedulePaperworkDueLabel: "Papeleo vence",
-		schedulePaperworkDueSave: "Guardar fecha límite",
-		schedulePaperworkDueSaved: "Fecha límite de papeleo guardada.",
-		schedulePaperworkDueError: "No pudimos guardar la fecha límite de papeleo.",
 		scheduleMoveEveryone: "Mover a todos",
 		scheduleMoveEveryoneTitle: "Mover a todos a otra sesión",
 		scheduleMoveEveryoneBody: "Mueve a todos los roadies de {name} a otra sesión de orientación. La sesión de origen se puede eliminar después.",
@@ -59490,6 +59462,23 @@ function StatusBadge({ tone = "muted", children, className, ocid }) {
 	});
 }
 //#endregion
+//#region src/lib/schedule.ts
+/**
+* The schedule's "Paperwork due" deadline event, the single source of the
+* paperwork due date. Matches the `#deadline` event named "Paperwork due";
+* returns undefined when the schedule carries no such event, so the paperwork
+* window stays closed rather than reading a different deadline.
+*/
+function paperworkDueEvent(events) {
+	let named;
+	for (const event of events) {
+		if (event.kind !== EventKind.deadline) continue;
+		if (event.name !== "Paperwork due") continue;
+		if (!named || event.start < named.start) named = event;
+	}
+	return named;
+}
+//#endregion
 //#region src/components/roadie/RoadieTile.tsx
 /** The roadie's initials for the no-photo placeholder, at most two letters. */
 function initialsOf$6(name) {
@@ -59519,14 +59508,15 @@ function archiveReasonLabel$1(reason) {
 	}
 }
 /**
-* Whether a roadie's paperwork is overdue: the store's paperwork due date has
-* passed and at least one paperwork item that applies to them (respecting
-* "Only alcohol positions" and "Only under 18") is not checked. Mirrors the
-* backend's `paperworkStatusWith` so the flag matches the orientation screen.
+* Whether a roadie's paperwork is overdue: the schedule's "Paperwork due"
+* deadline has passed and at least one paperwork item that applies to them
+* (respecting "Only alcohol positions" and "Only under 18") is not checked.
+* Mirrors the backend's `paperworkStatusWith` so the flag matches the
+* orientation screen.
 */
-function paperworkIncomplete(roadie, checkoff, paperworkItems, position, dueDate, now) {
-	if (dueDate === void 0) return false;
-	if (now <= Number(dueDate / 1000000n)) return false;
+function paperworkIncomplete(roadie, checkoff, paperworkItems, position, dueInstant, now) {
+	if (dueInstant === void 0) return false;
+	if (now <= Number(dueInstant / 1000000n)) return false;
 	const needsAlcohol = position?.needsAlcoholCert ?? false;
 	const applicable = paperworkItems.filter((item) => (!item.requiresAlcoholCert || needsAlcohol) && (!item.minorOnly || roadie.isMinor));
 	if (applicable.length === 0) return false;
@@ -59535,21 +59525,22 @@ function paperworkIncomplete(roadie, checkoff, paperworkItems, position, dueDate
 }
 /**
 * The paperwork-overdue flag for each roadie, keyed by roadie id. Reads the
-* store's paperwork due date, the paperwork checklist and the positions, then
-* fetches the orientation check-off for the roadies already past the due date
-* (the check-off read is Admin/Store Manager only, so callers pass `enabled`).
-* Returns an empty map for callers that may not read check-offs.
+* schedule's "Paperwork due" deadline event, the paperwork checklist and the
+* positions, then fetches the orientation check-off for the roadies already
+* past the due date (the check-off read is Admin/Store Manager only, so callers
+* pass `enabled`). Returns an empty map for callers that may not read
+* check-offs.
 */
 function usePaperworkIncompleteMap(roadies, enabled) {
 	const { actor, isFetching } = useActor(createActor);
-	const { data: storeInfo } = useStoreInfo();
+	const { data: schedule } = useSchedule();
 	const { data: checklists } = useChecklists$1();
 	const { data: positions } = usePositions();
-	const dueDate = storeInfo?.paperworkDueDate;
+	const dueInstant = (0, import_react.useMemo)(() => paperworkDueEvent(schedule ?? [])?.start, [schedule]);
 	const now = Date.now();
-	const pastDue = (0, import_react.useMemo)(() => dueDate === void 0 || now <= Number(dueDate / 1000000n) ? [] : roadies, [
+	const pastDue = (0, import_react.useMemo)(() => dueInstant === void 0 || now <= Number(dueInstant / 1000000n) ? [] : roadies, [
 		roadies,
-		dueDate,
+		dueInstant,
 		now
 	]);
 	const ids = (0, import_react.useMemo)(() => pastDue.map((r) => r.id), [pastDue]);
@@ -59574,16 +59565,16 @@ function usePaperworkIncompleteMap(roadies, enabled) {
 	}, [positions]);
 	return (0, import_react.useMemo)(() => {
 		const flags = /* @__PURE__ */ new Map();
-		if (!enabled || dueDate === void 0) return flags;
+		if (!enabled || dueInstant === void 0) return flags;
 		const items = checklists?.paperwork ?? [];
 		for (const roadie of pastDue) {
 			const key = roadie.id.toString();
-			flags.set(key, paperworkIncomplete(roadie, checkoffs?.get(key), items, positionMap.get(roadie.mainPositionId.toString()), dueDate, now));
+			flags.set(key, paperworkIncomplete(roadie, checkoffs?.get(key), items, positionMap.get(roadie.mainPositionId.toString()), dueInstant, now));
 		}
 		return flags;
 	}, [
 		enabled,
-		dueDate,
+		dueInstant,
 		pastDue,
 		checkoffs,
 		checklists,
@@ -60163,39 +60154,35 @@ function useRehireRoadie$1() {
 function emptyDraft() {
 	return {
 		id: 0n,
+		isNew: true,
 		name: "",
 		house: House.foh,
 		code: "",
 		needsAlcoholCert: false,
 		minimumAge: "16",
-		shirtsRequired: "0",
-		hatsRequired: "0",
 		defaultShirts: "0",
 		defaultHats: "0",
 		shirtType: "",
 		shirtQty: "0",
 		hatType: "",
-		hatQty: "0",
-		crewManager: ""
+		hatQty: "0"
 	};
 }
 function toDraft$2(position) {
 	return {
 		id: position.id,
+		isNew: false,
 		name: position.name,
 		house: position.house,
 		code: position.code,
 		needsAlcoholCert: position.needsAlcoholCert,
 		minimumAge: position.minimumAge.toString(),
-		shirtsRequired: position.shirtsRequired.toString(),
-		hatsRequired: position.hatsRequired.toString(),
 		defaultShirts: position.defaultShirts.toString(),
 		defaultHats: position.defaultHats.toString(),
 		shirtType: position.shirtType,
 		shirtQty: position.shirtQty.toString(),
 		hatType: position.hatType,
-		hatQty: position.hatQty.toString(),
-		crewManager: position.crewManager ?? ""
+		hatQty: position.hatQty.toString()
 	};
 }
 /** Floor a numeric draft field to a non-negative whole number. */
@@ -60214,15 +60201,12 @@ function toPosition(draft, openingBuildTo, afterOpeningBuildTo) {
 		afterOpeningBuildTo,
 		needsAlcoholCert: draft.needsAlcoholCert,
 		minimumAge: toCount(draft.minimumAge),
-		shirtsRequired: toCount(draft.shirtsRequired),
-		hatsRequired: toCount(draft.hatsRequired),
 		defaultShirts: toCount(draft.defaultShirts),
 		defaultHats: toCount(draft.defaultHats),
 		shirtType: draft.shirtType.trim(),
 		shirtQty: toCount(draft.shirtQty),
 		hatType: draft.hatType.trim(),
-		hatQty: toCount(draft.hatQty),
-		crewManager: draft.crewManager.trim() ? draft.crewManager.trim() : void 0
+		hatQty: toCount(draft.hatQty)
 	};
 }
 var BUILD_TO_MAX = 999;
@@ -60433,7 +60417,7 @@ function PositionsPanel() {
 	const [draft, setDraft] = (0, import_react.useState)(null);
 	const [deleteTarget, setDeleteTarget] = (0, import_react.useState)(null);
 	const readOnly = demo.enabled;
-	const isEditing = draft !== null && draft.id !== 0n;
+	const isEditing = draft !== null && !draft.isNew;
 	const mutation = isEditing ? update : create;
 	const set = (key, value) => {
 		setDraft((current) => current ? {
@@ -60444,7 +60428,7 @@ function PositionsPanel() {
 	const onSubmit = (event) => {
 		event.preventDefault();
 		if (!draft || !draft.name.trim()) return;
-		const live = positions.data?.find((position) => position.id === draft.id);
+		const live = draft.isNew ? void 0 : positions.data?.find((position) => position.id === draft.id);
 		const payload = toPosition(draft, live?.openingBuildTo ?? 0n, live?.afterOpeningBuildTo ?? 0n);
 		mutation.mutate(payload, { onSuccess: () => setDraft(null) });
 	};
@@ -60560,34 +60544,6 @@ function PositionsPanel() {
 											onChange: (event) => set("minimumAge", event.target.value)
 										})
 									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-										label: c.positionsShirtsRequired,
-										htmlFor: "pos-shirts",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											id: "pos-shirts",
-											type: "number",
-											min: 0,
-											step: 1,
-											"data-ocid": "admin.positions.shirts_required.input",
-											className: "touch-target",
-											value: draft.shirtsRequired,
-											onChange: (event) => set("shirtsRequired", event.target.value)
-										})
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-										label: c.positionsHatsRequired,
-										htmlFor: "pos-hats",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											id: "pos-hats",
-											type: "number",
-											min: 0,
-											step: 1,
-											"data-ocid": "admin.positions.hats_required.input",
-											className: "touch-target",
-											value: draft.hatsRequired,
-											onChange: (event) => set("hatsRequired", event.target.value)
-										})
-									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("fieldset", {
 										className: "sm:col-span-2 rounded-md border border-border bg-muted/30 p-3",
 										"data-ocid": "admin.positions.uniform.panel",
@@ -60651,19 +60607,6 @@ function PositionsPanel() {
 												})
 											]
 										})]
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-										label: c.positionsCrewManager,
-										htmlFor: "pos-crew-manager",
-										hint: c.optional,
-										className: "sm:col-span-2",
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											id: "pos-crew-manager",
-											"data-ocid": "admin.positions.crew_manager.input",
-											className: "touch-target",
-											value: draft.crewManager,
-											onChange: (event) => set("crewManager", event.target.value)
-										})
 									})
 								]
 							}),
@@ -60929,84 +60872,6 @@ function dateTimeToInput(value, timeZone) {
 	const hour = get("hour") === "24" ? "00" : get("hour");
 	return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}`;
 }
-/**
-* The editable paperwork due date. It lives on the store configuration rather
-* than the schedule, so it saves through `updateStoreInfo` while preserving the
-* rest of the store record. Read-only while demo mode is on.
-*/
-function PaperworkDueEditor({ readOnly }) {
-	const c = useAdminCopy();
-	const { data: storeInfo } = useStoreInfo();
-	const update = useUpdateStoreInfo();
-	const [value, setValue] = (0, import_react.useState)("");
-	const [saved, setSaved] = (0, import_react.useState)(false);
-	(0, import_react.useEffect)(() => {
-		if (storeInfo && value === "") {
-			const date = dateOnlyToDate(storeInfo.paperworkDueDate);
-			if (date) setValue(date.toISOString().slice(0, 10));
-		}
-	}, [storeInfo, value]);
-	const onSave = () => {
-		if (!storeInfo || !value) return;
-		const date = /* @__PURE__ */ new Date(`${value}T00:00:00Z`);
-		if (Number.isNaN(date.getTime())) return;
-		setSaved(false);
-		update.mutate({
-			...storeInfo,
-			paperworkDueDate: dateToDateOnly(date)
-		}, { onSuccess: () => setSaved(true) });
-	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AdminSection, {
-		title: c.schedulePaperworkDueTitle,
-		description: c.schedulePaperworkDueDescription,
-		ocid: "admin.schedule.paperwork_due.section",
-		children: readOnly ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DemoSettingsNote, {}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "flex flex-col gap-3 sm:flex-row sm:items-end",
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
-					label: c.schedulePaperworkDueLabel,
-					htmlFor: "paperwork-due",
-					className: "sm:max-w-xs",
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-						id: "paperwork-due",
-						type: "date",
-						"data-ocid": "admin.schedule.paperwork_due.input",
-						className: "touch-target",
-						value,
-						onChange: (event) => {
-							setSaved(false);
-							setValue(event.target.value);
-						}
-					})
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-					type: "button",
-					className: "touch-target w-fit",
-					"data-ocid": "admin.schedule.paperwork_due.save_button",
-					disabled: update.isPending || !value,
-					onClick: onSave,
-					children: [update.isPending ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
-						className: "mr-2 h-4 w-4 animate-spin",
-						"aria-hidden": "true"
-					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Save, {
-						className: "mr-2 h-4 w-4",
-						"aria-hidden": "true"
-					}), c.schedulePaperworkDueSave]
-				}),
-				saved && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "text-sm font-medium text-accent",
-					"data-ocid": "admin.schedule.paperwork_due.success_state",
-					children: c.schedulePaperworkDueSaved
-				}),
-				update.isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "text-sm font-medium text-destructive",
-					"data-ocid": "admin.schedule.paperwork_due.error_state",
-					children: c.schedulePaperworkDueError
-				})
-			]
-		})
-	});
-}
 function SchedulePanel() {
 	const c = useAdminCopy();
 	const demo = useDemo();
@@ -61025,7 +60890,7 @@ function SchedulePanel() {
 	const canMoveEveryone = !!viewerRole && ARCHIVE_ROLES.includes(viewerRole);
 	const sessions = useOrientationSessions(canMoveEveryone && !readOnly);
 	const events = schedule.data ?? [];
-	const isEditing = draft !== null && draft.id !== 0n;
+	const isEditing = draft !== null && !draft.isNew;
 	const mutation = isEditing ? update : create;
 	const trainingDayLabels = /* @__PURE__ */ new Map();
 	events.filter((event) => event.kind === EventKind.trainingDay).sort((a, b) => a.start < b.start ? -1 : a.start > b.start ? 1 : 0).forEach((event, index) => {
@@ -61040,6 +60905,7 @@ function SchedulePanel() {
 	const openNew = () => {
 		setDraft({
 			id: 0n,
+			isNew: true,
 			kind: EventKind.trainingDay,
 			name: "",
 			start: "",
@@ -61049,6 +60915,7 @@ function SchedulePanel() {
 	const openEdit = (event) => {
 		setDraft({
 			id: event.id,
+			isNew: false,
 			kind: event.kind,
 			name: event.name,
 			start: dateTimeToInput(event.start, timeZone),
@@ -61071,9 +60938,9 @@ function SchedulePanel() {
 		if (!deleteTarget) return;
 		remove.mutate(deleteTarget.id, { onSuccess: () => setDeleteTarget(null) });
 	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		className: "space-y-6",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AdminSection, {
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AdminSection, {
 			title: c.scheduleTitle,
 			description: c.scheduleDescription,
 			ocid: "admin.schedule.section",
@@ -61307,7 +61174,7 @@ function SchedulePanel() {
 					onClose: () => setMoveSource(null)
 				})
 			]
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PaperworkDueEditor, { readOnly })]
+		})
 	});
 }
 //#endregion
@@ -98360,15 +98227,15 @@ function useNow(pretendInstant, intervalMs = 6e4) {
 	return pretendInstant ?? now;
 }
 /**
-* The orientation window, derived from the schedule and the store's paperwork
-* due date. The window opens on the paperwork due date and closes on the final
-* sign-off date; the orientation session date marks the point after which
-* no-shows are counted. All three dates respect the demo "Pretend it's" date
-* through `now`.
+* The orientation window, derived from the schedule. The window opens on the
+* schedule's "Paperwork due" deadline event and closes on the final sign-off
+* date; the orientation session date marks the point after which no-shows are
+* counted. All three dates respect the demo "Pretend it's" date through `now`.
 */
-function useOrientationWindow(events, paperworkDueDate, now) {
+function useOrientationWindow(events, now) {
 	return (0, import_react.useMemo)(() => {
-		const dueInstant = paperworkDueDate ? dateOnlyToDate(paperworkDueDate)?.getTime() ?? null : null;
+		const dueEvent = paperworkDueEvent(events);
+		const dueInstant = dueEvent ? timestampToDate(dueEvent.start)?.getTime() ?? null : null;
 		let orientationInstant = null;
 		let signOffInstant = null;
 		for (const event of events) {
@@ -98386,11 +98253,7 @@ function useOrientationWindow(events, paperworkDueDate, now) {
 			afterOrientation: orientationInstant !== null && now >= orientationInstant,
 			afterSignOff: signOffInstant !== null && now >= signOffInstant
 		};
-	}, [
-		events,
-		paperworkDueDate,
-		now
-	]);
+	}, [events, now]);
 }
 /**
 * The dashboard alerts: a red "Paperwork incomplete" flag for every roadie past
@@ -98449,7 +98312,7 @@ function DashboardPage() {
 		if (!demo.enabled || !demo.pretendDate) return null;
 		return pretendDateToInstant(demo.pretendDate)?.getTime() ?? null;
 	}, [demo.enabled, demo.pretendDate]));
-	const orientationWindow = useOrientationWindow(schedule ?? [], storeInfo?.paperworkDueDate, now);
+	const orientationWindow = useOrientationWindow(schedule ?? [], now);
 	const hasNoPositions = !!data && data.foh.length === 0 && data.boh.length === 0;
 	useSeedWhenEmpty(!!data, hasNoPositions);
 	const summaryByPosition = (0, import_react.useMemo)(() => {

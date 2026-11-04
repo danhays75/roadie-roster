@@ -35,23 +35,10 @@ import {
   useSchedule,
   useStoreInfo,
   useUpdateScheduleEvent,
-  useUpdateStoreInfo,
 } from "@/hooks/useQueries";
-import {
-  dateOnlyToDate,
-  dateToDateOnly,
-  dateToTimestamp,
-  formatTimestamp,
-} from "@/lib/format";
-import {
-  CalendarPlus,
-  Loader2,
-  Pencil,
-  Save,
-  Trash2,
-  Users,
-} from "lucide-react";
-import { useEffect, useState } from "react";
+import { dateToTimestamp, formatTimestamp } from "@/lib/format";
+import { CalendarPlus, Loader2, Pencil, Trash2, Users } from "lucide-react";
+import { useState } from "react";
 
 const EVENT_KINDS: EventKind[] = [
   EventKind.deadline,
@@ -65,6 +52,11 @@ const EVENT_KINDS: EventKind[] = [
 
 interface EventDraft {
   id: bigint;
+  /**
+   * True only for a draft opened by the Add button. A seeded event can carry
+   * id 0, so the id alone cannot distinguish a new event from an existing one.
+   */
+  isNew: boolean;
   kind: EventKind;
   name: string;
   start: string;
@@ -113,103 +105,6 @@ function dateTimeToInput(value: bigint, timeZone: string): string {
   return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}`;
 }
 
-/**
- * The editable paperwork due date. It lives on the store configuration rather
- * than the schedule, so it saves through `updateStoreInfo` while preserving the
- * rest of the store record. Read-only while demo mode is on.
- */
-function PaperworkDueEditor({ readOnly }: { readOnly: boolean }) {
-  const c = useAdminCopy();
-  const { data: storeInfo } = useStoreInfo();
-  const update = useUpdateStoreInfo();
-  const [value, setValue] = useState("");
-  const [saved, setSaved] = useState(false);
-
-  // One-time initialization from the loaded record; never overwrite a draft.
-  useEffect(() => {
-    if (storeInfo && value === "") {
-      const date = dateOnlyToDate(storeInfo.paperworkDueDate);
-      if (date) setValue(date.toISOString().slice(0, 10));
-    }
-  }, [storeInfo, value]);
-
-  const onSave = () => {
-    if (!storeInfo || !value) return;
-    const date = new Date(`${value}T00:00:00Z`);
-    if (Number.isNaN(date.getTime())) return;
-    setSaved(false);
-    update.mutate(
-      { ...storeInfo, paperworkDueDate: dateToDateOnly(date) },
-      { onSuccess: () => setSaved(true) },
-    );
-  };
-
-  return (
-    <AdminSection
-      title={c.schedulePaperworkDueTitle}
-      description={c.schedulePaperworkDueDescription}
-      ocid="admin.schedule.paperwork_due.section"
-    >
-      {readOnly ? (
-        <DemoSettingsNote />
-      ) : (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <FormField
-            label={c.schedulePaperworkDueLabel}
-            htmlFor="paperwork-due"
-            className="sm:max-w-xs"
-          >
-            <Input
-              id="paperwork-due"
-              type="date"
-              data-ocid="admin.schedule.paperwork_due.input"
-              className="touch-target"
-              value={value}
-              onChange={(event) => {
-                setSaved(false);
-                setValue(event.target.value);
-              }}
-            />
-          </FormField>
-          <Button
-            type="button"
-            className="touch-target w-fit"
-            data-ocid="admin.schedule.paperwork_due.save_button"
-            disabled={update.isPending || !value}
-            onClick={onSave}
-          >
-            {update.isPending ? (
-              <Loader2
-                className="mr-2 h-4 w-4 animate-spin"
-                aria-hidden="true"
-              />
-            ) : (
-              <Save className="mr-2 h-4 w-4" aria-hidden="true" />
-            )}
-            {c.schedulePaperworkDueSave}
-          </Button>
-          {saved && (
-            <p
-              className="text-sm font-medium text-accent"
-              data-ocid="admin.schedule.paperwork_due.success_state"
-            >
-              {c.schedulePaperworkDueSaved}
-            </p>
-          )}
-          {update.isError && (
-            <p
-              className="text-sm font-medium text-destructive"
-              data-ocid="admin.schedule.paperwork_due.error_state"
-            >
-              {c.schedulePaperworkDueError}
-            </p>
-          )}
-        </div>
-      )}
-    </AdminSection>
-  );
-}
-
 export function SchedulePanel() {
   const c = useAdminCopy();
   const demo = useDemo();
@@ -238,7 +133,9 @@ export function SchedulePanel() {
   const sessions = useOrientationSessions(canMoveEveryone && !readOnly);
 
   const events = schedule.data ?? [];
-  const isEditing = draft !== null && draft.id !== 0n;
+  // A seeded event can carry id 0, so the id alone cannot tell a new event from
+  // an existing one. Only the Add button opens a draft with `isNew` set.
+  const isEditing = draft !== null && !draft.isNew;
   const mutation = isEditing ? update : create;
 
   // Training-day labels are derived from chronological order, so they renumber
@@ -258,6 +155,7 @@ export function SchedulePanel() {
   const openNew = () => {
     setDraft({
       id: 0n,
+      isNew: true,
       kind: EventKind.trainingDay,
       name: "",
       start: "",
@@ -268,6 +166,7 @@ export function SchedulePanel() {
   const openEdit = (event: ScheduleEvent) => {
     setDraft({
       id: event.id,
+      isNew: false,
       kind: event.kind,
       name: event.name,
       start: dateTimeToInput(event.start, timeZone),
@@ -582,7 +481,6 @@ export function SchedulePanel() {
           />
         )}
       </AdminSection>
-      <PaperworkDueEditor readOnly={readOnly} />
     </div>
   );
 }

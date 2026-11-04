@@ -76,7 +76,6 @@ const STORE_INFO: StoreInfo = {
   locationName: "Bake",
   timeZone: "America/Chicago",
   storePhone: "+1-555-0199",
-  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 const SEEDED_SETTINGS: UniformSettings = {
@@ -321,8 +320,6 @@ describe("Admin > Positions uniform defaults", () => {
     openingBuildTo: 2n,
     afterOpeningBuildTo: 2n,
     minimumAge: 18n,
-    shirtsRequired: 2n,
-    hatsRequired: 1n,
     needsAlcoholCert: false,
     shirtType: "Polo",
     shirtQty: 2n,
@@ -510,8 +507,6 @@ const MANAGER_POSITION: Position = {
   openingBuildTo: 2n,
   afterOpeningBuildTo: 2n,
   minimumAge: 18n,
-  shirtsRequired: 2n,
-  hatsRequired: 1n,
   needsAlcoholCert: false,
   shirtType: "Polo",
   shirtQty: 2n,
@@ -536,7 +531,6 @@ const MANAGER_STORE: StoreInfo = {
   locationName: "Bake",
   timeZone: "America/Chicago",
   storePhone: "+1-555-0199",
-  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 function managerProfile(overrides: Partial<RoadieProfile> = {}): RoadieProfile {
@@ -810,5 +804,43 @@ describe("store template uniform defaults", () => {
       hatType: "Cap",
       hatQty: 1n,
     });
+  });
+
+  it("keeps the removed crew-manager and required-count fields out of the downloaded template", async () => {
+    const user = userEvent.setup();
+    const { actor } = templateActor();
+    const createObjectURL = vi.fn<(blob: Blob) => string>(
+      () => "blob:template",
+    );
+    Object.defineProperty(URL, "createObjectURL", {
+      writable: true,
+      configurable: true,
+      value: createObjectURL,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      writable: true,
+      configurable: true,
+      value: vi.fn(),
+    });
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    renderWithActor(<TemplatePanel />, actor);
+    await user.click(
+      await screen.findByTestId("admin.template.download_button"),
+    );
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
+
+    const blob = createObjectURL.mock.calls[0]?.[0] as Blob;
+    const parsed = JSON.parse(await blob.text()) as {
+      positions: Array<Record<string, unknown>>;
+    };
+    // The removed fields never reach the template file.
+    expect(parsed.positions[0]).not.toHaveProperty("crewManager");
+    expect(parsed.positions[0]).not.toHaveProperty("shirtsRequired");
+    expect(parsed.positions[0]).not.toHaveProperty("hatsRequired");
+
+    click.mockRestore();
   });
 });

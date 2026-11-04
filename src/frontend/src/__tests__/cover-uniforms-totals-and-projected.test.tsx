@@ -28,7 +28,6 @@ const STORE_INFO: StoreInfo = {
   locationName: "Bake",
   timeZone: "America/Chicago",
   storePhone: "+1-555-0199",
-  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /**

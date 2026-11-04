@@ -360,19 +360,16 @@ export interface Position {
   'openingBuildTo' : bigint,
   'defaultHats' : bigint,
   'defaultShirts' : bigint,
-  'crewManager' : [] | [string],
   'house' : House,
   'afterOpeningBuildTo' : bigint,
   'minimumAge' : bigint,
   'code' : string,
   'name' : string,
   'shirtQty' : bigint,
-  'shirtsRequired' : bigint,
   'shirtType' : string,
   'hatType' : string,
   'hatQty' : bigint,
   'needsAlcoholCert' : boolean,
-  'hatsRequired' : bigint,
 }
 export type PositionId = bigint;
 export interface PretendDate { 'day' : DateOnly, 'shift' : DemoShift }
@@ -560,7 +557,6 @@ export interface StoreInfo {
   'address' : string,
   'secondaryLogo' : [] | [PhotoRef],
   'locationName' : string,
-  'paperworkDueDate' : DateOnly,
   'timeZone' : TimeZone,
   'storePhone' : Phone,
 }

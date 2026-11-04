@@ -53,7 +53,6 @@ const STORE: StoreInfo = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
-  paperworkDueDate: BigInt(Date.UTC(2027, 0, 29)) * 1_000_000n,
 };
 
 const SERVERS: Position = {
@@ -66,8 +65,6 @@ const SERVERS: Position = {
   openingBuildTo: 65n,
   afterOpeningBuildTo: 65n,
   minimumAge: 18n,
-  shirtsRequired: 2n,
-  hatsRequired: 1n,
   needsAlcoholCert: true,
   shirtType: "Polo",
   shirtQty: 2n,
@@ -176,48 +173,6 @@ function adminActor() {
     ),
   };
 }
-
-describe("Admin > Schedule paperwork due date", () => {
-  it("shows an editable Paperwork due date defaulting to the store value", async () => {
-    const user = userEvent.setup();
-    renderPageWithActor(AdminPage, adminActor(), { path: "/admin" });
-
-    await user.click(await screen.findByTestId("admin.schedule.tab"));
-
-    const input = await screen.findByTestId(
-      "admin.schedule.paperwork_due.input",
-    );
-    // The seeded due date is Jan 29, 2027 (encoded as a UTC-midnight DateOnly).
-    expect(input).toHaveValue("2027-01-29");
-    expect(
-      screen.getByTestId("admin.schedule.paperwork_due.save_button"),
-    ).toBeInTheDocument();
-  });
-
-  it("saves an edited paperwork due date through updateStoreInfo", async () => {
-    const user = userEvent.setup();
-    const actor = adminActor();
-    renderPageWithActor(AdminPage, actor, { path: "/admin" });
-
-    await user.click(await screen.findByTestId("admin.schedule.tab"));
-
-    const input = await screen.findByTestId(
-      "admin.schedule.paperwork_due.input",
-    );
-    // A date input is set through a change event; typing into it is unreliable
-    // in jsdom.
-    fireEvent.change(input, { target: { value: "2027-02-15" } });
-    fireEvent.click(
-      screen.getByTestId("admin.schedule.paperwork_due.save_button"),
-    );
-
-    await waitFor(() => expect(actor.updateStoreInfo).toHaveBeenCalledTimes(1));
-    const saved = actor.updateStoreInfo.mock.calls[0][0];
-    expect(saved.paperworkDueDate).toBe(
-      BigInt(Date.UTC(2027, 1, 15)) * 1_000_000n,
-    );
-  });
-});
 
 describe("Admin > Positions uniform defaults", () => {
   it("lets an admin edit the shirt and hat type and quantity on a position", async () => {

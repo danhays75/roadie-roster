@@ -64,12 +64,10 @@ function position(id: bigint, name: string, code: string): Position {
     afterOpeningBuildTo: 0n,
     minimumAge: 16n,
     shirtQty: 0n,
-    shirtsRequired: 0n,
     shirtType: "",
     hatType: "",
     hatQty: 0n,
     needsAlcoholCert: false,
-    hatsRequired: 0n,
     defaultShirts: 0n,
     defaultHats: 0n,
   };

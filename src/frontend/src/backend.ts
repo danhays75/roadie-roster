@@ -445,19 +445,16 @@ export interface Position {
     openingBuildTo: bigint;
     defaultHats: bigint;
     defaultShirts: bigint;
-    crewManager?: string;
     house: House;
     afterOpeningBuildTo: bigint;
     minimumAge: bigint;
     code: string;
     name: string;
     shirtQty: bigint;
-    shirtsRequired: bigint;
     shirtType: string;
     hatType: string;
     hatQty: bigint;
     needsAlcoholCert: boolean;
-    hatsRequired: bigint;
 }
 export type PositionId = bigint;
 export interface PretendDate {
@@ -651,7 +648,6 @@ export interface StoreInfo {
     address: string;
     secondaryLogo?: PhotoRef;
     locationName: string;
-    paperworkDueDate: DateOnly;
     timeZone: TimeZone;
     storePhone: Phone;
 }
@@ -3973,7 +3969,6 @@ function from_candid_record_n163(_uploadFile: (file: ExternalBlob) => Promise<Ui
     address: string;
     secondaryLogo: [] | [_PhotoRef];
     locationName: string;
-    paperworkDueDate: _DateOnly;
     timeZone: _TimeZone;
     storePhone: _Phone;
 }): {
@@ -3991,7 +3986,6 @@ function from_candid_record_n163(_uploadFile: (file: ExternalBlob) => Promise<Ui
     address: string;
     secondaryLogo?: PhotoRef;
     locationName: string;
-    paperworkDueDate: DateOnly;
     timeZone: TimeZone;
     storePhone: Phone;
 } {
@@ -4010,7 +4004,6 @@ function from_candid_record_n163(_uploadFile: (file: ExternalBlob) => Promise<Ui
         address: value.address,
         secondaryLogo: record_opt_to_undefined(from_candid_opt_n120(_uploadFile, _downloadFile, value.secondaryLogo)),
         locationName: value.locationName,
-        paperworkDueDate: value.paperworkDueDate,
         timeZone: value.timeZone,
         storePhone: value.storePhone
     };
@@ -4698,56 +4691,47 @@ function from_candid_record_n88(_uploadFile: (file: ExternalBlob) => Promise<Uin
     openingBuildTo: bigint;
     defaultHats: bigint;
     defaultShirts: bigint;
-    crewManager: [] | [string];
     house: _House;
     afterOpeningBuildTo: bigint;
     minimumAge: bigint;
     code: string;
     name: string;
     shirtQty: bigint;
-    shirtsRequired: bigint;
     shirtType: string;
     hatType: string;
     hatQty: bigint;
     needsAlcoholCert: boolean;
-    hatsRequired: bigint;
 }): {
     id: PositionId;
     openingBuildTo: bigint;
     defaultHats: bigint;
     defaultShirts: bigint;
-    crewManager?: string;
     house: House;
     afterOpeningBuildTo: bigint;
     minimumAge: bigint;
     code: string;
     name: string;
     shirtQty: bigint;
-    shirtsRequired: bigint;
     shirtType: string;
     hatType: string;
     hatQty: bigint;
     needsAlcoholCert: boolean;
-    hatsRequired: bigint;
 } {
     return {
         id: value.id,
         openingBuildTo: value.openingBuildTo,
         defaultHats: value.defaultHats,
         defaultShirts: value.defaultShirts,
-        crewManager: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.crewManager)),
         house: from_candid_House_n59(_uploadFile, _downloadFile, value.house),
         afterOpeningBuildTo: value.afterOpeningBuildTo,
         minimumAge: value.minimumAge,
         code: value.code,
         name: value.name,
         shirtQty: value.shirtQty,
-        shirtsRequired: value.shirtsRequired,
         shirtType: value.shirtType,
         hatType: value.hatType,
         hatQty: value.hatQty,
-        needsAlcoholCert: value.needsAlcoholCert,
-        hatsRequired: value.hatsRequired
+        needsAlcoholCert: value.needsAlcoholCert
     };
 }
 function from_candid_record_n90(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -5920,7 +5904,6 @@ function to_candid_record_n259(_uploadFile: (file: ExternalBlob) => Promise<Uint
     address: string;
     secondaryLogo?: PhotoRef;
     locationName: string;
-    paperworkDueDate: DateOnly;
     timeZone: TimeZone;
     storePhone: Phone;
 }): {
@@ -5938,7 +5921,6 @@ function to_candid_record_n259(_uploadFile: (file: ExternalBlob) => Promise<Uint
     address: string;
     secondaryLogo: [] | [_PhotoRef];
     locationName: string;
-    paperworkDueDate: _DateOnly;
     timeZone: _TimeZone;
     storePhone: _Phone;
 } {
@@ -5957,7 +5939,6 @@ function to_candid_record_n259(_uploadFile: (file: ExternalBlob) => Promise<Uint
         address: value.address,
         secondaryLogo: value.secondaryLogo ? candid_some(value.secondaryLogo) : candid_none(),
         locationName: value.locationName,
-        paperworkDueDate: value.paperworkDueDate,
         timeZone: value.timeZone,
         storePhone: value.storePhone
     };
@@ -5976,56 +5957,47 @@ function to_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     openingBuildTo: bigint;
     defaultHats: bigint;
     defaultShirts: bigint;
-    crewManager?: string;
     house: House;
     afterOpeningBuildTo: bigint;
     minimumAge: bigint;
     code: string;
     name: string;
     shirtQty: bigint;
-    shirtsRequired: bigint;
     shirtType: string;
     hatType: string;
     hatQty: bigint;
     needsAlcoholCert: boolean;
-    hatsRequired: bigint;
 }): {
     id: _PositionId;
     openingBuildTo: bigint;
     defaultHats: bigint;
     defaultShirts: bigint;
-    crewManager: [] | [string];
     house: _House;
     afterOpeningBuildTo: bigint;
     minimumAge: bigint;
     code: string;
     name: string;
     shirtQty: bigint;
-    shirtsRequired: bigint;
     shirtType: string;
     hatType: string;
     hatQty: bigint;
     needsAlcoholCert: boolean;
-    hatsRequired: bigint;
 } {
     return {
         id: value.id,
         openingBuildTo: value.openingBuildTo,
         defaultHats: value.defaultHats,
         defaultShirts: value.defaultShirts,
-        crewManager: value.crewManager ? candid_some(value.crewManager) : candid_none(),
         house: to_candid_House_n45(_uploadFile, _downloadFile, value.house),
         afterOpeningBuildTo: value.afterOpeningBuildTo,
         minimumAge: value.minimumAge,
         code: value.code,
         name: value.name,
         shirtQty: value.shirtQty,
-        shirtsRequired: value.shirtsRequired,
         shirtType: value.shirtType,
         hatType: value.hatType,
         hatQty: value.hatQty,
-        needsAlcoholCert: value.needsAlcoholCert,
-        hatsRequired: value.hatsRequired
+        needsAlcoholCert: value.needsAlcoholCert
     };
 }
 function to_candid_record_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {

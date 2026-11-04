@@ -1,11 +1,11 @@
 import type {
   ArchiveReason,
   ChecklistItem,
-  DateOnly,
   OrientationCheckoff,
   Position,
   Roadie,
   RoadieId,
+  Timestamp,
 } from "@/backend";
 import { RoadieStatus, RosterState, createActor } from "@/backend";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -13,9 +13,10 @@ import {
   useChecklists,
   usePositions,
   useRoadiePhoto,
-  useStoreInfo,
+  useSchedule,
 } from "@/hooks/useQueries";
 import { refToDataUrl, roadieStatusLabel } from "@/lib/format";
+import { paperworkDueEvent } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
@@ -60,21 +61,22 @@ export function archiveReasonLabel(reason: ArchiveReason | undefined): string {
 }
 
 /**
- * Whether a roadie's paperwork is overdue: the store's paperwork due date has
- * passed and at least one paperwork item that applies to them (respecting
- * "Only alcohol positions" and "Only under 18") is not checked. Mirrors the
- * backend's `paperworkStatusWith` so the flag matches the orientation screen.
+ * Whether a roadie's paperwork is overdue: the schedule's "Paperwork due"
+ * deadline has passed and at least one paperwork item that applies to them
+ * (respecting "Only alcohol positions" and "Only under 18") is not checked.
+ * Mirrors the backend's `paperworkStatusWith` so the flag matches the
+ * orientation screen.
  */
 export function paperworkIncomplete(
   roadie: Roadie,
   checkoff: OrientationCheckoff | null | undefined,
   paperworkItems: ChecklistItem[],
   position: Position | undefined,
-  dueDate: DateOnly | undefined,
+  dueInstant: Timestamp | undefined,
   now: number,
 ): boolean {
-  if (dueDate === undefined) return false;
-  if (now <= Number(dueDate / 1_000_000n)) return false;
+  if (dueInstant === undefined) return false;
+  if (now <= Number(dueInstant / 1_000_000n)) return false;
   const needsAlcohol = position?.needsAlcoholCert ?? false;
   const applicable = paperworkItems.filter(
     (item) =>
@@ -88,28 +90,32 @@ export function paperworkIncomplete(
 
 /**
  * The paperwork-overdue flag for each roadie, keyed by roadie id. Reads the
- * store's paperwork due date, the paperwork checklist and the positions, then
- * fetches the orientation check-off for the roadies already past the due date
- * (the check-off read is Admin/Store Manager only, so callers pass `enabled`).
- * Returns an empty map for callers that may not read check-offs.
+ * schedule's "Paperwork due" deadline event, the paperwork checklist and the
+ * positions, then fetches the orientation check-off for the roadies already
+ * past the due date (the check-off read is Admin/Store Manager only, so callers
+ * pass `enabled`). Returns an empty map for callers that may not read
+ * check-offs.
  */
 export function usePaperworkIncompleteMap(
   roadies: Roadie[],
   enabled: boolean,
 ): Map<string, boolean> {
   const { actor, isFetching } = useActor(createActor);
-  const { data: storeInfo } = useStoreInfo();
+  const { data: schedule } = useSchedule();
   const { data: checklists } = useChecklists();
   const { data: positions } = usePositions();
 
-  const dueDate = storeInfo?.paperworkDueDate;
+  const dueInstant = useMemo(
+    () => paperworkDueEvent(schedule ?? [])?.start,
+    [schedule],
+  );
   const now = Date.now();
   const pastDue = useMemo(
     () =>
-      dueDate === undefined || now <= Number(dueDate / 1_000_000n)
+      dueInstant === undefined || now <= Number(dueInstant / 1_000_000n)
         ? []
         : roadies,
-    [roadies, dueDate, now],
+    [roadies, dueInstant, now],
   );
   const ids = useMemo(() => pastDue.map((r) => r.id), [pastDue]);
   const idsKey = ids.map((id) => id.toString()).join(",");
@@ -143,7 +149,7 @@ export function usePaperworkIncompleteMap(
 
   return useMemo(() => {
     const flags = new Map<string, boolean>();
-    if (!enabled || dueDate === undefined) return flags;
+    if (!enabled || dueInstant === undefined) return flags;
     const items = checklists?.paperwork ?? [];
     for (const roadie of pastDue) {
       const key = roadie.id.toString();
@@ -154,13 +160,13 @@ export function usePaperworkIncompleteMap(
           checkoffs?.get(key),
           items,
           positionMap.get(roadie.mainPositionId.toString()),
-          dueDate,
+          dueInstant,
           now,
         ),
       );
     }
     return flags;
-  }, [enabled, dueDate, pastDue, checkoffs, checklists, positionMap, now]);
+  }, [enabled, dueInstant, pastDue, checkoffs, checklists, positionMap, now]);
 }
 
 /**

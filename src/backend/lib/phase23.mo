@@ -578,10 +578,14 @@ module {
 
   // --- Shift boards ---
 
-  /// The map key for one shift board: the event id and shift, so a board is
-  /// unique per shift. Matches the migration and the OQL entity key.
-  func boardKey(eventId : Common.EventId, shift : Common.Shift) : Text {
-    eventId.toText() # ":" # (switch shift { case (#am) "am"; case (#pm) "pm" });
+  /// The map key for one shift board: the partition, the event id and the
+  /// shift, so a demo board and a real board for the same event and shift never
+  /// collide. Matches the migration and the OQL entity key.
+  func boardKey(eventId : Common.EventId, shift : Common.Shift, isDemo : Bool) : Text {
+    (if (isDemo) { "demo:" } else { "real:" })
+      # eventId.toText()
+      # ":"
+      # (switch shift { case (#am) "am"; case (#pm) "pm" });
   };
 
   /// Internal: the shift label for a board, e.g. "Day 2 AM" or "F&F PM".
@@ -730,7 +734,7 @@ module {
   ) : ?Phase23.ShiftBoardView {
     ignore Auth.requireReadable(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
-    switch (shiftBoards.get(boardKey(eventId, shift))) {
+    switch (shiftBoards.get(boardKey(eventId, shift, demo))) {
       case (?board) {
         if (board.isDemo != demo) { return null };
         ?buildBoardView(board, schedule.get(eventId), roadies, positions);
@@ -783,6 +787,77 @@ module {
         Runtime.trap("A roadie may appear in at most one group or in Off");
       };
       seen.add(rid);
+    };
+  };
+
+  /// Internal: the roles a trainer principal may hold to lead a group on a
+  /// board.
+  func isTrainerRole(role : Common.Role) : Bool {
+    role == #admin
+      or role == #storeManager
+      or role == #trainingManager
+      or role == #trainer
+      or role == #visitingManager;
+  };
+
+  /// Internal: reject a board whose roadies or trainers are not valid for the
+  /// active partition. Every roadie id must exist, be in the active partition
+  /// and not be archived. Every trainer principal must hold an access grant
+  /// with a trainer-capable role; in demo mode a demo leader is accepted.
+  func validateBoardMembers(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    board : Phase23.ShiftBoard,
+  ) : () {
+    let demo = Auth.demoActive(demoState);
+    for (g in board.groups.values()) {
+      if (not trainerAllowed(accessGrants, demoState, g.trainerPrincipal)) {
+        Runtime.trap("Trainer is not eligible to lead a group");
+      };
+      for (rid in g.roadieIds.values()) {
+        requireBoardRoadie(roadies, demo, rid);
+      };
+    };
+    for (rid in board.offRoadieIds.values()) {
+      requireBoardRoadie(roadies, demo, rid);
+    };
+  };
+
+  /// Internal: require a roadie id to name an existing, non-archived roadie in
+  /// the active partition.
+  func requireBoardRoadie(
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    demo : Bool,
+    rid : Common.RoadieId,
+  ) : () {
+    let roadie = roadies.get(rid) ?? Runtime.trap("Roadie not found on this board");
+    if (roadie.isDemo != demo) {
+      Runtime.trap("Roadie belongs to the other partition");
+    };
+    if (roadie.status == #archived) {
+      Runtime.trap("Roadie is archived");
+    };
+  };
+
+  /// Internal: whether a principal may lead a group on a board. In demo mode a
+  /// demo leader is accepted; otherwise the principal must hold an access grant
+  /// with a trainer-capable role.
+  func trainerAllowed(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    trainer : Principal,
+  ) : Bool {
+    if (Auth.demoActive(demoState)) {
+      switch (accessGrants.get(trainer)) {
+        case (?grant) { Auth.isDemoLeader(grant) };
+        case null { false };
+      };
+    } else {
+      switch (accessGrants.get(trainer)) {
+        case (?grant) { isTrainerRole(grant.role) };
+        case null { false };
+      };
     };
   };
 
@@ -910,7 +985,8 @@ module {
     Auth.requireGroupEditor(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
     validateBoard(board);
-    let key = boardKey(board.eventId, board.shift);
+    validateBoardMembers(accessGrants, demoState, roadies, board);
+    let key = boardKey(board.eventId, board.shift, demo);
     let previous = shiftBoards.get(key);
     // A write targets the current partition only: a real board cannot be
     // changed while demo mode is on, and a demo board cannot be changed while
@@ -952,11 +1028,11 @@ module {
   ) : () {
     Auth.requireGroupEditor(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
-    let source = shiftBoards.get(boardKey(fromEventId, fromShift)) ?? Runtime.trap("Source shift board not found");
+    let source = shiftBoards.get(boardKey(fromEventId, fromShift, demo)) ?? Runtime.trap("Source shift board not found");
     if (source.isDemo != demo) {
       Runtime.trap("Source shift board not found");
     };
-    let key = boardKey(eventId, shift);
+    let key = boardKey(eventId, shift, demo);
     let previous = shiftBoards.get(key);
     switch (previous) {
       case (?p) {
@@ -977,7 +1053,7 @@ module {
     validateBoard(stored);
     shiftBoards.add(key, stored);
     recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, previous, stored, schedule.get(eventId), caller);
-    logWrite(changeLog, counters, demoState, caller, "copyShiftBoard", null, false, "Copied shift board " # boardKey(fromEventId, fromShift) # " to " # key);
+    logWrite(changeLog, counters, demoState, caller, "copyShiftBoard", null, false, "Copied shift board " # boardKey(fromEventId, fromShift, demo) # " to " # key);
   };
 
   /// Fill empty capacity from the Unassigned tray: same station as the trainer
@@ -999,7 +1075,7 @@ module {
   ) : () {
     Auth.requireGroupEditor(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
-    let key = boardKey(eventId, shift);
+    let key = boardKey(eventId, shift, demo);
     let board = shiftBoards.get(key) ?? Runtime.trap("Shift board not found");
     if (board.isDemo != demo) {
       Runtime.trap("Shift board not found");
@@ -1026,34 +1102,58 @@ module {
         and not markedUnavailable(r, day, shift)
       )
       .toArray();
-    // Fill each group's empty capacity: same station as the trainer first, then
-    // any remaining candidate, balancing evenly across groups. A candidate is
-    // consumed once, tracked in `used`.
+    // Deal candidates round-robin across the groups that still have open
+    // capacity, so no group is filled to capacity before the next gets a
+    // roadie. The same-station pass runs first: in each round every group with
+    // open capacity takes one candidate whose main position is one of the
+    // trainer's stations; then the any pass fills the remaining seats the same
+    // way. A candidate is consumed once, tracked in `used`.
     let used = List.empty<Common.RoadieId>();
-    let newGroups = board.groups.map(func(g) {
-      let current = g.roadieIds;
-      let empty = saturatingSub(g.capacity, current.size());
-      if (empty == 0) { return g };
-      let trainerStations = trainerStationsFor(accessGrants, demoState, g.trainerPrincipal);
-      let picked = List.empty<Common.RoadieId>();
-      // First pass: same station as the trainer.
-      for (c in candidates.values()) {
-        if (picked.size() < empty and not used.contains(c.id)) {
-          if (trainerStations.contains(c.mainPositionId)) {
-            picked.add(c.id);
-            used.add(c.id);
+    let working = List.fromArray<Phase23.ShiftBoardGroup>(board.groups.map(func(g) { { g with roadieIds = g.roadieIds } }));
+    // The stations each group's trainer covers, computed once per group.
+    let stations = working.map<Phase23.ShiftBoardGroup, [Common.PositionId]>(func(g) = trainerStationsFor(accessGrants, demoState, g.trainerPrincipal));
+    // Same-station pass.
+    var progressed = true;
+    while (progressed) {
+      progressed := false;
+      var gi = 0;
+      while (gi < working.size()) {
+        let g = working.at(gi);
+        if (g.roadieIds.size() < g.capacity) {
+          let trainerStations = stations.at(gi);
+          switch (candidates.find(func c = not used.contains(c.id) and trainerStations.contains(c.mainPositionId))) {
+            case (?c) {
+              used.add(c.id);
+              working.put(gi, { g with roadieIds = g.roadieIds.concat([c.id]) });
+              progressed := true;
+            };
+            case null {};
           };
         };
+        gi += 1;
       };
-      // Second pass: any remaining candidate, balanced evenly.
-      for (c in candidates.values()) {
-        if (picked.size() < empty and not used.contains(c.id)) {
-          picked.add(c.id);
-          used.add(c.id);
+    };
+    // Any-candidate pass.
+    var progressedAny = true;
+    while (progressedAny) {
+      progressedAny := false;
+      var gi = 0;
+      while (gi < working.size()) {
+        let g = working.at(gi);
+        if (g.roadieIds.size() < g.capacity) {
+          switch (candidates.find(func c = not used.contains(c.id))) {
+            case (?c) {
+              used.add(c.id);
+              working.put(gi, { g with roadieIds = g.roadieIds.concat([c.id]) });
+              progressedAny := true;
+            };
+            case null {};
+          };
         };
+        gi += 1;
       };
-      { g with roadieIds = current.concat(picked.toArray()) };
-    });
+    };
+    let newGroups = working.toArray();
     let stored : Phase23.ShiftBoard = {
       board with
       groups = newGroups;
@@ -1099,7 +1199,7 @@ module {
   ) : () {
     Auth.requireGroupEditor(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
-    let key = boardKey(eventId, shift);
+    let key = boardKey(eventId, shift, demo);
     let previous = shiftBoards.get(key);
     switch (previous) {
       case (?p) {

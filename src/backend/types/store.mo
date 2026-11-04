@@ -19,10 +19,6 @@ module {
     leaderTalkSize : Nat;
     logo : ?Common.PhotoRef;
     secondaryLogo : ?Common.PhotoRef;
-    /// The date by which every roadie's paperwork must be complete. Roadies
-    /// who are not 100% complete after this date get a "Paperwork incomplete"
-    /// flag. Defaults to Jan 29, 2027.
-    paperworkDueDate : Common.DateOnly;
   };
 
   /// The two store logos returned by the public logo query. Both are optional;
@@ -42,9 +38,6 @@ module {
     afterOpeningBuildTo : Nat;
     needsAlcoholCert : Bool;
     minimumAge : Nat;
-    shirtsRequired : Nat;
-    hatsRequired : Nat;
-    crewManager : ?Text;
     /// Legacy default shirt and hat counts for this position, kept on the
     /// public API for the orientation and roster screens. Part of the store
     /// template.

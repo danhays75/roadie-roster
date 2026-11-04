@@ -144,10 +144,6 @@
 
 ## Learnings
 
-- UnassignedSection assigns each unassigned roadie through the per-roadie moveRoadieToSession, not the bulk move, because the bulk move only relocates roadies already attached to a source session.
-- SchedulePanel gates Move everyone on ARCHIVE_ROLES (admin/storeManager) and event.kind === orientation, matching the backend requireManager guard on moveAllRoadiesToSession.
-- Migration src/backend/migrations/00000013_000000.mo reassigns only rosterState == #pending roadies whose orientationEventId is null or names a missing/non-orientation event to the earliest upcoming orientation session, leaving all others untouched.
-- Map.map on a Map<Nat, Roadie> returning Roadie needs explicit <Nat, Roadie, Roadie> when the lambda's branches do not let inference pick V2 (M0098).
 - pnpm fix (biome --write) reformats test files under src/__tests__; revert them with git checkout after running it so the tester-owned tests stay untouched.
 - Uniform order rows are grouped by the backend item label (Polo/Cap) via groupOrderRows; the Uniforms page renders one table per group.
 - getUniformOrder filters r.isDemo == Auth.demoActive(demoState), so demo and real uniform counts never mix.
@@ -169,3 +165,7 @@
 - Migration 00000016 restores Position.defaultShirts/defaultHats with an OldPosition/NewPosition split; every Position and TemplatePosition record (including seeded ones) must carry both fields.
 - The Position type requires defaultShirts/defaultHats, so any test fixture constructing a Position must supply them or the frontend type-check fails.
 - The tester owns test files under src/frontend/src/__tests__ and test/pocketic; production workers must not edit them.
+- boardKey(eventId,shift,isDemo) in src/backend/lib/phase23.mo is the single partition-key builder for shift boards; all board reads/writes and migration 00000017 use it.
+- Retired fields (StoreInfo.paperworkDueDate, Position.crewManager, Position.shirtsRequired/hatsRequired) survive only in old migrations and tester-owned tests, never in app source.
+- components/admin/copy.ts keeps unused positionsShirtsRequired/positionsHatsRequired/positionsCrewManager keys; no .tsx references them.
+- The app's existing regression suite has known pre-existing failures (19 frontend, 4 backend) unrelated to the requested fixes; the user asked for them to be handled separately.

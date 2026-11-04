@@ -42,8 +42,6 @@ const POSITION: Position = {
   openingBuildTo: 2n,
   afterOpeningBuildTo: 2n,
   minimumAge: 18n,
-  shirtsRequired: 2n,
-  hatsRequired: 1n,
   needsAlcoholCert: false,
   shirtType: "Polo",
   shirtQty: 2n,
@@ -61,8 +59,6 @@ const SECOND_POSITION: Position = {
   openingBuildTo: 1n,
   afterOpeningBuildTo: 1n,
   minimumAge: 18n,
-  shirtsRequired: 1n,
-  hatsRequired: 1n,
   needsAlcoholCert: false,
   shirtType: "Polo",
   shirtQty: 2n,
@@ -99,7 +95,6 @@ const STORE_INFO: StoreInfo = {
   locationName: "Bake",
   timeZone: "America/Chicago",
   storePhone: "+1-555-0199",
-  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /** A roadie with a main and a second position, and a populated profile. */

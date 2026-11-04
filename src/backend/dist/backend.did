@@ -185,7 +185,6 @@ type StoreInfo =
    locationName: text;
    logo: opt PhotoRef;
    openingDate: DateOnly;
-   paperworkDueDate: DateOnly;
    pmShiftEnd: TimeOfDay;
    pmShiftStart: TimeOfDay;
    secondaryLogo: opt PhotoRef;
@@ -415,12 +414,10 @@ type Position =
  record {
    afterOpeningBuildTo: nat;
    code: text;
-   crewManager: opt text;
    defaultHats: nat;
    defaultShirts: nat;
    hatQty: nat;
    hatType: text;
-   hatsRequired: nat;
    house: House;
    id: PositionId;
    minimumAge: nat;
@@ -429,7 +426,6 @@ type Position =
    openingBuildTo: nat;
    shirtQty: nat;
    shirtType: text;
-   shirtsRequired: nat;
  };
 type PhotoRef = blob;
 type Phone = text;

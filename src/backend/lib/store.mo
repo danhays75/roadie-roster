@@ -397,9 +397,6 @@ module {
         afterOpeningBuildTo = p.afterOpeningBuildTo;
         needsAlcoholCert = p.needsAlcoholCert;
         minimumAge = p.minimumAge;
-        shirtsRequired = 2;
-        hatsRequired = 1;
-        crewManager = null;
         defaultShirts = p.defaultShirts;
         defaultHats = p.defaultHats;
         shirtType = p.shirtType;

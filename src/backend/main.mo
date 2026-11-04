@@ -190,9 +190,6 @@ actor {
           afterOpeningBuildTo = 0;
           needsAlcoholCert = false;
           minimumAge = 0;
-          shirtsRequired = 0;
-          hatsRequired = 0;
-          crewManager = null;
           defaultShirts = 0;
           defaultHats = 0;
           shirtType = "";
@@ -406,7 +403,7 @@ actor {
           editedAt = 0;
           isDemo = false;
         })
-        .payload("key", func b = b.eventId.toText() # ":" # (switch b.shift { case (#am) "am"; case (#pm) "pm" }))
+        .payload("key", func b = (if b.isDemo { "demo:" } else { "real:" }) # b.eventId.toText() # ":" # (switch b.shift { case (#am) "am"; case (#pm) "pm" }))
         .payload("eventId", func b = b.eventId)
         .payload("shift", func b = switch b.shift { case (#am) "am"; case (#pm) "pm" })
         .payload("groupCount", func b = b.groups.size())

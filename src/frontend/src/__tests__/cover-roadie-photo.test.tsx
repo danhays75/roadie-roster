@@ -76,8 +76,6 @@ const POSITION: Position = {
   openingBuildTo: 4n,
   afterOpeningBuildTo: 2n,
   minimumAge: 16n,
-  shirtsRequired: 2n,
-  hatsRequired: 1n,
   needsAlcoholCert: false,
   shirtType: "Polo",
   shirtQty: 2n,

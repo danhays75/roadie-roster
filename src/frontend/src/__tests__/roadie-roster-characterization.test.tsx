@@ -65,7 +65,6 @@ const STORE: StoreInfo = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
-  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /** A minimal PNG signature followed by filler bytes. */
@@ -254,8 +253,6 @@ describe("main logo still renders on every surface", () => {
       openingBuildTo: 2n,
       afterOpeningBuildTo: 1n,
       minimumAge: 16n,
-      shirtsRequired: 2n,
-      hatsRequired: 1n,
       needsAlcoholCert: false,
       shirtType: "Polo",
       shirtQty: 2n,

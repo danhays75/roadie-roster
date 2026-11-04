@@ -14,8 +14,6 @@ const SERVERS: Position = {
   openingBuildTo: 65n,
   afterOpeningBuildTo: 65n,
   minimumAge: 18n,
-  shirtsRequired: 2n,
-  hatsRequired: 1n,
   needsAlcoholCert: true,
   shirtType: "Polo",
   shirtQty: 2n,
@@ -40,7 +38,6 @@ const STORE = {
   trainingGroupSize: 5n,
   leaderTalkName: "10 Minutes with Dan",
   leaderTalkSize: 10n,
-  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 /** An Admin grant: only an Admin may seed, so the seeding hook needs one. */

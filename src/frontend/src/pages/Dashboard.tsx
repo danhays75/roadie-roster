@@ -1,4 +1,10 @@
-import type { Alert, Position, RosterSummary, StoreInfo } from "@/backend";
+import type {
+  Alert,
+  Position,
+  RosterSummary,
+  ScheduleEvent,
+  StoreInfo,
+} from "@/backend";
 import { EventKind, createActor } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
@@ -24,11 +30,11 @@ import {
 } from "@/hooks/useQueries";
 import { useSeedWhenEmpty } from "@/hooks/useSeeding";
 import {
-  dateOnlyToDate,
   formatDateOnly,
   pretendDateToInstant,
   timestampToDate,
 } from "@/lib/format";
+import { paperworkDueEvent } from "@/lib/schedule";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, SlidersHorizontal } from "lucide-react";
@@ -110,20 +116,19 @@ function useNow(pretendInstant: number | null, intervalMs = 60_000): number {
 }
 
 /**
- * The orientation window, derived from the schedule and the store's paperwork
- * due date. The window opens on the paperwork due date and closes on the final
- * sign-off date; the orientation session date marks the point after which
- * no-shows are counted. All three dates respect the demo "Pretend it's" date
- * through `now`.
+ * The orientation window, derived from the schedule. The window opens on the
+ * schedule's "Paperwork due" deadline event and closes on the final sign-off
+ * date; the orientation session date marks the point after which no-shows are
+ * counted. All three dates respect the demo "Pretend it's" date through `now`.
  */
 function useOrientationWindow(
-  events: { kind: EventKind; start: bigint }[],
-  paperworkDueDate: bigint | undefined,
+  events: ScheduleEvent[],
   now: number,
 ): OrientationWindow {
   return useMemo(() => {
-    const dueInstant = paperworkDueDate
-      ? (dateOnlyToDate(paperworkDueDate)?.getTime() ?? null)
+    const dueEvent = paperworkDueEvent(events);
+    const dueInstant = dueEvent
+      ? (timestampToDate(dueEvent.start)?.getTime() ?? null)
       : null;
 
     let orientationInstant: number | null = null;
@@ -154,7 +159,7 @@ function useOrientationWindow(
         orientationInstant !== null && now >= orientationInstant,
       afterSignOff: signOffInstant !== null && now >= signOffInstant,
     };
-  }, [events, paperworkDueDate, now]);
+  }, [events, now]);
 }
 
 /**
@@ -233,11 +238,7 @@ export default function DashboardPage() {
     return pretendDateToInstant(demo.pretendDate)?.getTime() ?? null;
   }, [demo.enabled, demo.pretendDate]);
   const now = useNow(pretendInstant);
-  const orientationWindow = useOrientationWindow(
-    schedule ?? [],
-    storeInfo?.paperworkDueDate,
-    now,
-  );
+  const orientationWindow = useOrientationWindow(schedule ?? [], now);
 
   // A fresh install (or a store with no positions yet) is seeded once so the
   // dashboard shows the 18 seeded positions instead of an empty shell.

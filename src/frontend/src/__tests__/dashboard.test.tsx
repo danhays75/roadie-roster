@@ -29,8 +29,6 @@ const CASHIER: Position = {
   openingBuildTo: 4n,
   afterOpeningBuildTo: 2n,
   minimumAge: 16n,
-  shirtsRequired: 2n,
-  hatsRequired: 1n,
   needsAlcoholCert: false,
   shirtType: "Polo",
   shirtQty: 2n,
@@ -75,7 +73,6 @@ function storeInfo(overrides: Partial<StoreInfo> = {}): StoreInfo {
     trainingGroupSize: 4n,
     leaderTalkName: "Leader talk",
     leaderTalkSize: 4n,
-    paperworkDueDate: dateOnly(-5),
     ...overrides,
   };
 }
@@ -89,6 +86,19 @@ function scheduleEvent(
     id,
     kind,
     name: kind,
+    start: dateTime(offsetDays),
+  };
+}
+
+/**
+ * The schedule's "Paperwork due" deadline event, the single source of the
+ * paperwork due date. The orientation window opens on this event's start.
+ */
+function paperworkDueEvent(offsetDays: number, id: bigint): ScheduleEvent {
+  return {
+    id,
+    kind: EventKind.deadline,
+    name: "Paperwork due",
     start: dateTime(offsetDays),
   };
 }
@@ -262,7 +272,7 @@ describe("Dashboard hiring summary", () => {
     freezeNow();
     // The window opens on the paperwork due date, five days from now.
     const actor = baseActor({
-      store: storeInfo({ paperworkDueDate: dateOnly(5) }),
+      schedule: [paperworkDueEvent(5, 1n)],
     });
     renderPageWithActor(DashboardPage, actor, { path: "/dashboard" });
 
@@ -279,8 +289,8 @@ describe("Dashboard hiring summary", () => {
     freezeNow();
     // Due five days ago, orientation tomorrow, sign-off in ten days.
     const actor = baseActor({
-      store: storeInfo({ paperworkDueDate: dateOnly(-5) }),
       schedule: [
+        paperworkDueEvent(-5, 3n),
         scheduleEvent(EventKind.orientation, 1, 1n),
         scheduleEvent(EventKind.signOff, 10, 2n),
       ],
@@ -302,8 +312,8 @@ describe("Dashboard hiring summary", () => {
   it("shows the no-shows link after the orientation date", async () => {
     freezeNow();
     const actor = baseActor({
-      store: storeInfo({ paperworkDueDate: dateOnly(-5) }),
       schedule: [
+        paperworkDueEvent(-5, 3n),
         scheduleEvent(EventKind.orientation, -1, 1n),
         scheduleEvent(EventKind.signOff, 10, 2n),
       ],
@@ -318,8 +328,8 @@ describe("Dashboard hiring summary", () => {
   it("hides CERTIFIED before the final sign-off date and shows it after", async () => {
     freezeNow();
     const before = baseActor({
-      store: storeInfo({ paperworkDueDate: dateOnly(-5) }),
       schedule: [
+        paperworkDueEvent(-5, 3n),
         scheduleEvent(EventKind.orientation, -1, 1n),
         scheduleEvent(EventKind.signOff, 10, 2n),
       ],
@@ -334,8 +344,8 @@ describe("Dashboard hiring summary", () => {
     unmount();
 
     const after = baseActor({
-      store: storeInfo({ paperworkDueDate: dateOnly(-5) }),
       schedule: [
+        paperworkDueEvent(-5, 3n),
         scheduleEvent(EventKind.orientation, -1, 1n),
         scheduleEvent(EventKind.signOff, -1, 2n),
       ],
@@ -351,7 +361,7 @@ describe("Dashboard per-position rows", () => {
   it("shows one hired/need line with the NEEDED badge and no split outside the window", async () => {
     freezeNow();
     const actor = baseActor({
-      store: storeInfo({ paperworkDueDate: dateOnly(5) }),
+      schedule: [paperworkDueEvent(5, 1n)],
     });
     renderPageWithActor(DashboardPage, actor, { path: "/dashboard" });
 
@@ -368,8 +378,8 @@ describe("Dashboard per-position rows", () => {
   it("shows the pending/active split only during the orientation window", async () => {
     freezeNow();
     const actor = baseActor({
-      store: storeInfo({ paperworkDueDate: dateOnly(-5) }),
       schedule: [
+        paperworkDueEvent(-5, 3n),
         scheduleEvent(EventKind.orientation, 1, 1n),
         scheduleEvent(EventKind.signOff, 10, 2n),
       ],
@@ -387,8 +397,8 @@ describe("Dashboard demo pretend date", () => {
     freezeNow();
     // Real now is before the window; the pretend date is inside it.
     const actor = baseActor({
-      store: storeInfo({ paperworkDueDate: dateOnly(5) }),
       schedule: [
+        paperworkDueEvent(5, 3n),
         scheduleEvent(EventKind.orientation, 6, 1n),
         scheduleEvent(EventKind.signOff, 7, 2n),
       ],
@@ -410,8 +420,8 @@ describe("Dashboard demo pretend date", () => {
   it("shows the CERTIFIED tile when the pretend date is after sign-off", async () => {
     freezeNow();
     const actor = baseActor({
-      store: storeInfo({ paperworkDueDate: dateOnly(5) }),
       schedule: [
+        paperworkDueEvent(5, 3n),
         scheduleEvent(EventKind.orientation, 6, 1n),
         scheduleEvent(EventKind.signOff, 7, 2n),
       ],

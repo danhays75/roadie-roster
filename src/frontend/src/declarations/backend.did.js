@@ -202,19 +202,16 @@ export const Position = IDL.Record({
   'openingBuildTo' : IDL.Nat,
   'defaultHats' : IDL.Nat,
   'defaultShirts' : IDL.Nat,
-  'crewManager' : IDL.Opt(IDL.Text),
   'house' : House,
   'afterOpeningBuildTo' : IDL.Nat,
   'minimumAge' : IDL.Nat,
   'code' : IDL.Text,
   'name' : IDL.Text,
   'shirtQty' : IDL.Nat,
-  'shirtsRequired' : IDL.Nat,
   'shirtType' : IDL.Text,
   'hatType' : IDL.Text,
   'hatQty' : IDL.Nat,
   'needsAlcoholCert' : IDL.Bool,
-  'hatsRequired' : IDL.Nat,
 });
 export const DateTime = IDL.Int;
 export const EventKind = IDL.Variant({
@@ -575,7 +572,6 @@ export const StoreInfo = IDL.Record({
   'address' : IDL.Text,
   'secondaryLogo' : IDL.Opt(PhotoRef),
   'locationName' : IDL.Text,
-  'paperworkDueDate' : DateOnly,
   'timeZone' : TimeZone,
   'storePhone' : Phone,
 });
@@ -1177,19 +1173,16 @@ export const idlFactory = ({ IDL }) => {
     'openingBuildTo' : IDL.Nat,
     'defaultHats' : IDL.Nat,
     'defaultShirts' : IDL.Nat,
-    'crewManager' : IDL.Opt(IDL.Text),
     'house' : House,
     'afterOpeningBuildTo' : IDL.Nat,
     'minimumAge' : IDL.Nat,
     'code' : IDL.Text,
     'name' : IDL.Text,
     'shirtQty' : IDL.Nat,
-    'shirtsRequired' : IDL.Nat,
     'shirtType' : IDL.Text,
     'hatType' : IDL.Text,
     'hatQty' : IDL.Nat,
     'needsAlcoholCert' : IDL.Bool,
-    'hatsRequired' : IDL.Nat,
   });
   const DateTime = IDL.Int;
   const EventKind = IDL.Variant({
@@ -1544,7 +1537,6 @@ export const idlFactory = ({ IDL }) => {
     'address' : IDL.Text,
     'secondaryLogo' : IDL.Opt(PhotoRef),
     'locationName' : IDL.Text,
-    'paperworkDueDate' : DateOnly,
     'timeZone' : TimeZone,
     'storePhone' : Phone,
   });

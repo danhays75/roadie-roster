@@ -91,12 +91,6 @@ export interface AdminCopy {
   scheduleDeleteTitle: string;
   scheduleDeleteBody: string;
   scheduleDeleteBlocked: string;
-  schedulePaperworkDueTitle: string;
-  schedulePaperworkDueDescription: string;
-  schedulePaperworkDueLabel: string;
-  schedulePaperworkDueSave: string;
-  schedulePaperworkDueSaved: string;
-  schedulePaperworkDueError: string;
   scheduleMoveEveryone: string;
   scheduleMoveEveryoneTitle: string;
   scheduleMoveEveryoneBody: string;
@@ -313,13 +307,6 @@ const en: AdminCopy = {
   scheduleDeleteTitle: "Delete event",
   scheduleDeleteBody: "Delete {name}? This cannot be undone.",
   scheduleDeleteBlocked: "This event has records and cannot be deleted.",
-  schedulePaperworkDueTitle: "Paperwork due date",
-  schedulePaperworkDueDescription:
-    "The date every roadie's paperwork must be complete by.",
-  schedulePaperworkDueLabel: "Paperwork due",
-  schedulePaperworkDueSave: "Save due date",
-  schedulePaperworkDueSaved: "Paperwork due date saved.",
-  schedulePaperworkDueError: "We couldn't save the paperwork due date.",
   scheduleMoveEveryone: "Move everyone",
   scheduleMoveEveryoneTitle: "Move everyone to another session",
   scheduleMoveEveryoneBody:
@@ -556,13 +543,6 @@ const es: AdminCopy = {
   scheduleDeleteTitle: "Eliminar evento",
   scheduleDeleteBody: "¿Eliminar {name}? No se puede deshacer.",
   scheduleDeleteBlocked: "Este evento tiene registros y no se puede eliminar.",
-  schedulePaperworkDueTitle: "Fecha límite de papeleo",
-  schedulePaperworkDueDescription:
-    "La fecha en que el papeleo de cada roadie debe estar completo.",
-  schedulePaperworkDueLabel: "Papeleo vence",
-  schedulePaperworkDueSave: "Guardar fecha límite",
-  schedulePaperworkDueSaved: "Fecha límite de papeleo guardada.",
-  schedulePaperworkDueError: "No pudimos guardar la fecha límite de papeleo.",
   scheduleMoveEveryone: "Mover a todos",
   scheduleMoveEveryoneTitle: "Mover a todos a otra sesión",
   scheduleMoveEveryoneBody:

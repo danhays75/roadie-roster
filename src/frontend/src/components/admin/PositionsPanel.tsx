@@ -41,59 +41,58 @@ import { useEffect, useRef, useState } from "react";
 
 interface PositionDraft {
   id: bigint;
+  /**
+   * True only for a draft created by the Add button. Create-vs-update is
+   * decided by this flag, never by the id: the seeded Servers position has
+   * id 0, so an id-based sentinel would turn every edit of it into a create.
+   */
+  isNew: boolean;
   name: string;
   house: House;
   code: string;
   needsAlcoholCert: boolean;
   minimumAge: string;
-  shirtsRequired: string;
-  hatsRequired: string;
   defaultShirts: string;
   defaultHats: string;
   shirtType: string;
   shirtQty: string;
   hatType: string;
   hatQty: string;
-  crewManager: string;
 }
 
 function emptyDraft(): PositionDraft {
   return {
     id: 0n,
+    isNew: true,
     name: "",
     house: House.foh,
     code: "",
     needsAlcoholCert: false,
     minimumAge: "16",
-    shirtsRequired: "0",
-    hatsRequired: "0",
     defaultShirts: "0",
     defaultHats: "0",
     shirtType: "",
     shirtQty: "0",
     hatType: "",
     hatQty: "0",
-    crewManager: "",
   };
 }
 
 function toDraft(position: Position): PositionDraft {
   return {
     id: position.id,
+    isNew: false,
     name: position.name,
     house: position.house,
     code: position.code,
     needsAlcoholCert: position.needsAlcoholCert,
     minimumAge: position.minimumAge.toString(),
-    shirtsRequired: position.shirtsRequired.toString(),
-    hatsRequired: position.hatsRequired.toString(),
     defaultShirts: position.defaultShirts.toString(),
     defaultHats: position.defaultHats.toString(),
     shirtType: position.shirtType,
     shirtQty: position.shirtQty.toString(),
     hatType: position.hatType,
     hatQty: position.hatQty.toString(),
-    crewManager: position.crewManager ?? "",
   };
 }
 
@@ -118,17 +117,12 @@ function toPosition(
     afterOpeningBuildTo,
     needsAlcoholCert: draft.needsAlcoholCert,
     minimumAge: toCount(draft.minimumAge),
-    shirtsRequired: toCount(draft.shirtsRequired),
-    hatsRequired: toCount(draft.hatsRequired),
     defaultShirts: toCount(draft.defaultShirts),
     defaultHats: toCount(draft.defaultHats),
     shirtType: draft.shirtType.trim(),
     shirtQty: toCount(draft.shirtQty),
     hatType: draft.hatType.trim(),
     hatQty: toCount(draft.hatQty),
-    crewManager: draft.crewManager.trim()
-      ? draft.crewManager.trim()
-      : undefined,
   };
 }
 
@@ -372,7 +366,10 @@ export function PositionsPanel() {
   // real settings, which demo mode must not touch. The list stays readable.
   const readOnly = demo.enabled;
 
-  const isEditing = draft !== null && draft.id !== 0n;
+  // Create-vs-update is decided by the draft's own isNew flag, set only by the
+  // Add button. The seeded Servers position has id 0, so an id-based sentinel
+  // would turn every edit of it into a duplicate create.
+  const isEditing = draft !== null && !draft.isNew;
   const mutation = isEditing ? update : create;
 
   const set = <K extends keyof PositionDraft>(
@@ -386,8 +383,12 @@ export function PositionsPanel() {
     event.preventDefault();
     if (!draft || !draft.name.trim()) return;
     // Build-to targets are owned by the +1/−1 steppers, so an edit preserves
-    // the live targets and a new position starts at zero.
-    const live = positions.data?.find((position) => position.id === draft.id);
+    // the live targets and a new position starts at zero. A new draft carries
+    // id 0n, which can collide with the seeded Servers position, so the lookup
+    // is skipped entirely for a new draft.
+    const live = draft.isNew
+      ? undefined
+      : positions.data?.find((position) => position.id === draft.id);
     const payload = toPosition(
       draft,
       live?.openingBuildTo ?? 0n,
@@ -515,37 +516,6 @@ export function PositionsPanel() {
                     onChange={(event) => set("minimumAge", event.target.value)}
                   />
                 </FormField>
-                <FormField
-                  label={c.positionsShirtsRequired}
-                  htmlFor="pos-shirts"
-                >
-                  <Input
-                    id="pos-shirts"
-                    type="number"
-                    min={0}
-                    step={1}
-                    data-ocid="admin.positions.shirts_required.input"
-                    className="touch-target"
-                    value={draft.shirtsRequired}
-                    onChange={(event) =>
-                      set("shirtsRequired", event.target.value)
-                    }
-                  />
-                </FormField>
-                <FormField label={c.positionsHatsRequired} htmlFor="pos-hats">
-                  <Input
-                    id="pos-hats"
-                    type="number"
-                    min={0}
-                    step={1}
-                    data-ocid="admin.positions.hats_required.input"
-                    className="touch-target"
-                    value={draft.hatsRequired}
-                    onChange={(event) =>
-                      set("hatsRequired", event.target.value)
-                    }
-                  />
-                </FormField>
                 <fieldset
                   className="sm:col-span-2 rounded-md border border-border bg-muted/30 p-3"
                   data-ocid="admin.positions.uniform.panel"
@@ -613,20 +583,6 @@ export function PositionsPanel() {
                     </FormField>
                   </div>
                 </fieldset>
-                <FormField
-                  label={c.positionsCrewManager}
-                  htmlFor="pos-crew-manager"
-                  hint={c.optional}
-                  className="sm:col-span-2"
-                >
-                  <Input
-                    id="pos-crew-manager"
-                    data-ocid="admin.positions.crew_manager.input"
-                    className="touch-target"
-                    value={draft.crewManager}
-                    onChange={(event) => set("crewManager", event.target.value)}
-                  />
-                </FormField>
               </div>
 
               <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">

@@ -120,8 +120,6 @@ const POSITION: Position = {
   openingBuildTo: 2n,
   afterOpeningBuildTo: 2n,
   minimumAge: 18n,
-  shirtsRequired: 2n,
-  hatsRequired: 1n,
   needsAlcoholCert: false,
   shirtType: "Polo",
   shirtQty: 2n,
@@ -158,7 +156,6 @@ const STORE_INFO: StoreInfo = {
   locationName: "Bake",
   timeZone: "America/Chicago",
   storePhone: "+1-555-0199",
-  paperworkDueDate: 1_800_000_000_000_000_000n,
 };
 
 const START_DATE = BigInt(Date.UTC(2027, 2, 14)) * 1_000_000n;
