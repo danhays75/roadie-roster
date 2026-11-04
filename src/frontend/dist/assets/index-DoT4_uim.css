@@ -484,6 +484,19 @@
   right: 2.2cqw;
   background: var(--gold);
 }
+.rc .tag.birthday {
+  top: 8.4cqw;
+  left: auto;
+  right: 2.2cqw;
+  background: var(--cream);
+  color: var(--red);
+  border: .5cqw solid var(--red);
+}
+.rc .stats {
+  display: flex;
+  flex-direction: column;
+  gap: .4cqw;
+}
 .rc .b-top {
   display: flex;
   align-items: center;
@@ -2087,6 +2100,9 @@ video {
 .items-center {
   align-items: center;
 }
+.items-baseline {
+  align-items: baseline;
+}
 .items-stretch {
   align-items: stretch;
 }
@@ -2662,6 +2678,9 @@ video {
 .text-\[16cqw\] {
   font-size: 16cqw;
 }
+.text-\[3\.4cqw\] {
+  font-size: 3.4cqw;
+}
 .text-base {
   font-size: 1rem;
   line-height: 1.5rem;
@@ -2696,6 +2715,9 @@ video {
 }
 .uppercase {
   text-transform: uppercase;
+}
+.normal-case {
+  text-transform: none;
 }
 .italic {
   font-style: italic;
@@ -4785,6 +4807,12 @@ video {
 
   .xl\:grid-cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media print {
+
+  .print\:block {
+    display: block;
   }
 }
 .\[\&\:first-child\[data-selected\=true\]_button\]\:rounded-l-md:first-child[data-selected=true] button {

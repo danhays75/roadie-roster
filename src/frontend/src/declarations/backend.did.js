@@ -208,7 +208,11 @@ export const Position = IDL.Record({
   'minimumAge' : IDL.Nat,
   'code' : IDL.Text,
   'name' : IDL.Text,
+  'shirtQty' : IDL.Nat,
   'shirtsRequired' : IDL.Nat,
+  'shirtType' : IDL.Text,
+  'hatType' : IDL.Text,
+  'hatQty' : IDL.Nat,
   'needsAlcoholCert' : IDL.Bool,
   'hatsRequired' : IDL.Nat,
 });
@@ -254,6 +258,10 @@ export const TemplatePosition = IDL.Record({
   'minimumAge' : IDL.Nat,
   'code' : IDL.Text,
   'name' : IDL.Text,
+  'shirtQty' : IDL.Nat,
+  'shirtType' : IDL.Text,
+  'hatType' : IDL.Text,
+  'hatQty' : IDL.Nat,
   'needsAlcoholCert' : IDL.Bool,
 });
 export const UniformItemType = IDL.Variant({
@@ -575,6 +583,42 @@ export const UniformCheckoffView = IDL.Record({
   'complete' : IDL.Bool,
   'items' : IDL.Vec(UniformCheckoffItem),
 });
+export const UniformHouseFilter = IDL.Variant({
+  'all' : IDL.Null,
+  'boh' : IDL.Null,
+  'foh' : IDL.Null,
+});
+export const UniformOrderRow = IDL.Record({
+  'hired' : IDL.Nat,
+  'item' : IDL.Text,
+  'orderTotal' : IDL.Nat,
+  'size' : IDL.Text,
+  'projected' : IDL.Nat,
+});
+export const UniformSizeUnknownRow = IDL.Record({
+  'roadieId' : RoadieId,
+  'name' : IDL.Text,
+  'missingHat' : IDL.Bool,
+  'missingShirt' : IDL.Bool,
+});
+export const UniformOrderView = IDL.Record({
+  'rows' : IDL.Vec(UniformOrderRow),
+  'filter' : UniformHouseFilter,
+  'sizeUnknown' : IDL.Vec(UniformSizeUnknownRow),
+  'bufferPercent' : IDL.Nat,
+});
+export const SizeCurveEntry = IDL.Record({
+  'size' : IDL.Text,
+  'percent' : IDL.Nat,
+});
+export const SizeCurve = IDL.Record({
+  'shirts' : IDL.Vec(SizeCurveEntry),
+  'hats' : IDL.Vec(SizeCurveEntry),
+});
+export const UniformSettings = IDL.Record({
+  'sizeCurve' : SizeCurve,
+  'bufferPercent' : IDL.Nat,
+});
 export const Alert = IDL.Record({
   'id' : AlertId,
   'createdAt' : Timestamp,
@@ -777,6 +821,12 @@ export const idlService = IDL.Service({
       [IDL.Opt(UniformCheckoffView)],
       ['query'],
     ),
+  'getUniformOrder' : IDL.Func(
+      [UniformHouseFilter],
+      [UniformOrderView],
+      ['query'],
+    ),
+  'getUniformSettings' : IDL.Func([], [UniformSettings], ['query']),
   'hasKioskPin' : IDL.Func([], [IDL.Bool], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isMinor' : IDL.Func([RoadieId], [IDL.Bool], ['query']),
@@ -869,6 +919,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'updateTrainingGroup' : IDL.Func([TrainingGroup], [], []),
+  'updateUniformSettings' : IDL.Func([UniformSettings], [], []),
   'updateUserRole' : IDL.Func([IDL.Principal, Role], [], []),
 });
 
@@ -1075,7 +1126,11 @@ export const idlFactory = ({ IDL }) => {
     'minimumAge' : IDL.Nat,
     'code' : IDL.Text,
     'name' : IDL.Text,
+    'shirtQty' : IDL.Nat,
     'shirtsRequired' : IDL.Nat,
+    'shirtType' : IDL.Text,
+    'hatType' : IDL.Text,
+    'hatQty' : IDL.Nat,
     'needsAlcoholCert' : IDL.Bool,
     'hatsRequired' : IDL.Nat,
   });
@@ -1121,6 +1176,10 @@ export const idlFactory = ({ IDL }) => {
     'minimumAge' : IDL.Nat,
     'code' : IDL.Text,
     'name' : IDL.Text,
+    'shirtQty' : IDL.Nat,
+    'shirtType' : IDL.Text,
+    'hatType' : IDL.Text,
+    'hatQty' : IDL.Nat,
     'needsAlcoholCert' : IDL.Bool,
   });
   const UniformItemType = IDL.Variant({
@@ -1436,6 +1495,39 @@ export const idlFactory = ({ IDL }) => {
     'complete' : IDL.Bool,
     'items' : IDL.Vec(UniformCheckoffItem),
   });
+  const UniformHouseFilter = IDL.Variant({
+    'all' : IDL.Null,
+    'boh' : IDL.Null,
+    'foh' : IDL.Null,
+  });
+  const UniformOrderRow = IDL.Record({
+    'hired' : IDL.Nat,
+    'item' : IDL.Text,
+    'orderTotal' : IDL.Nat,
+    'size' : IDL.Text,
+    'projected' : IDL.Nat,
+  });
+  const UniformSizeUnknownRow = IDL.Record({
+    'roadieId' : RoadieId,
+    'name' : IDL.Text,
+    'missingHat' : IDL.Bool,
+    'missingShirt' : IDL.Bool,
+  });
+  const UniformOrderView = IDL.Record({
+    'rows' : IDL.Vec(UniformOrderRow),
+    'filter' : UniformHouseFilter,
+    'sizeUnknown' : IDL.Vec(UniformSizeUnknownRow),
+    'bufferPercent' : IDL.Nat,
+  });
+  const SizeCurveEntry = IDL.Record({ 'size' : IDL.Text, 'percent' : IDL.Nat });
+  const SizeCurve = IDL.Record({
+    'shirts' : IDL.Vec(SizeCurveEntry),
+    'hats' : IDL.Vec(SizeCurveEntry),
+  });
+  const UniformSettings = IDL.Record({
+    'sizeCurve' : SizeCurve,
+    'bufferPercent' : IDL.Nat,
+  });
   const Alert = IDL.Record({
     'id' : AlertId,
     'createdAt' : Timestamp,
@@ -1642,6 +1734,12 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UniformCheckoffView)],
         ['query'],
       ),
+    'getUniformOrder' : IDL.Func(
+        [UniformHouseFilter],
+        [UniformOrderView],
+        ['query'],
+      ),
+    'getUniformSettings' : IDL.Func([], [UniformSettings], ['query']),
     'hasKioskPin' : IDL.Func([], [IDL.Bool], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isMinor' : IDL.Func([RoadieId], [IDL.Bool], ['query']),
@@ -1742,6 +1840,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'updateTrainingGroup' : IDL.Func([TrainingGroup], [], []),
+    'updateUniformSettings' : IDL.Func([UniformSettings], [], []),
     'updateUserRole' : IDL.Func([IDL.Principal, Role], [], []),
   });
 };

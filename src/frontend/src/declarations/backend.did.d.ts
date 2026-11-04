@@ -346,7 +346,11 @@ export interface Position {
   'minimumAge' : bigint,
   'code' : string,
   'name' : string,
+  'shirtQty' : bigint,
   'shirtsRequired' : bigint,
+  'shirtType' : string,
+  'hatType' : string,
+  'hatQty' : bigint,
   'needsAlcoholCert' : boolean,
   'hatsRequired' : bigint,
 }
@@ -457,6 +461,11 @@ export interface SignupSubmission {
   'photo' : [] | [PhotoRef],
   'profile' : RoadieProfile,
 }
+export interface SizeCurve {
+  'shirts' : Array<SizeCurveEntry>,
+  'hats' : Array<SizeCurveEntry>,
+}
+export interface SizeCurveEntry { 'size' : string, 'percent' : bigint }
 export interface StaffProfile {
   'title' : string,
   'arrivalDate' : [] | [DateOnly],
@@ -524,6 +533,10 @@ export interface TemplatePosition {
   'minimumAge' : bigint,
   'code' : string,
   'name' : string,
+  'shirtQty' : bigint,
+  'shirtType' : string,
+  'hatType' : string,
+  'hatQty' : bigint,
   'needsAlcoholCert' : boolean,
 }
 export interface TemplatePreview {
@@ -591,8 +604,34 @@ export interface UniformCheckoffView {
   'complete' : boolean,
   'items' : Array<UniformCheckoffItem>,
 }
+export type UniformHouseFilter = { 'all' : null } |
+  { 'boh' : null } |
+  { 'foh' : null };
 export type UniformItemType = { 'count' : null } |
   { 'checkbox' : null };
+export interface UniformOrderRow {
+  'hired' : bigint,
+  'item' : string,
+  'orderTotal' : bigint,
+  'size' : string,
+  'projected' : bigint,
+}
+export interface UniformOrderView {
+  'rows' : Array<UniformOrderRow>,
+  'filter' : UniformHouseFilter,
+  'sizeUnknown' : Array<UniformSizeUnknownRow>,
+  'bufferPercent' : bigint,
+}
+export interface UniformSettings {
+  'sizeCurve' : SizeCurve,
+  'bufferPercent' : bigint,
+}
+export interface UniformSizeUnknownRow {
+  'roadieId' : RoadieId,
+  'name' : string,
+  'missingHat' : boolean,
+  'missingShirt' : boolean,
+}
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
@@ -876,6 +915,16 @@ export interface _SERVICE {
    */
   'getUniformCheckoff' : ActorMethod<[RoadieId], [] | [UniformCheckoffView]>,
   /**
+   * / Build the uniform order for one house filter (Admin, Store Manager or
+   * / Training Manager).
+   */
+  'getUniformOrder' : ActorMethod<[UniformHouseFilter], UniformOrderView>,
+  /**
+   * / Read the uniform settings (size curve and order buffer). Admin, Store
+   * / Manager and Training Manager.
+   */
+  'getUniformSettings' : ActorMethod<[], UniformSettings>,
+  /**
    * / True when an Admin has set a kiosk PIN.
    */
   'hasKioskPin' : ActorMethod<[], boolean>,
@@ -1130,6 +1179,10 @@ export interface _SERVICE {
    * / Update a training group's membership (Admin/Store Manager only).
    */
   'updateTrainingGroup' : ActorMethod<[TrainingGroup], undefined>,
+  /**
+   * / Update the uniform settings (Admin or Store Manager only, logged).
+   */
+  'updateUniformSettings' : ActorMethod<[UniformSettings], undefined>,
   /**
    * / Change an existing user's role (Admin only).
    */

@@ -50,6 +50,13 @@ module {
     /// template.
     defaultShirts : Nat;
     defaultHats : Nat;
+    /// Uniform defaults for this position: the shirt type (free text) and how
+    /// many shirts, and the hat type (free text) and how many hats. Quantities
+    /// accept 0. Part of the store template.
+    shirtType : Text;
+    shirtQty : Nat;
+    hatType : Text;
+    hatQty : Nat;
   };
 
   /// A single build-to adjustment recorded as a +1/−1 delta.
@@ -127,6 +134,10 @@ module {
     needsAlcoholCert : Bool;
     defaultShirts : Nat;
     defaultHats : Nat;
+    shirtType : Text;
+    shirtQty : Nat;
+    hatType : Text;
+    hatQty : Nat;
   };
 
   /// A schedule event inside a template file, expressed as whole days relative
@@ -175,5 +186,66 @@ module {
   public type StoreSettings = {
     info : StoreInfo;
     demo : Common.DemoStateView;
+  };
+
+  // --- Uniforms ---
+
+  /// One size's share of the size curve, as a whole percentage. `size` is the
+  /// size label (a shirt size or a hat size).
+  public type SizeCurveEntry = {
+    size : Text;
+    percent : Nat;
+  };
+
+  /// The size curve used to project sizes for positions not yet filled: a
+  /// percentage per shirt size and per hat size. Each set is intended to total
+  /// 100%; a set that does not total 100% is saved with a warning, never
+  /// blocked.
+  public type SizeCurve = {
+    shirts : [SizeCurveEntry];
+    hats : [SizeCurveEntry];
+  };
+
+  /// The uniform settings edited on Admin > Uniforms: the size curve and the
+  /// order buffer percentage (default 10).
+  public type UniformSettings = {
+    sizeCurve : SizeCurve;
+    bufferPercent : Nat;
+  };
+
+  /// Which house the uniform order is filtered to.
+  public type UniformHouseFilter = {
+    #all;
+    #foh;
+    #boh;
+  };
+
+  /// One item-and-size row of the uniform order: the Hired count, the
+  /// Projected count for unfilled build-to slots, and the Order total (with the
+  /// buffer applied, rounded up).
+  public type UniformOrderRow = {
+    item : Text;
+    size : Text;
+    hired : Nat;
+    projected : Nat;
+    orderTotal : Nat;
+  };
+
+  /// A roadie missing a size, listed by name and id so the order page can link
+  /// to their card.
+  public type UniformSizeUnknownRow = {
+    roadieId : Common.RoadieId;
+    name : Text;
+    missingShirt : Bool;
+    missingHat : Bool;
+  };
+
+  /// The uniform order for one house filter: the per-item-and-size rows plus
+  /// the roadies missing a size.
+  public type UniformOrderView = {
+    filter : UniformHouseFilter;
+    bufferPercent : Nat;
+    rows : [UniformOrderRow];
+    sizeUnknown : [UniformSizeUnknownRow];
   };
 };

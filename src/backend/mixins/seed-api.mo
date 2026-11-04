@@ -14,11 +14,12 @@ mixin (
   schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
   checklists : { var value : Store.Checklists },
   retention : { var value : Store.RetentionSettings },
+  uniformSettings : { var value : Store.UniformSettings },
   counters : SeedLib.Counters,
 ) {
   /// Re-seed the store when it has no positions yet. Idempotent; returns true
   /// when a seed was applied, false when the store already had positions.
   public shared ({ caller }) func ensureSeeded() : async Bool {
-    SeedLib.ensureSeeded(accessGrants, demoState, storeInfo, positions, schedule, checklists, retention, counters, caller);
+    SeedLib.ensureSeeded(accessGrants, demoState, storeInfo, positions, schedule, checklists, retention, uniformSettings, counters, caller);
   };
 };

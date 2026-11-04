@@ -82,6 +82,10 @@ const SERVERS: Position = {
   defaultShirts: 3n,
   defaultHats: 2n,
   needsAlcoholCert: true,
+  shirtType: "Polo",
+  shirtQty: 2n,
+  hatType: "Cap",
+  hatQty: 1n,
 };
 
 const PRINCIPAL = { toText: () => "aaaaa-aa" } as unknown as Principal;

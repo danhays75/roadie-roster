@@ -1,4 +1,5 @@
 import Map "mo:core/Map";
+import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
 import AccessControl "mo:caffeineai-authorization/access-control";
 import MixinAuthorization "mo:caffeineai-authorization/MixinAuthorization";
@@ -45,6 +46,7 @@ actor {
   let schedule : Map.Map<Common.EventId, Store.ScheduleEvent>;
   let checklists : { var value : Store.Checklists };
   let retention : { var value : Store.RetentionSettings };
+  let uniformSettings : { var value : Store.UniformSettings };
   let storeTemplates : Map.Map<Text, Store.StoreTemplate>;
 
   let roadies : Map.Map<Common.RoadieId, Roadie.Roadie>;
@@ -96,6 +98,7 @@ actor {
     schedule,
     checklists,
     retention,
+    uniformSettings,
     storeTemplates,
     roadies,
     attendance,
@@ -156,6 +159,7 @@ actor {
     schedule,
     checklists,
     retention,
+    uniformSettings,
     counters,
   );
 
@@ -163,6 +167,13 @@ actor {
   include ApiDocMixin();
 
   // --- OQL exposure ---
+
+  /// Render a size-curve entry list as a compact "size percent" text, so the
+  /// uniform settings entity can expose the curve as a queryable column.
+  func curveText(entries : [Store.SizeCurveEntry]) : Text {
+    entries.map(func(e) = e.size # " " # e.percent.toText()).values().join(", ");
+  };
+
   include Expose({
     entities = [
       positions.toEntityManual("position", "Position", "id")
@@ -180,6 +191,10 @@ actor {
           crewManager = null;
           defaultShirts = 0;
           defaultHats = 0;
+          shirtType = "";
+          shirtQty = 0;
+          hatType = "";
+          hatQty = 0;
         })
         .payload("id", func p = p.id)
         .payload("name", func p = p.name)
@@ -191,6 +206,10 @@ actor {
         .payload("minimumAge", func p = p.minimumAge)
         .payload("defaultShirts", func p = p.defaultShirts)
         .payload("defaultHats", func p = p.defaultHats)
+        .payload("shirtType", func p = p.shirtType)
+        .payload("shirtQty", func p = p.shirtQty)
+        .payload("hatType", func p = p.hatType)
+        .payload("hatQty", func p = p.hatQty)
         .controllerOnly()
         .build(),
       roadies.toEntityManual("roadie", "Roadie", "id")
@@ -511,6 +530,25 @@ actor {
         })
         .payload("futureTrainer", func s = s.futureTrainer)
         .payload("signedAt", func s = s.signedAt)
+        .controllerOnly()
+        .build(),
+      Entity.manual<Store.UniformSettings>(
+        "uniformSettings",
+        func () = [uniformSettings.value].values(),
+        "UniformSettings",
+        "id",
+      )
+        .sample({
+          sizeCurve = {
+            shirts = [{ size = "M"; percent = 25 }];
+            hats = [{ size = "One size"; percent = 60 }];
+          };
+          bufferPercent = 10;
+        })
+        .payload("id", func _s = "uniformSettings")
+        .payload("bufferPercent", func s = s.bufferPercent)
+        .payload("shirtCurve", func s = curveText(s.sizeCurve.shirts))
+        .payload("hatCurve", func s = curveText(s.sizeCurve.hats))
         .controllerOnly()
         .build(),
     ];

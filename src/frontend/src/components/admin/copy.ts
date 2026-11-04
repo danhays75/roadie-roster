@@ -59,6 +59,13 @@ export interface AdminCopy {
   positionsHatsRequired: string;
   positionsDefaultShirts: string;
   positionsDefaultHats: string;
+  positionsShirtType: string;
+  positionsShirtTypePlaceholder: string;
+  positionsShirtQty: string;
+  positionsHatType: string;
+  positionsHatTypePlaceholder: string;
+  positionsHatQty: string;
+  positionsUniformSummary: string;
   positionsCrewManager: string;
   positionsNeedsAlcoholCert: string;
   positionsSaveError: string;
@@ -151,6 +158,45 @@ export interface AdminCopy {
 
   accessDescription: string;
 
+  uniformsTitle: string;
+  uniformsDescription: string;
+  uniformsLoading: string;
+  uniformsError: string;
+  uniformsEmpty: string;
+  uniformsSizeCurve: string;
+  uniformsSizeCurveHint: string;
+  uniformsShirts: string;
+  uniformsHats: string;
+  uniformsSize: string;
+  uniformsPercent: string;
+  uniformsBuffer: string;
+  uniformsBufferHint: string;
+  uniformsSave: string;
+  uniformsSaved: string;
+  uniformsSaveError: string;
+  uniformsOrderTitle: string;
+  uniformsOrderDescription: string;
+  uniformsFilterAll: string;
+  uniformsFilterFoh: string;
+  uniformsFilterBoh: string;
+  uniformsColumnItem: string;
+  uniformsColumnSize: string;
+  uniformsColumnHired: string;
+  uniformsColumnProjected: string;
+  uniformsColumnOrderTotal: string;
+  uniformsSizeUnknownTitle: string;
+  uniformsSizeUnknownHint: string;
+  uniformsSizeUnknownMissingShirt: string;
+  uniformsSizeUnknownMissingHat: string;
+  uniformsSizeUnknownMissingBoth: string;
+  uniformsSizeUnknownEmpty: string;
+  uniformsDownload: string;
+  uniformsPrint: string;
+  uniformsPrintTitle: string;
+  uniformsBufferSummary: string;
+  uniformsCurveTotal: string;
+  uniformsCurveTotalWarning: string;
+
   kioskPinTitle: string;
   kioskPinDescription: string;
   kioskPinLoading: string;
@@ -231,6 +277,14 @@ const en: AdminCopy = {
   positionsHatsRequired: "Hats required",
   positionsDefaultShirts: "Default shirts",
   positionsDefaultHats: "Default hats",
+  positionsShirtType: "Shirt type",
+  positionsShirtTypePlaceholder: "Polo",
+  positionsShirtQty: "Shirts per roadie",
+  positionsHatType: "Hat type",
+  positionsHatTypePlaceholder: "Cap",
+  positionsHatQty: "Hats per roadie",
+  positionsUniformSummary:
+    "Uniform: {shirtQty}× {shirtType} · {hatQty}× {hatType}",
   positionsCrewManager: "Crew manager",
   positionsNeedsAlcoholCert: "Needs alcohol certification",
   positionsSaveError: "We couldn't save that position.",
@@ -339,6 +393,50 @@ const en: AdminCopy = {
 
   accessDescription: "Who can sign in, and with which role.",
 
+  uniformsTitle: "Uniforms",
+  uniformsDescription:
+    "The size curve and buffer that turn the roster into a uniform order.",
+  uniformsLoading: "Loading uniform settings…",
+  uniformsError: "We couldn't load the uniform settings.",
+  uniformsEmpty: "No uniform order yet.",
+  uniformsSizeCurve: "Size curve",
+  uniformsSizeCurveHint:
+    "The share of each size across the crew. Percentages should add up to 100.",
+  uniformsShirts: "Shirts",
+  uniformsHats: "Hats",
+  uniformsSize: "Size",
+  uniformsPercent: "Percent",
+  uniformsBuffer: "Buffer",
+  uniformsBufferHint:
+    "Extra stock added on top of the projected order, as a percentage.",
+  uniformsSave: "Save settings",
+  uniformsSaved: "Uniform settings saved.",
+  uniformsSaveError: "We couldn't save the uniform settings.",
+  uniformsOrderTitle: "Uniform order",
+  uniformsOrderDescription:
+    "Hired and projected counts per size, with the buffered order total.",
+  uniformsFilterAll: "All",
+  uniformsFilterFoh: "FOH",
+  uniformsFilterBoh: "BOH",
+  uniformsColumnItem: "Item",
+  uniformsColumnSize: "Size",
+  uniformsColumnHired: "Hired",
+  uniformsColumnProjected: "Projected",
+  uniformsColumnOrderTotal: "Order total",
+  uniformsSizeUnknownTitle: "Size unknown",
+  uniformsSizeUnknownHint:
+    "Roadies missing a shirt or hat size. Set their size so the order is complete.",
+  uniformsSizeUnknownMissingShirt: "Missing shirt size",
+  uniformsSizeUnknownMissingHat: "Missing hat size",
+  uniformsSizeUnknownMissingBoth: "Missing shirt and hat size",
+  uniformsSizeUnknownEmpty: "Every roadie has a shirt and hat size.",
+  uniformsDownload: "Download (Excel)",
+  uniformsPrint: "Print",
+  uniformsPrintTitle: "Uniform order",
+  uniformsBufferSummary: "Buffer {percent}%",
+  uniformsCurveTotal: "Total {percent}%",
+  uniformsCurveTotalWarning: "The size curve should add up to 100%.",
+
   kioskPinTitle: "Kiosk staff PIN",
   kioskPinDescription:
     "The PIN staff enter to sign out of the kiosk on a shared device.",
@@ -421,6 +519,14 @@ const es: AdminCopy = {
   positionsHatsRequired: "Gorras requeridas",
   positionsDefaultShirts: "Camisetas por defecto",
   positionsDefaultHats: "Gorras por defecto",
+  positionsShirtType: "Tipo de camiseta",
+  positionsShirtTypePlaceholder: "Polo",
+  positionsShirtQty: "Camisetas por roadie",
+  positionsHatType: "Tipo de gorra",
+  positionsHatTypePlaceholder: "Gorra",
+  positionsHatQty: "Gorras por roadie",
+  positionsUniformSummary:
+    "Uniforme: {shirtQty}× {shirtType} · {hatQty}× {hatType}",
   positionsCrewManager: "Gerente de equipo",
   positionsNeedsAlcoholCert: "Requiere certificación de alcohol",
   positionsSaveError: "No pudimos guardar ese puesto.",
@@ -532,6 +638,51 @@ const es: AdminCopy = {
   templateSaveError: "No pudimos guardar la plantilla de tienda.",
 
   accessDescription: "Quién puede iniciar sesión y con qué rol.",
+
+  uniformsTitle: "Uniformes",
+  uniformsDescription:
+    "La curva de tallas y el margen que convierten la plantilla en un pedido de uniformes.",
+  uniformsLoading: "Cargando ajustes de uniformes…",
+  uniformsError: "No pudimos cargar los ajustes de uniformes.",
+  uniformsEmpty: "Aún no hay pedido de uniformes.",
+  uniformsSizeCurve: "Curva de tallas",
+  uniformsSizeCurveHint:
+    "La proporción de cada talla en el equipo. Los porcentajes deben sumar 100.",
+  uniformsShirts: "Camisetas",
+  uniformsHats: "Gorras",
+  uniformsSize: "Talla",
+  uniformsPercent: "Porcentaje",
+  uniformsBuffer: "Margen",
+  uniformsBufferHint:
+    "Stock extra añadido al pedido proyectado, como porcentaje.",
+  uniformsSave: "Guardar ajustes",
+  uniformsSaved: "Ajustes de uniformes guardados.",
+  uniformsSaveError: "No pudimos guardar los ajustes de uniformes.",
+  uniformsOrderTitle: "Pedido de uniformes",
+  uniformsOrderDescription:
+    "Conteos contratados y proyectados por talla, con el total del pedido con margen.",
+  uniformsFilterAll: "Todos",
+  uniformsFilterFoh: "Sala",
+  uniformsFilterBoh: "Cocina",
+  uniformsColumnItem: "Artículo",
+  uniformsColumnSize: "Talla",
+  uniformsColumnHired: "Contratados",
+  uniformsColumnProjected: "Proyectados",
+  uniformsColumnOrderTotal: "Total del pedido",
+  uniformsSizeUnknownTitle: "Talla desconocida",
+  uniformsSizeUnknownHint:
+    "Roadies sin talla de camiseta o gorra. Define su talla para completar el pedido.",
+  uniformsSizeUnknownMissingShirt: "Falta talla de camiseta",
+  uniformsSizeUnknownMissingHat: "Falta talla de gorra",
+  uniformsSizeUnknownMissingBoth: "Falta talla de camiseta y gorra",
+  uniformsSizeUnknownEmpty:
+    "Todos los roadies tienen talla de camiseta y gorra.",
+  uniformsDownload: "Descargar (Excel)",
+  uniformsPrint: "Imprimir",
+  uniformsPrintTitle: "Pedido de uniformes",
+  uniformsBufferSummary: "Margen {percent}%",
+  uniformsCurveTotal: "Total {percent}%",
+  uniformsCurveTotalWarning: "La curva de tallas debe sumar 100%.",
 
   kioskPinTitle: "PIN del personal del quiosco",
   kioskPinDescription:

@@ -47,6 +47,10 @@ const POSITION: Position = {
   needsAlcoholCert: false,
   defaultShirts: 3n,
   defaultHats: 2n,
+  shirtType: "Polo",
+  shirtQty: 2n,
+  hatType: "Cap",
+  hatQty: 1n,
 };
 
 function grant(role: Role, staffProfile?: StaffProfile): AccessGrant {

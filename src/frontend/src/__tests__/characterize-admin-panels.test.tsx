@@ -8,7 +8,7 @@ import type {
 } from "@/backend";
 import { House, UniformItemType } from "@/backend";
 import AdminPage from "@/pages/Admin";
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -52,6 +52,10 @@ const SERVERS: Position = {
   needsAlcoholCert: true,
   defaultShirts: 3n,
   defaultHats: 2n,
+  shirtType: "Polo",
+  shirtQty: 2n,
+  hatType: "Cap",
+  hatQty: 1n,
 };
 
 const CHECKLISTS: Checklists = {
@@ -107,6 +111,9 @@ function baseActor() {
     saveStoreTemplate: vi.fn<backendInterface["saveStoreTemplate"]>(
       async () => {},
     ),
+    createPosition: vi.fn<backendInterface["createPosition"]>(async () => 0n),
+    updatePosition: vi.fn<backendInterface["updatePosition"]>(async () => {}),
+    deletePosition: vi.fn<backendInterface["deletePosition"]>(async () => {}),
   };
 }
 
@@ -195,6 +202,87 @@ describe("checklist editor add/remove/save survives the toggle rename", () => {
     );
     const saved = actor.updateChecklists.mock.calls[0]?.[0];
     expect(saved?.orientationUniform).toEqual([]);
+  });
+});
+
+describe("position create/delete and field round-trip survive the uniform-defaults addition", () => {
+  it("creates a position from the add dialog and sends the trimmed draft", async () => {
+    const user = userEvent.setup();
+    const actor = baseActor();
+    renderPageWithActor(AdminPage, actor, { path: "/admin" });
+
+    await user.click(await screen.findByTestId("admin.positions.tab"));
+    await user.click(await screen.findByTestId("admin.positions.add_button"));
+
+    // The add dialog opens with the name field empty and Save disabled.
+    const name = await screen.findByTestId("admin.positions.name.input");
+    expect(name).toHaveValue("");
+    expect(screen.getByTestId("admin.positions.save_button")).toBeDisabled();
+
+    await user.type(name, "  Greeters  ");
+    await user.type(screen.getByTestId("admin.positions.code.input"), "GRT");
+    await user.click(screen.getByTestId("admin.positions.save_button"));
+
+    await waitFor(() => expect(actor.createPosition).toHaveBeenCalledTimes(1));
+    const created = actor.createPosition.mock.calls[0]?.[0];
+    // The name is trimmed and the code is carried through.
+    expect(created?.name).toBe("Greeters");
+    expect(created?.code).toBe("GRT");
+    // A new position is created, not updated.
+    expect(actor.updatePosition).not.toHaveBeenCalled();
+  });
+
+  it("round-trips the house, minimum age and alcohol-cert fields on edit", async () => {
+    const user = userEvent.setup();
+    // A non-zero id: the panel treats id 0n as the add-vs-edit sentinel, so an
+    // edit must target a real position id.
+    const actor = {
+      ...baseActor(),
+      listPositions: vi.fn<backendInterface["listPositions"]>(async () => [
+        { ...SERVERS, id: 1n },
+      ]),
+    };
+    renderPageWithActor(AdminPage, actor, { path: "/admin" });
+
+    await user.click(await screen.findByTestId("admin.positions.tab"));
+    await user.click(await screen.findByTestId("admin.positions.edit_button"));
+
+    // The seeded Servers position is FOH, age 18, alcohol-cert required.
+    const age = await screen.findByTestId("admin.positions.minimum_age.input");
+    expect(age).toHaveValue(18);
+    expect(
+      screen.getByTestId("admin.positions.alcohol_cert.switch"),
+    ).toBeChecked();
+
+    fireEvent.change(age, { target: { value: "21" } });
+    await user.click(screen.getByTestId("admin.positions.save_button"));
+
+    await waitFor(() => expect(actor.updatePosition).toHaveBeenCalledTimes(1));
+    const saved = actor.updatePosition.mock.calls[0]?.[0];
+    expect(saved?.id).toBe(1n);
+    expect(saved?.minimumAge).toBe(21n);
+    // The build-to targets are preserved from the live position, not reset.
+    expect(saved?.openingBuildTo).toBe(65n);
+    expect(saved?.afterOpeningBuildTo).toBe(65n);
+  });
+
+  it("deletes a position only after the confirmation dialog is confirmed", async () => {
+    const user = userEvent.setup();
+    const actor = baseActor();
+    renderPageWithActor(AdminPage, actor, { path: "/admin" });
+
+    await user.click(await screen.findByTestId("admin.positions.tab"));
+    await user.click(
+      await screen.findByTestId("admin.positions.delete_button"),
+    );
+
+    // The confirmation dialog appears; nothing is deleted yet.
+    expect(actor.deletePosition).not.toHaveBeenCalled();
+    await user.click(
+      await screen.findByTestId("admin.positions.delete_confirm_button"),
+    );
+
+    await waitFor(() => expect(actor.deletePosition).toHaveBeenCalledWith(0n));
   });
 });
 

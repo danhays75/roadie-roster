@@ -385,7 +385,11 @@ export interface Position {
     minimumAge: bigint;
     code: string;
     name: string;
+    shirtQty: bigint;
     shirtsRequired: bigint;
+    shirtType: string;
+    hatType: string;
+    hatQty: bigint;
     needsAlcoholCert: boolean;
     hatsRequired: bigint;
 }
@@ -499,6 +503,14 @@ export interface SignupSubmission {
     photo?: PhotoRef;
     profile: RoadieProfile;
 }
+export interface SizeCurve {
+    shirts: Array<SizeCurveEntry>;
+    hats: Array<SizeCurveEntry>;
+}
+export interface SizeCurveEntry {
+    size: string;
+    percent: bigint;
+}
 export interface StaffProfile {
     title: string;
     arrivalDate?: DateOnly;
@@ -571,6 +583,10 @@ export interface TemplatePosition {
     minimumAge: bigint;
     code: string;
     name: string;
+    shirtQty: bigint;
+    shirtType: string;
+    hatType: string;
+    hatQty: bigint;
     needsAlcoholCert: boolean;
 }
 export interface TemplatePreview {
@@ -637,6 +653,29 @@ export interface UniformCheckoffView {
     locked: boolean;
     complete: boolean;
     items: Array<UniformCheckoffItem>;
+}
+export interface UniformOrderRow {
+    hired: bigint;
+    item: string;
+    orderTotal: bigint;
+    size: string;
+    projected: bigint;
+}
+export interface UniformOrderView {
+    rows: Array<UniformOrderRow>;
+    filter: UniformHouseFilter;
+    sizeUnknown: Array<UniformSizeUnknownRow>;
+    bufferPercent: bigint;
+}
+export interface UniformSettings {
+    sizeCurve: SizeCurve;
+    bufferPercent: bigint;
+}
+export interface UniformSizeUnknownRow {
+    roadieId: RoadieId;
+    name: string;
+    missingHat: boolean;
+    missingShirt: boolean;
 }
 export type Value = {
     __kind__: "int";
@@ -727,6 +766,11 @@ export enum RosterState {
 export enum Shift {
     am = "am",
     pm = "pm"
+}
+export enum UniformHouseFilter {
+    all = "all",
+    boh = "boh",
+    foh = "foh"
 }
 export enum UniformItemType {
     count = "count",
@@ -968,6 +1012,16 @@ export interface backendInterface {
      * / or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
      */
     getUniformCheckoff(roadieId: RoadieId): Promise<UniformCheckoffView | null>;
+    /**
+     * / Build the uniform order for one house filter (Admin, Store Manager or
+     * / Training Manager).
+     */
+    getUniformOrder(filter: UniformHouseFilter): Promise<UniformOrderView>;
+    /**
+     * / Read the uniform settings (size curve and order buffer). Admin, Store
+     * / Manager and Training Manager.
+     */
+    getUniformSettings(): Promise<UniformSettings>;
     /**
      * / True when an Admin has set a kiosk PIN.
      */
@@ -1211,6 +1265,10 @@ export interface backendInterface {
      * / Update a training group's membership (Admin/Store Manager only).
      */
     updateTrainingGroup(group: TrainingGroup): Promise<void>;
+    /**
+     * / Update the uniform settings (Admin or Store Manager only, logged).
+     */
+    updateUniformSettings(settings: UniformSettings): Promise<void>;
     /**
      * / Change an existing user's role (Admin only).
      */

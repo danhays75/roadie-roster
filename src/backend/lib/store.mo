@@ -1,6 +1,8 @@
+import List "mo:core/List";
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
+import Text "mo:core/Text";
 import Time "mo:core/Time";
 import Common "../types/common";
 import Store "../types/store";
@@ -346,6 +348,10 @@ module {
           needsAlcoholCert = p.needsAlcoholCert;
           defaultShirts = p.defaultShirts;
           defaultHats = p.defaultHats;
+          shirtType = p.shirtType;
+          shirtQty = p.shirtQty;
+          hatType = p.hatType;
+          hatQty = p.hatQty;
         };
       }).toArray();
       checklists = checklists.value;
@@ -396,6 +402,10 @@ module {
         crewManager = null;
         defaultShirts = p.defaultShirts;
         defaultHats = p.defaultHats;
+        shirtType = p.shirtType;
+        shirtQty = p.shirtQty;
+        hatType = p.hatType;
+        hatQty = p.hatQty;
       });
       nextPositionId += 1;
     };
@@ -457,5 +467,252 @@ module {
       leaderTalkName = storeInfo.value.leaderTalkName;
     });
     ignore ChangeLog.record(changeLog, counters, caller, "saveStoreTemplate", null, false, "Saved store template " # name);
+  };
+
+  // --- Uniforms ---
+
+  /// Require a uniform viewer (Admin, Store Manager or Training Manager); trap
+  /// otherwise. While demo mode is on, the caller's own impersonated demo role
+  /// is consulted.
+  func requireUniformViewer(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    caller : Principal,
+  ) : () {
+    switch (Auth.effectiveRole(accessGrants, demoState, caller)) {
+      case (?role) {
+        if (role != #admin and role != #storeManager and role != #trainingManager) {
+          Runtime.trap("Access denied: Admin, Store Manager or Training Manager role required");
+        };
+      };
+      case null {
+        Runtime.trap("Access denied: Admin, Store Manager or Training Manager role required");
+      };
+    };
+  };
+
+  /// Read the uniform settings (size curve and order buffer). Admin, Store
+  /// Manager and Training Manager may read it.
+  public func getUniformSettings(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    uniformSettings : { var value : Store.UniformSettings },
+    caller : Principal,
+  ) : Store.UniformSettings {
+    requireUniformViewer(accessGrants, demoState, caller);
+    uniformSettings.value;
+  };
+
+  /// Update the uniform settings (Admin or Store Manager only, logged). Refused
+  /// while demo mode is on.
+  public func updateUniformSettings(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    uniformSettings : { var value : Store.UniformSettings },
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    settings : Store.UniformSettings,
+  ) : () {
+    Auth.requireRealSettingsManager(accessGrants, demoState, caller);
+    uniformSettings.value := settings;
+    ignore ChangeLog.record(changeLog, counters, caller, "updateUniformSettings", null, false, "Updated uniform settings");
+  };
+
+  /// Build the uniform order for one house filter (Admin, Store Manager or
+  /// Training Manager). Per item and size: Hired counts Pending + Active
+  /// roadies (archived excluded) using their real sizes and their position's
+  /// uniform defaults; Projected splits the unfilled build-to slots of each
+  /// position by the size curve and multiplies by that position's defaults;
+  /// Order total adds the buffer percentage and rounds up. Roadies missing a
+  /// shirt or hat size are listed in the Size unknown bucket. Demo records
+  /// count only while demo mode is on.
+  public func getUniformOrder(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    uniformSettings : { var value : Store.UniformSettings },
+    caller : Principal,
+    filter : Store.UniformHouseFilter,
+  ) : Store.UniformOrderView {
+    requireUniformViewer(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    let buffer = uniformSettings.value.bufferPercent;
+    let curve = uniformSettings.value.sizeCurve;
+    let inScope = positions.values()
+      .filter(func(p) = houseMatches(filter, p.house))
+      .toArray();
+    let hired = roadies.values()
+      .filter(func(r) =
+        r.isDemo == demo
+        and r.status != #archived
+        and inScope.any(func(p) = p.id == r.mainPositionId)
+      )
+      .toArray();
+
+    let shirtItems = distinctItems(inScope, true);
+    let hatItems = distinctItems(inScope, false);
+    let shirtSizes = distinctSizes(curve.shirts, hired.map(func r = r.profile.shirtSize));
+    let hatSizes = distinctSizes(curve.hats, hired.map(func r = r.profile.hatSize));
+
+    let rows = List.empty<Store.UniformOrderRow>();
+    for (item in shirtItems.values()) {
+      for (size in shirtSizes.values()) {
+        let h = hiredCount(hired, inScope, item, size, true);
+        let p = projectedCount(inScope, hired, item, size, curve.shirts, true);
+        rows.add({ item; size; hired = h; projected = p; orderTotal = withBuffer(h, p, buffer) });
+      };
+    };
+    for (item in hatItems.values()) {
+      for (size in hatSizes.values()) {
+        let h = hiredCount(hired, inScope, item, size, false);
+        let p = projectedCount(inScope, hired, item, size, curve.hats, false);
+        rows.add({ item; size; hired = h; projected = p; orderTotal = withBuffer(h, p, buffer) });
+      };
+    };
+
+    let sizeUnknown = hired
+      .filter(func r = r.profile.shirtSize == null or r.profile.hatSize == null)
+      .map(func r = {
+        roadieId = r.id;
+        name = displayName(r);
+        missingShirt = r.profile.shirtSize == null;
+        missingHat = r.profile.hatSize == null;
+      });
+
+    {
+      filter;
+      bufferPercent = buffer;
+      rows = rows.toArray();
+      sizeUnknown;
+    };
+  };
+
+  /// Internal: whether a position's house is in the filter.
+  func houseMatches(filter : Store.UniformHouseFilter, house : Common.House) : Bool {
+    switch (filter) {
+      case (#all) { true };
+      case (#foh) { house == #foh };
+      case (#boh) { house == #boh };
+    };
+  };
+
+  /// Internal: the display label for a uniform item, falling back to a generic
+  /// label when the position's type text is blank.
+  func itemLabel(raw : Text, shirts : Bool) : Text {
+    if (raw.size() > 0) { raw } else if (shirts) { "Shirt" } else { "Hat" };
+  };
+
+  /// Internal: the distinct uniform item labels among positions that give at
+  /// least one of the item.
+  func distinctItems(positions : [Store.Position], shirts : Bool) : [Text] {
+    let out = List.empty<Text>();
+    for (p in positions.values()) {
+      let qty = if (shirts) { p.shirtQty } else { p.hatQty };
+      if (qty > 0) {
+        let itemName = itemLabel(if (shirts) { p.shirtType } else { p.hatType }, shirts);
+        if (not out.contains(itemName)) { out.add(itemName) };
+      };
+    };
+    out.toArray();
+  };
+
+  /// Internal: the size labels to report: the curve's sizes plus any real sizes
+  /// the hired roadies carry that the curve omits.
+  func distinctSizes(curveEntries : [Store.SizeCurveEntry], realSizes : [?Text]) : [Text] {
+    let out = List.empty<Text>();
+    for (e in curveEntries.values()) {
+      if (not out.contains(e.size)) { out.add(e.size) };
+    };
+    for (s in realSizes.values()) {
+      switch (s) {
+        case (?size) { if (not out.contains(size)) { out.add(size) } };
+        case null {};
+      };
+    };
+    out.toArray();
+  };
+
+  /// Internal: the Hired count for one item and size: each hired roadie whose
+  /// position gives that item and whose real size matches contributes the
+  /// position's quantity for that item.
+  func hiredCount(
+    hired : [Roadie.Roadie],
+    inScope : [Store.Position],
+    item : Text,
+    size : Text,
+    shirts : Bool,
+  ) : Nat {
+    var total = 0;
+    for (r in hired.values()) {
+      let realSize = if (shirts) { r.profile.shirtSize } else { r.profile.hatSize };
+      switch (realSize) {
+        case (?s) {
+          if (s == size) {
+            switch (inScope.find(func(p) = p.id == r.mainPositionId)) {
+              case (?p) {
+                let qty = if (shirts) { p.shirtQty } else { p.hatQty };
+                let itemName = itemLabel(if (shirts) { p.shirtType } else { p.hatType }, shirts);
+                if (qty > 0 and itemName == item) { total += qty };
+              };
+              case null {};
+            };
+          };
+        };
+        case null {};
+      };
+    };
+    total;
+  };
+
+  /// Internal: the Projected count for one item and size: each in-scope
+  /// position's unfilled build-to slots, split by the size curve's percentage
+  /// for that size and multiplied by the position's quantity for the item,
+  /// rounded to the nearest whole unit.
+  func projectedCount(
+    inScope : [Store.Position],
+    hired : [Roadie.Roadie],
+    item : Text,
+    size : Text,
+    curveEntries : [Store.SizeCurveEntry],
+    shirts : Bool,
+  ) : Nat {
+    let percent = switch (curveEntries.find(func(e) = e.size == size)) {
+      case (?e) { e.percent };
+      case null { 0 };
+    };
+    if (percent == 0) { return 0 };
+    var total = 0;
+    for (p in inScope.values()) {
+      let qty = if (shirts) { p.shirtQty } else { p.hatQty };
+      let itemName = itemLabel(if (shirts) { p.shirtType } else { p.hatType }, shirts);
+      if (qty > 0 and itemName == item) {
+        let hiredHere = hired.filter(func r = r.mainPositionId == p.id).size();
+        let unfilled = saturatingSub(p.openingBuildTo, hiredHere);
+        total += (unfilled * percent * qty + 50) / 100;
+      };
+    };
+    total;
+  };
+
+  /// Internal: the Order total for one row: (Hired + Projected) with the buffer
+  /// percentage added, rounded up.
+  func withBuffer(hired : Nat, projected : Nat, buffer : Nat) : Nat {
+    let base = hired + projected;
+    (base * (100 + buffer) + 99) / 100;
+  };
+
+  /// Internal: the display name for a roadie (preferred name when set).
+  func displayName(roadie : Roadie.Roadie) : Text {
+    switch (roadie.profile.preferredName) {
+      case (?p) { if (p.size() > 0) { p } else { roadie.profile.name } };
+      case null { roadie.profile.name };
+    };
+  };
+
+  /// Internal: `a - b`, clamped at zero, without a trapping Nat subtraction.
+  func saturatingSub(a : Nat, b : Nat) : Nat {
+    if (a <= b) { 0 } else { a - b };
   };
 };

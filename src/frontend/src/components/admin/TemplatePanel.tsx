@@ -201,6 +201,10 @@ function parseTemplateFile(value: unknown): StoreTemplateFile | null {
       needsAlcoholCert: raw.needsAlcoholCert === true,
       defaultHats: toBigInt(raw.defaultHats) ?? 0n,
       defaultShirts: toBigInt(raw.defaultShirts) ?? 0n,
+      shirtType: typeof raw.shirtType === "string" ? raw.shirtType : "",
+      shirtQty: toBigInt(raw.shirtQty) ?? 0n,
+      hatType: typeof raw.hatType === "string" ? raw.hatType : "",
+      hatQty: toBigInt(raw.hatQty) ?? 0n,
     });
   }
 

@@ -54,6 +54,10 @@ const POSITION: Position = {
   needsAlcoholCert: false,
   defaultShirts: 3n,
   defaultHats: 2n,
+  shirtType: "Polo",
+  shirtQty: 2n,
+  hatType: "Cap",
+  hatQty: 1n,
 };
 
 const PHOTO_BYTES = new Uint8Array([1, 2, 3, 4]);

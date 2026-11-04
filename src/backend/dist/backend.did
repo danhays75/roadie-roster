@@ -36,10 +36,43 @@ type UserRole =
    guest;
    user;
  };
+type UniformSizeUnknownRow = 
+ record {
+   missingHat: bool;
+   missingShirt: bool;
+   name: text;
+   roadieId: RoadieId;
+ };
+type UniformSettings = 
+ record {
+   bufferPercent: nat;
+   sizeCurve: SizeCurve;
+ };
+type UniformOrderView = 
+ record {
+   bufferPercent: nat;
+   filter: UniformHouseFilter;
+   rows: vec UniformOrderRow;
+   sizeUnknown: vec UniformSizeUnknownRow;
+ };
+type UniformOrderRow = 
+ record {
+   hired: nat;
+   item: text;
+   orderTotal: nat;
+   projected: nat;
+   size: text;
+ };
 type UniformItemType = 
  variant {
    checkbox;
    count;
+ };
+type UniformHouseFilter = 
+ variant {
+   all;
+   boh;
+   foh;
  };
 type UniformCheckoffView = 
  record {
@@ -120,11 +153,15 @@ type TemplatePosition =
    code: text;
    defaultHats: nat;
    defaultShirts: nat;
+   hatQty: nat;
+   hatType: text;
    house: House;
    minimumAge: nat;
    name: text;
    needsAlcoholCert: bool;
    openingBuildTo: nat;
+   shirtQty: nat;
+   shirtType: text;
  };
 type TemplateLoadResult = 
  variant {
@@ -190,6 +227,16 @@ type StaffProfile =
    trainerPositionIds: vec PositionId;
    workEmail: opt Email;
    workPhone: opt Phone;
+ };
+type SizeCurveEntry = 
+ record {
+   percent: nat;
+   size: text;
+ };
+type SizeCurve = 
+ record {
+   hats: vec SizeCurveEntry;
+   shirts: vec SizeCurveEntry;
  };
 type SignupSubmission = 
  record {
@@ -340,6 +387,8 @@ type Position =
    crewManager: opt text;
    defaultHats: nat;
    defaultShirts: nat;
+   hatQty: nat;
+   hatType: text;
    hatsRequired: nat;
    house: House;
    id: PositionId;
@@ -347,6 +396,8 @@ type Position =
    name: text;
    needsAlcoholCert: bool;
    openingBuildTo: nat;
+   shirtQty: nat;
+   shirtType: text;
    shirtsRequired: nat;
  };
 type PhotoRef = blob;
@@ -907,6 +958,12 @@ service : {
   /// The uniform check-off for a roadie (Admin, Store Manager, Training Manager
   /// or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
   getUniformCheckoff: (roadieId: RoadieId) -> (opt UniformCheckoffView) query;
+  /// Build the uniform order for one house filter (Admin, Store Manager or
+  /// Training Manager).
+  getUniformOrder: (filter: UniformHouseFilter) -> (UniformOrderView) query;
+  /// Read the uniform settings (size curve and order buffer). Admin, Store
+  /// Manager and Training Manager.
+  getUniformSettings: () -> (UniformSettings) query;
   /// True when an Admin has set a kiosk PIN.
   hasKioskPin: () -> (bool) query;
   isCallerAdmin: () -> (bool) query;
@@ -1052,6 +1109,8 @@ service : {
    vec PositionId) -> ();
   /// Update a training group's membership (Admin/Store Manager only).
   updateTrainingGroup: (group: TrainingGroup) -> ();
+  /// Update the uniform settings (Admin or Store Manager only, logged).
+  updateUniformSettings: (settings: UniformSettings) -> ();
   /// Change an existing user's role (Admin only).
   updateUserRole: ("principal": principal, role: Role) -> ();
 }

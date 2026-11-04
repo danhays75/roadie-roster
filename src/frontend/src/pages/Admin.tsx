@@ -11,6 +11,7 @@ import { useDemo } from "@/hooks/useDemo";
 import { useI18n } from "@/hooks/useI18n";
 import { usePositions } from "@/hooks/useQueries";
 import { useSeedWhenEmpty } from "@/hooks/useSeeding";
+import UniformsPage from "@/pages/Uniforms";
 import { useState } from "react";
 
 type AdminTab =
@@ -20,7 +21,8 @@ type AdminTab =
   | "schedule"
   | "checklists"
   | "template"
-  | "crews";
+  | "crews"
+  | "uniforms";
 
 export default function AdminPage() {
   const { t } = useI18n();
@@ -45,6 +47,7 @@ export default function AdminPage() {
     "checklists",
     "template",
     "access",
+    "uniforms",
   ];
   const showRealSettings = !demo.enabled;
 
@@ -56,6 +59,7 @@ export default function AdminPage() {
           { key: "schedule" as const, label: t("admin.section.schedule") },
           { key: "checklists" as const, label: t("admin.section.checklists") },
           { key: "template" as const, label: t("admin.section.template") },
+          { key: "uniforms" as const, label: t("admin.section.uniforms") },
         ]
       : []),
     ...(canSeeCrews
@@ -103,6 +107,7 @@ export default function AdminPage() {
       {activeTab === "schedule" && <SchedulePanel />}
       {activeTab === "checklists" && <ChecklistsPanel />}
       {activeTab === "template" && <TemplatePanel />}
+      {activeTab === "uniforms" && <UniformsPage />}
       {activeTab === "crews" && canSeeCrews && <CrewsPanel />}
       {activeTab === "access" && <AccessPanel />}
     </div>

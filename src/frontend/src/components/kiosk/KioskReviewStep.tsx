@@ -2,7 +2,7 @@ import { Shift, Weekday } from "@/backend";
 import { WEEKDAY_ORDER } from "@/components/kiosk/KioskAvailabilityStep";
 import type { KioskContact } from "@/components/kiosk/KioskContactStep";
 import type { KioskDetails } from "@/components/kiosk/KioskDetailsStep";
-import { useKioskCopy } from "@/components/kiosk/copy";
+import { hatSizeLabel, useKioskCopy } from "@/components/kiosk/copy";
 
 /** Review step: a read-only summary of everything the roadie entered. */
 export function KioskReviewStep({
@@ -40,7 +40,9 @@ export function KioskReviewStep({
     },
     {
       label: t("field.hatSize"),
-      value: details.hatSize || t("common.none"),
+      value: details.hatSize
+        ? hatSizeLabel(details.hatSize, t)
+        : t("common.none"),
     },
     {
       label: t("field.shiftsWanted"),

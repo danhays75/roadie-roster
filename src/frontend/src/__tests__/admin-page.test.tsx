@@ -49,6 +49,10 @@ const POSITIONS: Position[] = [
     needsAlcoholCert: true,
     defaultShirts: 3n,
     defaultHats: 2n,
+    shirtType: "Polo",
+    shirtQty: 2n,
+    hatType: "Cap",
+    hatQty: 1n,
   },
   {
     id: 5n,
@@ -63,6 +67,10 @@ const POSITIONS: Position[] = [
     needsAlcoholCert: false,
     defaultShirts: 3n,
     defaultHats: 2n,
+    shirtType: "Polo",
+    shirtQty: 2n,
+    hatType: "Cap",
+    hatQty: 1n,
   },
 ];
 

@@ -33282,7 +33282,11 @@ var Position = Record({
 	"minimumAge": Nat,
 	"code": Text,
 	"name": Text,
+	"shirtQty": Nat,
 	"shirtsRequired": Nat,
+	"shirtType": Text,
+	"hatType": Text,
+	"hatQty": Nat,
 	"needsAlcoholCert": Bool,
 	"hatsRequired": Nat
 });
@@ -33328,6 +33332,10 @@ var TemplatePosition = Record({
 	"minimumAge": Nat,
 	"code": Text,
 	"name": Text,
+	"shirtQty": Nat,
+	"shirtType": Text,
+	"hatType": Text,
+	"hatQty": Nat,
 	"needsAlcoholCert": Bool
 });
 var UniformItemType$1 = Variant({
@@ -33651,6 +33659,41 @@ var UniformCheckoffView = Record({
 	"complete": Bool,
 	"items": Vec(UniformCheckoffItem)
 });
+var UniformHouseFilter$1 = Variant({
+	"all": Null,
+	"boh": Null,
+	"foh": Null
+});
+var UniformOrderRow = Record({
+	"hired": Nat,
+	"item": Text,
+	"orderTotal": Nat,
+	"size": Text,
+	"projected": Nat
+});
+var UniformSizeUnknownRow = Record({
+	"roadieId": RoadieId,
+	"name": Text,
+	"missingHat": Bool,
+	"missingShirt": Bool
+});
+var UniformOrderView = Record({
+	"rows": Vec(UniformOrderRow),
+	"filter": UniformHouseFilter$1,
+	"sizeUnknown": Vec(UniformSizeUnknownRow),
+	"bufferPercent": Nat
+});
+var SizeCurveEntry = Record({
+	"size": Text,
+	"percent": Nat
+});
+var UniformSettings = Record({
+	"sizeCurve": Record({
+		"shirts": Vec(SizeCurveEntry),
+		"hats": Vec(SizeCurveEntry)
+	}),
+	"bufferPercent": Nat
+});
 var Alert = Record({
 	"id": AlertId,
 	"createdAt": Timestamp,
@@ -33814,6 +33857,8 @@ Service({
 	"getStoreLogo": Func([], [StoreLogos], ["query"]),
 	"getTrainingGroup": Func([TrainingGroupId], [Opt(TrainingGroupView)], ["query"]),
 	"getUniformCheckoff": Func([RoadieId], [Opt(UniformCheckoffView)], ["query"]),
+	"getUniformOrder": Func([UniformHouseFilter$1], [UniformOrderView], ["query"]),
+	"getUniformSettings": Func([], [UniformSettings], ["query"]),
 	"hasKioskPin": Func([], [Bool], ["query"]),
 	"isCallerAdmin": Func([], [Bool], ["query"]),
 	"isMinor": Func([RoadieId], [Bool], ["query"]),
@@ -33887,6 +33932,7 @@ Service({
 	"updateTrainerNote": Func([TrainerNote], [], []),
 	"updateTrainerStations": Func([Principal, Vec(PositionId)], [], []),
 	"updateTrainingGroup": Func([TrainingGroup], [], []),
+	"updateUniformSettings": Func([UniformSettings], [], []),
 	"updateUserRole": Func([Principal, Role$1], [], [])
 });
 var idlFactory = ({ IDL }) => {
@@ -34097,7 +34143,11 @@ var idlFactory = ({ IDL }) => {
 		"minimumAge": IDL.Nat,
 		"code": IDL.Text,
 		"name": IDL.Text,
+		"shirtQty": IDL.Nat,
 		"shirtsRequired": IDL.Nat,
+		"shirtType": IDL.Text,
+		"hatType": IDL.Text,
+		"hatQty": IDL.Nat,
 		"needsAlcoholCert": IDL.Bool,
 		"hatsRequired": IDL.Nat
 	});
@@ -34143,6 +34193,10 @@ var idlFactory = ({ IDL }) => {
 		"minimumAge": IDL.Nat,
 		"code": IDL.Text,
 		"name": IDL.Text,
+		"shirtQty": IDL.Nat,
+		"shirtType": IDL.Text,
+		"hatType": IDL.Text,
+		"hatQty": IDL.Nat,
 		"needsAlcoholCert": IDL.Bool
 	});
 	const UniformItemType = IDL.Variant({
@@ -34470,6 +34524,42 @@ var idlFactory = ({ IDL }) => {
 		"complete": IDL.Bool,
 		"items": IDL.Vec(UniformCheckoffItem)
 	});
+	const UniformHouseFilter = IDL.Variant({
+		"all": IDL.Null,
+		"boh": IDL.Null,
+		"foh": IDL.Null
+	});
+	const UniformOrderRow = IDL.Record({
+		"hired": IDL.Nat,
+		"item": IDL.Text,
+		"orderTotal": IDL.Nat,
+		"size": IDL.Text,
+		"projected": IDL.Nat
+	});
+	const UniformSizeUnknownRow = IDL.Record({
+		"roadieId": RoadieId,
+		"name": IDL.Text,
+		"missingHat": IDL.Bool,
+		"missingShirt": IDL.Bool
+	});
+	const UniformOrderView = IDL.Record({
+		"rows": IDL.Vec(UniformOrderRow),
+		"filter": UniformHouseFilter,
+		"sizeUnknown": IDL.Vec(UniformSizeUnknownRow),
+		"bufferPercent": IDL.Nat
+	});
+	const SizeCurveEntry = IDL.Record({
+		"size": IDL.Text,
+		"percent": IDL.Nat
+	});
+	const SizeCurve = IDL.Record({
+		"shirts": IDL.Vec(SizeCurveEntry),
+		"hats": IDL.Vec(SizeCurveEntry)
+	});
+	const UniformSettings = IDL.Record({
+		"sizeCurve": SizeCurve,
+		"bufferPercent": IDL.Nat
+	});
 	const Alert = IDL.Record({
 		"id": AlertId,
 		"createdAt": Timestamp,
@@ -34636,6 +34726,8 @@ var idlFactory = ({ IDL }) => {
 		"getStoreLogo": IDL.Func([], [StoreLogos], ["query"]),
 		"getTrainingGroup": IDL.Func([TrainingGroupId], [IDL.Opt(TrainingGroupView)], ["query"]),
 		"getUniformCheckoff": IDL.Func([RoadieId], [IDL.Opt(UniformCheckoffView)], ["query"]),
+		"getUniformOrder": IDL.Func([UniformHouseFilter], [UniformOrderView], ["query"]),
+		"getUniformSettings": IDL.Func([], [UniformSettings], ["query"]),
 		"hasKioskPin": IDL.Func([], [IDL.Bool], ["query"]),
 		"isCallerAdmin": IDL.Func([], [IDL.Bool], ["query"]),
 		"isMinor": IDL.Func([RoadieId], [IDL.Bool], ["query"]),
@@ -34709,6 +34801,7 @@ var idlFactory = ({ IDL }) => {
 		"updateTrainerNote": IDL.Func([TrainerNote], [], []),
 		"updateTrainerStations": IDL.Func([IDL.Principal, IDL.Vec(PositionId)], [], []),
 		"updateTrainingGroup": IDL.Func([TrainingGroup], [], []),
+		"updateUniformSettings": IDL.Func([UniformSettings], [], []),
 		"updateUserRole": IDL.Func([IDL.Principal, Role], [], [])
 	});
 };
@@ -34798,6 +34891,12 @@ var Shift = /* @__PURE__ */ function(Shift) {
 	Shift["am"] = "am";
 	Shift["pm"] = "pm";
 	return Shift;
+}({});
+var UniformHouseFilter = /* @__PURE__ */ function(UniformHouseFilter) {
+	UniformHouseFilter["all"] = "all";
+	UniformHouseFilter["boh"] = "boh";
+	UniformHouseFilter["foh"] = "foh";
+	return UniformHouseFilter;
 }({});
 var UniformItemType = /* @__PURE__ */ function(UniformItemType) {
 	UniformItemType["count"] = "count";
@@ -35452,6 +35551,28 @@ var Backend = class {
 			return from_candid_opt_n161(this._uploadFile, this._downloadFile, result);
 		}
 	}
+	async getUniformOrder(arg0) {
+		if (this.processError) try {
+			const result = await this.actor.getUniformOrder(to_candid_UniformHouseFilter_n167(this._uploadFile, this._downloadFile, arg0));
+			return from_candid_UniformOrderView_n168(this._uploadFile, this._downloadFile, result);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else {
+			const result = await this.actor.getUniformOrder(to_candid_UniformHouseFilter_n167(this._uploadFile, this._downloadFile, arg0));
+			return from_candid_UniformOrderView_n168(this._uploadFile, this._downloadFile, result);
+		}
+	}
+	async getUniformSettings() {
+		if (this.processError) try {
+			return await this.actor.getUniformSettings();
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else return await this.actor.getUniformSettings();
+	}
 	async hasKioskPin() {
 		if (this.processError) try {
 			return await this.actor.hasKioskPin();
@@ -35482,14 +35603,14 @@ var Backend = class {
 	async listAccessGrants() {
 		if (this.processError) try {
 			const result = await this.actor.listAccessGrants();
-			return from_candid_vec_n167(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n171(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listAccessGrants();
-			return from_candid_vec_n167(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n171(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listAlerts() {
@@ -35504,92 +35625,92 @@ var Backend = class {
 	async listAttendanceForEvent(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.listAttendanceForEvent(arg0);
-			return from_candid_vec_n168(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n172(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listAttendanceForEvent(arg0);
-			return from_candid_vec_n168(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n172(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listChangeLog() {
 		if (this.processError) try {
 			const result = await this.actor.listChangeLog();
-			return from_candid_vec_n173(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n177(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listChangeLog();
-			return from_candid_vec_n173(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n177(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listCrews() {
 		if (this.processError) try {
 			const result = await this.actor.listCrews();
-			return from_candid_vec_n176(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n180(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listCrews();
-			return from_candid_vec_n176(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n180(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listLeaders() {
 		if (this.processError) try {
 			const result = await this.actor.listLeaders();
-			return from_candid_vec_n179(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n183(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listLeaders();
-			return from_candid_vec_n179(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n183(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listOrientationSessions() {
 		if (this.processError) try {
 			const result = await this.actor.listOrientationSessions();
-			return from_candid_vec_n182(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n186(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listOrientationSessions();
-			return from_candid_vec_n182(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n186(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listPendingSignups() {
 		if (this.processError) try {
 			const result = await this.actor.listPendingSignups();
-			return from_candid_vec_n185(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n189(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listPendingSignups();
-			return from_candid_vec_n185(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n189(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listPendingUsers() {
 		if (this.processError) try {
 			const result = await this.actor.listPendingUsers();
-			return from_candid_vec_n186(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n190(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listPendingUsers();
-			return from_candid_vec_n186(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n190(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listPositions() {
@@ -35608,66 +35729,66 @@ var Backend = class {
 	async listRoadies() {
 		if (this.processError) try {
 			const result = await this.actor.listRoadies();
-			return from_candid_vec_n189(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n193(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listRoadies();
-			return from_candid_vec_n189(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n193(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listRosterForPosition(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.listRosterForPosition(arg0);
-			return from_candid_vec_n189(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n193(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listRosterForPosition(arg0);
-			return from_candid_vec_n189(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n193(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listSchedule() {
 		if (this.processError) try {
 			const result = await this.actor.listSchedule();
-			return from_candid_vec_n190(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n194(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listSchedule();
-			return from_candid_vec_n190(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n194(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listTrainerNotes(arg0) {
 		if (this.processError) try {
 			const result = await this.actor.listTrainerNotes(arg0);
-			return from_candid_vec_n193(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n197(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listTrainerNotes(arg0);
-			return from_candid_vec_n193(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n197(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async listUnassignedPendingRoadies() {
 		if (this.processError) try {
 			const result = await this.actor.listUnassignedPendingRoadies();
-			return from_candid_vec_n196(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n200(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.listUnassignedPendingRoadies();
-			return from_candid_vec_n196(this._uploadFile, this._downloadFile, result);
+			return from_candid_vec_n200(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async loadDemoData() {
@@ -35681,25 +35802,25 @@ var Backend = class {
 	}
 	async loadStoreTemplate(arg0) {
 		if (this.processError) try {
-			const result = await this.actor.loadStoreTemplate(to_candid_StoreTemplateFile_n199(this._uploadFile, this._downloadFile, arg0));
-			return from_candid_TemplateLoadResult_n213(this._uploadFile, this._downloadFile, result);
+			const result = await this.actor.loadStoreTemplate(to_candid_StoreTemplateFile_n203(this._uploadFile, this._downloadFile, arg0));
+			return from_candid_TemplateLoadResult_n217(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
-			const result = await this.actor.loadStoreTemplate(to_candid_StoreTemplateFile_n199(this._uploadFile, this._downloadFile, arg0));
-			return from_candid_TemplateLoadResult_n213(this._uploadFile, this._downloadFile, result);
+			const result = await this.actor.loadStoreTemplate(to_candid_StoreTemplateFile_n203(this._uploadFile, this._downloadFile, arg0));
+			return from_candid_TemplateLoadResult_n217(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async markPresent(arg0, arg1, arg2) {
 		if (this.processError) try {
-			return await this.actor.markPresent(arg0, arg1, to_candid_opt_n215(this._uploadFile, this._downloadFile, arg2));
+			return await this.actor.markPresent(arg0, arg1, to_candid_opt_n219(this._uploadFile, this._downloadFile, arg2));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.markPresent(arg0, arg1, to_candid_opt_n215(this._uploadFile, this._downloadFile, arg2));
+		else return await this.actor.markPresent(arg0, arg1, to_candid_opt_n219(this._uploadFile, this._downloadFile, arg2));
 	}
 	async moveAllRoadiesToSession(arg0, arg1) {
 		if (this.processError) try {
@@ -35721,30 +35842,30 @@ var Backend = class {
 	}
 	async recordAttendance(arg0) {
 		if (this.processError) try {
-			return await this.actor.recordAttendance(to_candid_AttendanceRecord_n216(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.recordAttendance(to_candid_AttendanceRecord_n220(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.recordAttendance(to_candid_AttendanceRecord_n216(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.recordAttendance(to_candid_AttendanceRecord_n220(this._uploadFile, this._downloadFile, arg0));
 	}
 	async recordFinalSignOff(arg0) {
 		if (this.processError) try {
-			return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n219(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n223(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n219(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.recordFinalSignOff(to_candid_FinalSignOff_n223(this._uploadFile, this._downloadFile, arg0));
 	}
 	async rehireRoadie(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.rehireRoadie(arg0, to_candid_opt_n215(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.rehireRoadie(arg0, to_candid_opt_n219(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.rehireRoadie(arg0, to_candid_opt_n215(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.rehireRoadie(arg0, to_candid_opt_n219(this._uploadFile, this._downloadFile, arg1));
 	}
 	async rejectSignup(arg0) {
 		if (this.processError) try {
@@ -35812,27 +35933,27 @@ var Backend = class {
 	async setDemoMode(arg0, arg1) {
 		if (this.processError) try {
 			const result = await this.actor.setDemoMode(arg0, arg1);
-			return from_candid_DemoActionResult_n223(this._uploadFile, this._downloadFile, result);
+			return from_candid_DemoActionResult_n227(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
 			const result = await this.actor.setDemoMode(arg0, arg1);
-			return from_candid_DemoActionResult_n223(this._uploadFile, this._downloadFile, result);
+			return from_candid_DemoActionResult_n227(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async setDemoRole(arg0, arg1) {
 		if (this.processError) try {
-			const result = await this.actor.setDemoRole(to_candid_DemoRole_n225(this._uploadFile, this._downloadFile, arg0), arg1);
-			return from_candid_DemoActionResult_n223(this._uploadFile, this._downloadFile, result);
+			const result = await this.actor.setDemoRole(to_candid_DemoRole_n229(this._uploadFile, this._downloadFile, arg0), arg1);
+			return from_candid_DemoActionResult_n227(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
-			const result = await this.actor.setDemoRole(to_candid_DemoRole_n225(this._uploadFile, this._downloadFile, arg0), arg1);
-			return from_candid_DemoActionResult_n223(this._uploadFile, this._downloadFile, result);
+			const result = await this.actor.setDemoRole(to_candid_DemoRole_n229(this._uploadFile, this._downloadFile, arg0), arg1);
+			return from_candid_DemoActionResult_n227(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async setKioskPin(arg0) {
@@ -35864,25 +35985,25 @@ var Backend = class {
 	}
 	async setPretendDate(arg0) {
 		if (this.processError) try {
-			const result = await this.actor.setPretendDate(to_candid_opt_n226(this._uploadFile, this._downloadFile, arg0));
-			return from_candid_DemoActionResult_n223(this._uploadFile, this._downloadFile, result);
+			const result = await this.actor.setPretendDate(to_candid_opt_n230(this._uploadFile, this._downloadFile, arg0));
+			return from_candid_DemoActionResult_n227(this._uploadFile, this._downloadFile, result);
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
 		else {
-			const result = await this.actor.setPretendDate(to_candid_opt_n226(this._uploadFile, this._downloadFile, arg0));
-			return from_candid_DemoActionResult_n223(this._uploadFile, this._downloadFile, result);
+			const result = await this.actor.setPretendDate(to_candid_opt_n230(this._uploadFile, this._downloadFile, arg0));
+			return from_candid_DemoActionResult_n227(this._uploadFile, this._downloadFile, result);
 		}
 	}
 	async submitSignup(arg0, arg1, arg2, arg3) {
 		if (this.processError) try {
-			return await this.actor.submitSignup(to_candid_RoadieProfile_n230(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n232(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n233(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n234(this._uploadFile, this._downloadFile, arg3));
+			return await this.actor.submitSignup(to_candid_RoadieProfile_n234(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n236(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n237(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n238(this._uploadFile, this._downloadFile, arg3));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.submitSignup(to_candid_RoadieProfile_n230(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n232(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n233(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n234(this._uploadFile, this._downloadFile, arg3));
+		else return await this.actor.submitSignup(to_candid_RoadieProfile_n234(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n236(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n237(this._uploadFile, this._downloadFile, arg2), to_candid_ContactSet_n238(this._uploadFile, this._downloadFile, arg3));
 	}
 	async submitStaffProfile(arg0) {
 		if (this.processError) try {
@@ -35904,39 +36025,39 @@ var Backend = class {
 	}
 	async updateAccessEnd(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateAccessEnd(arg0, to_candid_opt_n240(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateAccessEnd(arg0, to_candid_opt_n244(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateAccessEnd(arg0, to_candid_opt_n240(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateAccessEnd(arg0, to_candid_opt_n244(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateChecklists(arg0) {
 		if (this.processError) try {
-			return await this.actor.updateChecklists(to_candid_Checklists_n207(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.updateChecklists(to_candid_Checklists_n211(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateChecklists(to_candid_Checklists_n207(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.updateChecklists(to_candid_Checklists_n211(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateContactSet(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n234(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n238(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n234(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateContactSet(arg0, to_candid_ContactSet_n238(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateCrew(arg0, arg1, arg2) {
 		if (this.processError) try {
-			return await this.actor.updateCrew(arg0, arg1, to_candid_opt_n241(this._uploadFile, this._downloadFile, arg2));
+			return await this.actor.updateCrew(arg0, arg1, to_candid_opt_n245(this._uploadFile, this._downloadFile, arg2));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateCrew(arg0, arg1, to_candid_opt_n241(this._uploadFile, this._downloadFile, arg2));
+		else return await this.actor.updateCrew(arg0, arg1, to_candid_opt_n245(this._uploadFile, this._downloadFile, arg2));
 	}
 	async updateMyStaffProfile(arg0) {
 		if (this.processError) try {
@@ -35967,21 +36088,21 @@ var Backend = class {
 	}
 	async updateRoadieDetails(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n230(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n234(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n230(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateRoadieDetails(arg0, to_candid_RoadieProfile_n234(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateRoadieStatus(arg0, arg1) {
 		if (this.processError) try {
-			return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n242(this._uploadFile, this._downloadFile, arg1));
+			return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n246(this._uploadFile, this._downloadFile, arg1));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n242(this._uploadFile, this._downloadFile, arg1));
+		else return await this.actor.updateRoadieStatus(arg0, to_candid_RoadieStatus_n246(this._uploadFile, this._downloadFile, arg1));
 	}
 	async updateScheduleEvent(arg0) {
 		if (this.processError) try {
@@ -35994,12 +36115,12 @@ var Backend = class {
 	}
 	async updateStoreInfo(arg0) {
 		if (this.processError) try {
-			return await this.actor.updateStoreInfo(to_candid_StoreInfo_n243(this._uploadFile, this._downloadFile, arg0));
+			return await this.actor.updateStoreInfo(to_candid_StoreInfo_n247(this._uploadFile, this._downloadFile, arg0));
 		} catch (e) {
 			this.processError(e);
 			throw new Error("unreachable");
 		}
-		else return await this.actor.updateStoreInfo(to_candid_StoreInfo_n243(this._uploadFile, this._downloadFile, arg0));
+		else return await this.actor.updateStoreInfo(to_candid_StoreInfo_n247(this._uploadFile, this._downloadFile, arg0));
 	}
 	async updateTrainerNote(arg0) {
 		if (this.processError) try {
@@ -36028,6 +36149,15 @@ var Backend = class {
 		}
 		else return await this.actor.updateTrainingGroup(to_candid_TrainingGroup_n49(this._uploadFile, this._downloadFile, arg0));
 	}
+	async updateUniformSettings(arg0) {
+		if (this.processError) try {
+			return await this.actor.updateUniformSettings(arg0);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else return await this.actor.updateUniformSettings(arg0);
+	}
 	async updateUserRole(arg0, arg1) {
 		if (this.processError) try {
 			return await this.actor.updateUserRole(arg0, to_candid_Role_n19(this._uploadFile, this._downloadFile, arg1));
@@ -36044,10 +36174,10 @@ function from_candid_AccessGrant_n113(_uploadFile, _downloadFile, value) {
 function from_candid_ArchiveReason_n143(_uploadFile, _downloadFile, value) {
 	return from_candid_variant_n144(_uploadFile, _downloadFile, value);
 }
-function from_candid_AttendanceRecord_n169(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n170(_uploadFile, _downloadFile, value);
+function from_candid_AttendanceRecord_n173(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n174(_uploadFile, _downloadFile, value);
 }
-function from_candid_AttendanceState_n172(_uploadFile, _downloadFile, value) {
+function from_candid_AttendanceState_n176(_uploadFile, _downloadFile, value) {
 	return "present" in value ? "present" : "late" in value ? "late" : "absent" in value ? "absent" : value;
 }
 function from_candid_AvailabilitySlot_n84(_uploadFile, _downloadFile, value) {
@@ -36056,8 +36186,8 @@ function from_candid_AvailabilitySlot_n84(_uploadFile, _downloadFile, value) {
 function from_candid_Cell_n72(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n73(_uploadFile, _downloadFile, value);
 }
-function from_candid_ChangeLogEntry_n174(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n175(_uploadFile, _downloadFile, value);
+function from_candid_ChangeLogEntry_n178(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n179(_uploadFile, _downloadFile, value);
 }
 function from_candid_ChecklistItem_n65(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n66(_uploadFile, _downloadFile, value);
@@ -36068,14 +36198,14 @@ function from_candid_Checklists_n62(_uploadFile, _downloadFile, value) {
 function from_candid_ContactSet_n78(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n79(_uploadFile, _downloadFile, value);
 }
-function from_candid_Crew_n177(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n178(_uploadFile, _downloadFile, value);
+function from_candid_Crew_n181(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n182(_uploadFile, _downloadFile, value);
 }
 function from_candid_DashboardView_n86(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n87(_uploadFile, _downloadFile, value);
 }
-function from_candid_DemoActionResult_n223(_uploadFile, _downloadFile, value) {
-	return from_candid_variant_n224(_uploadFile, _downloadFile, value);
+function from_candid_DemoActionResult_n227(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n228(_uploadFile, _downloadFile, value);
 }
 function from_candid_DemoRole_n98(_uploadFile, _downloadFile, value) {
 	return "admin" in value ? "admin" : "trainingManager" in value ? "trainingManager" : "trainer" in value ? "trainer" : "leadership" in value ? "leadership" : "visitingManager" in value ? "visitingManager" : "storeManager" in value ? "storeManager" : "kiosk" in value ? "kiosk" : value;
@@ -36113,8 +36243,8 @@ function from_candid_GiftBagsData_n101(_uploadFile, _downloadFile, value) {
 function from_candid_House_n61(_uploadFile, _downloadFile, value) {
 	return "boh" in value ? "boh" : "foh" in value ? "foh" : value;
 }
-function from_candid_LeaderSummary_n180(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n181(_uploadFile, _downloadFile, value);
+function from_candid_LeaderSummary_n184(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n185(_uploadFile, _downloadFile, value);
 }
 function from_candid_MyAccessView_n110(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n111(_uploadFile, _downloadFile, value);
@@ -36122,8 +36252,8 @@ function from_candid_MyAccessView_n110(_uploadFile, _downloadFile, value) {
 function from_candid_OrientationRoadieRow_n130(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n131(_uploadFile, _downloadFile, value);
 }
-function from_candid_OrientationSessionOption_n183(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n184(_uploadFile, _downloadFile, value);
+function from_candid_OrientationSessionOption_n187(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n188(_uploadFile, _downloadFile, value);
 }
 function from_candid_OrientationSessionView_n126(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n127(_uploadFile, _downloadFile, value);
@@ -36131,8 +36261,8 @@ function from_candid_OrientationSessionView_n126(_uploadFile, _downloadFile, val
 function from_candid_PaperworkStatus_n134(_uploadFile, _downloadFile, value) {
 	return "incomplete" in value ? "incomplete" : "complete" in value ? "complete" : value;
 }
-function from_candid_PendingUser_n187(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n188(_uploadFile, _downloadFile, value);
+function from_candid_PendingUser_n191(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n192(_uploadFile, _downloadFile, value);
 }
 function from_candid_Position_n89(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n90(_uploadFile, _downloadFile, value);
@@ -36161,8 +36291,8 @@ function from_candid_Role_n116(_uploadFile, _downloadFile, value) {
 function from_candid_RosterState_n133(_uploadFile, _downloadFile, value) {
 	return "active" in value ? "active" : "pending" in value ? "pending" : value;
 }
-function from_candid_ScheduleEvent_n191(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n192(_uploadFile, _downloadFile, value);
+function from_candid_ScheduleEvent_n195(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n196(_uploadFile, _downloadFile, value);
 }
 function from_candid_Shift_n38(_uploadFile, _downloadFile, value) {
 	return "am" in value ? "am" : "pm" in value ? "pm" : value;
@@ -36185,8 +36315,8 @@ function from_candid_StoreLogos_n154(_uploadFile, _downloadFile, value) {
 function from_candid_StoreTemplateFile_n51(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n52(_uploadFile, _downloadFile, value);
 }
-function from_candid_TemplateLoadResult_n213(_uploadFile, _downloadFile, value) {
-	return from_candid_variant_n214(_uploadFile, _downloadFile, value);
+function from_candid_TemplateLoadResult_n217(_uploadFile, _downloadFile, value) {
+	return from_candid_variant_n218(_uploadFile, _downloadFile, value);
 }
 function from_candid_TemplatePosition_n59(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n60(_uploadFile, _downloadFile, value);
@@ -36194,8 +36324,8 @@ function from_candid_TemplatePosition_n59(_uploadFile, _downloadFile, value) {
 function from_candid_TemplateScheduleEvent_n54(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n55(_uploadFile, _downloadFile, value);
 }
-function from_candid_TrainerNote_n194(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n195(_uploadFile, _downloadFile, value);
+function from_candid_TrainerNote_n198(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n199(_uploadFile, _downloadFile, value);
 }
 function from_candid_TrainingGroupView_n157(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n158(_uploadFile, _downloadFile, value);
@@ -36203,8 +36333,8 @@ function from_candid_TrainingGroupView_n157(_uploadFile, _downloadFile, value) {
 function from_candid_TrainingGroup_n159(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n160(_uploadFile, _downloadFile, value);
 }
-function from_candid_UnassignedRoadieRow_n197(_uploadFile, _downloadFile, value) {
-	return from_candid_record_n198(_uploadFile, _downloadFile, value);
+function from_candid_UnassignedRoadieRow_n201(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n202(_uploadFile, _downloadFile, value);
 }
 function from_candid_UniformCheckoffItem_n165(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n166(_uploadFile, _downloadFile, value);
@@ -36212,8 +36342,14 @@ function from_candid_UniformCheckoffItem_n165(_uploadFile, _downloadFile, value)
 function from_candid_UniformCheckoffView_n162(_uploadFile, _downloadFile, value) {
 	return from_candid_record_n163(_uploadFile, _downloadFile, value);
 }
+function from_candid_UniformHouseFilter_n170(_uploadFile, _downloadFile, value) {
+	return "all" in value ? "all" : "boh" in value ? "boh" : "foh" in value ? "foh" : value;
+}
 function from_candid_UniformItemType_n67(_uploadFile, _downloadFile, value) {
 	return "count" in value ? "count" : "checkbox" in value ? "checkbox" : value;
+}
+function from_candid_UniformOrderView_n168(_uploadFile, _downloadFile, value) {
+	return from_candid_record_n169(_uploadFile, _downloadFile, value);
 }
 function from_candid_UserRole_n76(_uploadFile, _downloadFile, value) {
 	return "admin" in value ? "admin" : "user" in value ? "user" : "guest" in value ? "guest" : value;
@@ -36284,7 +36420,7 @@ function from_candid_opt_n156(_uploadFile, _downloadFile, value) {
 function from_candid_opt_n161(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : from_candid_UniformCheckoffView_n162(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n171(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n175(_uploadFile, _downloadFile, value) {
 	return value.length === 0 ? null : from_candid_Shift_n38(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n32(_uploadFile, _downloadFile, value) {
@@ -36540,18 +36676,26 @@ function from_candid_record_n166(_uploadFile, _downloadFile, value) {
 		itemType: from_candid_UniformItemType_n67(_uploadFile, _downloadFile, value.itemType)
 	};
 }
-function from_candid_record_n170(_uploadFile, _downloadFile, value) {
+function from_candid_record_n169(_uploadFile, _downloadFile, value) {
+	return {
+		rows: value.rows,
+		filter: from_candid_UniformHouseFilter_n170(_uploadFile, _downloadFile, value.filter),
+		sizeUnknown: value.sizeUnknown,
+		bufferPercent: value.bufferPercent
+	};
+}
+function from_candid_record_n174(_uploadFile, _downloadFile, value) {
 	return {
 		eventId: record_opt_to_undefined(from_candid_opt_n139(_uploadFile, _downloadFile, value.eventId)),
 		roadieId: value.roadieId,
 		isDemo: value.isDemo,
 		recordedAt: value.recordedAt,
 		recordedBy: value.recordedBy,
-		shift: record_opt_to_undefined(from_candid_opt_n171(_uploadFile, _downloadFile, value.shift)),
-		state: from_candid_AttendanceState_n172(_uploadFile, _downloadFile, value.state)
+		shift: record_opt_to_undefined(from_candid_opt_n175(_uploadFile, _downloadFile, value.shift)),
+		state: from_candid_AttendanceState_n176(_uploadFile, _downloadFile, value.state)
 	};
 }
-function from_candid_record_n175(_uploadFile, _downloadFile, value) {
+function from_candid_record_n179(_uploadFile, _downloadFile, value) {
 	return {
 		at: value.at,
 		by: value.by,
@@ -36563,7 +36707,7 @@ function from_candid_record_n175(_uploadFile, _downloadFile, value) {
 		subjectRoadieId: record_opt_to_undefined(from_candid_opt_n115(_uploadFile, _downloadFile, value.subjectRoadieId))
 	};
 }
-function from_candid_record_n178(_uploadFile, _downloadFile, value) {
+function from_candid_record_n182(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		name: value.name,
@@ -36571,7 +36715,7 @@ function from_candid_record_n178(_uploadFile, _downloadFile, value) {
 		leaderPrincipal: record_opt_to_undefined(from_candid_opt_n81(_uploadFile, _downloadFile, value.leaderPrincipal))
 	};
 }
-function from_candid_record_n181(_uploadFile, _downloadFile, value) {
+function from_candid_record_n185(_uploadFile, _downloadFile, value) {
 	return {
 		title: value.title,
 		principal: value.principal,
@@ -36582,7 +36726,7 @@ function from_candid_record_n181(_uploadFile, _downloadFile, value) {
 		trainerPositionIds: value.trainerPositionIds
 	};
 }
-function from_candid_record_n184(_uploadFile, _downloadFile, value) {
+function from_candid_record_n188(_uploadFile, _downloadFile, value) {
 	return {
 		end: record_opt_to_undefined(from_candid_opt_n128(_uploadFile, _downloadFile, value.end)),
 		eventId: value.eventId,
@@ -36590,14 +36734,14 @@ function from_candid_record_n184(_uploadFile, _downloadFile, value) {
 		start: value.start
 	};
 }
-function from_candid_record_n188(_uploadFile, _downloadFile, value) {
+function from_candid_record_n192(_uploadFile, _downloadFile, value) {
 	return {
 		principal: value.principal,
 		staffProfile: record_opt_to_undefined(from_candid_opt_n117(_uploadFile, _downloadFile, value.staffProfile)),
 		requestedAt: value.requestedAt
 	};
 }
-function from_candid_record_n192(_uploadFile, _downloadFile, value) {
+function from_candid_record_n196(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		end: record_opt_to_undefined(from_candid_opt_n128(_uploadFile, _downloadFile, value.end)),
@@ -36606,7 +36750,7 @@ function from_candid_record_n192(_uploadFile, _downloadFile, value) {
 		start: value.start
 	};
 }
-function from_candid_record_n195(_uploadFile, _downloadFile, value) {
+function from_candid_record_n199(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		day: value.day,
@@ -36619,7 +36763,7 @@ function from_candid_record_n195(_uploadFile, _downloadFile, value) {
 		workOn: value.workOn
 	};
 }
-function from_candid_record_n198(_uploadFile, _downloadFile, value) {
+function from_candid_record_n202(_uploadFile, _downloadFile, value) {
 	return {
 		roadieId: value.roadieId,
 		name: value.name,
@@ -36703,6 +36847,10 @@ function from_candid_record_n60(_uploadFile, _downloadFile, value) {
 		minimumAge: value.minimumAge,
 		code: value.code,
 		name: value.name,
+		shirtQty: value.shirtQty,
+		shirtType: value.shirtType,
+		hatType: value.hatType,
+		hatQty: value.hatQty,
 		needsAlcoholCert: value.needsAlcoholCert
 	};
 }
@@ -36780,7 +36928,11 @@ function from_candid_record_n90(_uploadFile, _downloadFile, value) {
 		minimumAge: value.minimumAge,
 		code: value.code,
 		name: value.name,
+		shirtQty: value.shirtQty,
 		shirtsRequired: value.shirtsRequired,
+		shirtType: value.shirtType,
+		hatType: value.hatType,
+		hatQty: value.hatQty,
 		needsAlcoholCert: value.needsAlcoholCert,
 		hatsRequired: value.hatsRequired
 	};
@@ -36876,7 +37028,7 @@ function from_candid_variant_n151(_uploadFile, _downloadFile, value) {
 		rejected: value.rejected
 	} : value;
 }
-function from_candid_variant_n214(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n218(_uploadFile, _downloadFile, value) {
 	return "ok" in value ? {
 		__kind__: "ok",
 		ok: value.ok
@@ -36885,7 +37037,7 @@ function from_candid_variant_n214(_uploadFile, _downloadFile, value) {
 		err: value.err
 	} : value;
 }
-function from_candid_variant_n224(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n228(_uploadFile, _downloadFile, value) {
 	return "ok" in value ? {
 		__kind__: "ok",
 		ok: from_candid_DemoStateView_n91(_uploadFile, _downloadFile, value.ok)
@@ -36936,41 +37088,41 @@ function from_candid_vec_n129(_uploadFile, _downloadFile, value) {
 function from_candid_vec_n164(_uploadFile, _downloadFile, value) {
 	return value.map((x) => from_candid_UniformCheckoffItem_n165(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n167(_uploadFile, _downloadFile, value) {
+function from_candid_vec_n171(_uploadFile, _downloadFile, value) {
 	return value.map((x) => from_candid_AccessGrant_n113(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n168(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_AttendanceRecord_n169(_uploadFile, _downloadFile, x));
+function from_candid_vec_n172(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_AttendanceRecord_n173(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n173(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_ChangeLogEntry_n174(_uploadFile, _downloadFile, x));
+function from_candid_vec_n177(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_ChangeLogEntry_n178(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n176(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_Crew_n177(_uploadFile, _downloadFile, x));
+function from_candid_vec_n180(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_Crew_n181(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n179(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_LeaderSummary_n180(_uploadFile, _downloadFile, x));
-}
-function from_candid_vec_n182(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_OrientationSessionOption_n183(_uploadFile, _downloadFile, x));
-}
-function from_candid_vec_n185(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_SignupSubmission_n148(_uploadFile, _downloadFile, x));
+function from_candid_vec_n183(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_LeaderSummary_n184(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n186(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_PendingUser_n187(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_OrientationSessionOption_n187(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n189(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_Roadie_n136(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_SignupSubmission_n148(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n190(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_ScheduleEvent_n191(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_PendingUser_n191(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n193(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_TrainerNote_n194(_uploadFile, _downloadFile, x));
+	return value.map((x) => from_candid_Roadie_n136(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n196(_uploadFile, _downloadFile, value) {
-	return value.map((x) => from_candid_UnassignedRoadieRow_n197(_uploadFile, _downloadFile, x));
+function from_candid_vec_n194(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_ScheduleEvent_n195(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n197(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_TrainerNote_n198(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n200(_uploadFile, _downloadFile, value) {
+	return value.map((x) => from_candid_UnassignedRoadieRow_n201(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n27(_uploadFile, _downloadFile, value) {
 	return value.map((x) => from_candid_tuple_n28(_uploadFile, _downloadFile, x));
@@ -37017,35 +37169,35 @@ function to_candid_ApprovalRequest_n17(_uploadFile, _downloadFile, value) {
 function to_candid_ArchiveReason_n22(_uploadFile, _downloadFile, value) {
 	return to_candid_variant_n23(_uploadFile, _downloadFile, value);
 }
-function to_candid_AttendanceRecord_n216(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n217(_uploadFile, _downloadFile, value);
+function to_candid_AttendanceRecord_n220(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n221(_uploadFile, _downloadFile, value);
 }
-function to_candid_AttendanceState_n218(_uploadFile, _downloadFile, value) {
+function to_candid_AttendanceState_n222(_uploadFile, _downloadFile, value) {
 	return value == "present" ? { present: null } : value == "late" ? { late: null } : value == "absent" ? { absent: null } : value;
 }
-function to_candid_AvailabilitySlot_n237(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n238(_uploadFile, _downloadFile, value);
+function to_candid_AvailabilitySlot_n241(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n242(_uploadFile, _downloadFile, value);
 }
-function to_candid_ChecklistItem_n210(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n211(_uploadFile, _downloadFile, value);
+function to_candid_ChecklistItem_n214(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n215(_uploadFile, _downloadFile, value);
 }
-function to_candid_Checklists_n207(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n208(_uploadFile, _downloadFile, value);
+function to_candid_Checklists_n211(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n212(_uploadFile, _downloadFile, value);
 }
-function to_candid_ContactSet_n234(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n235(_uploadFile, _downloadFile, value);
+function to_candid_ContactSet_n238(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n239(_uploadFile, _downloadFile, value);
 }
-function to_candid_DemoRole_n225(_uploadFile, _downloadFile, value) {
+function to_candid_DemoRole_n229(_uploadFile, _downloadFile, value) {
 	return value == "admin" ? { admin: null } : value == "trainingManager" ? { trainingManager: null } : value == "trainer" ? { trainer: null } : value == "leadership" ? { leadership: null } : value == "visitingManager" ? { visitingManager: null } : value == "storeManager" ? { storeManager: null } : value == "kiosk" ? { kiosk: null } : value;
 }
-function to_candid_DemoShift_n229(_uploadFile, _downloadFile, value) {
+function to_candid_DemoShift_n233(_uploadFile, _downloadFile, value) {
 	return value == "am" ? { am: null } : value == "pm" ? { pm: null } : value;
 }
 function to_candid_EventKind_n48(_uploadFile, _downloadFile, value) {
 	return value == "other" ? { other: null } : value == "signOff" ? { signOff: null } : value == "deadline" ? { deadline: null } : value == "friendsAndFamily" ? { friendsAndFamily: null } : value == "openingDay" ? { openingDay: null } : value == "trainingDay" ? { trainingDay: null } : value == "orientation" ? { orientation: null } : value;
 }
-function to_candid_FinalSignOff_n219(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n220(_uploadFile, _downloadFile, value);
+function to_candid_FinalSignOff_n223(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n224(_uploadFile, _downloadFile, value);
 }
 function to_candid_GiftBagFilter_n99(_uploadFile, _downloadFile, value) {
 	return to_candid_variant_n100(_uploadFile, _downloadFile, value);
@@ -37056,13 +37208,13 @@ function to_candid_House_n45(_uploadFile, _downloadFile, value) {
 function to_candid_Position_n43(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n44(_uploadFile, _downloadFile, value);
 }
-function to_candid_PretendDate_n227(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n228(_uploadFile, _downloadFile, value);
+function to_candid_PretendDate_n231(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n232(_uploadFile, _downloadFile, value);
 }
-function to_candid_RoadieProfile_n230(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n231(_uploadFile, _downloadFile, value);
+function to_candid_RoadieProfile_n234(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n235(_uploadFile, _downloadFile, value);
 }
-function to_candid_RoadieStatus_n242(_uploadFile, _downloadFile, value) {
+function to_candid_RoadieStatus_n246(_uploadFile, _downloadFile, value) {
 	return value == "active" ? { active: null } : value == "hired" ? { hired: null } : value == "inTraining" ? { inTraining: null } : value == "paperworkDone" ? { paperworkDone: null } : value == "oriented" ? { oriented: null } : value == "certified" ? { certified: null } : value == "needsMoreTime" ? { needsMoreTime: null } : value == "archived" ? { archived: null } : value;
 }
 function to_candid_Role_n19(_uploadFile, _downloadFile, value) {
@@ -37074,23 +37226,23 @@ function to_candid_ScheduleEvent_n46(_uploadFile, _downloadFile, value) {
 function to_candid_Shift_n14(_uploadFile, _downloadFile, value) {
 	return value == "am" ? { am: null } : value == "pm" ? { pm: null } : value;
 }
-function to_candid_SignOffOutcome_n221(_uploadFile, _downloadFile, value) {
-	return to_candid_variant_n222(_uploadFile, _downloadFile, value);
+function to_candid_SignOffOutcome_n225(_uploadFile, _downloadFile, value) {
+	return to_candid_variant_n226(_uploadFile, _downloadFile, value);
 }
 function to_candid_StaffProfile_n20(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n21(_uploadFile, _downloadFile, value);
 }
-function to_candid_StoreInfo_n243(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n244(_uploadFile, _downloadFile, value);
+function to_candid_StoreInfo_n247(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n248(_uploadFile, _downloadFile, value);
 }
-function to_candid_StoreTemplateFile_n199(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n200(_uploadFile, _downloadFile, value);
+function to_candid_StoreTemplateFile_n203(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n204(_uploadFile, _downloadFile, value);
 }
-function to_candid_TemplatePosition_n205(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n206(_uploadFile, _downloadFile, value);
+function to_candid_TemplatePosition_n209(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n210(_uploadFile, _downloadFile, value);
 }
-function to_candid_TemplateScheduleEvent_n202(_uploadFile, _downloadFile, value) {
-	return to_candid_record_n203(_uploadFile, _downloadFile, value);
+function to_candid_TemplateScheduleEvent_n206(_uploadFile, _downloadFile, value) {
+	return to_candid_record_n207(_uploadFile, _downloadFile, value);
 }
 function to_candid_TrainerNote_n12(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n13(_uploadFile, _downloadFile, value);
@@ -37098,13 +37250,16 @@ function to_candid_TrainerNote_n12(_uploadFile, _downloadFile, value) {
 function to_candid_TrainingGroup_n49(_uploadFile, _downloadFile, value) {
 	return to_candid_record_n50(_uploadFile, _downloadFile, value);
 }
-function to_candid_UniformItemType_n212(_uploadFile, _downloadFile, value) {
+function to_candid_UniformHouseFilter_n167(_uploadFile, _downloadFile, value) {
+	return value == "all" ? { all: null } : value == "boh" ? { boh: null } : value == "foh" ? { foh: null } : value;
+}
+function to_candid_UniformItemType_n216(_uploadFile, _downloadFile, value) {
 	return value == "count" ? { count: null } : value == "checkbox" ? { checkbox: null } : value;
 }
 function to_candid_UserRole_n24(_uploadFile, _downloadFile, value) {
 	return value == "admin" ? { admin: null } : value == "user" ? { user: null } : value == "guest" ? { guest: null } : value;
 }
-function to_candid_Weekday_n239(_uploadFile, _downloadFile, value) {
+function to_candid_Weekday_n243(_uploadFile, _downloadFile, value) {
 	return value == "fri" ? { fri: null } : value == "mon" ? { mon: null } : value == "sat" ? { sat: null } : value == "sun" ? { sun: null } : value == "thu" ? { thu: null } : value == "tue" ? { tue: null } : value == "wed" ? { wed: null } : value;
 }
 function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value) {
@@ -37113,22 +37268,22 @@ function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _dow
 function to_candid_opt_n1(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value));
 }
-function to_candid_opt_n215(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n219(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n226(_uploadFile, _downloadFile, value) {
-	return value === null ? candid_none() : candid_some(to_candid_PretendDate_n227(_uploadFile, _downloadFile, value));
+function to_candid_opt_n230(_uploadFile, _downloadFile, value) {
+	return value === null ? candid_none() : candid_some(to_candid_PretendDate_n231(_uploadFile, _downloadFile, value));
 }
-function to_candid_opt_n232(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n236(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n233(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n237(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n240(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n244(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_opt_n241(_uploadFile, _downloadFile, value) {
+function to_candid_opt_n245(_uploadFile, _downloadFile, value) {
 	return value === null ? candid_none() : candid_some(value);
 }
 function to_candid_opt_n41(_uploadFile, _downloadFile, value) {
@@ -37169,42 +37324,23 @@ function to_candid_record_n18(_uploadFile, _downloadFile, value) {
 		accessEndsAt: value.accessEndsAt ? candid_some(value.accessEndsAt) : candid_none()
 	};
 }
-function to_candid_record_n200(_uploadFile, _downloadFile, value) {
+function to_candid_record_n204(_uploadFile, _downloadFile, value) {
 	return {
 		leaderTalkName: value.leaderTalkName,
 		leaderTalkSize: value.leaderTalkSize,
 		version: value.version,
 		trainingGroupSize: value.trainingGroupSize,
-		schedule: to_candid_vec_n201(_uploadFile, _downloadFile, value.schedule),
-		positions: to_candid_vec_n204(_uploadFile, _downloadFile, value.positions),
-		checklists: to_candid_Checklists_n207(_uploadFile, _downloadFile, value.checklists)
+		schedule: to_candid_vec_n205(_uploadFile, _downloadFile, value.schedule),
+		positions: to_candid_vec_n208(_uploadFile, _downloadFile, value.positions),
+		checklists: to_candid_Checklists_n211(_uploadFile, _downloadFile, value.checklists)
 	};
 }
-function to_candid_record_n203(_uploadFile, _downloadFile, value) {
+function to_candid_record_n207(_uploadFile, _downloadFile, value) {
 	return {
 		kind: to_candid_EventKind_n48(_uploadFile, _downloadFile, value.kind),
 		name: value.name,
 		endOffsetDays: value.endOffsetDays ? candid_some(value.endOffsetDays) : candid_none(),
 		startOffsetDays: value.startOffsetDays
-	};
-}
-function to_candid_record_n206(_uploadFile, _downloadFile, value) {
-	return {
-		openingBuildTo: value.openingBuildTo,
-		defaultHats: value.defaultHats,
-		defaultShirts: value.defaultShirts,
-		house: to_candid_House_n45(_uploadFile, _downloadFile, value.house),
-		afterOpeningBuildTo: value.afterOpeningBuildTo,
-		minimumAge: value.minimumAge,
-		code: value.code,
-		name: value.name,
-		needsAlcoholCert: value.needsAlcoholCert
-	};
-}
-function to_candid_record_n208(_uploadFile, _downloadFile, value) {
-	return {
-		paperwork: to_candid_vec_n209(_uploadFile, _downloadFile, value.paperwork),
-		orientationUniform: to_candid_vec_n209(_uploadFile, _downloadFile, value.orientationUniform)
 	};
 }
 function to_candid_record_n21(_uploadFile, _downloadFile, value) {
@@ -37233,16 +37369,39 @@ function to_candid_record_n21(_uploadFile, _downloadFile, value) {
 		favoriteColor: value.favoriteColor ? candid_some(value.favoriteColor) : candid_none()
 	};
 }
-function to_candid_record_n211(_uploadFile, _downloadFile, value) {
+function to_candid_record_n210(_uploadFile, _downloadFile, value) {
+	return {
+		openingBuildTo: value.openingBuildTo,
+		defaultHats: value.defaultHats,
+		defaultShirts: value.defaultShirts,
+		house: to_candid_House_n45(_uploadFile, _downloadFile, value.house),
+		afterOpeningBuildTo: value.afterOpeningBuildTo,
+		minimumAge: value.minimumAge,
+		code: value.code,
+		name: value.name,
+		shirtQty: value.shirtQty,
+		shirtType: value.shirtType,
+		hatType: value.hatType,
+		hatQty: value.hatQty,
+		needsAlcoholCert: value.needsAlcoholCert
+	};
+}
+function to_candid_record_n212(_uploadFile, _downloadFile, value) {
+	return {
+		paperwork: to_candid_vec_n213(_uploadFile, _downloadFile, value.paperwork),
+		orientationUniform: to_candid_vec_n213(_uploadFile, _downloadFile, value.orientationUniform)
+	};
+}
+function to_candid_record_n215(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		requiresAlcoholCert: value.requiresAlcoholCert,
 		text: value.text,
 		minorOnly: value.minorOnly,
-		itemType: to_candid_UniformItemType_n212(_uploadFile, _downloadFile, value.itemType)
+		itemType: to_candid_UniformItemType_n216(_uploadFile, _downloadFile, value.itemType)
 	};
 }
-function to_candid_record_n217(_uploadFile, _downloadFile, value) {
+function to_candid_record_n221(_uploadFile, _downloadFile, value) {
 	return {
 		eventId: value.eventId ? candid_some(value.eventId) : candid_none(),
 		roadieId: value.roadieId,
@@ -37250,26 +37409,26 @@ function to_candid_record_n217(_uploadFile, _downloadFile, value) {
 		recordedAt: value.recordedAt,
 		recordedBy: value.recordedBy,
 		shift: value.shift ? candid_some(to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)) : candid_none(),
-		state: to_candid_AttendanceState_n218(_uploadFile, _downloadFile, value.state)
+		state: to_candid_AttendanceState_n222(_uploadFile, _downloadFile, value.state)
 	};
 }
-function to_candid_record_n220(_uploadFile, _downloadFile, value) {
+function to_candid_record_n224(_uploadFile, _downloadFile, value) {
 	return {
 		roadieId: value.roadieId,
 		isDemo: value.isDemo,
 		signedAt: value.signedAt,
 		signedBy: value.signedBy,
-		outcome: to_candid_SignOffOutcome_n221(_uploadFile, _downloadFile, value.outcome),
+		outcome: to_candid_SignOffOutcome_n225(_uploadFile, _downloadFile, value.outcome),
 		futureTrainer: value.futureTrainer
 	};
 }
-function to_candid_record_n228(_uploadFile, _downloadFile, value) {
+function to_candid_record_n232(_uploadFile, _downloadFile, value) {
 	return {
 		day: value.day,
-		shift: to_candid_DemoShift_n229(_uploadFile, _downloadFile, value.shift)
+		shift: to_candid_DemoShift_n233(_uploadFile, _downloadFile, value.shift)
 	};
 }
-function to_candid_record_n231(_uploadFile, _downloadFile, value) {
+function to_candid_record_n235(_uploadFile, _downloadFile, value) {
 	return {
 		favoriteSnack: value.favoriteSnack ? candid_some(value.favoriteSnack) : candid_none(),
 		positionAppliedFor: value.positionAppliedFor ? candid_some(value.positionAppliedFor) : candid_none(),
@@ -37289,7 +37448,7 @@ function to_candid_record_n231(_uploadFile, _downloadFile, value) {
 		weekdayLunch: value.weekdayLunch ? candid_some(value.weekdayLunch) : candid_none()
 	};
 }
-function to_candid_record_n235(_uploadFile, _downloadFile, value) {
+function to_candid_record_n239(_uploadFile, _downloadFile, value) {
 	return {
 		managerSignedAt: value.managerSignedAt ? candid_some(value.managerSignedAt) : candid_none(),
 		managerSignedBy: value.managerSignedBy ? candid_some(value.managerSignedBy) : candid_none(),
@@ -37297,7 +37456,7 @@ function to_candid_record_n235(_uploadFile, _downloadFile, value) {
 		dateOfBirth: value.dateOfBirth,
 		email: value.email,
 		availabilitySignature: value.availabilitySignature ? candid_some(value.availabilitySignature) : candid_none(),
-		availability: to_candid_vec_n236(_uploadFile, _downloadFile, value.availability),
+		availability: to_candid_vec_n240(_uploadFile, _downloadFile, value.availability),
 		availabilityResignPending: value.availabilityResignPending,
 		emergencyContactPhone: value.emergencyContactPhone,
 		emergencyContactName: value.emergencyContactName,
@@ -37305,13 +37464,13 @@ function to_candid_record_n235(_uploadFile, _downloadFile, value) {
 		managerSignature: value.managerSignature ? candid_some(value.managerSignature) : candid_none()
 	};
 }
-function to_candid_record_n238(_uploadFile, _downloadFile, value) {
+function to_candid_record_n242(_uploadFile, _downloadFile, value) {
 	return {
-		day: to_candid_Weekday_n239(_uploadFile, _downloadFile, value.day),
+		day: to_candid_Weekday_n243(_uploadFile, _downloadFile, value.day),
 		shift: to_candid_Shift_n14(_uploadFile, _downloadFile, value.shift)
 	};
 }
-function to_candid_record_n244(_uploadFile, _downloadFile, value) {
+function to_candid_record_n248(_uploadFile, _downloadFile, value) {
 	return {
 		amShiftEnd: value.amShiftEnd,
 		pmShiftStart: value.pmShiftStart,
@@ -37347,7 +37506,11 @@ function to_candid_record_n44(_uploadFile, _downloadFile, value) {
 		minimumAge: value.minimumAge,
 		code: value.code,
 		name: value.name,
+		shirtQty: value.shirtQty,
 		shirtsRequired: value.shirtsRequired,
+		shirtType: value.shirtType,
+		hatType: value.hatType,
+		hatQty: value.hatQty,
 		needsAlcoholCert: value.needsAlcoholCert,
 		hatsRequired: value.hatsRequired
 	};
@@ -37375,23 +37538,23 @@ function to_candid_record_n50(_uploadFile, _downloadFile, value) {
 function to_candid_variant_n100(_uploadFile, _downloadFile, value) {
 	return value.__kind__ === "all" ? { all: value.all } : value.__kind__ === "boh" ? { boh: value.boh } : value.__kind__ === "foh" ? { foh: value.foh } : value.__kind__ === "roadies" ? { roadies: value.roadies } : value.__kind__ === "leaders" ? { leaders: value.leaders } : value.__kind__ === "position" ? { position: value.position } : value;
 }
-function to_candid_variant_n222(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n226(_uploadFile, _downloadFile, value) {
 	return value.__kind__ === "certified" ? { certified: value.certified } : value.__kind__ === "needsMoreTime" ? { needsMoreTime: value.needsMoreTime } : value;
 }
 function to_candid_variant_n23(_uploadFile, _downloadFile, value) {
 	return value.__kind__ === "noShow" ? { noShow: value.noShow } : value.__kind__ === "quitDuringTraining" ? { quitDuringTraining: value.quitDuringTraining } : value.__kind__ === "other" ? { other: value.other } : value.__kind__ === "paperworkIncomplete" ? { paperworkIncomplete: value.paperworkIncomplete } : value.__kind__ === "letGo" ? { letGo: value.letGo } : value.__kind__ === "ncnsOrientation" ? { ncnsOrientation: value.ncnsOrientation } : value.__kind__ === "tookAnotherJob" ? { tookAnotherJob: value.tookAnotherJob } : value;
 }
-function to_candid_vec_n201(_uploadFile, _downloadFile, value) {
-	return value.map((x) => to_candid_TemplateScheduleEvent_n202(_uploadFile, _downloadFile, x));
+function to_candid_vec_n205(_uploadFile, _downloadFile, value) {
+	return value.map((x) => to_candid_TemplateScheduleEvent_n206(_uploadFile, _downloadFile, x));
 }
-function to_candid_vec_n204(_uploadFile, _downloadFile, value) {
-	return value.map((x) => to_candid_TemplatePosition_n205(_uploadFile, _downloadFile, x));
+function to_candid_vec_n208(_uploadFile, _downloadFile, value) {
+	return value.map((x) => to_candid_TemplatePosition_n209(_uploadFile, _downloadFile, x));
 }
-function to_candid_vec_n209(_uploadFile, _downloadFile, value) {
-	return value.map((x) => to_candid_ChecklistItem_n210(_uploadFile, _downloadFile, x));
+function to_candid_vec_n213(_uploadFile, _downloadFile, value) {
+	return value.map((x) => to_candid_ChecklistItem_n214(_uploadFile, _downloadFile, x));
 }
-function to_candid_vec_n236(_uploadFile, _downloadFile, value) {
-	return value.map((x) => to_candid_AvailabilitySlot_n237(_uploadFile, _downloadFile, x));
+function to_candid_vec_n240(_uploadFile, _downloadFile, value) {
+	return value.map((x) => to_candid_AvailabilitySlot_n241(_uploadFile, _downloadFile, x));
 }
 function createActor(canisterId, _uploadFile, _downloadFile, options = {}) {
 	const agent = options.agent || HttpAgent.createSync({ ...options.agentOptions });
@@ -47657,6 +47820,60 @@ function useSetPaperworkItems() {
 		}
 	});
 }
+/**
+* The uniform settings: the shirt and hat size curve plus the buffer percent
+* applied to the projected order. Readable by Admin, Store Manager and Training
+* Manager, so callers pass `enabled` (typically `canUniforms(role)`) to avoid a
+* trapping read for other roles.
+*/
+function useUniformSettings(enabled = true) {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["uniformSettings"],
+		queryFn: async () => {
+			if (!actor) return null;
+			return actor.getUniformSettings();
+		},
+		enabled: enabled && !!actor && !isFetching
+	});
+}
+/**
+* Save the uniform settings (Admin/Store Manager only). The backend guards the
+* write with requireRealSettingsManager, so it traps while demo mode is on. The
+* settings and the derived order are invalidated so both refresh.
+*/
+function useUpdateUniformSettings() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (settings) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.updateUniformSettings(settings);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["uniformSettings"] });
+			queryClient.invalidateQueries({ queryKey: ["uniformOrder"] });
+			queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+		}
+	});
+}
+/**
+* The uniform order for one house filter: per-item size rows with hired,
+* projected and order totals, the size-unknown roadies and the buffer percent
+* used. Readable by Admin, Store Manager and Training Manager, so callers pass
+* `enabled` (typically `canUniforms(role)`) to avoid a trapping read.
+*/
+function useUniformOrder(filter, enabled = true) {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["uniformOrder", filter],
+		queryFn: async () => {
+			if (!actor) return null;
+			return actor.getUniformOrder(filter);
+		},
+		enabled: enabled && !!actor && !isFetching
+	});
+}
 //#endregion
 //#region src/hooks/useDemo.ts
 /** The demo roles offered by the banner's "View as" picker, in display order. */
@@ -47798,6 +48015,18 @@ var GIFT_BAGS_ROLES = [
 	Role.trainingManager
 ];
 /**
+* Roles allowed to view the Uniforms surface: Admin, Store Manager and
+* Training Manager. Training Manager may view the order but not edit the
+* settings, which is what UNIFORM_EDITOR_ROLES gates.
+*/
+var UNIFORM_VIEWER_ROLES = [
+	Role.admin,
+	Role.storeManager,
+	Role.trainingManager
+];
+/** Roles allowed to edit the uniform settings (size curve and buffer). */
+var UNIFORM_EDITOR_ROLES = [Role.admin, Role.storeManager];
+/**
 * Roles allowed to see the Leaders surface. Every readable role except Kiosk
 * and Integration, which have no roster read access.
 */
@@ -47876,6 +48105,11 @@ var NAV_ITEMS = [
 		labelKey: "nav.giftBags",
 		to: "/gift-bags",
 		allowedRoles: GIFT_BAGS_ROLES
+	},
+	{
+		labelKey: "nav.uniforms",
+		to: "/uniforms",
+		allowedRoles: UNIFORM_VIEWER_ROLES
 	}
 ];
 /**
@@ -48013,6 +48247,14 @@ function canLeaders(role) {
 function canOrientation(role) {
 	return !!role && ORIENTATION_ROLES.includes(role);
 }
+/** Whether the given role may view the Uniforms surface. */
+function canUniforms(role) {
+	return !!role && UNIFORM_VIEWER_ROLES.includes(role);
+}
+/** Whether the given role may edit the uniform settings. */
+function canEditUniforms(role) {
+	return !!role && UNIFORM_EDITOR_ROLES.includes(role);
+}
 var dictionaries = {
 	en: {
 		"app.name": "Roadie Roster",
@@ -48028,6 +48270,7 @@ var dictionaries = {
 		"nav.kiosk": "Kiosk",
 		"nav.export": "Export",
 		"nav.giftBags": "Gift Bags",
+		"nav.uniforms": "Uniforms",
 		"nav.signOut": "Sign out",
 		"nav.openMenu": "Open navigation menu",
 		"nav.closeMenu": "Close navigation menu",
@@ -48393,6 +48636,7 @@ var dictionaries = {
 		"admin.section.checklists": "Checklists",
 		"admin.section.template": "Store template",
 		"admin.section.crews": "Crews",
+		"admin.section.uniforms": "Uniforms",
 		"admin.section.changeLog": "Change log",
 		"admin.access.empty": "No access grants yet.",
 		"admin.access.loading": "Loading access grants…",
@@ -48574,6 +48818,7 @@ var dictionaries = {
 		"nav.kiosk": "Quiosco",
 		"nav.export": "Exportar",
 		"nav.giftBags": "Bolsas de regalo",
+		"nav.uniforms": "Uniformes",
 		"nav.signOut": "Cerrar sesión",
 		"nav.openMenu": "Abrir menú de navegación",
 		"nav.closeMenu": "Cerrar menú de navegación",
@@ -48939,6 +49184,7 @@ var dictionaries = {
 		"admin.section.checklists": "Listas de verificación",
 		"admin.section.template": "Plantilla de tienda",
 		"admin.section.crews": "Equipos",
+		"admin.section.uniforms": "Uniformes",
 		"admin.section.changeLog": "Registro de cambios",
 		"admin.access.empty": "Aún no hay accesos otorgados.",
 		"admin.access.loading": "Cargando accesos…",
@@ -55845,6 +56091,13 @@ var adminCopy = {
 		positionsHatsRequired: "Hats required",
 		positionsDefaultShirts: "Default shirts",
 		positionsDefaultHats: "Default hats",
+		positionsShirtType: "Shirt type",
+		positionsShirtTypePlaceholder: "Polo",
+		positionsShirtQty: "Shirts per roadie",
+		positionsHatType: "Hat type",
+		positionsHatTypePlaceholder: "Cap",
+		positionsHatQty: "Hats per roadie",
+		positionsUniformSummary: "Uniform: {shirtQty}× {shirtType} · {hatQty}× {hatType}",
 		positionsCrewManager: "Crew manager",
 		positionsNeedsAlcoholCert: "Needs alcohol certification",
 		positionsSaveError: "We couldn't save that position.",
@@ -55939,6 +56192,44 @@ var adminCopy = {
 		templateSaved: "Store template saved.",
 		templateSaveError: "We couldn't save the store template.",
 		accessDescription: "Who can sign in, and with which role.",
+		uniformsTitle: "Uniforms",
+		uniformsDescription: "The size curve and buffer that turn the roster into a uniform order.",
+		uniformsLoading: "Loading uniform settings…",
+		uniformsError: "We couldn't load the uniform settings.",
+		uniformsEmpty: "No uniform order yet.",
+		uniformsSizeCurve: "Size curve",
+		uniformsSizeCurveHint: "The share of each size across the crew. Percentages should add up to 100.",
+		uniformsShirts: "Shirts",
+		uniformsHats: "Hats",
+		uniformsSize: "Size",
+		uniformsPercent: "Percent",
+		uniformsBuffer: "Buffer",
+		uniformsBufferHint: "Extra stock added on top of the projected order, as a percentage.",
+		uniformsSave: "Save settings",
+		uniformsSaved: "Uniform settings saved.",
+		uniformsSaveError: "We couldn't save the uniform settings.",
+		uniformsOrderTitle: "Uniform order",
+		uniformsOrderDescription: "Hired and projected counts per size, with the buffered order total.",
+		uniformsFilterAll: "All",
+		uniformsFilterFoh: "FOH",
+		uniformsFilterBoh: "BOH",
+		uniformsColumnItem: "Item",
+		uniformsColumnSize: "Size",
+		uniformsColumnHired: "Hired",
+		uniformsColumnProjected: "Projected",
+		uniformsColumnOrderTotal: "Order total",
+		uniformsSizeUnknownTitle: "Size unknown",
+		uniformsSizeUnknownHint: "Roadies missing a shirt or hat size. Set their size so the order is complete.",
+		uniformsSizeUnknownMissingShirt: "Missing shirt size",
+		uniformsSizeUnknownMissingHat: "Missing hat size",
+		uniformsSizeUnknownMissingBoth: "Missing shirt and hat size",
+		uniformsSizeUnknownEmpty: "Every roadie has a shirt and hat size.",
+		uniformsDownload: "Download (Excel)",
+		uniformsPrint: "Print",
+		uniformsPrintTitle: "Uniform order",
+		uniformsBufferSummary: "Buffer {percent}%",
+		uniformsCurveTotal: "Total {percent}%",
+		uniformsCurveTotalWarning: "The size curve should add up to 100%.",
 		kioskPinTitle: "Kiosk staff PIN",
 		kioskPinDescription: "The PIN staff enter to sign out of the kiosk on a shared device.",
 		kioskPinLoading: "Checking the staff PIN…",
@@ -56013,6 +56304,13 @@ var adminCopy = {
 		positionsHatsRequired: "Gorras requeridas",
 		positionsDefaultShirts: "Camisetas por defecto",
 		positionsDefaultHats: "Gorras por defecto",
+		positionsShirtType: "Tipo de camiseta",
+		positionsShirtTypePlaceholder: "Polo",
+		positionsShirtQty: "Camisetas por roadie",
+		positionsHatType: "Tipo de gorra",
+		positionsHatTypePlaceholder: "Gorra",
+		positionsHatQty: "Gorras por roadie",
+		positionsUniformSummary: "Uniforme: {shirtQty}× {shirtType} · {hatQty}× {hatType}",
 		positionsCrewManager: "Gerente de equipo",
 		positionsNeedsAlcoholCert: "Requiere certificación de alcohol",
 		positionsSaveError: "No pudimos guardar ese puesto.",
@@ -56107,6 +56405,44 @@ var adminCopy = {
 		templateSaved: "Plantilla de tienda guardada.",
 		templateSaveError: "No pudimos guardar la plantilla de tienda.",
 		accessDescription: "Quién puede iniciar sesión y con qué rol.",
+		uniformsTitle: "Uniformes",
+		uniformsDescription: "La curva de tallas y el margen que convierten la plantilla en un pedido de uniformes.",
+		uniformsLoading: "Cargando ajustes de uniformes…",
+		uniformsError: "No pudimos cargar los ajustes de uniformes.",
+		uniformsEmpty: "Aún no hay pedido de uniformes.",
+		uniformsSizeCurve: "Curva de tallas",
+		uniformsSizeCurveHint: "La proporción de cada talla en el equipo. Los porcentajes deben sumar 100.",
+		uniformsShirts: "Camisetas",
+		uniformsHats: "Gorras",
+		uniformsSize: "Talla",
+		uniformsPercent: "Porcentaje",
+		uniformsBuffer: "Margen",
+		uniformsBufferHint: "Stock extra añadido al pedido proyectado, como porcentaje.",
+		uniformsSave: "Guardar ajustes",
+		uniformsSaved: "Ajustes de uniformes guardados.",
+		uniformsSaveError: "No pudimos guardar los ajustes de uniformes.",
+		uniformsOrderTitle: "Pedido de uniformes",
+		uniformsOrderDescription: "Conteos contratados y proyectados por talla, con el total del pedido con margen.",
+		uniformsFilterAll: "Todos",
+		uniformsFilterFoh: "Sala",
+		uniformsFilterBoh: "Cocina",
+		uniformsColumnItem: "Artículo",
+		uniformsColumnSize: "Talla",
+		uniformsColumnHired: "Contratados",
+		uniformsColumnProjected: "Proyectados",
+		uniformsColumnOrderTotal: "Total del pedido",
+		uniformsSizeUnknownTitle: "Talla desconocida",
+		uniformsSizeUnknownHint: "Roadies sin talla de camiseta o gorra. Define su talla para completar el pedido.",
+		uniformsSizeUnknownMissingShirt: "Falta talla de camiseta",
+		uniformsSizeUnknownMissingHat: "Falta talla de gorra",
+		uniformsSizeUnknownMissingBoth: "Falta talla de camiseta y gorra",
+		uniformsSizeUnknownEmpty: "Todos los roadies tienen talla de camiseta y gorra.",
+		uniformsDownload: "Descargar (Excel)",
+		uniformsPrint: "Imprimir",
+		uniformsPrintTitle: "Pedido de uniformes",
+		uniformsBufferSummary: "Margen {percent}%",
+		uniformsCurveTotal: "Total {percent}%",
+		uniformsCurveTotalWarning: "La curva de tallas debe sumar 100%.",
 		kioskPinTitle: "PIN del personal del quiosco",
 		kioskPinDescription: "El PIN que el personal ingresa para cerrar la sesión del quiosco en un dispositivo compartido.",
 		kioskPinLoading: "Comprobando el PIN del personal…",
@@ -57389,6 +57725,319 @@ function useDashboardCopy() {
 	} };
 }
 //#endregion
+//#region src/components/kiosk/copy.ts
+/**
+* Copy keys for the shared hat-size vocabulary. The stored value is the plain
+* size string ("One size", "S/M", "L/XL"); this maps it to its translated label
+* so the kiosk and the review step render the same wording.
+*/
+var HAT_SIZE_COPY_KEYS = {
+	"One size": "hat.oneSize",
+	"S/M": "hat.sm",
+	"L/XL": "hat.lxl"
+};
+/** Translate a stored hat-size value, falling back to the raw value. */
+function hatSizeLabel(value, t, keys = HAT_SIZE_COPY_KEYS) {
+	const key = keys[value];
+	return key ? t(key) : value;
+}
+/**
+* Kiosk-scoped copy. The shared dictionary in `lib/copy.ts` is owned by the
+* foundation; these keys live here so the kiosk flow stays self-contained.
+*/
+var kioskCopy = {
+	en: {
+		"lang.label": "Choose your language",
+		"welcome.title": "Welcome to the team",
+		"welcome.body": "Apply to join the crew. It takes about five minutes — we'll ask for a photo, your details, when you can work, and your signature.",
+		"welcome.point1": "Tell us about yourself",
+		"welcome.point2": "Take a quick photo",
+		"welcome.point3": "Pick the shifts you want",
+		"welcome.point4": "Sign with your finger",
+		"welcome.start": "Start my application",
+		"welcome.privacy": "Your answers go straight to the hiring team. Nothing is shared with the next person who uses this kiosk.",
+		progressLabel: "Application progress",
+		"step.photo": "Photo",
+		"step.details": "About you",
+		"step.contact": "Contact",
+		"step.availability": "Availability",
+		"step.signature": "Signature",
+		"step.review": "Review",
+		"photo.title": "Take your photo",
+		"photo.body": "Look at the camera and take a clear photo of your face. You can retake it as many times as you like.",
+		"photo.previewAlt": "Your captured photo",
+		"photo.capture": "Take photo",
+		"photo.retake": "Retake photo",
+		"photo.remove": "Remove photo",
+		"photo.switchToBack": "Use back camera",
+		"photo.switchToFront": "Use front camera",
+		"photo.useFile": "Upload a photo instead",
+		"photo.idle": "Starting the camera…",
+		"photo.starting": "Getting the camera ready…",
+		"photo.unsupported": "This device has no camera. Upload a photo instead.",
+		"photo.error.permission": "We need camera permission to take your photo. Allow access and try again, or upload a photo instead.",
+		"photo.error.generic": "We couldn't start the camera. Try again or upload a photo instead.",
+		"photo.noteLabel": "Photo status",
+		"photo.noteHint": "A photo is optional but helps the team recognise you.",
+		"photo.ready": "Photo captured and ready to submit.",
+		"photo.notReady": "No photo captured yet.",
+		"details.title": "Tell us about you",
+		"details.body": "These answers help the hiring team get to know you. Only your name and the position you want are required.",
+		"field.name": "Full name",
+		"field.preferredName": "Preferred name",
+		"field.preferredNameHint": "What should we call you?",
+		"field.hometown": "Hometown",
+		"field.position": "Position applied for",
+		"field.positionPlaceholder": "e.g. Cashier, Cook, Server",
+		"field.shirtSize": "Shirt size",
+		"field.hatSize": "Hat size",
+		"hat.oneSize": "One size",
+		"hat.sm": "S/M",
+		"hat.lxl": "L/XL",
+		"manager.sizes.title": "Uniform sizes",
+		"manager.sizes.body": "Shirt and hat sizes are not contact information and are visible to leaders.",
+		"field.shiftsWanted": "Shifts wanted per week",
+		"field.shiftsWantedHint": "How many shifts would you like each week?",
+		"field.weekdayLunch": "Available for weekday lunch shifts?",
+		"field.weekdayLunchHint": "Lunch shifts run during the day, Monday to Friday.",
+		"field.hobbies": "What do you do on your day off?",
+		"field.favoriteSnack": "Favorite candy or snack (brand)",
+		"field.favoriteSnackPlaceholder": "e.g. Snickers, Hot Cheetos",
+		"field.favoriteTeam": "Favorite sports team",
+		"field.favoriteTeamPlaceholder": "e.g. LSU Tigers, Saints",
+		"field.favoriteDrink": "Favorite drink",
+		"field.favoriteDrinkPlaceholder": "Soda, energy drink, or coffee order",
+		"field.favoriteColor": "Favorite color",
+		"field.favoriteColorPlaceholder": "e.g. Navy blue",
+		"field.funFact": "Fun fact",
+		"field.goalHere": "Your goal here",
+		"field.selectPlaceholder": "Select…",
+		"contact.title": "How can we reach you?",
+		"contact.body": "We use these details to schedule your interview and reach someone in an emergency.",
+		"field.email": "Email",
+		"field.phone": "Phone",
+		"field.dateOfBirth": "Date of birth",
+		"field.dateOfBirthHint": "Some roles have age requirements.",
+		"field.emergencyContact": "Emergency contact name",
+		"field.emergencyPhone": "Emergency contact phone",
+		"availability.title": "When can you work?",
+		"availability.body": "Tap every shift you can work. You can pick as many as you like.",
+		"availability.day": "Day",
+		"availability.am": "AM",
+		"availability.pm": "PM",
+		"availability.available": "Yes",
+		"availability.unavailable": "No",
+		"availability.selected": "{count} shifts selected",
+		"availability.noneSelected": "No shifts selected",
+		"weekday.wed": "Wednesday",
+		"weekday.thu": "Thursday",
+		"weekday.fri": "Friday",
+		"weekday.sat": "Saturday",
+		"weekday.sun": "Sunday",
+		"weekday.mon": "Monday",
+		"weekday.tue": "Tuesday",
+		"kiosk.weekday.wed": "Wednesday",
+		"kiosk.weekday.thu": "Thursday",
+		"kiosk.weekday.fri": "Friday",
+		"kiosk.weekday.sat": "Saturday",
+		"kiosk.weekday.sun": "Sunday",
+		"kiosk.weekday.mon": "Monday",
+		"kiosk.weekday.tue": "Tuesday",
+		"signature.title": "Sign your availability",
+		"signature.body": "Draw your signature in the box with your finger or a stylus to confirm the shifts you selected.",
+		"signature.canvasLabel": "Signature drawing area",
+		"signature.prompt": "Draw your signature above.",
+		"signature.captured": "Signature captured.",
+		"signature.clear": "Clear",
+		"signature.signAsTest": "Sign as Test",
+		"review.title": "Check your answers",
+		"review.body": "Review everything below. Use Back to fix anything before you submit.",
+		"review.photo": "Photo",
+		"review.photoReady": "Captured",
+		"review.signature": "Signature",
+		"review.signatureReady": "Signed",
+		"success.title": "Application submitted",
+		"success.body": "Thank you! The hiring team will review your application and reach out soon.",
+		"success.next": "Start a new application",
+		"success.auto": "This screen clears automatically so the next person starts fresh.",
+		next: "Next",
+		back: "Back",
+		cancel: "Cancel",
+		submit: "Submit application",
+		submitting: "Submitting…",
+		"common.none": "Not provided",
+		"common.yes": "Yes",
+		"common.no": "No",
+		"common.retry": "Retry",
+		"error.nameRequired": "Enter your full name.",
+		"error.positionRequired": "Enter the position you're applying for.",
+		"error.emailInvalid": "Enter a valid email address.",
+		"error.phoneRequired": "Enter your phone number.",
+		"error.phoneInvalid": "Enter a valid phone number.",
+		"error.dobRequired": "Enter your date of birth.",
+		"error.dobInvalid": "Enter a valid date of birth.",
+		"error.dobPast": "Date of birth must be in the past.",
+		"error.dobAge": "You must be between 14 and 100 years old.",
+		"error.shiftsRange": "Enter a number of shifts between 0 and 7.",
+		"error.emergencyRequired": "Enter an emergency contact name.",
+		"error.emergencyPhoneRequired": "Enter an emergency contact phone.",
+		"error.emergencyPhoneInvalid": "Enter a valid emergency contact phone.",
+		"error.availabilityRequired": "Select at least one shift.",
+		"error.signatureRequired": "Draw your signature to continue.",
+		"error.submit": "We couldn't submit your application. Please try again."
+	},
+	es: {
+		"lang.label": "Elige tu idioma",
+		"welcome.title": "Bienvenido al equipo",
+		"welcome.body": "Solicita unirte al equipo. Toma unos cinco minutos: pediremos una foto, tus datos, cuándo puedes trabajar y tu firma.",
+		"welcome.point1": "Cuéntanos sobre ti",
+		"welcome.point2": "Toma una foto rápida",
+		"welcome.point3": "Elige los turnos que quieres",
+		"welcome.point4": "Firma con el dedo",
+		"welcome.start": "Comenzar mi solicitud",
+		"welcome.privacy": "Tus respuestas van directo al equipo de contratación. Nada se comparte con la siguiente persona que use este quiosco.",
+		progressLabel: "Progreso de la solicitud",
+		"step.photo": "Foto",
+		"step.details": "Sobre ti",
+		"step.contact": "Contacto",
+		"step.availability": "Disponibilidad",
+		"step.signature": "Firma",
+		"step.review": "Revisar",
+		"photo.title": "Toma tu foto",
+		"photo.body": "Mira a la cámara y toma una foto clara de tu rostro. Puedes repetirla cuantas veces quieras.",
+		"photo.previewAlt": "Tu foto capturada",
+		"photo.capture": "Tomar foto",
+		"photo.retake": "Repetir foto",
+		"photo.remove": "Quitar foto",
+		"photo.switchToBack": "Usar cámara trasera",
+		"photo.switchToFront": "Usar cámara frontal",
+		"photo.useFile": "Subir una foto en su lugar",
+		"photo.idle": "Iniciando la cámara…",
+		"photo.starting": "Preparando la cámara…",
+		"photo.unsupported": "Este dispositivo no tiene cámara. Sube una foto en su lugar.",
+		"photo.error.permission": "Necesitamos permiso de cámara para tomar tu foto. Permite el acceso e inténtalo de nuevo, o sube una foto.",
+		"photo.error.generic": "No pudimos iniciar la cámara. Inténtalo de nuevo o sube una foto.",
+		"photo.noteLabel": "Estado de la foto",
+		"photo.noteHint": "La foto es opcional, pero ayuda al equipo a reconocerte.",
+		"photo.ready": "Foto capturada y lista para enviar.",
+		"photo.notReady": "Aún no se ha capturado ninguna foto.",
+		"details.title": "Cuéntanos sobre ti",
+		"details.body": "Estas respuestas ayudan al equipo a conocerte. Solo tu nombre y el puesto que quieres son obligatorios.",
+		"field.name": "Nombre completo",
+		"field.preferredName": "Nombre preferido",
+		"field.preferredNameHint": "¿Cómo te llamamos?",
+		"field.hometown": "Ciudad natal",
+		"field.position": "Puesto solicitado",
+		"field.positionPlaceholder": "p. ej. Cajero, Cocinero, Mesero",
+		"field.shirtSize": "Talla de camiseta",
+		"field.hatSize": "Talla de gorra",
+		"hat.oneSize": "Talla única",
+		"hat.sm": "S/M",
+		"hat.lxl": "L/XL",
+		"manager.sizes.title": "Tallas de uniforme",
+		"manager.sizes.body": "Las tallas de camiseta y gorra no son datos de contacto y son visibles para los líderes.",
+		"field.shiftsWanted": "Turnos por semana",
+		"field.shiftsWantedHint": "¿Cuántos turnos quieres cada semana?",
+		"field.weekdayLunch": "¿Disponible para turnos de almuerzo?",
+		"field.weekdayLunchHint": "Los turnos de almuerzo son de día, de lunes a viernes.",
+		"field.hobbies": "¿Qué haces en tu día libre?",
+		"field.favoriteSnack": "Dulce o snack favorito (marca)",
+		"field.favoriteSnackPlaceholder": "ej. Snickers, Hot Cheetos",
+		"field.favoriteTeam": "Equipo deportivo favorito",
+		"field.favoriteTeamPlaceholder": "ej. LSU Tigers, Saints",
+		"field.favoriteDrink": "Bebida favorita",
+		"field.favoriteDrinkPlaceholder": "Refresco, bebida energética o tu café",
+		"field.favoriteColor": "Color favorito",
+		"field.favoriteColorPlaceholder": "ej. Azul marino",
+		"field.funFact": "Dato curioso",
+		"field.goalHere": "Tu meta aquí",
+		"field.selectPlaceholder": "Selecciona…",
+		"contact.title": "¿Cómo te contactamos?",
+		"contact.body": "Usamos estos datos para programar tu entrevista y contactar a alguien en una emergencia.",
+		"field.email": "Correo",
+		"field.phone": "Teléfono",
+		"field.dateOfBirth": "Fecha de nacimiento",
+		"field.dateOfBirthHint": "Algunos puestos tienen requisitos de edad.",
+		"field.emergencyContact": "Nombre del contacto de emergencia",
+		"field.emergencyPhone": "Teléfono del contacto de emergencia",
+		"availability.title": "¿Cuándo puedes trabajar?",
+		"availability.body": "Toca cada turno en el que puedas trabajar. Puedes elegir todos los que quieras.",
+		"availability.day": "Día",
+		"availability.am": "AM",
+		"availability.pm": "PM",
+		"availability.available": "Sí",
+		"availability.unavailable": "No",
+		"availability.selected": "{count} turnos seleccionados",
+		"availability.noneSelected": "Ningún turno seleccionado",
+		"weekday.wed": "Miércoles",
+		"weekday.thu": "Jueves",
+		"weekday.fri": "Viernes",
+		"weekday.sat": "Sábado",
+		"weekday.sun": "Domingo",
+		"weekday.mon": "Lunes",
+		"weekday.tue": "Martes",
+		"kiosk.weekday.wed": "Miércoles",
+		"kiosk.weekday.thu": "Jueves",
+		"kiosk.weekday.fri": "Viernes",
+		"kiosk.weekday.sat": "Sábado",
+		"kiosk.weekday.sun": "Domingo",
+		"kiosk.weekday.mon": "Lunes",
+		"kiosk.weekday.tue": "Martes",
+		"signature.title": "Firma tu disponibilidad",
+		"signature.body": "Dibuja tu firma en el recuadro con el dedo o un lápiz para confirmar los turnos que elegiste.",
+		"signature.canvasLabel": "Área para dibujar la firma",
+		"signature.prompt": "Dibuja tu firma arriba.",
+		"signature.captured": "Firma capturada.",
+		"signature.clear": "Borrar",
+		"signature.signAsTest": "Firmar como prueba",
+		"review.title": "Revisa tus respuestas",
+		"review.body": "Revisa todo lo de abajo. Usa Atrás para corregir algo antes de enviar.",
+		"review.photo": "Foto",
+		"review.photoReady": "Capturada",
+		"review.signature": "Firma",
+		"review.signatureReady": "Firmada",
+		"success.title": "Solicitud enviada",
+		"success.body": "¡Gracias! El equipo de contratación revisará tu solicitud y se comunicará pronto.",
+		"success.next": "Comenzar una nueva solicitud",
+		"success.auto": "Esta pantalla se limpia automáticamente para que la siguiente persona empiece de cero.",
+		next: "Siguiente",
+		back: "Atrás",
+		cancel: "Cancelar",
+		submit: "Enviar solicitud",
+		submitting: "Enviando…",
+		"common.none": "No proporcionado",
+		"common.yes": "Sí",
+		"common.no": "No",
+		"common.retry": "Reintentar",
+		"error.nameRequired": "Ingresa tu nombre completo.",
+		"error.positionRequired": "Ingresa el puesto al que aplicas.",
+		"error.emailInvalid": "Ingresa un correo válido.",
+		"error.phoneRequired": "Ingresa tu número de teléfono.",
+		"error.phoneInvalid": "Ingresa un número de teléfono válido.",
+		"error.dobRequired": "Ingresa tu fecha de nacimiento.",
+		"error.dobInvalid": "Ingresa una fecha de nacimiento válida.",
+		"error.dobPast": "La fecha de nacimiento debe ser en el pasado.",
+		"error.dobAge": "Debes tener entre 14 y 100 años.",
+		"error.shiftsRange": "Ingresa un número de turnos entre 0 y 7.",
+		"error.emergencyRequired": "Ingresa un nombre de contacto de emergencia.",
+		"error.emergencyPhoneRequired": "Ingresa un teléfono de contacto de emergencia.",
+		"error.emergencyPhoneInvalid": "Ingresa un teléfono de contacto de emergencia válido.",
+		"error.availabilityRequired": "Selecciona al menos un turno.",
+		"error.signatureRequired": "Dibuja tu firma para continuar.",
+		"error.submit": "No pudimos enviar tu solicitud. Inténtalo de nuevo."
+	}
+};
+/** Translate a kiosk-scoped key, interpolating `{name}` placeholders. */
+function useKioskCopy() {
+	const { locale } = useI18n();
+	const dict = kioskCopy[locale] ?? kioskCopy.en;
+	return (key, vars) => {
+		let value = dict[key] ?? kioskCopy.en[key] ?? key;
+		if (vars) for (const [name, replacement] of Object.entries(vars)) value = value.replaceAll(`{${name}}`, String(replacement));
+		return value;
+	};
+}
+//#endregion
 //#region src/components/roadie/FlipCard.tsx
 /** The roadie's initials for the no-photo placeholder, at most two letters. */
 function initialsOf$5(name) {
@@ -57403,12 +58052,12 @@ function initialsOf$5(name) {
 * stars, matching the reference card. The store number is the accessible name,
 * so assistive tech reads the seal as the store number rather than as an image.
 */
-function StoreSeal({ storeNumber }) {
+function StoreSeal({ storeNumber, label }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", {
 		className: "seal",
 		viewBox: "0 0 100 100",
 		role: "img",
-		"aria-label": String(storeNumber),
+		"aria-label": label,
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
 				d: "M50.0,2.0 L55.8,5.9 L62.4,3.6 L67.0,8.9 L74.0,8.4 L77.1,14.7 L83.9,16.1 L85.3,22.9 L91.6,26.0 L91.1,33.0 L96.4,37.6 L94.1,44.2 L98.0,50.0 L94.1,55.8 L96.4,62.4 L91.1,67.0 L91.6,74.0 L85.3,77.1 L83.9,83.9 L77.1,85.3 L74.0,91.6 L67.0,91.1 L62.4,96.4 L55.8,94.1 L50.0,98.0 L44.2,94.1 L37.6,96.4 L33.0,91.1 L26.0,91.6 L22.9,85.3 L16.1,83.9 L14.7,77.1 L8.4,74.0 L8.9,67.0 L3.6,62.4 L5.9,55.8 L2.0,50.0 L5.9,44.2 L3.6,37.6 L8.9,33.0 L8.4,26.0 L14.7,22.9 L16.1,16.1 L22.9,14.7 L26.0,8.4 L33.0,8.9 L37.6,3.6 L44.2,5.9Z",
@@ -57456,6 +58105,51 @@ function StoreSeal({ storeNumber }) {
 				children: "★ ★ ★"
 			})
 		]
+	});
+}
+/**
+* The front-face top-banner badge. An uploaded secondary logo wins, then the
+* uploaded main logo, and only when neither exists does the drawn bottle-cap
+* store seal stand in. The uploaded logos keep their own aspect ratio; the
+* bottle-cap is square.
+*/
+function StoreBadge({ storeNumber }) {
+	const { t } = useI18n();
+	const { data: logos } = useStoreLogo();
+	const secondaryUrl = (0, import_react.useMemo)(() => refToDataUrl(logos?.secondaryLogo), [logos?.secondaryLogo]);
+	const mainUrl = (0, import_react.useMemo)(() => refToDataUrl(logos?.logo), [logos?.logo]);
+	if (secondaryUrl) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+		src: secondaryUrl,
+		alt: "Store secondary logo",
+		"data-ocid": "store.logo.secondary",
+		className: "h-full w-auto max-w-full object-contain"
+	});
+	if (mainUrl) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+		src: mainUrl,
+		alt: "Store logo",
+		"data-ocid": "store.logo",
+		className: "h-full w-auto max-w-full object-contain"
+	});
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreSeal, {
+		storeNumber,
+		label: t("roadie.card.badge")
+	});
+}
+/**
+* One ROADIE STATS bar. A bar with a known value fills proportionally; a bar
+* with no data yet shows the "Coming soon" label instead of an empty track.
+*/
+function StatBar({ label, value }) {
+	const { t } = useI18n();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "stat",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: label }), value === null ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			className: "text-[3.4cqw] normal-case",
+			children: t("roadie.card.comingSoon")
+		}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			className: "bar",
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { style: { width: `${Math.round(value * 100)}%` } })
+		})]
 	});
 }
 /**
@@ -57637,6 +58331,9 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 	const openingTeamFooter = `${t("roadie.card.openingTeam")} ★ ${storeNumber ? `#${storeNumber} ` : ""}${storeCity ?? t("roadie.field.none")}`;
 	const leaderFooter = trainerFooter ?? openingTeamFooter;
 	const roadieBackFooter = `${storeNumber ? `#${storeNumber} ` : ""}${t("roadie.card.openingCrew").toUpperCase()}${openingDate ? ` · ${openingDate.toUpperCase()}` : ""}`;
+	const orientationProgress = roadie?.rosterState === RosterState.active ? 1 : null;
+	const certifiedProgress = roadie?.status === RoadieStatus.certified ? 1 : null;
+	const trainingProgress = null;
 	const profileRows = [
 		{
 			label: t("roadie.field.hometown"),
@@ -57659,6 +58356,10 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 			value: about?.favoriteSnack
 		},
 		{
+			label: t("roadie.field.favoriteMovie"),
+			value: roadieProfile?.favoriteMovie
+		},
+		{
 			label: t("roadie.field.favoriteDrink"),
 			value: about?.favoriteDrink
 		},
@@ -57669,6 +58370,18 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 		{
 			label: t("roadie.field.funFact"),
 			value: about?.funFact
+		},
+		{
+			label: t("roadie.field.shirtSize"),
+			value: about?.shirtSize
+		},
+		{
+			label: t("roadie.field.hatSize"),
+			value: about?.hatSize ? hatSizeLabel(about.hatSize, t, {
+				"One size": "profile.hat.oneSize",
+				"S/M": "profile.hat.sm",
+				"L/XL": "profile.hat.lxl"
+			}) : void 0
 		},
 		{
 			label: t("roadie.field.hiredAt"),
@@ -57706,7 +58419,7 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 									children: t("roadie.card.tlc")
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 									className: "cap",
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreSeal, { storeNumber: storeNumber ?? "" })
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreBadge, { storeNumber: storeNumber ?? "" })
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -57734,6 +58447,12 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 										className: "tag minor",
 										"data-ocid": "roadie.minor_badge",
 										children: "MINOR"
+									}),
+									isMinor && roadie?.birthdayMonthDay && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "tag birthday",
+										"data-ocid": "roadie.birthday_badge",
+										"aria-label": t("roadie.card.birthdayBadge"),
+										children: roadie.birthdayMonthDay
 									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 										className: "shield",
@@ -57831,6 +58550,27 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 											label: t("roadie.card.here"),
 											value: `${arrival ?? "—"} – ${departure ?? "—"}`
 										})]
+									}),
+									!isLeader && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+										className: "stats",
+										children: [
+											/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+												className: "h",
+												children: t("roadie.card.stats")
+											}),
+											/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatBar, {
+												label: t("roadie.card.stat.orientation"),
+												value: orientationProgress
+											}),
+											/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatBar, {
+												label: t("roadie.card.stat.training"),
+												value: trainingProgress
+											}),
+											/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatBar, {
+												label: t("roadie.card.stat.certified"),
+												value: certifiedProgress
+											})
+										]
 									}),
 									about?.goalHere && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 										className: "quote",
@@ -58823,6 +59563,10 @@ function emptyDraft() {
 		hatsRequired: "0",
 		defaultShirts: "3",
 		defaultHats: "2",
+		shirtType: "",
+		shirtQty: "0",
+		hatType: "",
+		hatQty: "0",
 		crewManager: ""
 	};
 }
@@ -58838,6 +59582,10 @@ function toDraft$2(position) {
 		hatsRequired: position.hatsRequired.toString(),
 		defaultShirts: position.defaultShirts.toString(),
 		defaultHats: position.defaultHats.toString(),
+		shirtType: position.shirtType,
+		shirtQty: position.shirtQty.toString(),
+		hatType: position.hatType,
+		hatQty: position.hatQty.toString(),
 		crewManager: position.crewManager ?? ""
 	};
 }
@@ -58861,6 +59609,10 @@ function toPosition(draft, openingBuildTo, afterOpeningBuildTo) {
 		hatsRequired: toCount(draft.hatsRequired),
 		defaultShirts: toCount(draft.defaultShirts),
 		defaultHats: toCount(draft.defaultHats),
+		shirtType: draft.shirtType.trim(),
+		shirtQty: toCount(draft.shirtQty),
+		hatType: draft.hatType.trim(),
+		hatQty: toCount(draft.hatQty),
 		crewManager: draft.crewManager.trim() ? draft.crewManager.trim() : void 0
 	};
 }
@@ -58996,6 +59748,16 @@ function PositionRow$1({ position, readOnly, onEdit, onDelete }) {
 						opening: position.openingBuildTo.toString(),
 						after: position.afterOpeningBuildTo.toString(),
 						age: position.minimumAge.toString()
+					})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "mt-1 text-xs text-muted-foreground",
+					"data-ocid": "admin.positions.uniform_summary",
+					children: fill$2(c.positionsUniformSummary, {
+						shirtQty: position.shirtQty.toString(),
+						shirtType: position.shirtType || c.positionsShirtType,
+						hatQty: position.hatQty.toString(),
+						hatType: position.hatType || c.positionsHatType
 					})
 				}),
 				!readOnly && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -59241,6 +60003,58 @@ function PositionsPanel() {
 											className: "touch-target",
 											value: draft.defaultHats,
 											onChange: (event) => set("defaultHats", event.target.value)
+										})
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+										label: c.positionsShirtType,
+										htmlFor: "pos-shirt-type",
+										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+											id: "pos-shirt-type",
+											"data-ocid": "admin.positions.shirt_type.input",
+											className: "touch-target",
+											placeholder: c.positionsShirtTypePlaceholder,
+											value: draft.shirtType,
+											onChange: (event) => set("shirtType", event.target.value)
+										})
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+										label: c.positionsShirtQty,
+										htmlFor: "pos-shirt-qty",
+										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+											id: "pos-shirt-qty",
+											type: "number",
+											min: 0,
+											step: 1,
+											"data-ocid": "admin.positions.shirt_qty.input",
+											className: "touch-target",
+											value: draft.shirtQty,
+											onChange: (event) => set("shirtQty", event.target.value)
+										})
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+										label: c.positionsHatType,
+										htmlFor: "pos-hat-type",
+										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+											id: "pos-hat-type",
+											"data-ocid": "admin.positions.hat_type.input",
+											className: "touch-target",
+											placeholder: c.positionsHatTypePlaceholder,
+											value: draft.hatType,
+											onChange: (event) => set("hatType", event.target.value)
+										})
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
+										label: c.positionsHatQty,
+										htmlFor: "pos-hat-qty",
+										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+											id: "pos-hat-qty",
+											type: "number",
+											min: 0,
+											step: 1,
+											"data-ocid": "admin.positions.hat_qty.input",
+											className: "touch-target",
+											value: draft.hatQty,
+											onChange: (event) => set("hatQty", event.target.value)
 										})
 									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FormField, {
@@ -60819,7 +61633,11 @@ function parseTemplateFile(value) {
 			minimumAge,
 			needsAlcoholCert: raw.needsAlcoholCert === true,
 			defaultHats: toBigInt(raw.defaultHats) ?? 0n,
-			defaultShirts: toBigInt(raw.defaultShirts) ?? 0n
+			defaultShirts: toBigInt(raw.defaultShirts) ?? 0n,
+			shirtType: typeof raw.shirtType === "string" ? raw.shirtType : "",
+			shirtQty: toBigInt(raw.shirtQty) ?? 0n,
+			hatType: typeof raw.hatType === "string" ? raw.hatType : "",
+			hatQty: toBigInt(raw.hatQty) ?? 0n
 		});
 	}
 	const schedule = [];
@@ -61217,2266 +62035,6 @@ function useSeedWhenEmpty(ready, isEmpty) {
 		mutate
 	]);
 }
-//#endregion
-//#region src/pages/Admin.tsx
-function AdminPage() {
-	const { t } = useI18n();
-	const demo = useDemo();
-	const [tab, setTab] = (0, import_react.useState)("store");
-	const positions = usePositions();
-	const access = useAccessState();
-	const viewerRole = access.kind === "granted" ? access.grant.role : void 0;
-	const canSeeCrews = !!viewerRole && APPROVAL_ROLES.includes(viewerRole);
-	useSeedWhenEmpty(positions.isSuccess, (positions.data?.length ?? 0) === 0);
-	const realSettingsTabs = [
-		"positions",
-		"schedule",
-		"checklists",
-		"template",
-		"access"
-	];
-	const showRealSettings = !demo.enabled;
-	const tabs = [
-		{
-			key: "store",
-			label: t("admin.section.store")
-		},
-		...showRealSettings ? [
-			{
-				key: "positions",
-				label: t("admin.section.positions")
-			},
-			{
-				key: "schedule",
-				label: t("admin.section.schedule")
-			},
-			{
-				key: "checklists",
-				label: t("admin.section.checklists")
-			},
-			{
-				key: "template",
-				label: t("admin.section.template")
-			}
-		] : [],
-		...canSeeCrews ? [{
-			key: "crews",
-			label: t("admin.section.crews")
-		}] : [],
-		...showRealSettings ? [{
-			key: "access",
-			label: t("admin.section.access")
-		}] : []
-	];
-	const activeTab = !showRealSettings && realSettingsTabs.includes(tab) ? "store" : tab;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "space-y-6",
-		"data-ocid": "admin.page",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
-				title: t("admin.title"),
-				subtitle: t("admin.subtitle")
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				role: "tablist",
-				"aria-label": t("admin.title"),
-				className: "flex flex-wrap gap-1 rounded-md border border-border bg-card p-1",
-				children: tabs.map((item) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-					type: "button",
-					role: "tab",
-					"aria-selected": activeTab === item.key,
-					"data-ocid": `admin.${item.key}.tab`,
-					onClick: () => setTab(item.key),
-					className: `touch-target rounded px-3 py-1.5 font-display text-xs font-semibold uppercase tracking-wider transition-colors ${activeTab === item.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`,
-					children: item.label
-				}, item.key))
-			}),
-			activeTab === "store" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreInfoPanel, {}),
-			activeTab === "positions" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PositionsPanel, {}),
-			activeTab === "schedule" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SchedulePanel, {}),
-			activeTab === "checklists" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChecklistsPanel, {}),
-			activeTab === "template" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TemplatePanel, {}),
-			activeTab === "crews" && canSeeCrews && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CrewsPanel, {}),
-			activeTab === "access" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccessPanel, {})
-		]
-	});
-}
-//#endregion
-//#region src/components/approvals/ApprovalConfirmDialog.tsx
-/**
-* Confirmation step shown before granting a high-privilege role. The admin
-* must explicitly confirm before the approval is sent.
-*/
-function ApprovalConfirmDialog({ open, role, pending, onOpenChange, onConfirm }) {
-	const { t } = useI18n();
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
-		open,
-		onOpenChange,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, {
-			"data-ocid": "approvals.confirm.dialog",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: t("approvals.confirm.title") }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogDescription, { children: t("approvals.confirm.body", { role: roleLabel(role) }) })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-				type: "button",
-				variant: "outline",
-				className: "touch-target",
-				"data-ocid": "approvals.cancel_button",
-				onClick: () => onOpenChange(false),
-				children: t("approvals.cancel")
-			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-				type: "button",
-				className: "touch-target",
-				"data-ocid": "approvals.confirm_button",
-				disabled: pending,
-				onClick: onConfirm,
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, {
-					className: "mr-2 h-4 w-4",
-					"aria-hidden": "true"
-				}), t("approvals.confirm.action")]
-			})] })]
-		})
-	});
-}
-/**
-* Confirmation step shown before rejecting a pending sign-up. Rejecting is
-* destructive, so the manager must explicitly confirm before it is sent.
-*/
-function RejectConfirmDialog({ open, pending, onOpenChange, onConfirm }) {
-	const { t } = useI18n();
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
-		open,
-		onOpenChange,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, {
-			"data-ocid": "approvals.reject.dialog",
-			"aria-describedby": void 0,
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: t("approvals.action.reject") }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-				type: "button",
-				variant: "outline",
-				className: "touch-target",
-				"data-ocid": "approvals.reject.cancel_button",
-				onClick: () => onOpenChange(false),
-				children: t("approvals.cancel")
-			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-				type: "button",
-				variant: "destructive",
-				className: "touch-target",
-				"data-ocid": "approvals.reject.confirm_button",
-				disabled: pending,
-				onClick: onConfirm,
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, {
-					className: "mr-2 h-4 w-4",
-					"aria-hidden": "true"
-				}), t("common.confirm")]
-			})] })]
-		})
-	});
-}
-//#endregion
-//#region src/components/approvals/ManagerSignaturePad.tsx
-/**
-* A sample signature drawn as normalized points (0..1 of the canvas box), so
-* the demo "Sign as Test" button can fill the pad at any canvas size. The path
-* is a single flowing cursive stroke that reads as a signature.
-*/
-var SAMPLE_SIGNATURE$1 = [
-	[.08, .68],
-	[.12, .42],
-	[.16, .3],
-	[.2, .34],
-	[.22, .52],
-	[.24, .66],
-	[.28, .6],
-	[.32, .44],
-	[.36, .38],
-	[.4, .46],
-	[.42, .6],
-	[.46, .64],
-	[.5, .5],
-	[.54, .36],
-	[.58, .4],
-	[.6, .56],
-	[.64, .62],
-	[.68, .48],
-	[.72, .34],
-	[.76, .4],
-	[.8, .58],
-	[.86, .62],
-	[.92, .5]
-];
-/**
-* A pointer-drawn manager signature on a canvas. Emits the drawn strokes as
-* raw PNG bytes so the approval stores a real signature reference, never the
-* roadie's own signature. Reuses the same drawing technique as the kiosk
-* signature step so a manager can sign on a phone.
-*/
-function ManagerSignaturePad({ value, onChange, error }) {
-	const { t } = useI18n();
-	const demo = useDemo();
-	const canvasRef = (0, import_react.useRef)(null);
-	const drawingRef = (0, import_react.useRef)(false);
-	const [dirty, setDirty] = (0, import_react.useState)(false);
-	const setupCanvas = (0, import_react.useCallback)(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-		const ratio = window.devicePixelRatio || 1;
-		const rect = canvas.getBoundingClientRect();
-		canvas.width = Math.max(1, Math.round(rect.width * ratio));
-		canvas.height = Math.max(1, Math.round(rect.height * ratio));
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
-		ctx.scale(ratio, ratio);
-		ctx.lineWidth = 2.5;
-		ctx.lineCap = "round";
-		ctx.lineJoin = "round";
-		ctx.strokeStyle = "#14284B";
-	}, []);
-	(0, import_react.useEffect)(() => {
-		setupCanvas();
-	}, [setupCanvas]);
-	const pointFromEvent = (event) => {
-		const canvas = canvasRef.current;
-		if (!canvas) return {
-			x: 0,
-			y: 0
-		};
-		const rect = canvas.getBoundingClientRect();
-		return {
-			x: event.clientX - rect.left,
-			y: event.clientY - rect.top
-		};
-	};
-	const handlePointerDown = (event) => {
-		const canvas = canvasRef.current;
-		const ctx = canvas?.getContext("2d");
-		if (!canvas || !ctx) return;
-		canvas.setPointerCapture(event.pointerId);
-		drawingRef.current = true;
-		const { x, y } = pointFromEvent(event);
-		ctx.beginPath();
-		ctx.moveTo(x, y);
-	};
-	const handlePointerMove = (event) => {
-		if (!drawingRef.current) return;
-		const ctx = canvasRef.current?.getContext("2d");
-		if (!ctx) return;
-		const { x, y } = pointFromEvent(event);
-		ctx.lineTo(x, y);
-		ctx.stroke();
-		if (!dirty) setDirty(true);
-	};
-	const finishStroke = () => {
-		if (!drawingRef.current) return;
-		drawingRef.current = false;
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-		canvas.toBlob((blob) => {
-			if (!blob) return;
-			blob.arrayBuffer().then((buffer) => onChange(new Uint8Array(buffer)));
-		}, "image/png");
-	};
-	const clear = () => {
-		const canvas = canvasRef.current;
-		const ctx = canvas?.getContext("2d");
-		if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-		setDirty(false);
-		onChange(null);
-	};
-	const signAsTest = () => {
-		const canvas = canvasRef.current;
-		const ctx = canvas?.getContext("2d");
-		if (!canvas || !ctx) return;
-		const rect = canvas.getBoundingClientRect();
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		ctx.beginPath();
-		SAMPLE_SIGNATURE$1.forEach(([nx, ny], index) => {
-			const x = nx * rect.width;
-			const y = ny * rect.height;
-			if (index === 0) ctx.moveTo(x, y);
-			else ctx.lineTo(x, y);
-		});
-		ctx.stroke();
-		setDirty(true);
-		canvas.toBlob((blob) => {
-			if (!blob) return;
-			blob.arrayBuffer().then((buffer) => onChange(new Uint8Array(buffer)));
-		}, "image/png");
-	};
-	const hasSignature = value !== null && value.length > 0;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "space-y-2 md:col-span-2",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-				children: t("approvals.signup.signature.label")
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "rounded-lg border border-border bg-card p-3",
-				children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("canvas", {
-						ref: canvasRef,
-						"data-ocid": "approvals.signup.signature.canvas_target",
-						"aria-label": t("approvals.signup.signature.label"),
-						className: "h-40 w-full touch-none rounded-md border border-dashed border-input bg-white",
-						onPointerDown: handlePointerDown,
-						onPointerMove: handlePointerMove,
-						onPointerUp: finishStroke,
-						onPointerLeave: finishStroke,
-						onPointerCancel: finishStroke
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "mt-3 flex items-center justify-between gap-3",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-							className: "flex items-center gap-2 text-xs text-muted-foreground",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PenLine, {
-								className: "h-4 w-4",
-								"aria-hidden": "true"
-							}), hasSignature ? t("approvals.signup.signature.label") : t("approvals.signup.signature.required")]
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-							type: "button",
-							variant: "outline",
-							"data-ocid": "approvals.signup.signature.clear_button",
-							onClick: clear,
-							disabled: !dirty && !hasSignature,
-							className: "touch-target rounded-full",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eraser, {
-								className: "h-4 w-4",
-								"aria-hidden": "true"
-							}), t("common.cancel")]
-						})]
-					}),
-					demo.enabled && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-						type: "button",
-						variant: "secondary",
-						"data-ocid": "approvals.signup.signature.sign_as_test_button",
-						onClick: signAsTest,
-						className: "touch-target mt-3 w-full rounded-full",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(WandSparkles, {
-							className: "h-4 w-4",
-							"aria-hidden": "true"
-						}), t("demo.signAsTest")]
-					})
-				]
-			}),
-			error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				role: "alert",
-				"data-ocid": "approvals.signup.signature.error_state",
-				className: "text-sm font-medium text-destructive",
-				children: error
-			})
-		]
-	});
-}
-//#endregion
-//#region src/components/approvals/ApprovalRoleSelect.tsx
-/** Roles an admin may grant. No role is pre-selected. */
-var ASSIGNABLE_ROLES = [
-	Role.storeManager,
-	Role.trainingManager,
-	Role.leadership,
-	Role.visitingManager,
-	Role.trainer,
-	Role.kiosk,
-	Role.admin
-];
-/** Roles that require an explicit confirmation before granting. */
-var CONFIRM_ROLES = [Role.storeManager, Role.admin];
-/** Whether granting this role needs a confirmation step. */
-function needsConfirmation(role) {
-	return role !== "" && CONFIRM_ROLES.includes(role);
-}
-/** Role picker for the approval form. */
-function ApprovalRoleSelect({ id, value, onChange }) {
-	const { t } = useI18n();
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "space-y-1.5",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
-			htmlFor: id,
-			children: t("approvals.role.label")
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-			value,
-			onValueChange: (next) => onChange(next),
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
-				id,
-				"data-ocid": "approvals.role.select",
-				className: "touch-target w-full",
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("approvals.role.placeholder") })
-			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: ASSIGNABLE_ROLES.map((option) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-				value: option,
-				children: roleLabel(option)
-			}, option)) })]
-		})]
-	});
-}
-//#endregion
-//#region src/components/approvals/PendingApprovalCard.tsx
-/** Roles whose profile carries trainer stations and travel dates. */
-var TRAVEL_ROLES = [Role.trainer, Role.visitingManager];
-/** Roles allowed to see a staff member's work phone and email. */
-var CONTACT_ROLES = [Role.admin, Role.storeManager];
-/** A `YYYY-MM-DD` value for a date input, read in UTC. */
-function dateOnlyToInput(value) {
-	if (value === void 0) return "";
-	const date = dateOnlyToDate(value);
-	if (!date) return "";
-	return date.toISOString().slice(0, 10);
-}
-/** The role to pre-select: the requested role when an admin may grant it. */
-function initialRole(profile) {
-	if (!profile) return "";
-	return ASSIGNABLE_ROLES.includes(profile.requestedRole) ? profile.requestedRole : "";
-}
-/** One labelled profile value, hidden when it is blank. */
-function ProfileField({ label, value }) {
-	if (!value) return null;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "min-w-0",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
-			className: "text-xs uppercase tracking-wide text-muted-foreground",
-			children: label
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
-			className: "break-words text-sm text-foreground",
-			children: value
-		})]
-	});
-}
-/**
-* The submitted staff profile carried on a pending request: name, title, home
-* store, photo, and — for the roles that travel — the stations they train and
-* their arrival and departure dates. Work phone and email are shown only to
-* Admin and Store Manager, matching the roadie contact-info rule.
-*/
-function StaffProfileSummary({ profile, positions, canSeeContact }) {
-	const { t } = useI18n();
-	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(profile.photo), [profile.photo]);
-	const homeStore = [profile.homeStoreNumber, profile.homeStoreCity].filter((part) => part.trim() !== "").join(" · ");
-	const showsTravel = TRAVEL_ROLES.includes(profile.requestedRole);
-	const trainedPositions = profile.trainerPositionIds.map((id) => positions.find((position) => position.id === id)?.name).filter((name) => !!name).join(", ");
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		"data-ocid": "approvals.profile.summary",
-		className: "mt-3 flex flex-col gap-3 rounded-md border border-border bg-muted/30 p-3 sm:flex-row",
-		children: [photoUrl && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-			src: photoUrl,
-			alt: staffDisplayName(profile, t("profile.unnamed")),
-			"data-ocid": "approvals.profile.photo",
-			className: "h-16 w-16 shrink-0 rounded-full border-2 border-primary object-cover"
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
-			className: "grid flex-1 gap-2 sm:grid-cols-2",
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
-					label: t("profile.fullName"),
-					value: profile.fullName
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
-					label: t("profile.preferredName"),
-					value: profile.preferredName ?? ""
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
-					label: t("profile.title.label"),
-					value: profile.title
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
-					label: t("profile.homeStoreNumber"),
-					value: homeStore
-				}),
-				canSeeContact && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
-					label: t("profile.workPhone"),
-					value: profile.workPhone ?? ""
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
-					label: t("profile.workEmail"),
-					value: profile.workEmail ?? ""
-				})] }),
-				showsTravel && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
-						label: t("approvals.stations.label"),
-						value: trainedPositions
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
-						label: t("profile.arrivalDate"),
-						value: profile.arrivalDate !== void 0 ? formatDateOnly(profile.arrivalDate) : ""
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
-						label: t("profile.departureDate"),
-						value: profile.departureDate !== void 0 ? formatDateOnly(profile.departureDate) : ""
-					})
-				] })
-			]
-		})]
-	});
-}
-/**
-* One pending sign-in with the full approval form: role, trainer stations,
-* optional access end date, and an optional link to an existing roadie card.
-* The submitted staff profile is shown and its requested role, stations and
-* departure date pre-fill the form, all still editable by the admin.
-*/
-function PendingApprovalCard({ user }) {
-	const { t } = useI18n();
-	const access = useAccessState();
-	const viewerRole = access.kind === "granted" ? access.grant.role : void 0;
-	const canSeeContact = !!viewerRole && CONTACT_ROLES.includes(viewerRole);
-	const isAdmin = viewerRole === Role.admin;
-	const { data: positions } = usePositions();
-	const { data: roadies } = useRoadies();
-	const { data: storeInfo } = useStoreInfo();
-	const approve = useApproveUser();
-	const timeZone = storeInfo?.timeZone || "America/Chicago";
-	const profile = user.staffProfile;
-	const [role, setRole] = (0, import_react.useState)(() => initialRole(profile));
-	const [stationIds, setStationIds] = (0, import_react.useState)(() => (profile?.trainerPositionIds ?? []).map((id) => id.toString()));
-	const [accessEnd, setAccessEnd] = (0, import_react.useState)(() => dateOnlyToInput(profile?.departureDate));
-	const [linkedRoadieId, setLinkedRoadieId] = (0, import_react.useState)("");
-	const [confirmOpen, setConfirmOpen] = (0, import_react.useState)(false);
-	const [showId, setShowId] = (0, import_react.useState)(false);
-	const [error, setError] = (0, import_react.useState)(null);
-	const principalText = user.principal.toText();
-	const needsStations = role === Role.trainer;
-	const displayName = staffDisplayName(profile, t("profile.unnamed"));
-	const submit = () => {
-		if (role === "") {
-			setError(t("approvals.role.required"));
-			return;
-		}
-		setError(null);
-		approve.mutate({
-			principal: user.principal,
-			role,
-			staffProfile: user.staffProfile,
-			trainerPositionIds: needsStations ? stationIds.map((id) => BigInt(id)) : [],
-			accessEndsAt: accessEnd ? dateToTimestamp(zonedWallTimeToDate(accessEnd, 23, 59, 59, timeZone)) : void 0,
-			linkedRoadieId: linkedRoadieId ? BigInt(linkedRoadieId) : void 0
-		}, {
-			onSuccess: () => {
-				setConfirmOpen(false);
-				setRole("");
-				setStationIds([]);
-				setAccessEnd("");
-				setLinkedRoadieId("");
-			},
-			onError: () => setError(t("approvals.error.generic"))
-		});
-	};
-	const handleApproveClick = () => {
-		if (role === "") {
-			setError(t("approvals.role.required"));
-			return;
-		}
-		setError(null);
-		if (needsConfirmation(role)) setConfirmOpen(true);
-		else submit();
-	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
-		"data-ocid": "approvals.item",
-		className: "rounded-lg border border-border bg-card p-4 shadow-subtle",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-center justify-between gap-2",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "min-w-0",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "font-display text-sm font-semibold uppercase tracking-wide",
-							children: displayName
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-							className: "text-xs text-muted-foreground",
-							children: [
-								t("approvals.requestedAt"),
-								": ",
-								formatTimestamp(user.requestedAt)
-							]
-						}),
-						isAdmin && showId && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-							"data-ocid": "approvals.principal",
-							className: "mt-1 break-all font-mono text-xs text-muted-foreground",
-							children: [
-								t("profile.principal"),
-								": ",
-								principalText
-							]
-						})
-					]
-				}), isAdmin && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-					type: "button",
-					variant: "ghost",
-					size: "sm",
-					className: "touch-target",
-					"data-ocid": "approvals.show_id.toggle",
-					"aria-pressed": showId,
-					title: t("profile.showId.hint"),
-					onClick: () => setShowId((current) => !current),
-					children: [showId ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EyeOff, {
-						className: "mr-2 h-4 w-4",
-						"aria-hidden": "true"
-					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eye, {
-						className: "mr-2 h-4 w-4",
-						"aria-hidden": "true"
-					}), t("profile.showId")]
-				})]
-			}),
-			profile && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StaffProfileSummary, {
-				profile,
-				positions: positions ?? [],
-				canSeeContact
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "mt-4 grid gap-4 md:grid-cols-2",
-				children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ApprovalRoleSelect, {
-						id: `role-${principalText}`,
-						value: role,
-						onChange: setRole
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "space-y-1.5",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
-								htmlFor: `link-${principalText}`,
-								children: t("approvals.link.label")
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-								value: linkedRoadieId,
-								onValueChange: setLinkedRoadieId,
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
-									id: `link-${principalText}`,
-									"data-ocid": "approvals.link.select",
-									className: "touch-target w-full",
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("approvals.link.none") })
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: (roadies ?? []).map((roadie) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-									value: roadie.id.toString(),
-									children: roadie.profile.preferredName || roadie.profile.name
-								}, roadie.id.toString())) })]
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								className: "text-xs text-muted-foreground",
-								children: t("approvals.link.hint")
-							})
-						]
-					}),
-					needsStations && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrainerStationsPicker, {
-						positions: positions ?? [],
-						selectedIds: stationIds,
-						onChange: setStationIds
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "space-y-1.5",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
-								htmlFor: `end-${principalText}`,
-								children: t("approvals.accessEnd.label")
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-								id: `end-${principalText}`,
-								type: "date",
-								value: accessEnd,
-								onChange: (event) => setAccessEnd(event.target.value),
-								"data-ocid": "approvals.access_end.input",
-								className: "touch-target"
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								className: "text-xs text-muted-foreground",
-								children: t("approvals.accessEnd.hint")
-							})
-						]
-					})
-				]
-			}),
-			error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				role: "alert",
-				"data-ocid": "approvals.error_state",
-				className: "mt-3 text-sm text-destructive",
-				children: error
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				className: "mt-4 flex justify-end",
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-					type: "button",
-					className: "touch-target",
-					"data-ocid": "approvals.approve_button",
-					disabled: approve.isPending,
-					onClick: handleApproveClick,
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(UserCheck, {
-						className: "mr-2 h-4 w-4",
-						"aria-hidden": "true"
-					}), t("approvals.action.approve")]
-				})
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ApprovalConfirmDialog, {
-				open: confirmOpen,
-				role,
-				pending: approve.isPending,
-				onOpenChange: setConfirmOpen,
-				onConfirm: submit
-			})
-		]
-	});
-}
-//#endregion
-//#region src/components/approvals/PendingApprovalList.tsx
-/**
-* The pending-approval queue with its loading, error, and empty states.
-* Each row owns its own approval form.
-*/
-function PendingApprovalList({ pending, isLoading, isError, onRetry }) {
-	const { t } = useI18n();
-	if (isLoading) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("approvals.loading") });
-	if (isError) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
-		message: t("approvals.error"),
-		onRetry
-	});
-	if ((pending?.length ?? 0) === 0) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: t("approvals.empty") });
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
-		className: "space-y-4",
-		"data-ocid": "approvals.list",
-		children: pending?.map((user) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PendingApprovalCard, { user }, user.principal.toText()))
-	});
-}
-//#endregion
-//#region src/pages/Approvals.tsx
-/** The orientation sessions that have not yet passed, soonest first. */
-function upcomingOrientations(schedule) {
-	const now = Date.now();
-	return schedule.filter((event) => event.kind === EventKind.orientation).filter((event) => Number(event.start / 1000000n) >= now).sort((a, b) => Number(a.start - b.start));
-}
-/**
-* The default orientation session: the next upcoming session, soonest first.
-* Sessions are already filtered to the future and sorted, so the first one is
-* the next session regardless of the applicant's house.
-*/
-function defaultOrientationId(sessions) {
-	const next = sessions[0];
-	return next ? next.id.toString() : "";
-}
-/**
-* The applicant's real age in the store's time zone, or null when the date of
-* birth is missing or invalid.
-*/
-function ageInTimeZone(dateOfBirth, timeZone) {
-	const birth = dateOnlyToDate(dateOfBirth);
-	if (!birth) return null;
-	const today = calendarInTimeZone(/* @__PURE__ */ new Date(), timeZone);
-	const birthYear = birth.getUTCFullYear();
-	const birthMonth = birth.getUTCMonth() + 1;
-	const birthDay = birth.getUTCDate();
-	let age = today.year - birthYear;
-	if (today.month < birthMonth || today.month === birthMonth && today.day < birthDay) age -= 1;
-	return age;
-}
-/** The copy key describing what a duplicate matched on. */
-function matchFieldKey(matchedOn) {
-	if (matchedOn === "both") return "approvals.signup.duplicates.match.both";
-	if (matchedOn === "email") return "approvals.signup.duplicates.match.email";
-	return "approvals.signup.duplicates.match.phone";
-}
-/** A compact list of duplicate matches found against all cards. */
-function DuplicateList({ matches }) {
-	const { t } = useI18n();
-	if (matches.length === 0) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-		"data-ocid": "approvals.signup.duplicates.none",
-		className: "flex items-center gap-2 text-sm text-muted-foreground",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, {
-			className: "h-4 w-4 text-accent",
-			"aria-hidden": "true"
-		}), t("approvals.signup.duplicates.none")]
-	});
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		"data-ocid": "approvals.signup.duplicates.list",
-		className: "rounded-md border border-destructive/30 bg-destructive/5 p-3",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-			className: "flex items-center gap-2 font-display text-xs font-semibold uppercase tracking-widest text-destructive",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TriangleAlert, {
-				className: "h-4 w-4",
-				"aria-hidden": "true"
-			}), t("approvals.signup.duplicates.title")]
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
-			className: "mt-2 space-y-1 text-sm text-foreground",
-			children: matches.map((match) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
-				to: "/roster/$roadieId",
-				params: { roadieId: match.roadieId.toString() },
-				"data-ocid": "approvals.signup.duplicates.link",
-				className: "inline-flex min-h-[44px] flex-wrap items-center gap-x-1.5 rounded-sm text-foreground underline decoration-dotted underline-offset-4 transition-smooth hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: t("approvals.signup.duplicates.row", {
-					name: match.name,
-					position: match.mainPositionName,
-					field: t(matchFieldKey(match.matchedOn))
-				}) }), match.archived && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-					className: "text-xs text-muted-foreground",
-					children: t("roster.archived")
-				})]
-			}) }, `${match.roadieId}-${match.matchedOn}`))
-		})]
-	});
-}
-/**
-* One pending kiosk submission under review: duplicate check, position, crew,
-* orientation session, start date, and the manager's drawn signature.
-*/
-function PendingSignupCard({ signup, positions, crews, sessions, timeZone, approverPrincipal }) {
-	const { t } = useI18n();
-	const { data: duplicates, isLoading: duplicatesLoading } = useSignupDuplicates(signup.id);
-	const approve = useApproveSignup();
-	const reject = useRejectSignup();
-	const ledCrewId = (0, import_react.useMemo)(() => {
-		if (!approverPrincipal) return "";
-		const led = crews.find((crew) => crew.leaderPrincipal?.toString() === approverPrincipal);
-		return led ? led.id.toString() : "";
-	}, [crews, approverPrincipal]);
-	const [mainPositionId, setMainPositionId] = (0, import_react.useState)("");
-	const [secondPositionId, setSecondPositionId] = (0, import_react.useState)("");
-	const [crewId, setCrewId] = (0, import_react.useState)("");
-	const [crewTouched, setCrewTouched] = (0, import_react.useState)(false);
-	const [orientationId, setOrientationId] = (0, import_react.useState)("");
-	const [startDate, setStartDate] = (0, import_react.useState)("");
-	const [signature, setSignature] = (0, import_react.useState)(null);
-	const [error, setError] = (0, import_react.useState)(null);
-	const [rejectOpen, setRejectOpen] = (0, import_react.useState)(false);
-	(0, import_react.useEffect)(() => {
-		if (!crewTouched && ledCrewId) setCrewId(ledCrewId);
-	}, [crewTouched, ledCrewId]);
-	const mainPosition = positions.find((position) => position.id.toString() === mainPositionId);
-	const secondPosition = positions.find((position) => position.id.toString() === secondPositionId);
-	const suggestedOrientation = defaultOrientationId(sessions);
-	const age = (0, import_react.useMemo)(() => ageInTimeZone(signup.contactSet.dateOfBirth, timeZone), [signup.contactSet.dateOfBirth, timeZone]);
-	const isMinor = age !== null && age < 18;
-	const ageBlocked = (0, import_react.useMemo)(() => {
-		if (age === null) return false;
-		const realAge = BigInt(age);
-		const mainTooYoung = !!mainPosition && realAge < mainPosition.minimumAge;
-		const secondTooYoung = !!secondPosition && realAge < secondPosition.minimumAge;
-		return mainTooYoung || secondTooYoung;
-	}, [
-		age,
-		mainPosition,
-		secondPosition
-	]);
-	const submit = () => {
-		if (!mainPositionId) {
-			setError(t("approvals.signup.main.required"));
-			return;
-		}
-		if (ageBlocked) {
-			setError(t("approvals.signup.minor.blocked"));
-			return;
-		}
-		if (!signature || signature.length === 0) {
-			setError(t("approvals.signup.signature.required"));
-			return;
-		}
-		setError(null);
-		const chosenOrientation = orientationId || suggestedOrientation;
-		const decision = {
-			mainPositionId: BigInt(mainPositionId),
-			secondPositionId: secondPositionId ? BigInt(secondPositionId) : void 0,
-			crewId: crewId ? BigInt(crewId) : void 0,
-			orientationEventId: chosenOrientation ? BigInt(chosenOrientation) : void 0,
-			startDate: startDate ? dateToDateOnly(/* @__PURE__ */ new Date(`${startDate}T00:00:00Z`)) : void 0
-		};
-		approve.mutate({
-			id: signup.id,
-			decision,
-			signature
-		}, {
-			onSuccess: () => {
-				setMainPositionId("");
-				setSecondPositionId("");
-				setCrewId("");
-				setCrewTouched(false);
-				setOrientationId("");
-				setStartDate("");
-				setSignature(null);
-			},
-			onError: () => setError(t("approvals.signup.approve.error"))
-		});
-	};
-	const confirmReject = () => {
-		reject.mutate(signup.id, {
-			onSuccess: () => setRejectOpen(false),
-			onError: () => {
-				setRejectOpen(false);
-				setError(t("approvals.signup.approve.error"));
-			}
-		});
-	};
-	const name = signup.profile.preferredName || signup.profile.name;
-	const key = signup.id.toString();
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
-		"data-ocid": "approvals.signup.item",
-		className: "rounded-lg border border-border bg-card p-4 shadow-subtle",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-start justify-between gap-2",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "min-w-0",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-						className: "font-display text-sm font-semibold uppercase tracking-wide",
-						children: name
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-						className: "text-xs text-muted-foreground",
-						children: [
-							t("approvals.signup.submittedAt"),
-							":",
-							" ",
-							formatTimestamp(signup.submittedAt, timeZone)
-						]
-					})]
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex items-center gap-2",
-					children: [isMinor && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
-						tone: "pending",
-						ocid: "approvals.signup.minor_badge",
-						children: t("roadie.minor")
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
-						tone: "muted",
-						children: t("approvals.signup.pending")
-					})]
-				})]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
-				className: "mt-3 grid gap-2 text-sm sm:grid-cols-2",
-				children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
-						className: "text-xs uppercase tracking-wide text-muted-foreground",
-						children: t("roadie.field.phone")
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", { children: signup.contactSet.phone })] }),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
-						className: "text-xs uppercase tracking-wide text-muted-foreground",
-						children: t("roadie.field.email")
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
-						className: "break-all",
-						children: signup.contactSet.email
-					})] }),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
-						className: "text-xs uppercase tracking-wide text-muted-foreground",
-						children: t("roadie.field.birthday")
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", { children: formatDateOnly(signup.contactSet.dateOfBirth) })] }),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
-						className: "text-xs uppercase tracking-wide text-muted-foreground",
-						children: t("roadie.field.positionAppliedFor")
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", { children: signup.profile.positionAppliedFor || t("roadie.field.none") })] })
-				]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				className: "mt-4",
-				children: duplicatesLoading ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "text-sm text-muted-foreground",
-					children: t("approvals.signup.duplicates.loading")
-				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DuplicateList, { matches: duplicates ?? [] })
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "mt-4 grid gap-4 md:grid-cols-2",
-				children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "space-y-1.5",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
-							htmlFor: `main-${key}`,
-							children: t("approvals.signup.main.label")
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-							value: mainPositionId,
-							onValueChange: setMainPositionId,
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
-								id: `main-${key}`,
-								"data-ocid": "approvals.signup.main.select",
-								className: "touch-target w-full",
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("approvals.signup.main.placeholder") })
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: positions.map((position) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-								value: position.id.toString(),
-								children: position.name
-							}, position.id.toString())) })]
-						})]
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "space-y-1.5",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
-							htmlFor: `second-${key}`,
-							children: t("approvals.signup.second.label")
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-							value: secondPositionId,
-							onValueChange: setSecondPositionId,
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
-								id: `second-${key}`,
-								"data-ocid": "approvals.signup.second.select",
-								className: "touch-target w-full",
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("approvals.signup.second.none") })
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: positions.filter((position) => position.id.toString() !== mainPositionId).map((position) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-								value: position.id.toString(),
-								children: position.name
-							}, position.id.toString())) })]
-						})]
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "space-y-1.5",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
-								htmlFor: `crew-${key}`,
-								children: t("approvals.signup.crew.label")
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-								value: crewId,
-								onValueChange: (value) => {
-									setCrewTouched(true);
-									setCrewId(value);
-								},
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
-									id: `crew-${key}`,
-									"data-ocid": "approvals.signup.crew.select",
-									className: "touch-target w-full",
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("approvals.signup.crew.none") })
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: crews.map((crew) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-									value: crew.id.toString(),
-									children: crew.name
-								}, crew.id.toString())) })]
-							}),
-							ledCrewId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								className: "text-xs text-muted-foreground",
-								children: t("approvals.signup.crew.default")
-							})
-						]
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "space-y-1.5",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
-								htmlFor: `orientation-${key}`,
-								children: t("approvals.signup.orientation.label")
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-								value: orientationId || suggestedOrientation,
-								onValueChange: setOrientationId,
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
-									id: `orientation-${key}`,
-									"data-ocid": "approvals.signup.orientation.select",
-									className: "touch-target w-full",
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("approvals.signup.orientation.placeholder") })
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: sessions.map((session) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectItem, {
-									value: session.id.toString(),
-									children: [
-										session.name,
-										" · ",
-										formatTimestamp(session.start, timeZone)
-									]
-								}, session.id.toString())) })]
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								className: "text-xs text-muted-foreground",
-								children: t("approvals.signup.orientation.hint")
-							})
-						]
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "space-y-1.5",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
-							htmlFor: `start-${key}`,
-							children: t("approvals.signup.start.label")
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							id: `start-${key}`,
-							type: "date",
-							value: startDate,
-							onChange: (event) => setStartDate(event.target.value),
-							"data-ocid": "approvals.signup.start.input",
-							className: "touch-target"
-						})]
-					})
-				]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				className: "mt-4",
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ManagerSignaturePad, {
-					value: signature,
-					onChange: setSignature
-				})
-			}),
-			ageBlocked && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				role: "alert",
-				"data-ocid": "approvals.signup.minor.error",
-				className: "mt-3 text-sm text-destructive",
-				children: t("approvals.signup.minor.blocked")
-			}),
-			error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				role: "alert",
-				"data-ocid": "approvals.signup.error_state",
-				className: "mt-3 text-sm text-destructive",
-				children: error
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "mt-4 flex flex-wrap justify-end gap-2",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-					type: "button",
-					variant: "outline",
-					className: "touch-target",
-					"data-ocid": "approvals.signup.reject_button",
-					disabled: reject.isPending || approve.isPending,
-					onClick: () => setRejectOpen(true),
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, {
-						className: "mr-2 h-4 w-4",
-						"aria-hidden": "true"
-					}), t("approvals.action.reject")]
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-					type: "button",
-					className: "touch-target",
-					"data-ocid": "approvals.signup.approve_button",
-					disabled: approve.isPending || ageBlocked,
-					onClick: submit,
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(UserCheck, {
-						className: "mr-2 h-4 w-4",
-						"aria-hidden": "true"
-					}), t("approvals.signup.action.approve")]
-				})]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RejectConfirmDialog, {
-				open: rejectOpen,
-				pending: reject.isPending,
-				onOpenChange: setRejectOpen,
-				onConfirm: confirmReject
-			})
-		]
-	});
-}
-/** The pending kiosk submissions queue with its loading, error, and empty states. */
-function PendingSignupList({ signups, positions, crews, sessions, timeZone, approverPrincipal, isLoading, isError, onRetry }) {
-	const { t } = useI18n();
-	if (isLoading) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("approvals.signup.loading") });
-	if (isError) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
-		message: t("approvals.signup.error"),
-		onRetry
-	});
-	if ((signups?.length ?? 0) === 0) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: t("approvals.signup.empty") });
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
-		className: "space-y-4",
-		"data-ocid": "approvals.signup.list",
-		children: signups?.map((signup) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PendingSignupCard, {
-			signup,
-			positions,
-			crews,
-			sessions,
-			timeZone,
-			approverPrincipal
-		}, signup.id.toString()))
-	});
-}
-/**
-* Approve new hires. Admins review each pending sign-in, assign a role and
-* optional trainer stations, access end date, and linked roadie card. Store
-* Managers review pending kiosk submissions, run the duplicate check, assign
-* position, crew, orientation and start date, then sign to create the card.
-* The pending sign-in (access) section is visible only to admins.
-*/
-function ApprovalsPage() {
-	const { t } = useI18n();
-	const access = useAccessState();
-	const isAdmin = canAdmin(access.kind === "granted" ? access.grant.role : void 0);
-	const approverPrincipal = access.kind === "granted" ? access.grant.principal.toString() : null;
-	const { data: storeInfo } = useStoreInfo();
-	const timeZone = storeInfo?.timeZone || "America/Chicago";
-	const { data: pending, isLoading, isError, refetch } = usePendingUsers(isAdmin);
-	const { data: signups, isLoading: signupsLoading, isError: signupsError, refetch: refetchSignups } = usePendingSignups();
-	const { data: positions } = usePositions();
-	const { data: crews } = useCrews();
-	const { data: schedule } = useSchedule();
-	const sessions = (0, import_react.useMemo)(() => upcomingOrientations(schedule ?? []), [schedule]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "space-y-8",
-		"data-ocid": "approvals.page",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
-				title: t("approvals.title"),
-				subtitle: t("approvals.subtitle")
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
-				className: "space-y-4",
-				"data-ocid": "approvals.signups.section",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
-					className: "font-display text-lg font-semibold uppercase tracking-wide",
-					children: t("approvals.signup.section")
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PendingSignupList, {
-					signups,
-					positions: positions ?? [],
-					crews: crews ?? [],
-					sessions,
-					timeZone,
-					approverPrincipal,
-					isLoading: signupsLoading,
-					isError: signupsError,
-					onRetry: () => void refetchSignups()
-				})]
-			}),
-			isAdmin && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
-				className: "space-y-4",
-				"data-ocid": "approvals.users.section",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
-					className: "font-display text-lg font-semibold uppercase tracking-wide",
-					children: t("approvals.users.section")
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PendingApprovalList, {
-					pending,
-					isLoading,
-					isError,
-					onRetry: () => void refetch()
-				})]
-			})
-		]
-	});
-}
-//#endregion
-//#region src/components/ui/card.tsx
-function Card({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-		"data-slot": "card",
-		className: cn("bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm", className),
-		...props
-	});
-}
-function CardContent({ className, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-		"data-slot": "card-content",
-		className: cn("px-6", className),
-		...props
-	});
-}
-//#endregion
-//#region src/components/dashboard/KpiTiles.tsx
-/**
-* The Hired → Active funnel: everyone hired, how many have shown up (active)
-* and how many are still pending. The bar splits hired into its active and
-* pending parts so the "showed up" share reads at a glance.
-*/
-function HiredFunnel({ hired, active, pending }) {
-	const { t } = useDashboardCopy();
-	const total = Math.max(hired, 1);
-	const activePct = Math.round(active / total * 100);
-	const pendingPct = Math.round(pending / total * 100);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
-		"data-ocid": "dashboard.funnel",
-		className: "animate-fade-rise rounded-lg border-border py-4 shadow-subtle",
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
-			className: "px-4",
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex flex-wrap items-center gap-x-3 gap-y-1",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-						children: t("dashboard.funnel.title")
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-						className: "flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-foreground",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								"data-ocid": "dashboard.funnel.hired",
-								children: t("dashboard.funnel.hired", { count: hired })
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRight, {
-								className: "h-4 w-4 text-muted-foreground",
-								"aria-hidden": "true"
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								"data-ocid": "dashboard.funnel.active",
-								className: "text-accent",
-								children: t("dashboard.funnel.active", { count: active })
-							})
-						]
-					})]
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "mt-3 flex h-3 w-full overflow-hidden rounded-full bg-muted",
-					role: "img",
-					"aria-label": t("dashboard.funnel.aria", {
-						hired,
-						active,
-						pending
-					}),
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "h-full bg-accent transition-all",
-						style: { width: `${activePct}%` }
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "h-full bg-primary transition-all",
-						style: { width: `${pendingPct}%` }
-					})]
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-						className: "flex items-center gap-1.5",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "h-2.5 w-2.5 rounded-full bg-accent",
-							"aria-hidden": "true"
-						}), t("dashboard.funnel.activeLabel", { count: active })]
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-						className: "flex items-center gap-1.5",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "h-2.5 w-2.5 rounded-full bg-primary",
-							"aria-hidden": "true"
-						}), t("dashboard.funnel.pendingLabel", { count: pending })]
-					})]
-				})
-			]
-		})
-	});
-}
-/** The headline hiring tiles plus the Hired → Active funnel. */
-function KpiTiles({ hired, active, pending, buildToTotal, stillNeeded, showedAtOrientation, certified }) {
-	const { t } = useDashboardCopy();
-	const tiles = [
-		{
-			key: "hired",
-			labelKey: "dashboard.kpi.hired",
-			value: hired.toString(),
-			hintKey: "dashboard.kpi.hired.hint",
-			icon: UserCheck,
-			tone: "accent"
-		},
-		{
-			key: "active",
-			labelKey: "dashboard.kpi.active",
-			value: active.toString(),
-			hintKey: "dashboard.kpi.active.hint",
-			icon: CircleCheck,
-			tone: "accent"
-		},
-		{
-			key: "pending",
-			labelKey: "dashboard.kpi.pending",
-			value: pending.toString(),
-			hintKey: "dashboard.kpi.pending.hint",
-			icon: Clock,
-			tone: "primary"
-		},
-		{
-			key: "build_to",
-			labelKey: "dashboard.kpi.buildTo",
-			value: buildToTotal.toString(),
-			hintKey: "dashboard.kpi.buildTo.hint",
-			icon: Target,
-			tone: "primary"
-		},
-		{
-			key: "still_needed",
-			labelKey: "dashboard.kpi.stillNeeded",
-			value: stillNeeded.toString(),
-			hintKey: "dashboard.kpi.stillNeeded.hint",
-			icon: Users,
-			tone: "primary"
-		},
-		{
-			key: "orientation",
-			labelKey: "dashboard.kpi.showedAtOrientation",
-			value: showedAtOrientation?.toString() ?? "—",
-			hintKey: "dashboard.kpi.orientation.hint",
-			icon: Clock,
-			tone: "muted"
-		},
-		{
-			key: "certified",
-			labelKey: "dashboard.kpi.certified",
-			value: certified?.toString() ?? "—",
-			hintKey: "dashboard.kpi.certified.hint",
-			icon: CircleCheck,
-			tone: "muted"
-		}
-	];
-	const toneClasses = {
-		primary: "bg-primary/10 text-primary",
-		accent: "bg-accent/10 text-accent",
-		muted: "bg-muted text-muted-foreground"
-	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "space-y-3",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(HiredFunnel, {
-			hired: Number(hired),
-			active: Number(active),
-			pending: Number(pending)
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-			className: "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4",
-			"data-ocid": "dashboard.kpi.list",
-			children: tiles.map((tile) => {
-				const Icon = tile.icon;
-				return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
-					"data-ocid": `dashboard.kpi.${tile.key}`,
-					className: "animate-fade-rise rounded-lg border-border py-4 shadow-subtle",
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
-						className: "px-4",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "flex items-start justify-between gap-2",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-									className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-									children: t(tile.labelKey)
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-									className: cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", toneClasses[tile.tone]),
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon, {
-										className: "h-4 w-4",
-										"aria-hidden": "true"
-									})
-								})]
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								className: "mt-2 font-display text-3xl font-bold tabular-nums text-foreground",
-								children: tile.value
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								className: "mt-0.5 text-xs text-muted-foreground",
-								children: t(tile.hintKey)
-							})
-						]
-					})
-				}, tile.key);
-			})
-		})]
-	});
-}
-//#endregion
-//#region src/components/dashboard/OpeningTimeline.tsx
-/** Human label for a schedule event kind. */
-function eventKindLabel(kind) {
-	return {
-		[EventKind.deadline]: "Deadline",
-		[EventKind.orientation]: "Orientation",
-		[EventKind.trainingDay]: "Training day",
-		[EventKind.friendsAndFamily]: "Friends & family",
-		[EventKind.openingDay]: "Opening day",
-		[EventKind.signOff]: "Sign-off",
-		[EventKind.other]: "Event"
-	}[kind] ?? "Event";
-}
-/**
-* The current instant, refreshed on an interval. When demo mode supplies a
-* pretend date, that instant is returned instead of the real clock so the
-* countdown and schedule windows follow the pretend date.
-*/
-function useNow(pretendInstant, intervalMs = 6e4) {
-	const [now, setNow] = (0, import_react.useState)(() => Date.now());
-	(0, import_react.useEffect)(() => {
-		const id = window.setInterval(() => setNow(Date.now()), intervalMs);
-		return () => window.clearInterval(id);
-	}, [intervalMs]);
-	return pretendInstant ?? now;
-}
-function splitCountdown(ms) {
-	const total = Math.max(0, Math.floor(ms / 1e3));
-	return {
-		days: Math.floor(total / 86400),
-		hours: Math.floor(total % 86400 / 3600),
-		minutes: Math.floor(total % 3600 / 60)
-	};
-}
-function CountdownUnit({ value, label }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "flex min-w-16 flex-col items-center rounded-md bg-secondary px-3 py-2 text-secondary-foreground",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-			className: "font-display text-3xl font-bold leading-none tabular-nums",
-			children: value
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-			className: "mt-1 font-display text-[10px] font-semibold uppercase tracking-widest text-white/70",
-			children: label
-		})]
-	});
-}
-/** localStorage key remembering whether the schedule is expanded on this device. */
-var SCHEDULE_STORAGE_KEY = "roadie-roster.dashboard.schedule-expanded";
-/** Read the remembered schedule state, defaulting to collapsed. */
-function readStoredExpanded() {
-	try {
-		return window.localStorage.getItem(SCHEDULE_STORAGE_KEY) === "true";
-	} catch {
-		return false;
-	}
-}
-/** Persist the schedule state, ignoring unavailable storage. */
-function storeExpanded(expanded) {
-	try {
-		window.localStorage.setItem(SCHEDULE_STORAGE_KEY, String(expanded));
-	} catch {}
-}
-/**
-* Countdown to opening day plus the opening timeline, with the phase the store
-* is currently in highlighted. The milestone list is collapsible; the flag,
-* label, opening date and countdown boxes always stay visible.
-*/
-function OpeningTimeline({ events, openingDate }) {
-	const { t } = useDashboardCopy();
-	const { data: storeInfo } = useStoreInfo();
-	const demo = useDemo();
-	const timeZone = storeInfo?.timeZone;
-	const now = useNow((0, import_react.useMemo)(() => {
-		if (!demo.enabled || !demo.pretendDate) return null;
-		return pretendDateToInstant(demo.pretendDate)?.getTime() ?? null;
-	}, [demo.enabled, demo.pretendDate]));
-	const [expanded, setExpanded] = (0, import_react.useState)(readStoredExpanded);
-	const toggle = (0, import_react.useCallback)(() => {
-		setExpanded((current) => {
-			const next = !current;
-			storeExpanded(next);
-			return next;
-		});
-	}, []);
-	const ordered = (0, import_react.useMemo)(() => [...events].sort((a, b) => Number(a.start - b.start)).filter((event) => {
-		return timestampToDate(event.start) !== null;
-	}), [events]);
-	const currentIndex = (0, import_react.useMemo)(() => {
-		let index = -1;
-		for (let i = 0; i < ordered.length; i += 1) {
-			const date = timestampToDate(ordered[i].start);
-			if (date && date.getTime() <= now) index = i;
-		}
-		return index;
-	}, [ordered, now]);
-	const nextEvent = (0, import_react.useMemo)(() => {
-		for (const event of ordered) {
-			const date = timestampToDate(event.start);
-			if (date && date.getTime() > now) return event;
-		}
-		return null;
-	}, [ordered, now]);
-	const openingInstant = openingDate !== null ? dateOnlyToDate(openingDate) : null;
-	const openingMs = openingInstant ? openingInstant.getTime() - now : null;
-	const countdown = openingMs !== null ? splitCountdown(openingMs) : null;
-	const regionId = "dashboard.timeline.region";
-	const toggleLabel = expanded ? "Hide schedule" : "Show schedule";
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
-		"data-ocid": "dashboard.countdown.card",
-		className: "rounded-lg border-border py-5 shadow-subtle",
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
-			className: "space-y-5 px-5",
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-					type: "button",
-					onClick: toggle,
-					"aria-expanded": expanded,
-					"aria-controls": regionId,
-					"data-ocid": "dashboard.countdown.header_toggle",
-					className: "flex w-full flex-col gap-4 rounded-md text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:flex-row sm:items-center sm:justify-between",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex items-center gap-3",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary",
-							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Flag, {
-								className: "h-5 w-5",
-								"aria-hidden": "true"
-							})
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-							children: t("dashboard.countdown.label")
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "font-display text-lg font-bold uppercase tracking-wide text-foreground",
-							children: openingDate !== null ? formatDateOnlyLong(openingDate) : t("dashboard.countdown.noDate")
-						})] })]
-					}), countdown ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex items-center gap-2",
-						"data-ocid": "dashboard.countdown.timer",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CountdownUnit, {
-								value: countdown.days,
-								label: t("dashboard.countdown.days")
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CountdownUnit, {
-								value: countdown.hours,
-								label: t("dashboard.countdown.hours")
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CountdownUnit, {
-								value: countdown.minutes,
-								label: t("dashboard.countdown.minutes")
-							})
-						]
-					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-						className: "text-sm text-muted-foreground",
-						children: t("dashboard.countdown.noDate")
-					})]
-				}),
-				!expanded && nextEvent && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-					className: "text-sm text-muted-foreground",
-					"data-ocid": "dashboard.timeline.next",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "font-display text-xs font-semibold uppercase tracking-widest text-primary",
-							children: "Next:"
-						}),
-						" ",
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "font-medium text-foreground",
-							children: nextEvent.name
-						}),
-						" · ",
-						formatTimestampMediumDate(nextEvent.start, timeZone)
-					]
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					id: regionId,
-					"data-ocid": "dashboard.timeline.region",
-					className: cn("grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none", expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"),
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-						className: "overflow-hidden",
-						children: ordered.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", {
-							className: "relative space-y-1 border-l border-border pl-5",
-							"data-ocid": "dashboard.timeline.list",
-							children: ordered.map((event, index) => {
-								const isCurrent = index === currentIndex;
-								const isPast = index < currentIndex;
-								return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
-									"data-ocid": `dashboard.timeline.item.${index + 1}`,
-									className: "relative py-2",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										"aria-hidden": "true",
-										className: cn("absolute -left-[26px] top-3.5 h-3 w-3 rounded-full border-2", isCurrent ? "border-primary bg-primary" : isPast ? "border-accent bg-accent" : "border-border bg-card")
-									}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-										className: cn("flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md px-3 py-2", isCurrent && "bg-primary/5 ring-1 ring-primary/30"),
-										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-											className: "min-w-0",
-											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-												className: cn("truncate font-display text-sm font-semibold uppercase tracking-wide", isCurrent ? "text-primary" : "text-foreground"),
-												children: event.name
-											}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-												className: "text-xs text-muted-foreground",
-												children: eventKindLabel(event.kind)
-											})]
-										}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-											className: "flex items-center gap-2",
-											children: [isCurrent && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-												className: "rounded-full bg-primary px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-widest text-primary-foreground",
-												children: t("dashboard.timeline.now")
-											}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-												className: "flex items-center gap-1.5 text-xs text-muted-foreground",
-												children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CalendarClock, {
-													className: "h-3.5 w-3.5",
-													"aria-hidden": "true"
-												}), formatTimestampMediumDate(event.start, timeZone)]
-											})]
-										})]
-									})]
-								}, event.id.toString());
-							})
-						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "text-sm text-muted-foreground",
-							children: t("dashboard.timeline.empty")
-						})
-					})
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-					type: "button",
-					onClick: toggle,
-					"aria-expanded": expanded,
-					"aria-controls": regionId,
-					"data-ocid": "dashboard.timeline.toggle",
-					className: "touch-target flex w-full items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-4 py-3 font-display text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-					children: [toggleLabel, /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, {
-						"aria-hidden": "true",
-						className: cn("h-4 w-4 transition-transform duration-300 ease-out motion-reduce:transition-none", expanded && "rotate-180")
-					})]
-				})
-			]
-		})
-	});
-}
-//#endregion
-//#region src/components/dashboard/PositionPanel.tsx
-function AdjustStepper({ label, value, disabled, onDelta, ocid }) {
-	const { t } = useDashboardCopy();
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "flex items-center justify-between gap-2",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-			className: "text-xs font-medium text-muted-foreground",
-			children: label
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "flex items-center gap-1",
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-					type: "button",
-					variant: "outline",
-					size: "icon",
-					"aria-label": t("dashboard.adjust.decrease", { label }),
-					"data-ocid": `${ocid}.minus_button`,
-					className: "touch-target",
-					disabled: disabled || value <= 0,
-					onClick: () => onDelta(-1n),
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Minus, {
-						className: "h-4 w-4",
-						"aria-hidden": "true"
-					})
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-					className: "w-8 text-center font-display text-base font-bold tabular-nums",
-					children: value
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-					type: "button",
-					variant: "outline",
-					size: "icon",
-					"aria-label": t("dashboard.adjust.increase", { label }),
-					"data-ocid": `${ocid}.plus_button`,
-					className: "touch-target",
-					disabled,
-					onClick: () => onDelta(1n),
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, {
-						className: "h-4 w-4",
-						"aria-hidden": "true"
-					})
-				})
-			]
-		})]
-	});
-}
-function PositionRow({ position, summary, adjustMode, canAdjust, onOpenRoster }) {
-	const { t } = useDashboardCopy();
-	const { data: roster } = useRosterForPosition(position.id);
-	const adjust = useAdjustBuildTo();
-	const [error, setError] = (0, import_react.useState)(null);
-	const rosterOnHand = (roster ?? []).filter((r) => r.status !== RoadieStatus.archived).length;
-	const onHand = summary ? Number(summary.onHand) : rosterOnHand;
-	const target = summary ? Number(summary.buildTo) : Number(position.openingBuildTo);
-	const pct = target > 0 ? Math.min(100, Math.round(onHand / target * 100)) : 0;
-	const needed = target - onHand;
-	const openSpots = summary ? Number(summary.openSpots) : Math.max(0, needed);
-	const over = needed < 0;
-	const activeCount = summary ? Number(summary.active) : (roster ?? []).filter((r) => r.status !== RoadieStatus.archived && r.rosterState === RosterState.active).length;
-	const pendingCount = summary ? Number(summary.pending) : (roster ?? []).filter((r) => r.status !== RoadieStatus.archived && r.rosterState === RosterState.pending).length;
-	const applyDelta = (field, delta) => {
-		setError(null);
-		adjust.mutate({
-			positionId: position.id,
-			openingDelta: field === "opening" ? delta : 0n,
-			afterOpeningDelta: field === "afterOpening" ? delta : 0n
-		}, { onError: (err) => setError(err instanceof Error ? err.message : t("dashboard.adjust.error")) });
-	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
-		"data-ocid": "dashboard.position.item",
-		className: "rounded-md border border-border bg-card p-3",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "flex items-start justify-between gap-3",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-					type: "button",
-					"data-ocid": "dashboard.position.open_button",
-					onClick: () => onOpenRoster(position),
-					className: "group flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-						className: "min-w-0",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: "block truncate font-display text-sm font-semibold uppercase tracking-wide text-foreground group-hover:text-primary",
-								children: position.name
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: "block text-xs text-muted-foreground",
-								children: t("dashboard.position.onHandOf", {
-									onHand,
-									target
-								})
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-								"data-ocid": "dashboard.position.counts",
-								className: "mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-medium",
-								children: [
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "text-accent",
-										children: t("dashboard.position.active", { count: activeCount })
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "text-muted-foreground",
-										"aria-hidden": "true",
-										children: "·"
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "text-primary",
-										children: t("dashboard.position.pending", { count: pendingCount })
-									})
-								]
-							})
-						]
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, {
-						className: "h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary",
-						"aria-hidden": "true"
-					})]
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-					"data-ocid": "dashboard.position.needed",
-					className: cn("shrink-0 rounded-full px-2.5 py-1 font-display text-[11px] font-semibold uppercase tracking-wider", over ? "bg-accent/10 text-accent" : needed === 0 ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"),
-					children: over ? t("dashboard.position.over", { count: Math.abs(needed) }) : openSpots === 0 ? t("dashboard.position.filled") : t("dashboard.position.needed", { count: openSpots })
-				})]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				className: "mt-2 h-2 w-full overflow-hidden rounded-full bg-muted",
-				role: "progressbar",
-				tabIndex: 0,
-				"aria-valuenow": pct,
-				"aria-valuemin": 0,
-				"aria-valuemax": 100,
-				"aria-label": t("dashboard.position.progressLabel", {
-					name: position.name,
-					onHand,
-					target
-				}),
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					className: cn("h-full rounded-full transition-all", over ? "bg-accent" : "bg-primary"),
-					style: { width: `${pct}%` }
-				})
-			}),
-			adjustMode && canAdjust && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "mt-3 space-y-2 rounded-md border border-border bg-muted/30 p-3",
-				"data-ocid": "dashboard.adjust.panel",
-				children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AdjustStepper, {
-						label: t("dashboard.adjust.opening"),
-						value: Number(position.openingBuildTo),
-						disabled: adjust.isPending,
-						onDelta: (delta) => applyDelta("opening", delta),
-						ocid: "dashboard.adjust.opening"
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AdjustStepper, {
-						label: t("dashboard.adjust.afterOpening"),
-						value: Number(position.afterOpeningBuildTo),
-						disabled: adjust.isPending,
-						onDelta: (delta) => applyDelta("afterOpening", delta),
-						ocid: "dashboard.adjust.after_opening"
-					}),
-					adjust.isPending && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-						className: "flex items-center gap-2 text-xs text-muted-foreground",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
-							className: "h-3 w-3 animate-spin",
-							"aria-hidden": "true"
-						}), t("dashboard.adjust.saving")]
-					}),
-					error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-						className: "text-xs text-destructive",
-						role: "alert",
-						children: error
-					})
-				]
-			})
-		]
-	});
-}
-/** One house panel (front of house / back of house) with its position rows. */
-function PositionPanel({ titleKey, positions, summaryByPosition, adjustMode, canAdjust, onOpenRoster, ocid }) {
-	const { t } = useDashboardCopy();
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
-		"data-ocid": ocid,
-		className: "rounded-lg border-border py-5 shadow-subtle",
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
-			className: "space-y-3 px-5",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
-				className: "font-display text-lg font-bold uppercase tracking-wide text-foreground",
-				children: t(titleKey)
-			}), positions.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-sm text-muted-foreground",
-				children: t("dashboard.panel.empty")
-			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
-				className: "space-y-2",
-				children: positions.map((position) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PositionRow, {
-					position,
-					summary: summaryByPosition.get(position.id.toString()),
-					adjustMode,
-					canAdjust,
-					onOpenRoster
-				}, position.id.toString()))
-			})]
-		})
-	});
-}
-//#endregion
-//#region src/components/dashboard/PositionRosterDialog.tsx
-function OpenSpotTile({ index }) {
-	const { t } = useDashboardCopy();
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
-		"data-ocid": `dashboard.roster.open_spot.${index}`,
-		className: "flex min-h-32 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 p-3 text-center",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(UserPlus, {
-			className: "h-6 w-6 text-muted-foreground",
-			"aria-hidden": "true"
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-			className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
-			children: t("dashboard.roster.openSpot")
-		})]
-	});
-}
-function ArchivedRow({ roadie, canRehire, timeZone }) {
-	const { t } = useDashboardCopy();
-	const rehire = useRehireRoadie$1();
-	const [error, setError] = (0, import_react.useState)(null);
-	const name = roadie.profile.preferredName || roadie.profile.name;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
-		"data-ocid": "dashboard.roster.archived.item",
-		className: "flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-muted/30 p-3",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "min-w-0",
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "truncate font-display text-sm font-semibold uppercase tracking-wide text-foreground",
-					children: name
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-					className: "text-xs text-muted-foreground",
-					children: [archiveReasonLabel$1(roadie.archivedReason), roadie.archivedAt !== void 0 ? ` · ${formatTimestamp(roadie.archivedAt, timeZone)}` : ""]
-				}),
-				error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "mt-1 text-xs text-destructive",
-					role: "alert",
-					children: error
-				})
-			]
-		}), canRehire && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-			type: "button",
-			variant: "outline",
-			className: "touch-target",
-			"data-ocid": "dashboard.roster.rehire_button",
-			disabled: rehire.isPending,
-			onClick: () => {
-				setError(null);
-				rehire.mutate({
-					id: roadie.id,
-					reason: null
-				}, { onError: (err) => setError(err instanceof Error ? err.message : t("dashboard.roster.rehireError")) });
-			},
-			children: [rehire.isPending ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
-				className: "mr-2 h-4 w-4 animate-spin",
-				"aria-hidden": "true"
-			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RotateCcw, {
-				className: "mr-2 h-4 w-4",
-				"aria-hidden": "true"
-			}), t("dashboard.roster.rehire")]
-		})]
-	});
-}
-/**
-* The roster for one position: active photo tiles, dashed open-spot tiles for
-* each still-needed hire, and a "Show former (n)" toggle that reveals archived
-* roadies in a separate "No longer a roadie" section with rehire for managers.
-* Tapping an active tile opens the shared card pop-up.
-*/
-function PositionRosterDialog({ position, open, onOpenChange, canRehire }) {
-	const { t } = useDashboardCopy();
-	const { data: storeInfo } = useStoreInfo();
-	const timeZone = storeInfo?.timeZone || "America/Chicago";
-	const access = useAccessState();
-	const mayOpenFullProfile = canArchive(access.kind === "granted" ? access.grant.role : void 0);
-	const { data: roster, isLoading, isError } = useRosterForPosition(position?.id);
-	const { active, archived } = (0, import_react.useMemo)(() => {
-		const list = roster ?? [];
-		return {
-			active: list.filter((r) => r.status !== RoadieStatus.archived),
-			archived: list.filter((r) => r.status === RoadieStatus.archived)
-		};
-	}, [roster]);
-	const activeCount = active.filter((r) => r.rosterState === RosterState.active).length;
-	const pendingCount = active.filter((r) => r.rosterState === RosterState.pending).length;
-	const [showFormer, setShowFormer] = (0, import_react.useState)(true);
-	const [cardIndex, setCardIndex] = (0, import_react.useState)(null);
-	const entries = (0, import_react.useMemo)(() => active.map((roadie) => ({
-		key: roadie.id.toString(),
-		roadie
-	})), [active]);
-	const target = position ? Number(position.openingBuildTo) : 0;
-	const openSpots = Math.max(0, target - active.length);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Dialog, {
-		open,
-		onOpenChange,
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, {
-			"data-ocid": "dashboard.roster.dialog",
-			className: "max-h-[85vh] overflow-y-auto sm:max-w-2xl",
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					"data-ocid": "dashboard.roster.banner",
-					className: "flex items-center gap-3 rounded-lg bg-secondary px-4 py-3 text-secondary-foreground",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, { className: "h-12 w-12" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "min-w-0 truncate font-display text-sm font-bold uppercase tracking-widest text-white",
-						children: storeInfo?.locationName || storeInfo?.appName || ""
-					})]
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogHeader, { children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, {
-						className: "font-display text-xl font-bold uppercase tracking-wide",
-						children: position?.name ?? t("dashboard.roster.title")
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogDescription, { children: t("dashboard.roster.summary", {
-						onHand: active.length,
-						target
-					}) }),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						"data-ocid": "dashboard.roster.counts",
-						className: "flex flex-wrap items-center gap-2 pt-1",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-1 font-display text-[11px] font-semibold uppercase tracking-wider text-accent",
-							children: t("dashboard.roster.active", { count: activeCount })
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-display text-[11px] font-semibold uppercase tracking-wider text-primary",
-							children: t("dashboard.roster.pending", { count: pendingCount })
-						})]
-					})
-				] }),
-				isLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-					className: "flex items-center gap-2 py-6 text-sm text-muted-foreground",
-					"data-ocid": "dashboard.roster.loading_state",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
-						className: "h-4 w-4 animate-spin",
-						"aria-hidden": "true"
-					}), t("dashboard.roster.loading")]
-				}),
-				isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "py-6 text-sm text-destructive",
-					role: "alert",
-					"data-ocid": "dashboard.roster.error_state",
-					children: t("dashboard.roster.error")
-				}),
-				!isLoading && !isError && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [active.length === 0 && openSpots === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "py-6 text-sm text-muted-foreground",
-					"data-ocid": "dashboard.roster.empty_state",
-					children: t("dashboard.roster.empty")
-				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("ul", {
-					className: "grid grid-cols-2 gap-3 sm:grid-cols-3",
-					"data-ocid": "dashboard.roster.list",
-					children: [active.map((roadie, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadieTile, {
-						roadie,
-						onOpen: () => setCardIndex(index),
-						ocid: "dashboard.roster.item",
-						statusOcid: "dashboard.roster.item.status",
-						photoOcid: "dashboard.roster.item.photo"
-					}, roadie.id.toString())), Array.from({ length: openSpots }, (_, i) => `open-${i}`).map((id, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(OpenSpotTile, { index: index + 1 }, id))]
-				}), archived.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
-					className: "mt-2 space-y-2",
-					"data-ocid": "dashboard.roster.archived.section",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-						type: "button",
-						variant: "ghost",
-						className: "touch-target w-full justify-between",
-						"aria-expanded": showFormer,
-						"data-ocid": "dashboard.roster.former.toggle",
-						onClick: () => setShowFormer((on) => !on),
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "font-display text-sm font-bold uppercase tracking-widest text-muted-foreground",
-							children: showFormer ? t("dashboard.roster.hideFormer", { count: archived.length }) : t("dashboard.roster.showFormer", { count: archived.length })
-						}), showFormer ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronUp, {
-							className: "h-4 w-4",
-							"aria-hidden": "true"
-						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, {
-							className: "h-4 w-4",
-							"aria-hidden": "true"
-						})]
-					}), showFormer && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
-						className: "space-y-2",
-						children: archived.map((roadie) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchivedRow, {
-							roadie,
-							canRehire,
-							timeZone
-						}, roadie.id.toString()))
-					})]
-				})] })
-			]
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadieCardModal, {
-			entries,
-			index: cardIndex ?? 0,
-			open: cardIndex !== null,
-			onOpenChange: (next) => {
-				if (!next) setCardIndex(null);
-			},
-			onIndexChange: setCardIndex,
-			renderFullProfile: mayOpenFullProfile ? (entry) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FullProfileLink, { entry }) : void 0
-		})]
-	});
-}
-//#endregion
-//#region src/pages/Dashboard.tsx
-/**
-* The dashboard hero banner: a navy panel with the red-and-white flag stripe,
-* the store's secondary logo at about 96px on phones and 120px from the small
-* breakpoint up, and the store name and opening date beside it. On phones the
-* logo is centered above the name and date; from the small breakpoint up it
-* sits on the left alongside them. When no secondary logo has been uploaded the
-* banner shows just the name and date, with no star fallback.
-*/
-function DashboardHero({ storeInfo }) {
-	const storeName = storeInfo?.locationName || storeInfo?.appName || "";
-	const openingDate = storeInfo ? formatDateOnly(storeInfo.openingDate) : null;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
-		"data-ocid": "dashboard.hero",
-		className: "overflow-hidden rounded-lg bg-secondary text-secondary-foreground shadow-subtle",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "flex flex-col items-center gap-4 px-5 py-6 text-center sm:flex-row sm:items-center sm:gap-6 sm:px-8 sm:py-7 sm:text-left",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, {
-				variant: "secondary",
-				className: "h-24 shrink-0 sm:h-[120px]",
-				title: storeName || "Roadie store"
-			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "min-w-0",
-				children: [storeName && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
-					className: "font-display text-2xl font-bold uppercase leading-tight tracking-wide text-white md:text-3xl",
-					children: storeName
-				}), !!openingDate && openingDate !== "—" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-					className: "mt-1 text-sm text-white/80 md:text-base",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "font-display uppercase tracking-wider text-white/60",
-							children: "Opening"
-						}),
-						" ",
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "font-medium text-white",
-							children: openingDate
-						})
-					]
-				})]
-			})]
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-			className: "stripe-flag",
-			"aria-hidden": "true"
-		})]
-	});
-}
-/** The backend alerts store, readable by Admin and Store Manager only. */
-function useAlerts(enabled) {
-	const { actor, isFetching } = useActor(createActor);
-	return useQuery({
-		queryKey: ["alerts"],
-		queryFn: async () => {
-			if (!actor) return [];
-			return actor.listAlerts();
-		},
-		enabled: enabled && !!actor && !isFetching
-	});
-}
-/**
-* The dashboard alerts: a red "Paperwork incomplete" flag for every roadie past
-* the paperwork due date whose paperwork is not 100% complete, plus any
-* unacknowledged backend alerts. Rendered only for managers, who are the roles
-* that may read the check-off and the alerts store.
-*/
-function DashboardAlerts({ paperworkNames, alerts }) {
-	const { t } = useDashboardCopy();
-	const openAlerts = alerts.filter((alert) => !alert.acknowledged);
-	if (paperworkNames.length === 0 && openAlerts.length === 0) return null;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
-		"data-ocid": "dashboard.alerts",
-		className: "space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-4",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h2", {
-				className: "flex items-center gap-2 font-display text-sm font-bold uppercase tracking-widest text-destructive",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TriangleAlert, {
-					className: "h-4 w-4",
-					"aria-hidden": "true"
-				}), t("dashboard.alerts.title")]
-			}),
-			paperworkNames.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				"data-ocid": "dashboard.alerts.paperwork",
-				className: "rounded-md border border-destructive/30 bg-card px-3 py-2",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "font-display text-xs font-semibold uppercase tracking-wider text-destructive",
-					children: t("dashboard.alerts.paperwork", { count: paperworkNames.length })
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "mt-0.5 text-sm text-foreground",
-					children: paperworkNames.join(", ")
-				})]
-			}),
-			openAlerts.map((alert) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				"data-ocid": "dashboard.alerts.item",
-				className: "rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground",
-				children: alert.message
-			}, alert.id.toString()))
-		]
-	});
-}
-function DashboardPage() {
-	const { t } = useDashboardCopy();
-	const access = useAccessState();
-	const role = access.kind === "granted" ? access.grant.role : void 0;
-	const canAdjust = canArchive(role);
-	const canRehire = canArchive(role);
-	const { data, isLoading, isError, refetch } = useDashboard();
-	const { data: schedule } = useSchedule();
-	const { data: storeInfo } = useStoreInfo();
-	const { data: rosterSummary } = useRosterSummary();
-	const { data: roadies } = useRoadies();
-	const { data: alerts } = useAlerts(canAdjust);
-	const hasNoPositions = !!data && data.foh.length === 0 && data.boh.length === 0;
-	useSeedWhenEmpty(!!data, hasNoPositions);
-	const summaryByPosition = (0, import_react.useMemo)(() => {
-		const map = /* @__PURE__ */ new Map();
-		for (const row of rosterSummary ?? []) map.set(row.positionId.toString(), row);
-		return map;
-	}, [rosterSummary]);
-	const paperworkFlags = usePaperworkIncompleteMap(roadies ?? [], canAdjust);
-	const paperworkNames = (0, import_react.useMemo)(() => {
-		if (!canAdjust) return [];
-		return (roadies ?? []).filter((roadie) => paperworkFlags.get(roadie.id.toString())).map((roadie) => roadie.profile.preferredName || roadie.profile.name);
-	}, [
-		canAdjust,
-		roadies,
-		paperworkFlags
-	]);
-	const [adjustMode, setAdjustMode] = (0, import_react.useState)(false);
-	const [selected, setSelected] = (0, import_react.useState)(null);
-	const [rosterOpen, setRosterOpen] = (0, import_react.useState)(false);
-	const openRoster = (position) => {
-		setSelected(position);
-		setRosterOpen(true);
-	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "space-y-6",
-		"data-ocid": "dashboard.page",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DashboardHero, { storeInfo: storeInfo ?? null }),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
-				title: t("dashboard.title"),
-				subtitle: t("dashboard.subtitle"),
-				action: canAdjust ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-					type: "button",
-					variant: adjustMode ? "default" : "outline",
-					className: "touch-target",
-					"aria-pressed": adjustMode,
-					"data-ocid": "dashboard.adjust.toggle",
-					onClick: () => setAdjustMode((on) => !on),
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlidersHorizontal, {
-						className: "mr-2 h-4 w-4",
-						"aria-hidden": "true"
-					}), adjustMode ? t("dashboard.adjust.done") : t("dashboard.adjust.mode")]
-				}) : void 0
-			}),
-			isLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("dashboard.loading") }),
-			isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
-				message: t("dashboard.error"),
-				onRetry: () => void refetch()
-			}),
-			data && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(OpeningTimeline, {
-					events: schedule ?? [],
-					openingDate: storeInfo?.openingDate ?? null
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DashboardAlerts, {
-					paperworkNames,
-					alerts: alerts ?? []
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KpiTiles, {
-					hired: data.hired,
-					active: data.active,
-					pending: data.pending,
-					buildToTotal: data.buildToTotal,
-					stillNeeded: data.stillNeeded,
-					showedAtOrientation: data.showedAtOrientation,
-					certified: data.certified
-				}),
-				adjustMode && canAdjust && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-					className: "rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-foreground",
-					"data-ocid": "dashboard.adjust.hint",
-					children: t("dashboard.adjust.hint")
-				}),
-				data.foh.length === 0 && data.boh.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: t("dashboard.empty") }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "grid gap-6 lg:grid-cols-2",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PositionPanel, {
-						titleKey: "dashboard.section.foh",
-						positions: data.foh,
-						summaryByPosition,
-						adjustMode,
-						canAdjust,
-						onOpenRoster: openRoster,
-						ocid: "dashboard.foh.section"
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PositionPanel, {
-						titleKey: "dashboard.section.boh",
-						positions: data.boh,
-						summaryByPosition,
-						adjustMode,
-						canAdjust,
-						onOpenRoster: openRoster,
-						ocid: "dashboard.boh.section"
-					})]
-				})
-			] }),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PositionRosterDialog, {
-				position: selected,
-				open: rosterOpen,
-				onOpenChange: setRosterOpen,
-				canRehire
-			})
-		]
-	});
-}
 /*! ExcelJS 19-10-2023 */
 /*!
 * The buffer module from node.js, for the browser.
@@ -63519,7 +62077,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 * @copyright Louis-Dominique Dubeau
 */
 //#endregion
-//#region src/lib/export.ts
+//#region src/lib/uniforms.ts
 var import_exceljs_min = /* @__PURE__ */ __toESM((/* @__PURE__ */ __commonJSMin(((exports, module) => {
 	(function(e) {
 		if ("object" == typeof exports && "undefined" != typeof module) module.exports = e();
@@ -96412,6 +94970,2929 @@ while (n === a[++i] && n === a[++i] && n === a[++i] && n === a[++i] && n === a[+
 		}, {}, [15])(15);
 	}));
 })))(), 1);
+/** The seeded uniform settings, used before the backend settings load. */
+var DEFAULT_UNIFORM_SETTINGS = {
+	sizeCurve: {
+		shirts: [
+			{
+				size: "XS",
+				percent: 3n
+			},
+			{
+				size: "S",
+				percent: 12n
+			},
+			{
+				size: "M",
+				percent: 25n
+			},
+			{
+				size: "L",
+				percent: 28n
+			},
+			{
+				size: "XL",
+				percent: 18n
+			},
+			{
+				size: "2XL",
+				percent: 10n
+			},
+			{
+				size: "3XL",
+				percent: 4n
+			}
+		],
+		hats: [
+			{
+				size: "One size",
+				percent: 60n
+			},
+			{
+				size: "S/M",
+				percent: 20n
+			},
+			{
+				size: "L/XL",
+				percent: 20n
+			}
+		]
+	},
+	bufferPercent: 10n
+};
+/** The three house filters, in display order. */
+var UNIFORM_FILTERS = [
+	UniformHouseFilter.all,
+	UniformHouseFilter.foh,
+	UniformHouseFilter.boh
+];
+/** The copy key for each house filter. */
+var UNIFORM_FILTER_LABEL_KEY = {
+	[UniformHouseFilter.all]: "uniformsFilterAll",
+	[UniformHouseFilter.foh]: "uniformsFilterFoh",
+	[UniformHouseFilter.boh]: "uniformsFilterBoh"
+};
+/** Group the order rows by item, preserving the backend's row order. */
+function groupOrderRows(rows) {
+	const groups = [];
+	for (const row of rows) {
+		const existing = groups.find((group) => group.item === row.item);
+		if (existing) existing.rows.push(row);
+		else groups.push({
+			item: row.item,
+			rows: [row]
+		});
+	}
+	return groups;
+}
+/** The sum of a size curve's percentages. */
+function curveTotal(entries) {
+	return entries.reduce((total, entry) => total + Number(entry.percent), 0);
+}
+/** Whether a size curve's percentages add up to exactly 100. */
+function curveIsBalanced(entries) {
+	return curveTotal(entries) === 100;
+}
+/** A copy of the settings with every percentage coerced to a whole number. */
+function normalizeSettings(settings) {
+	return {
+		sizeCurve: {
+			shirts: settings.sizeCurve.shirts.map((entry) => ({
+				size: entry.size,
+				percent: BigInt(Math.max(0, Math.trunc(Number(entry.percent))))
+			})),
+			hats: settings.sizeCurve.hats.map((entry) => ({
+				size: entry.size,
+				percent: BigInt(Math.max(0, Math.trunc(Number(entry.percent))))
+			}))
+		},
+		bufferPercent: BigInt(Math.max(0, Math.trunc(Number(settings.bufferPercent))))
+	};
+}
+/** The copy key describing which sizes a size-unknown roadie is missing. */
+function sizeUnknownReasonKey(row) {
+	if (row.missingShirt && row.missingHat) return "uniformsSizeUnknownMissingBoth";
+	if (row.missingShirt) return "uniformsSizeUnknownMissingShirt";
+	return "uniformsSizeUnknownMissingHat";
+}
+/** The filename for the order workbook, dated by the local calendar day. */
+function uniformOrderFilename(now) {
+	return `uniform-order-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}.xlsx`;
+}
+/** The order sheet name. */
+var ORDER_SHEET = "Uniform order";
+/**
+* Build the uniform order workbook: a header block with the store name and
+* date, then one row per item and size with hired, projected and order totals.
+*/
+function buildUniformOrderWorkbook(order, storeName, dateLabel) {
+	const workbook = new import_exceljs_min.default.Workbook();
+	workbook.creator = "Roadie";
+	workbook.created = /* @__PURE__ */ new Date();
+	const sheet = workbook.addWorksheet(ORDER_SHEET);
+	sheet.columns = [
+		{
+			key: "item",
+			width: 16
+		},
+		{
+			key: "size",
+			width: 16
+		},
+		{
+			key: "hired",
+			width: 12
+		},
+		{
+			key: "projected",
+			width: 12
+		},
+		{
+			key: "orderTotal",
+			width: 14
+		}
+	];
+	const title = sheet.addRow([storeName]);
+	title.font = {
+		bold: true,
+		size: 14
+	};
+	sheet.addRow([dateLabel]);
+	sheet.addRow([]);
+	const header = sheet.addRow([
+		"Item",
+		"Size",
+		"Hired",
+		"Projected",
+		"Order total"
+	]);
+	header.font = { bold: true };
+	for (const group of groupOrderRows(order.rows)) for (const row of group.rows) sheet.addRow([
+		row.item,
+		row.size,
+		Number(row.hired),
+		Number(row.projected),
+		Number(row.orderTotal)
+	]);
+	sheet.views = [{
+		state: "frozen",
+		ySplit: 4
+	}];
+	return workbook;
+}
+/** Serialize the uniform order workbook to an .xlsx Blob. */
+async function uniformOrderWorkbookToBlob(order, storeName, dateLabel) {
+	const buffer = await buildUniformOrderWorkbook(order, storeName, dateLabel).xlsx.writeBuffer();
+	return new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+/** Whether the current device is an iPhone or iPad (incl. iPadOS desktop UA). */
+function isIosDevice$2() {
+	if (typeof navigator === "undefined") return false;
+	const ua = navigator.userAgent;
+	const iOS = /iPad|iPhone|iPod/.test(ua);
+	const iPadOs = ua.includes("Macintosh") && navigator.maxTouchPoints > 1;
+	return iOS || iPadOs;
+}
+/**
+* Build the uniform order workbook and trigger a browser download, reusing the
+* same iOS-aware delivery as the roster and gift bag exports.
+*/
+async function downloadUniformOrder(order, storeName, dateLabel, filename) {
+	const blob = await uniformOrderWorkbookToBlob(order, storeName, dateLabel);
+	if (isIosDevice$2()) {
+		const file = new File([blob], filename, { type: blob.type });
+		if (typeof navigator !== "undefined" && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) try {
+			await navigator.share({
+				files: [file],
+				title: filename
+			});
+			return;
+		} catch {}
+	}
+	const url = URL.createObjectURL(blob);
+	const anchor = document.createElement("a");
+	anchor.href = url;
+	anchor.download = filename;
+	anchor.rel = "noopener";
+	document.body.appendChild(anchor);
+	anchor.click();
+	anchor.remove();
+	if (isIosDevice$2()) window.setTimeout(() => URL.revokeObjectURL(url), 6e4);
+	else URL.revokeObjectURL(url);
+}
+//#endregion
+//#region src/pages/Uniforms.tsx
+/** One editable size-curve column: a label and its percentage inputs. */
+function CurveEditor({ label, entries, editable, onChange }) {
+	const copy = useAdminCopy();
+	const total = curveTotal(entries);
+	const balanced = curveIsBalanced(entries);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		"data-ocid": `uniforms.curve.${label.toLowerCase()}`,
+		className: "rounded-lg border border-border bg-card p-4 shadow-subtle",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex items-baseline justify-between gap-2",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+					className: "font-display text-base font-bold uppercase tracking-wide text-foreground",
+					children: label
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					"data-ocid": `uniforms.curve.${label.toLowerCase()}.total`,
+					className: cn("font-mono text-xs tabular-nums", balanced ? "text-muted-foreground" : "text-destructive"),
+					children: fill$2(copy.uniformsCurveTotal, { percent: total })
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
+				className: "mt-3 space-y-2",
+				children: entries.map((entry, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+					"data-ocid": `uniforms.curve.${label.toLowerCase()}.row.${index + 1}`,
+					className: "flex items-center gap-3",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "min-w-0 flex-1 truncate text-sm text-foreground",
+							children: entry.size
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							type: "number",
+							inputMode: "numeric",
+							min: 0,
+							max: 100,
+							step: 1,
+							value: entry.percent.toString(),
+							disabled: !editable,
+							"aria-label": `${label} ${entry.size} ${copy.uniformsPercent}`,
+							"data-ocid": `uniforms.curve.${label.toLowerCase()}.input.${index + 1}`,
+							className: "touch-target w-20 text-right font-mono tabular-nums",
+							onChange: (event) => {
+								onChange(entries.map((current, currentIndex) => currentIndex === index ? {
+									size: current.size,
+									percent: BigInt(Math.max(0, Math.trunc(Number(event.target.value) || 0)))
+								} : current));
+							}
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "w-4 text-sm text-muted-foreground",
+							children: "%"
+						})
+					]
+				}, entry.size))
+			}),
+			!balanced && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				"data-ocid": `uniforms.curve.${label.toLowerCase()}.warning`,
+				className: "mt-3 text-xs text-destructive",
+				children: copy.uniformsCurveTotalWarning
+			})
+		]
+	});
+}
+/** The order table for one item (Shirts or Hats). */
+function OrderTable({ item, rows }) {
+	const copy = useAdminCopy();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		"data-ocid": `uniforms.order.${item.toLowerCase()}`,
+		className: "rounded-lg border border-border bg-card p-4 shadow-subtle",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+			className: "font-display text-base font-bold uppercase tracking-wide text-foreground",
+			children: item
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			className: "mt-3 overflow-x-auto",
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("table", {
+				className: "w-full border-collapse text-sm",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("thead", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", {
+					className: "border-b border-border text-left",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
+							className: "py-1.5 pr-2 font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+							children: copy.uniformsColumnSize
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
+							className: "py-1.5 px-2 text-right font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+							children: copy.uniformsColumnHired
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
+							className: "py-1.5 px-2 text-right font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+							children: copy.uniformsColumnProjected
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("th", {
+							className: "py-1.5 pl-2 text-right font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+							children: copy.uniformsColumnOrderTotal
+						})
+					]
+				}) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("tbody", { children: rows.map((row, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", {
+					"data-ocid": `uniforms.order.${item.toLowerCase()}.row.${index + 1}`,
+					className: "border-b border-border/60 last:border-0",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+							className: "py-1.5 pr-2 text-foreground",
+							children: row.size
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+							className: "py-1.5 px-2 text-right font-mono tabular-nums text-foreground",
+							children: row.hired.toString()
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+							className: "py-1.5 px-2 text-right font-mono tabular-nums text-foreground",
+							children: row.projected.toString()
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("td", {
+							className: "py-1.5 pl-2 text-right font-mono font-semibold tabular-nums text-foreground",
+							children: row.orderTotal.toString()
+						})
+					]
+				}, `${row.item}-${row.size}`)) })]
+			})
+		})]
+	});
+}
+/** The Size unknown section: roadies missing a shirt or hat size. */
+function SizeUnknownSection({ order }) {
+	const copy = useAdminCopy();
+	const rows = order.sizeUnknown;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		"data-ocid": "uniforms.size_unknown.section",
+		className: "rounded-lg border border-border bg-card p-4 shadow-subtle",
+		"aria-labelledby": "uniforms-size-unknown-heading",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+				id: "uniforms-size-unknown-heading",
+				className: "font-display text-xl font-bold uppercase tracking-wide text-foreground",
+				children: copy.uniformsSizeUnknownTitle
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "mt-1 text-sm text-muted-foreground",
+				children: copy.uniformsSizeUnknownHint
+			}),
+			rows.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				"data-ocid": "uniforms.size_unknown.empty_state",
+				className: "mt-3 text-sm text-muted-foreground",
+				children: copy.uniformsSizeUnknownEmpty
+			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
+				className: "mt-3 space-y-1",
+				children: rows.map((row, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+					"data-ocid": `uniforms.size_unknown.item.${index + 1}`,
+					className: "flex flex-wrap items-center gap-x-2 gap-y-1 text-sm",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
+						to: "/roster/$roadieId",
+						params: { roadieId: row.roadieId.toString() },
+						"data-ocid": `uniforms.size_unknown.link.${index + 1}`,
+						className: "min-h-[44px] inline-flex items-center rounded-sm text-foreground underline decoration-dotted underline-offset-4 transition-smooth hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+						children: row.name
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: "text-xs text-muted-foreground",
+						children: copy[sizeUnknownReasonKey(row)]
+					})]
+				}, row.roadieId.toString()))
+			})
+		]
+	});
+}
+function UniformsPage() {
+	const copy = useAdminCopy();
+	const access = useAccessState();
+	const role = access.kind === "granted" ? access.grant.role : void 0;
+	const canView = canUniforms(role);
+	const canEdit = canEditUniforms(role);
+	const [filter, setFilter] = (0, import_react.useState)(UniformHouseFilter.all);
+	const settingsQuery = useUniformSettings(canView);
+	const orderQuery = useUniformOrder(filter, canView);
+	const updateSettings = useUpdateUniformSettings();
+	const { data: storeInfo } = useStoreInfo();
+	const [draft, setDraft] = (0, import_react.useState)(DEFAULT_UNIFORM_SETTINGS);
+	const [saved, setSaved] = (0, import_react.useState)(false);
+	const [saveError, setSaveError] = (0, import_react.useState)(false);
+	const [isDownloading, setIsDownloading] = (0, import_react.useState)(false);
+	const [downloadError, setDownloadError] = (0, import_react.useState)(false);
+	const settings = settingsQuery.data;
+	(0, import_react.useEffect)(() => {
+		if (settings) setDraft(settings);
+	}, [settings]);
+	const storeName = (0, import_react.useMemo)(() => storeInfo?.locationName || storeInfo?.appName || "", [storeInfo]);
+	const dateLabel = (0, import_react.useMemo)(() => storeInfo ? formatDateOnly(storeInfo.openingDate) : "", [storeInfo]);
+	const order = orderQuery.data;
+	const groups = order ? groupOrderRows(order.rows) : [];
+	function handleSave() {
+		setSaved(false);
+		setSaveError(false);
+		updateSettings.mutate(normalizeSettings(draft), {
+			onSuccess: () => setSaved(true),
+			onError: () => setSaveError(true)
+		});
+	}
+	async function handleDownload() {
+		if (!order) return;
+		setIsDownloading(true);
+		setDownloadError(false);
+		try {
+			await downloadUniformOrder(order, storeName, dateLabel, uniformOrderFilename(/* @__PURE__ */ new Date()));
+		} catch {
+			setDownloadError(true);
+		} finally {
+			setIsDownloading(false);
+		}
+	}
+	if (!canView) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-6",
+		"data-ocid": "uniforms.page",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, { title: copy.uniformsTitle }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, {
+			title: copy.uniformsEmpty,
+			ocid: "uniforms.empty_state"
+		})]
+	});
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-6",
+		"data-ocid": "uniforms.page",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "print-hide",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
+					title: copy.uniformsTitle,
+					subtitle: copy.uniformsDescription,
+					action: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+						type: "button",
+						variant: "outline",
+						className: "touch-target",
+						"data-ocid": "uniforms.print_button",
+						disabled: !order,
+						onClick: () => window.print(),
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, {
+							className: "mr-2 h-4 w-4",
+							"aria-hidden": "true"
+						}), copy.uniformsPrint]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+						type: "button",
+						className: "touch-target",
+						"data-ocid": "uniforms.download_button",
+						disabled: !order || isDownloading,
+						onClick: () => void handleDownload(),
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, {
+							className: "mr-2 h-4 w-4",
+							"aria-hidden": "true"
+						}), isDownloading ? copy.uniformsLoading : copy.uniformsDownload]
+					})] })
+				}), downloadError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					"data-ocid": "uniforms.download_error",
+					className: "mt-3 text-sm text-destructive",
+					children: copy.uniformsSaveError
+				})]
+			}),
+			settingsQuery.isLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, {
+				label: copy.uniformsLoading,
+				ocid: "uniforms.loading_state"
+			}),
+			settingsQuery.isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
+				message: copy.uniformsError,
+				onRetry: () => void settingsQuery.refetch(),
+				ocid: "uniforms.error_state"
+			}),
+			settingsQuery.data && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+				"data-ocid": "uniforms.settings.section",
+				className: "space-y-4",
+				"aria-labelledby": "uniforms-settings-heading",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+						id: "uniforms-settings-heading",
+						className: "font-display text-xl font-bold uppercase tracking-wide text-foreground",
+						children: copy.uniformsSizeCurve
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "mt-1 text-sm text-muted-foreground",
+						children: copy.uniformsSizeCurveHint
+					})] }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "grid gap-4 md:grid-cols-2",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CurveEditor, {
+							label: copy.uniformsShirts,
+							entries: draft.sizeCurve.shirts,
+							editable: canEdit,
+							onChange: (shirts) => setDraft((current) => ({
+								...current,
+								sizeCurve: {
+									...current.sizeCurve,
+									shirts
+								}
+							}))
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CurveEditor, {
+							label: copy.uniformsHats,
+							entries: draft.sizeCurve.hats,
+							editable: canEdit,
+							onChange: (hats) => setDraft((current) => ({
+								...current,
+								sizeCurve: {
+									...current.sizeCurve,
+									hats
+								}
+							}))
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "rounded-lg border border-border bg-card p-4 shadow-subtle",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+								htmlFor: "uniforms-buffer",
+								children: copy.uniformsBuffer
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "mt-1 text-sm text-muted-foreground",
+								children: copy.uniformsBufferHint
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "mt-2 flex items-center gap-2",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+									id: "uniforms-buffer",
+									type: "number",
+									inputMode: "numeric",
+									min: 0,
+									max: 100,
+									step: 1,
+									value: draft.bufferPercent.toString(),
+									disabled: !canEdit,
+									"data-ocid": "uniforms.buffer.input",
+									className: "touch-target w-24 text-right font-mono tabular-nums",
+									onChange: (event) => setDraft((current) => ({
+										...current,
+										bufferPercent: BigInt(Math.max(0, Math.trunc(Number(event.target.value) || 0)))
+									}))
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: "text-sm text-muted-foreground",
+									children: "%"
+								})]
+							})
+						]
+					}),
+					canEdit && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "flex flex-wrap items-center gap-3",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+								type: "button",
+								className: "touch-target",
+								"data-ocid": "uniforms.save_button",
+								disabled: updateSettings.isPending,
+								onClick: handleSave,
+								children: copy.uniformsSave
+							}),
+							saved && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								"data-ocid": "uniforms.success_state",
+								className: "text-sm text-accent",
+								children: copy.uniformsSaved
+							}),
+							saveError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								"data-ocid": "uniforms.save_error",
+								className: "text-sm text-destructive",
+								children: copy.uniformsSaveError
+							})
+						]
+					})
+				]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+				"data-ocid": "uniforms.order.section",
+				className: "space-y-4",
+				"aria-labelledby": "uniforms-order-heading",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "print-hide",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+								id: "uniforms-order-heading",
+								className: "font-display text-xl font-bold uppercase tracking-wide text-foreground",
+								children: copy.uniformsOrderTitle
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "mt-1 text-sm text-muted-foreground",
+								children: copy.uniformsOrderDescription
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								role: "tablist",
+								"aria-label": copy.uniformsOrderTitle,
+								className: "mt-3 inline-flex rounded-md border border-border bg-card p-1",
+								children: UNIFORM_FILTERS.map((value) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+									type: "button",
+									role: "tab",
+									"aria-selected": filter === value,
+									"data-ocid": `uniforms.filter.${value}`,
+									className: cn("touch-target rounded-sm px-4 font-display text-xs font-semibold uppercase tracking-widest transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", filter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"),
+									onClick: () => setFilter(value),
+									children: copy[UNIFORM_FILTER_LABEL_KEY[value]]
+								}, value))
+							})
+						]
+					}),
+					orderQuery.isLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, {
+						label: copy.uniformsLoading,
+						ocid: "uniforms.order.loading_state"
+					}),
+					orderQuery.isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
+						message: copy.uniformsError,
+						onRetry: () => void orderQuery.refetch(),
+						ocid: "uniforms.order.error_state"
+					}),
+					order && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "print-area space-y-4",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "hidden print:block",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+									className: "font-display text-2xl font-bold uppercase tracking-wide",
+									children: copy.uniformsPrintTitle
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+									className: "text-sm",
+									children: [
+										storeName,
+										" · ",
+										dateLabel
+									]
+								})]
+							}),
+							groups.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, {
+								title: copy.uniformsEmpty,
+								ocid: "uniforms.order.empty_state"
+							}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								className: "grid gap-4 md:grid-cols-2",
+								children: groups.map((group) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(OrderTable, {
+									item: group.item,
+									rows: group.rows
+								}, group.item))
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								"data-ocid": "uniforms.buffer.summary",
+								className: "text-sm text-muted-foreground",
+								children: fill$2(copy.uniformsBufferSummary, { percent: order.bufferPercent.toString() })
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SizeUnknownSection, { order })
+						]
+					})
+				]
+			})
+		]
+	});
+}
+//#endregion
+//#region src/pages/Admin.tsx
+function AdminPage() {
+	const { t } = useI18n();
+	const demo = useDemo();
+	const [tab, setTab] = (0, import_react.useState)("store");
+	const positions = usePositions();
+	const access = useAccessState();
+	const viewerRole = access.kind === "granted" ? access.grant.role : void 0;
+	const canSeeCrews = !!viewerRole && APPROVAL_ROLES.includes(viewerRole);
+	useSeedWhenEmpty(positions.isSuccess, (positions.data?.length ?? 0) === 0);
+	const realSettingsTabs = [
+		"positions",
+		"schedule",
+		"checklists",
+		"template",
+		"access",
+		"uniforms"
+	];
+	const showRealSettings = !demo.enabled;
+	const tabs = [
+		{
+			key: "store",
+			label: t("admin.section.store")
+		},
+		...showRealSettings ? [
+			{
+				key: "positions",
+				label: t("admin.section.positions")
+			},
+			{
+				key: "schedule",
+				label: t("admin.section.schedule")
+			},
+			{
+				key: "checklists",
+				label: t("admin.section.checklists")
+			},
+			{
+				key: "template",
+				label: t("admin.section.template")
+			},
+			{
+				key: "uniforms",
+				label: t("admin.section.uniforms")
+			}
+		] : [],
+		...canSeeCrews ? [{
+			key: "crews",
+			label: t("admin.section.crews")
+		}] : [],
+		...showRealSettings ? [{
+			key: "access",
+			label: t("admin.section.access")
+		}] : []
+	];
+	const activeTab = !showRealSettings && realSettingsTabs.includes(tab) ? "store" : tab;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-6",
+		"data-ocid": "admin.page",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
+				title: t("admin.title"),
+				subtitle: t("admin.subtitle")
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				role: "tablist",
+				"aria-label": t("admin.title"),
+				className: "flex flex-wrap gap-1 rounded-md border border-border bg-card p-1",
+				children: tabs.map((item) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					type: "button",
+					role: "tab",
+					"aria-selected": activeTab === item.key,
+					"data-ocid": `admin.${item.key}.tab`,
+					onClick: () => setTab(item.key),
+					className: `touch-target rounded px-3 py-1.5 font-display text-xs font-semibold uppercase tracking-wider transition-colors ${activeTab === item.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`,
+					children: item.label
+				}, item.key))
+			}),
+			activeTab === "store" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreInfoPanel, {}),
+			activeTab === "positions" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PositionsPanel, {}),
+			activeTab === "schedule" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SchedulePanel, {}),
+			activeTab === "checklists" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChecklistsPanel, {}),
+			activeTab === "template" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TemplatePanel, {}),
+			activeTab === "uniforms" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(UniformsPage, {}),
+			activeTab === "crews" && canSeeCrews && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CrewsPanel, {}),
+			activeTab === "access" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccessPanel, {})
+		]
+	});
+}
+//#endregion
+//#region src/components/approvals/ApprovalConfirmDialog.tsx
+/**
+* Confirmation step shown before granting a high-privilege role. The admin
+* must explicitly confirm before the approval is sent.
+*/
+function ApprovalConfirmDialog({ open, role, pending, onOpenChange, onConfirm }) {
+	const { t } = useI18n();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
+		open,
+		onOpenChange,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, {
+			"data-ocid": "approvals.confirm.dialog",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: t("approvals.confirm.title") }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogDescription, { children: t("approvals.confirm.body", { role: roleLabel(role) }) })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+				type: "button",
+				variant: "outline",
+				className: "touch-target",
+				"data-ocid": "approvals.cancel_button",
+				onClick: () => onOpenChange(false),
+				children: t("approvals.cancel")
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+				type: "button",
+				className: "touch-target",
+				"data-ocid": "approvals.confirm_button",
+				disabled: pending,
+				onClick: onConfirm,
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, {
+					className: "mr-2 h-4 w-4",
+					"aria-hidden": "true"
+				}), t("approvals.confirm.action")]
+			})] })]
+		})
+	});
+}
+/**
+* Confirmation step shown before rejecting a pending sign-up. Rejecting is
+* destructive, so the manager must explicitly confirm before it is sent.
+*/
+function RejectConfirmDialog({ open, pending, onOpenChange, onConfirm }) {
+	const { t } = useI18n();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
+		open,
+		onOpenChange,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, {
+			"data-ocid": "approvals.reject.dialog",
+			"aria-describedby": void 0,
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: t("approvals.action.reject") }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+				type: "button",
+				variant: "outline",
+				className: "touch-target",
+				"data-ocid": "approvals.reject.cancel_button",
+				onClick: () => onOpenChange(false),
+				children: t("approvals.cancel")
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+				type: "button",
+				variant: "destructive",
+				className: "touch-target",
+				"data-ocid": "approvals.reject.confirm_button",
+				disabled: pending,
+				onClick: onConfirm,
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, {
+					className: "mr-2 h-4 w-4",
+					"aria-hidden": "true"
+				}), t("common.confirm")]
+			})] })]
+		})
+	});
+}
+//#endregion
+//#region src/components/approvals/ManagerSignaturePad.tsx
+/**
+* A sample signature drawn as normalized points (0..1 of the canvas box), so
+* the demo "Sign as Test" button can fill the pad at any canvas size. The path
+* is a single flowing cursive stroke that reads as a signature.
+*/
+var SAMPLE_SIGNATURE$1 = [
+	[.08, .68],
+	[.12, .42],
+	[.16, .3],
+	[.2, .34],
+	[.22, .52],
+	[.24, .66],
+	[.28, .6],
+	[.32, .44],
+	[.36, .38],
+	[.4, .46],
+	[.42, .6],
+	[.46, .64],
+	[.5, .5],
+	[.54, .36],
+	[.58, .4],
+	[.6, .56],
+	[.64, .62],
+	[.68, .48],
+	[.72, .34],
+	[.76, .4],
+	[.8, .58],
+	[.86, .62],
+	[.92, .5]
+];
+/**
+* A pointer-drawn manager signature on a canvas. Emits the drawn strokes as
+* raw PNG bytes so the approval stores a real signature reference, never the
+* roadie's own signature. Reuses the same drawing technique as the kiosk
+* signature step so a manager can sign on a phone.
+*/
+function ManagerSignaturePad({ value, onChange, error }) {
+	const { t } = useI18n();
+	const demo = useDemo();
+	const canvasRef = (0, import_react.useRef)(null);
+	const drawingRef = (0, import_react.useRef)(false);
+	const [dirty, setDirty] = (0, import_react.useState)(false);
+	const setupCanvas = (0, import_react.useCallback)(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		const ratio = window.devicePixelRatio || 1;
+		const rect = canvas.getBoundingClientRect();
+		canvas.width = Math.max(1, Math.round(rect.width * ratio));
+		canvas.height = Math.max(1, Math.round(rect.height * ratio));
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+		ctx.scale(ratio, ratio);
+		ctx.lineWidth = 2.5;
+		ctx.lineCap = "round";
+		ctx.lineJoin = "round";
+		ctx.strokeStyle = "#14284B";
+	}, []);
+	(0, import_react.useEffect)(() => {
+		setupCanvas();
+	}, [setupCanvas]);
+	const pointFromEvent = (event) => {
+		const canvas = canvasRef.current;
+		if (!canvas) return {
+			x: 0,
+			y: 0
+		};
+		const rect = canvas.getBoundingClientRect();
+		return {
+			x: event.clientX - rect.left,
+			y: event.clientY - rect.top
+		};
+	};
+	const handlePointerDown = (event) => {
+		const canvas = canvasRef.current;
+		const ctx = canvas?.getContext("2d");
+		if (!canvas || !ctx) return;
+		canvas.setPointerCapture(event.pointerId);
+		drawingRef.current = true;
+		const { x, y } = pointFromEvent(event);
+		ctx.beginPath();
+		ctx.moveTo(x, y);
+	};
+	const handlePointerMove = (event) => {
+		if (!drawingRef.current) return;
+		const ctx = canvasRef.current?.getContext("2d");
+		if (!ctx) return;
+		const { x, y } = pointFromEvent(event);
+		ctx.lineTo(x, y);
+		ctx.stroke();
+		if (!dirty) setDirty(true);
+	};
+	const finishStroke = () => {
+		if (!drawingRef.current) return;
+		drawingRef.current = false;
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		canvas.toBlob((blob) => {
+			if (!blob) return;
+			blob.arrayBuffer().then((buffer) => onChange(new Uint8Array(buffer)));
+		}, "image/png");
+	};
+	const clear = () => {
+		const canvas = canvasRef.current;
+		const ctx = canvas?.getContext("2d");
+		if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+		setDirty(false);
+		onChange(null);
+	};
+	const signAsTest = () => {
+		const canvas = canvasRef.current;
+		const ctx = canvas?.getContext("2d");
+		if (!canvas || !ctx) return;
+		const rect = canvas.getBoundingClientRect();
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		ctx.beginPath();
+		SAMPLE_SIGNATURE$1.forEach(([nx, ny], index) => {
+			const x = nx * rect.width;
+			const y = ny * rect.height;
+			if (index === 0) ctx.moveTo(x, y);
+			else ctx.lineTo(x, y);
+		});
+		ctx.stroke();
+		setDirty(true);
+		canvas.toBlob((blob) => {
+			if (!blob) return;
+			blob.arrayBuffer().then((buffer) => onChange(new Uint8Array(buffer)));
+		}, "image/png");
+	};
+	const hasSignature = value !== null && value.length > 0;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-2 md:col-span-2",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+				children: t("approvals.signup.signature.label")
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "rounded-lg border border-border bg-card p-3",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("canvas", {
+						ref: canvasRef,
+						"data-ocid": "approvals.signup.signature.canvas_target",
+						"aria-label": t("approvals.signup.signature.label"),
+						className: "h-40 w-full touch-none rounded-md border border-dashed border-input bg-white",
+						onPointerDown: handlePointerDown,
+						onPointerMove: handlePointerMove,
+						onPointerUp: finishStroke,
+						onPointerLeave: finishStroke,
+						onPointerCancel: finishStroke
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "mt-3 flex items-center justify-between gap-3",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							className: "flex items-center gap-2 text-xs text-muted-foreground",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PenLine, {
+								className: "h-4 w-4",
+								"aria-hidden": "true"
+							}), hasSignature ? t("approvals.signup.signature.label") : t("approvals.signup.signature.required")]
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+							type: "button",
+							variant: "outline",
+							"data-ocid": "approvals.signup.signature.clear_button",
+							onClick: clear,
+							disabled: !dirty && !hasSignature,
+							className: "touch-target rounded-full",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eraser, {
+								className: "h-4 w-4",
+								"aria-hidden": "true"
+							}), t("common.cancel")]
+						})]
+					}),
+					demo.enabled && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+						type: "button",
+						variant: "secondary",
+						"data-ocid": "approvals.signup.signature.sign_as_test_button",
+						onClick: signAsTest,
+						className: "touch-target mt-3 w-full rounded-full",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(WandSparkles, {
+							className: "h-4 w-4",
+							"aria-hidden": "true"
+						}), t("demo.signAsTest")]
+					})
+				]
+			}),
+			error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				role: "alert",
+				"data-ocid": "approvals.signup.signature.error_state",
+				className: "text-sm font-medium text-destructive",
+				children: error
+			})
+		]
+	});
+}
+//#endregion
+//#region src/components/approvals/ApprovalRoleSelect.tsx
+/** Roles an admin may grant. No role is pre-selected. */
+var ASSIGNABLE_ROLES = [
+	Role.storeManager,
+	Role.trainingManager,
+	Role.leadership,
+	Role.visitingManager,
+	Role.trainer,
+	Role.kiosk,
+	Role.admin
+];
+/** Roles that require an explicit confirmation before granting. */
+var CONFIRM_ROLES = [Role.storeManager, Role.admin];
+/** Whether granting this role needs a confirmation step. */
+function needsConfirmation(role) {
+	return role !== "" && CONFIRM_ROLES.includes(role);
+}
+/** Role picker for the approval form. */
+function ApprovalRoleSelect({ id, value, onChange }) {
+	const { t } = useI18n();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-1.5",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+			htmlFor: id,
+			children: t("approvals.role.label")
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+			value,
+			onValueChange: (next) => onChange(next),
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+				id,
+				"data-ocid": "approvals.role.select",
+				className: "touch-target w-full",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("approvals.role.placeholder") })
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: ASSIGNABLE_ROLES.map((option) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+				value: option,
+				children: roleLabel(option)
+			}, option)) })]
+		})]
+	});
+}
+//#endregion
+//#region src/components/approvals/PendingApprovalCard.tsx
+/** Roles whose profile carries trainer stations and travel dates. */
+var TRAVEL_ROLES = [Role.trainer, Role.visitingManager];
+/** Roles allowed to see a staff member's work phone and email. */
+var CONTACT_ROLES = [Role.admin, Role.storeManager];
+/** A `YYYY-MM-DD` value for a date input, read in UTC. */
+function dateOnlyToInput(value) {
+	if (value === void 0) return "";
+	const date = dateOnlyToDate(value);
+	if (!date) return "";
+	return date.toISOString().slice(0, 10);
+}
+/** The role to pre-select: the requested role when an admin may grant it. */
+function initialRole(profile) {
+	if (!profile) return "";
+	return ASSIGNABLE_ROLES.includes(profile.requestedRole) ? profile.requestedRole : "";
+}
+/** One labelled profile value, hidden when it is blank. */
+function ProfileField({ label, value }) {
+	if (!value) return null;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "min-w-0",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
+			className: "text-xs uppercase tracking-wide text-muted-foreground",
+			children: label
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
+			className: "break-words text-sm text-foreground",
+			children: value
+		})]
+	});
+}
+/**
+* The submitted staff profile carried on a pending request: name, title, home
+* store, photo, and — for the roles that travel — the stations they train and
+* their arrival and departure dates. Work phone and email are shown only to
+* Admin and Store Manager, matching the roadie contact-info rule.
+*/
+function StaffProfileSummary({ profile, positions, canSeeContact }) {
+	const { t } = useI18n();
+	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(profile.photo), [profile.photo]);
+	const homeStore = [profile.homeStoreNumber, profile.homeStoreCity].filter((part) => part.trim() !== "").join(" · ");
+	const showsTravel = TRAVEL_ROLES.includes(profile.requestedRole);
+	const trainedPositions = profile.trainerPositionIds.map((id) => positions.find((position) => position.id === id)?.name).filter((name) => !!name).join(", ");
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		"data-ocid": "approvals.profile.summary",
+		className: "mt-3 flex flex-col gap-3 rounded-md border border-border bg-muted/30 p-3 sm:flex-row",
+		children: [photoUrl && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+			src: photoUrl,
+			alt: staffDisplayName(profile, t("profile.unnamed")),
+			"data-ocid": "approvals.profile.photo",
+			className: "h-16 w-16 shrink-0 rounded-full border-2 border-primary object-cover"
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
+			className: "grid flex-1 gap-2 sm:grid-cols-2",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+					label: t("profile.fullName"),
+					value: profile.fullName
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+					label: t("profile.preferredName"),
+					value: profile.preferredName ?? ""
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+					label: t("profile.title.label"),
+					value: profile.title
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+					label: t("profile.homeStoreNumber"),
+					value: homeStore
+				}),
+				canSeeContact && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+					label: t("profile.workPhone"),
+					value: profile.workPhone ?? ""
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+					label: t("profile.workEmail"),
+					value: profile.workEmail ?? ""
+				})] }),
+				showsTravel && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+						label: t("approvals.stations.label"),
+						value: trainedPositions
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+						label: t("profile.arrivalDate"),
+						value: profile.arrivalDate !== void 0 ? formatDateOnly(profile.arrivalDate) : ""
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ProfileField, {
+						label: t("profile.departureDate"),
+						value: profile.departureDate !== void 0 ? formatDateOnly(profile.departureDate) : ""
+					})
+				] })
+			]
+		})]
+	});
+}
+/**
+* One pending sign-in with the full approval form: role, trainer stations,
+* optional access end date, and an optional link to an existing roadie card.
+* The submitted staff profile is shown and its requested role, stations and
+* departure date pre-fill the form, all still editable by the admin.
+*/
+function PendingApprovalCard({ user }) {
+	const { t } = useI18n();
+	const access = useAccessState();
+	const viewerRole = access.kind === "granted" ? access.grant.role : void 0;
+	const canSeeContact = !!viewerRole && CONTACT_ROLES.includes(viewerRole);
+	const isAdmin = viewerRole === Role.admin;
+	const { data: positions } = usePositions();
+	const { data: roadies } = useRoadies();
+	const { data: storeInfo } = useStoreInfo();
+	const approve = useApproveUser();
+	const timeZone = storeInfo?.timeZone || "America/Chicago";
+	const profile = user.staffProfile;
+	const [role, setRole] = (0, import_react.useState)(() => initialRole(profile));
+	const [stationIds, setStationIds] = (0, import_react.useState)(() => (profile?.trainerPositionIds ?? []).map((id) => id.toString()));
+	const [accessEnd, setAccessEnd] = (0, import_react.useState)(() => dateOnlyToInput(profile?.departureDate));
+	const [linkedRoadieId, setLinkedRoadieId] = (0, import_react.useState)("");
+	const [confirmOpen, setConfirmOpen] = (0, import_react.useState)(false);
+	const [showId, setShowId] = (0, import_react.useState)(false);
+	const [error, setError] = (0, import_react.useState)(null);
+	const principalText = user.principal.toText();
+	const needsStations = role === Role.trainer;
+	const displayName = staffDisplayName(profile, t("profile.unnamed"));
+	const submit = () => {
+		if (role === "") {
+			setError(t("approvals.role.required"));
+			return;
+		}
+		setError(null);
+		approve.mutate({
+			principal: user.principal,
+			role,
+			staffProfile: user.staffProfile,
+			trainerPositionIds: needsStations ? stationIds.map((id) => BigInt(id)) : [],
+			accessEndsAt: accessEnd ? dateToTimestamp(zonedWallTimeToDate(accessEnd, 23, 59, 59, timeZone)) : void 0,
+			linkedRoadieId: linkedRoadieId ? BigInt(linkedRoadieId) : void 0
+		}, {
+			onSuccess: () => {
+				setConfirmOpen(false);
+				setRole("");
+				setStationIds([]);
+				setAccessEnd("");
+				setLinkedRoadieId("");
+			},
+			onError: () => setError(t("approvals.error.generic"))
+		});
+	};
+	const handleApproveClick = () => {
+		if (role === "") {
+			setError(t("approvals.role.required"));
+			return;
+		}
+		setError(null);
+		if (needsConfirmation(role)) setConfirmOpen(true);
+		else submit();
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+		"data-ocid": "approvals.item",
+		className: "rounded-lg border border-border bg-card p-4 shadow-subtle",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex flex-wrap items-center justify-between gap-2",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "min-w-0",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "font-display text-sm font-semibold uppercase tracking-wide",
+							children: displayName
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							className: "text-xs text-muted-foreground",
+							children: [
+								t("approvals.requestedAt"),
+								": ",
+								formatTimestamp(user.requestedAt)
+							]
+						}),
+						isAdmin && showId && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							"data-ocid": "approvals.principal",
+							className: "mt-1 break-all font-mono text-xs text-muted-foreground",
+							children: [
+								t("profile.principal"),
+								": ",
+								principalText
+							]
+						})
+					]
+				}), isAdmin && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+					type: "button",
+					variant: "ghost",
+					size: "sm",
+					className: "touch-target",
+					"data-ocid": "approvals.show_id.toggle",
+					"aria-pressed": showId,
+					title: t("profile.showId.hint"),
+					onClick: () => setShowId((current) => !current),
+					children: [showId ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EyeOff, {
+						className: "mr-2 h-4 w-4",
+						"aria-hidden": "true"
+					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Eye, {
+						className: "mr-2 h-4 w-4",
+						"aria-hidden": "true"
+					}), t("profile.showId")]
+				})]
+			}),
+			profile && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StaffProfileSummary, {
+				profile,
+				positions: positions ?? [],
+				canSeeContact
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "mt-4 grid gap-4 md:grid-cols-2",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ApprovalRoleSelect, {
+						id: `role-${principalText}`,
+						value: role,
+						onChange: setRole
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-1.5",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+								htmlFor: `link-${principalText}`,
+								children: t("approvals.link.label")
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+								value: linkedRoadieId,
+								onValueChange: setLinkedRoadieId,
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+									id: `link-${principalText}`,
+									"data-ocid": "approvals.link.select",
+									className: "touch-target w-full",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("approvals.link.none") })
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: (roadies ?? []).map((roadie) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+									value: roadie.id.toString(),
+									children: roadie.profile.preferredName || roadie.profile.name
+								}, roadie.id.toString())) })]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "text-xs text-muted-foreground",
+								children: t("approvals.link.hint")
+							})
+						]
+					}),
+					needsStations && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrainerStationsPicker, {
+						positions: positions ?? [],
+						selectedIds: stationIds,
+						onChange: setStationIds
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-1.5",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+								htmlFor: `end-${principalText}`,
+								children: t("approvals.accessEnd.label")
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								id: `end-${principalText}`,
+								type: "date",
+								value: accessEnd,
+								onChange: (event) => setAccessEnd(event.target.value),
+								"data-ocid": "approvals.access_end.input",
+								className: "touch-target"
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "text-xs text-muted-foreground",
+								children: t("approvals.accessEnd.hint")
+							})
+						]
+					})
+				]
+			}),
+			error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				role: "alert",
+				"data-ocid": "approvals.error_state",
+				className: "mt-3 text-sm text-destructive",
+				children: error
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "mt-4 flex justify-end",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+					type: "button",
+					className: "touch-target",
+					"data-ocid": "approvals.approve_button",
+					disabled: approve.isPending,
+					onClick: handleApproveClick,
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(UserCheck, {
+						className: "mr-2 h-4 w-4",
+						"aria-hidden": "true"
+					}), t("approvals.action.approve")]
+				})
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ApprovalConfirmDialog, {
+				open: confirmOpen,
+				role,
+				pending: approve.isPending,
+				onOpenChange: setConfirmOpen,
+				onConfirm: submit
+			})
+		]
+	});
+}
+//#endregion
+//#region src/components/approvals/PendingApprovalList.tsx
+/**
+* The pending-approval queue with its loading, error, and empty states.
+* Each row owns its own approval form.
+*/
+function PendingApprovalList({ pending, isLoading, isError, onRetry }) {
+	const { t } = useI18n();
+	if (isLoading) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("approvals.loading") });
+	if (isError) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
+		message: t("approvals.error"),
+		onRetry
+	});
+	if ((pending?.length ?? 0) === 0) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: t("approvals.empty") });
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
+		className: "space-y-4",
+		"data-ocid": "approvals.list",
+		children: pending?.map((user) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PendingApprovalCard, { user }, user.principal.toText()))
+	});
+}
+//#endregion
+//#region src/pages/Approvals.tsx
+/** The orientation sessions that have not yet passed, soonest first. */
+function upcomingOrientations(schedule) {
+	const now = Date.now();
+	return schedule.filter((event) => event.kind === EventKind.orientation).filter((event) => Number(event.start / 1000000n) >= now).sort((a, b) => Number(a.start - b.start));
+}
+/**
+* The default orientation session: the next upcoming session, soonest first.
+* Sessions are already filtered to the future and sorted, so the first one is
+* the next session regardless of the applicant's house.
+*/
+function defaultOrientationId(sessions) {
+	const next = sessions[0];
+	return next ? next.id.toString() : "";
+}
+/**
+* The applicant's real age in the store's time zone, or null when the date of
+* birth is missing or invalid.
+*/
+function ageInTimeZone(dateOfBirth, timeZone) {
+	const birth = dateOnlyToDate(dateOfBirth);
+	if (!birth) return null;
+	const today = calendarInTimeZone(/* @__PURE__ */ new Date(), timeZone);
+	const birthYear = birth.getUTCFullYear();
+	const birthMonth = birth.getUTCMonth() + 1;
+	const birthDay = birth.getUTCDate();
+	let age = today.year - birthYear;
+	if (today.month < birthMonth || today.month === birthMonth && today.day < birthDay) age -= 1;
+	return age;
+}
+/** The copy key describing what a duplicate matched on. */
+function matchFieldKey(matchedOn) {
+	if (matchedOn === "both") return "approvals.signup.duplicates.match.both";
+	if (matchedOn === "email") return "approvals.signup.duplicates.match.email";
+	return "approvals.signup.duplicates.match.phone";
+}
+/** A compact list of duplicate matches found against all cards. */
+function DuplicateList({ matches }) {
+	const { t } = useI18n();
+	if (matches.length === 0) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+		"data-ocid": "approvals.signup.duplicates.none",
+		className: "flex items-center gap-2 text-sm text-muted-foreground",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, {
+			className: "h-4 w-4 text-accent",
+			"aria-hidden": "true"
+		}), t("approvals.signup.duplicates.none")]
+	});
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		"data-ocid": "approvals.signup.duplicates.list",
+		className: "rounded-md border border-destructive/30 bg-destructive/5 p-3",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+			className: "flex items-center gap-2 font-display text-xs font-semibold uppercase tracking-widest text-destructive",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TriangleAlert, {
+				className: "h-4 w-4",
+				"aria-hidden": "true"
+			}), t("approvals.signup.duplicates.title")]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
+			className: "mt-2 space-y-1 text-sm text-foreground",
+			children: matches.map((match) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
+				to: "/roster/$roadieId",
+				params: { roadieId: match.roadieId.toString() },
+				"data-ocid": "approvals.signup.duplicates.link",
+				className: "inline-flex min-h-[44px] flex-wrap items-center gap-x-1.5 rounded-sm text-foreground underline decoration-dotted underline-offset-4 transition-smooth hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: t("approvals.signup.duplicates.row", {
+					name: match.name,
+					position: match.mainPositionName,
+					field: t(matchFieldKey(match.matchedOn))
+				}) }), match.archived && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					className: "text-xs text-muted-foreground",
+					children: t("roster.archived")
+				})]
+			}) }, `${match.roadieId}-${match.matchedOn}`))
+		})]
+	});
+}
+/**
+* One pending kiosk submission under review: duplicate check, position, crew,
+* orientation session, start date, and the manager's drawn signature.
+*/
+function PendingSignupCard({ signup, positions, crews, sessions, timeZone, approverPrincipal }) {
+	const { t } = useI18n();
+	const { data: duplicates, isLoading: duplicatesLoading } = useSignupDuplicates(signup.id);
+	const approve = useApproveSignup();
+	const reject = useRejectSignup();
+	const ledCrewId = (0, import_react.useMemo)(() => {
+		if (!approverPrincipal) return "";
+		const led = crews.find((crew) => crew.leaderPrincipal?.toString() === approverPrincipal);
+		return led ? led.id.toString() : "";
+	}, [crews, approverPrincipal]);
+	const [mainPositionId, setMainPositionId] = (0, import_react.useState)("");
+	const [secondPositionId, setSecondPositionId] = (0, import_react.useState)("");
+	const [crewId, setCrewId] = (0, import_react.useState)("");
+	const [crewTouched, setCrewTouched] = (0, import_react.useState)(false);
+	const [orientationId, setOrientationId] = (0, import_react.useState)("");
+	const [startDate, setStartDate] = (0, import_react.useState)("");
+	const [signature, setSignature] = (0, import_react.useState)(null);
+	const [error, setError] = (0, import_react.useState)(null);
+	const [rejectOpen, setRejectOpen] = (0, import_react.useState)(false);
+	(0, import_react.useEffect)(() => {
+		if (!crewTouched && ledCrewId) setCrewId(ledCrewId);
+	}, [crewTouched, ledCrewId]);
+	const mainPosition = positions.find((position) => position.id.toString() === mainPositionId);
+	const secondPosition = positions.find((position) => position.id.toString() === secondPositionId);
+	const suggestedOrientation = defaultOrientationId(sessions);
+	const age = (0, import_react.useMemo)(() => ageInTimeZone(signup.contactSet.dateOfBirth, timeZone), [signup.contactSet.dateOfBirth, timeZone]);
+	const isMinor = age !== null && age < 18;
+	const ageBlocked = (0, import_react.useMemo)(() => {
+		if (age === null) return false;
+		const realAge = BigInt(age);
+		const mainTooYoung = !!mainPosition && realAge < mainPosition.minimumAge;
+		const secondTooYoung = !!secondPosition && realAge < secondPosition.minimumAge;
+		return mainTooYoung || secondTooYoung;
+	}, [
+		age,
+		mainPosition,
+		secondPosition
+	]);
+	const submit = () => {
+		if (!mainPositionId) {
+			setError(t("approvals.signup.main.required"));
+			return;
+		}
+		if (ageBlocked) {
+			setError(t("approvals.signup.minor.blocked"));
+			return;
+		}
+		if (!signature || signature.length === 0) {
+			setError(t("approvals.signup.signature.required"));
+			return;
+		}
+		setError(null);
+		const chosenOrientation = orientationId || suggestedOrientation;
+		const decision = {
+			mainPositionId: BigInt(mainPositionId),
+			secondPositionId: secondPositionId ? BigInt(secondPositionId) : void 0,
+			crewId: crewId ? BigInt(crewId) : void 0,
+			orientationEventId: chosenOrientation ? BigInt(chosenOrientation) : void 0,
+			startDate: startDate ? dateToDateOnly(/* @__PURE__ */ new Date(`${startDate}T00:00:00Z`)) : void 0
+		};
+		approve.mutate({
+			id: signup.id,
+			decision,
+			signature
+		}, {
+			onSuccess: () => {
+				setMainPositionId("");
+				setSecondPositionId("");
+				setCrewId("");
+				setCrewTouched(false);
+				setOrientationId("");
+				setStartDate("");
+				setSignature(null);
+			},
+			onError: () => setError(t("approvals.signup.approve.error"))
+		});
+	};
+	const confirmReject = () => {
+		reject.mutate(signup.id, {
+			onSuccess: () => setRejectOpen(false),
+			onError: () => {
+				setRejectOpen(false);
+				setError(t("approvals.signup.approve.error"));
+			}
+		});
+	};
+	const name = signup.profile.preferredName || signup.profile.name;
+	const key = signup.id.toString();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+		"data-ocid": "approvals.signup.item",
+		className: "rounded-lg border border-border bg-card p-4 shadow-subtle",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex flex-wrap items-start justify-between gap-2",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "min-w-0",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "font-display text-sm font-semibold uppercase tracking-wide",
+						children: name
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+						className: "text-xs text-muted-foreground",
+						children: [
+							t("approvals.signup.submittedAt"),
+							":",
+							" ",
+							formatTimestamp(signup.submittedAt, timeZone)
+						]
+					})]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex items-center gap-2",
+					children: [isMinor && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
+						tone: "pending",
+						ocid: "approvals.signup.minor_badge",
+						children: t("roadie.minor")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, {
+						tone: "muted",
+						children: t("approvals.signup.pending")
+					})]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
+				className: "mt-3 grid gap-2 text-sm sm:grid-cols-2",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
+						className: "text-xs uppercase tracking-wide text-muted-foreground",
+						children: t("roadie.field.phone")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", { children: signup.contactSet.phone })] }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
+						className: "text-xs uppercase tracking-wide text-muted-foreground",
+						children: t("roadie.field.email")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
+						className: "break-all",
+						children: signup.contactSet.email
+					})] }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
+						className: "text-xs uppercase tracking-wide text-muted-foreground",
+						children: t("roadie.field.birthday")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", { children: formatDateOnly(signup.contactSet.dateOfBirth) })] }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
+						className: "text-xs uppercase tracking-wide text-muted-foreground",
+						children: t("roadie.field.positionAppliedFor")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", { children: signup.profile.positionAppliedFor || t("roadie.field.none") })] })
+				]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "mt-4",
+				children: duplicatesLoading ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-sm text-muted-foreground",
+					children: t("approvals.signup.duplicates.loading")
+				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DuplicateList, { matches: duplicates ?? [] })
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "mt-4 grid gap-4 md:grid-cols-2",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-1.5",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+							htmlFor: `main-${key}`,
+							children: t("approvals.signup.main.label")
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+							value: mainPositionId,
+							onValueChange: setMainPositionId,
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+								id: `main-${key}`,
+								"data-ocid": "approvals.signup.main.select",
+								className: "touch-target w-full",
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("approvals.signup.main.placeholder") })
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: positions.map((position) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+								value: position.id.toString(),
+								children: position.name
+							}, position.id.toString())) })]
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-1.5",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+							htmlFor: `second-${key}`,
+							children: t("approvals.signup.second.label")
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+							value: secondPositionId,
+							onValueChange: setSecondPositionId,
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+								id: `second-${key}`,
+								"data-ocid": "approvals.signup.second.select",
+								className: "touch-target w-full",
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("approvals.signup.second.none") })
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: positions.filter((position) => position.id.toString() !== mainPositionId).map((position) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+								value: position.id.toString(),
+								children: position.name
+							}, position.id.toString())) })]
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-1.5",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+								htmlFor: `crew-${key}`,
+								children: t("approvals.signup.crew.label")
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+								value: crewId,
+								onValueChange: (value) => {
+									setCrewTouched(true);
+									setCrewId(value);
+								},
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+									id: `crew-${key}`,
+									"data-ocid": "approvals.signup.crew.select",
+									className: "touch-target w-full",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("approvals.signup.crew.none") })
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: crews.map((crew) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+									value: crew.id.toString(),
+									children: crew.name
+								}, crew.id.toString())) })]
+							}),
+							ledCrewId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "text-xs text-muted-foreground",
+								children: t("approvals.signup.crew.default")
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-1.5",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+								htmlFor: `orientation-${key}`,
+								children: t("approvals.signup.orientation.label")
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+								value: orientationId || suggestedOrientation,
+								onValueChange: setOrientationId,
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+									id: `orientation-${key}`,
+									"data-ocid": "approvals.signup.orientation.select",
+									className: "touch-target w-full",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("approvals.signup.orientation.placeholder") })
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: sessions.map((session) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectItem, {
+									value: session.id.toString(),
+									children: [
+										session.name,
+										" · ",
+										formatTimestamp(session.start, timeZone)
+									]
+								}, session.id.toString())) })]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "text-xs text-muted-foreground",
+								children: t("approvals.signup.orientation.hint")
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-1.5",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+							htmlFor: `start-${key}`,
+							children: t("approvals.signup.start.label")
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							id: `start-${key}`,
+							type: "date",
+							value: startDate,
+							onChange: (event) => setStartDate(event.target.value),
+							"data-ocid": "approvals.signup.start.input",
+							className: "touch-target"
+						})]
+					})
+				]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "mt-4",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ManagerSignaturePad, {
+					value: signature,
+					onChange: setSignature
+				})
+			}),
+			ageBlocked && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				role: "alert",
+				"data-ocid": "approvals.signup.minor.error",
+				className: "mt-3 text-sm text-destructive",
+				children: t("approvals.signup.minor.blocked")
+			}),
+			error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				role: "alert",
+				"data-ocid": "approvals.signup.error_state",
+				className: "mt-3 text-sm text-destructive",
+				children: error
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "mt-4 flex flex-wrap justify-end gap-2",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+					type: "button",
+					variant: "outline",
+					className: "touch-target",
+					"data-ocid": "approvals.signup.reject_button",
+					disabled: reject.isPending || approve.isPending,
+					onClick: () => setRejectOpen(true),
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, {
+						className: "mr-2 h-4 w-4",
+						"aria-hidden": "true"
+					}), t("approvals.action.reject")]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+					type: "button",
+					className: "touch-target",
+					"data-ocid": "approvals.signup.approve_button",
+					disabled: approve.isPending || ageBlocked,
+					onClick: submit,
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(UserCheck, {
+						className: "mr-2 h-4 w-4",
+						"aria-hidden": "true"
+					}), t("approvals.signup.action.approve")]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RejectConfirmDialog, {
+				open: rejectOpen,
+				pending: reject.isPending,
+				onOpenChange: setRejectOpen,
+				onConfirm: confirmReject
+			})
+		]
+	});
+}
+/** The pending kiosk submissions queue with its loading, error, and empty states. */
+function PendingSignupList({ signups, positions, crews, sessions, timeZone, approverPrincipal, isLoading, isError, onRetry }) {
+	const { t } = useI18n();
+	if (isLoading) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("approvals.signup.loading") });
+	if (isError) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
+		message: t("approvals.signup.error"),
+		onRetry
+	});
+	if ((signups?.length ?? 0) === 0) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: t("approvals.signup.empty") });
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
+		className: "space-y-4",
+		"data-ocid": "approvals.signup.list",
+		children: signups?.map((signup) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PendingSignupCard, {
+			signup,
+			positions,
+			crews,
+			sessions,
+			timeZone,
+			approverPrincipal
+		}, signup.id.toString()))
+	});
+}
+/**
+* Approve new hires. Admins review each pending sign-in, assign a role and
+* optional trainer stations, access end date, and linked roadie card. Store
+* Managers review pending kiosk submissions, run the duplicate check, assign
+* position, crew, orientation and start date, then sign to create the card.
+* The pending sign-in (access) section is visible only to admins.
+*/
+function ApprovalsPage() {
+	const { t } = useI18n();
+	const access = useAccessState();
+	const isAdmin = canAdmin(access.kind === "granted" ? access.grant.role : void 0);
+	const approverPrincipal = access.kind === "granted" ? access.grant.principal.toString() : null;
+	const { data: storeInfo } = useStoreInfo();
+	const timeZone = storeInfo?.timeZone || "America/Chicago";
+	const { data: pending, isLoading, isError, refetch } = usePendingUsers(isAdmin);
+	const { data: signups, isLoading: signupsLoading, isError: signupsError, refetch: refetchSignups } = usePendingSignups();
+	const { data: positions } = usePositions();
+	const { data: crews } = useCrews();
+	const { data: schedule } = useSchedule();
+	const sessions = (0, import_react.useMemo)(() => upcomingOrientations(schedule ?? []), [schedule]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-8",
+		"data-ocid": "approvals.page",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
+				title: t("approvals.title"),
+				subtitle: t("approvals.subtitle")
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+				className: "space-y-4",
+				"data-ocid": "approvals.signups.section",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+					className: "font-display text-lg font-semibold uppercase tracking-wide",
+					children: t("approvals.signup.section")
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PendingSignupList, {
+					signups,
+					positions: positions ?? [],
+					crews: crews ?? [],
+					sessions,
+					timeZone,
+					approverPrincipal,
+					isLoading: signupsLoading,
+					isError: signupsError,
+					onRetry: () => void refetchSignups()
+				})]
+			}),
+			isAdmin && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+				className: "space-y-4",
+				"data-ocid": "approvals.users.section",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+					className: "font-display text-lg font-semibold uppercase tracking-wide",
+					children: t("approvals.users.section")
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PendingApprovalList, {
+					pending,
+					isLoading,
+					isError,
+					onRetry: () => void refetch()
+				})]
+			})
+		]
+	});
+}
+//#endregion
+//#region src/components/ui/card.tsx
+function Card({ className, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		"data-slot": "card",
+		className: cn("bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm", className),
+		...props
+	});
+}
+function CardContent({ className, ...props }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		"data-slot": "card-content",
+		className: cn("px-6", className),
+		...props
+	});
+}
+//#endregion
+//#region src/components/dashboard/KpiTiles.tsx
+/**
+* The Hired → Active funnel: everyone hired, how many have shown up (active)
+* and how many are still pending. The bar splits hired into its active and
+* pending parts so the "showed up" share reads at a glance.
+*/
+function HiredFunnel({ hired, active, pending }) {
+	const { t } = useDashboardCopy();
+	const total = Math.max(hired, 1);
+	const activePct = Math.round(active / total * 100);
+	const pendingPct = Math.round(pending / total * 100);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
+		"data-ocid": "dashboard.funnel",
+		className: "animate-fade-rise rounded-lg border-border py-4 shadow-subtle",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
+			className: "px-4",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex flex-wrap items-center gap-x-3 gap-y-1",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+						children: t("dashboard.funnel.title")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+						className: "flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wide text-foreground",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								"data-ocid": "dashboard.funnel.hired",
+								children: t("dashboard.funnel.hired", { count: hired })
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRight, {
+								className: "h-4 w-4 text-muted-foreground",
+								"aria-hidden": "true"
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								"data-ocid": "dashboard.funnel.active",
+								className: "text-accent",
+								children: t("dashboard.funnel.active", { count: active })
+							})
+						]
+					})]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "mt-3 flex h-3 w-full overflow-hidden rounded-full bg-muted",
+					role: "img",
+					"aria-label": t("dashboard.funnel.aria", {
+						hired,
+						active,
+						pending
+					}),
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: "h-full bg-accent transition-all",
+						style: { width: `${activePct}%` }
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: "h-full bg-primary transition-all",
+						style: { width: `${pendingPct}%` }
+					})]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+						className: "flex items-center gap-1.5",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "h-2.5 w-2.5 rounded-full bg-accent",
+							"aria-hidden": "true"
+						}), t("dashboard.funnel.activeLabel", { count: active })]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+						className: "flex items-center gap-1.5",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "h-2.5 w-2.5 rounded-full bg-primary",
+							"aria-hidden": "true"
+						}), t("dashboard.funnel.pendingLabel", { count: pending })]
+					})]
+				})
+			]
+		})
+	});
+}
+/** The headline hiring tiles plus the Hired → Active funnel. */
+function KpiTiles({ hired, active, pending, buildToTotal, stillNeeded, showedAtOrientation, certified }) {
+	const { t } = useDashboardCopy();
+	const tiles = [
+		{
+			key: "hired",
+			labelKey: "dashboard.kpi.hired",
+			value: hired.toString(),
+			hintKey: "dashboard.kpi.hired.hint",
+			icon: UserCheck,
+			tone: "accent"
+		},
+		{
+			key: "active",
+			labelKey: "dashboard.kpi.active",
+			value: active.toString(),
+			hintKey: "dashboard.kpi.active.hint",
+			icon: CircleCheck,
+			tone: "accent"
+		},
+		{
+			key: "pending",
+			labelKey: "dashboard.kpi.pending",
+			value: pending.toString(),
+			hintKey: "dashboard.kpi.pending.hint",
+			icon: Clock,
+			tone: "primary"
+		},
+		{
+			key: "build_to",
+			labelKey: "dashboard.kpi.buildTo",
+			value: buildToTotal.toString(),
+			hintKey: "dashboard.kpi.buildTo.hint",
+			icon: Target,
+			tone: "primary"
+		},
+		{
+			key: "still_needed",
+			labelKey: "dashboard.kpi.stillNeeded",
+			value: stillNeeded.toString(),
+			hintKey: "dashboard.kpi.stillNeeded.hint",
+			icon: Users,
+			tone: "primary"
+		},
+		{
+			key: "orientation",
+			labelKey: "dashboard.kpi.showedAtOrientation",
+			value: showedAtOrientation?.toString() ?? "—",
+			hintKey: "dashboard.kpi.orientation.hint",
+			icon: Clock,
+			tone: "muted"
+		},
+		{
+			key: "certified",
+			labelKey: "dashboard.kpi.certified",
+			value: certified?.toString() ?? "—",
+			hintKey: "dashboard.kpi.certified.hint",
+			icon: CircleCheck,
+			tone: "muted"
+		}
+	];
+	const toneClasses = {
+		primary: "bg-primary/10 text-primary",
+		accent: "bg-accent/10 text-accent",
+		muted: "bg-muted text-muted-foreground"
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-3",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(HiredFunnel, {
+			hired: Number(hired),
+			active: Number(active),
+			pending: Number(pending)
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			className: "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4",
+			"data-ocid": "dashboard.kpi.list",
+			children: tiles.map((tile) => {
+				const Icon = tile.icon;
+				return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
+					"data-ocid": `dashboard.kpi.${tile.key}`,
+					className: "animate-fade-rise rounded-lg border-border py-4 shadow-subtle",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
+						className: "px-4",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "flex items-start justify-between gap-2",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+									className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+									children: t(tile.labelKey)
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", toneClasses[tile.tone]),
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon, {
+										className: "h-4 w-4",
+										"aria-hidden": "true"
+									})
+								})]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "mt-2 font-display text-3xl font-bold tabular-nums text-foreground",
+								children: tile.value
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "mt-0.5 text-xs text-muted-foreground",
+								children: t(tile.hintKey)
+							})
+						]
+					})
+				}, tile.key);
+			})
+		})]
+	});
+}
+//#endregion
+//#region src/components/dashboard/OpeningTimeline.tsx
+/** Human label for a schedule event kind. */
+function eventKindLabel(kind) {
+	return {
+		[EventKind.deadline]: "Deadline",
+		[EventKind.orientation]: "Orientation",
+		[EventKind.trainingDay]: "Training day",
+		[EventKind.friendsAndFamily]: "Friends & family",
+		[EventKind.openingDay]: "Opening day",
+		[EventKind.signOff]: "Sign-off",
+		[EventKind.other]: "Event"
+	}[kind] ?? "Event";
+}
+/**
+* The current instant, refreshed on an interval. When demo mode supplies a
+* pretend date, that instant is returned instead of the real clock so the
+* countdown and schedule windows follow the pretend date.
+*/
+function useNow(pretendInstant, intervalMs = 6e4) {
+	const [now, setNow] = (0, import_react.useState)(() => Date.now());
+	(0, import_react.useEffect)(() => {
+		const id = window.setInterval(() => setNow(Date.now()), intervalMs);
+		return () => window.clearInterval(id);
+	}, [intervalMs]);
+	return pretendInstant ?? now;
+}
+function splitCountdown(ms) {
+	const total = Math.max(0, Math.floor(ms / 1e3));
+	return {
+		days: Math.floor(total / 86400),
+		hours: Math.floor(total % 86400 / 3600),
+		minutes: Math.floor(total % 3600 / 60)
+	};
+}
+function CountdownUnit({ value, label }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "flex min-w-16 flex-col items-center rounded-md bg-secondary px-3 py-2 text-secondary-foreground",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			className: "font-display text-3xl font-bold leading-none tabular-nums",
+			children: value
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			className: "mt-1 font-display text-[10px] font-semibold uppercase tracking-widest text-white/70",
+			children: label
+		})]
+	});
+}
+/** localStorage key remembering whether the schedule is expanded on this device. */
+var SCHEDULE_STORAGE_KEY = "roadie-roster.dashboard.schedule-expanded";
+/** Read the remembered schedule state, defaulting to collapsed. */
+function readStoredExpanded() {
+	try {
+		return window.localStorage.getItem(SCHEDULE_STORAGE_KEY) === "true";
+	} catch {
+		return false;
+	}
+}
+/** Persist the schedule state, ignoring unavailable storage. */
+function storeExpanded(expanded) {
+	try {
+		window.localStorage.setItem(SCHEDULE_STORAGE_KEY, String(expanded));
+	} catch {}
+}
+/**
+* Countdown to opening day plus the opening timeline, with the phase the store
+* is currently in highlighted. The milestone list is collapsible; the flag,
+* label, opening date and countdown boxes always stay visible.
+*/
+function OpeningTimeline({ events, openingDate }) {
+	const { t } = useDashboardCopy();
+	const { data: storeInfo } = useStoreInfo();
+	const demo = useDemo();
+	const timeZone = storeInfo?.timeZone;
+	const now = useNow((0, import_react.useMemo)(() => {
+		if (!demo.enabled || !demo.pretendDate) return null;
+		return pretendDateToInstant(demo.pretendDate)?.getTime() ?? null;
+	}, [demo.enabled, demo.pretendDate]));
+	const [expanded, setExpanded] = (0, import_react.useState)(readStoredExpanded);
+	const toggle = (0, import_react.useCallback)(() => {
+		setExpanded((current) => {
+			const next = !current;
+			storeExpanded(next);
+			return next;
+		});
+	}, []);
+	const ordered = (0, import_react.useMemo)(() => [...events].sort((a, b) => Number(a.start - b.start)).filter((event) => {
+		return timestampToDate(event.start) !== null;
+	}), [events]);
+	const currentIndex = (0, import_react.useMemo)(() => {
+		let index = -1;
+		for (let i = 0; i < ordered.length; i += 1) {
+			const date = timestampToDate(ordered[i].start);
+			if (date && date.getTime() <= now) index = i;
+		}
+		return index;
+	}, [ordered, now]);
+	const nextEvent = (0, import_react.useMemo)(() => {
+		for (const event of ordered) {
+			const date = timestampToDate(event.start);
+			if (date && date.getTime() > now) return event;
+		}
+		return null;
+	}, [ordered, now]);
+	const openingInstant = openingDate !== null ? dateOnlyToDate(openingDate) : null;
+	const openingMs = openingInstant ? openingInstant.getTime() - now : null;
+	const countdown = openingMs !== null ? splitCountdown(openingMs) : null;
+	const regionId = "dashboard.timeline.region";
+	const toggleLabel = expanded ? "Hide schedule" : "Show schedule";
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
+		"data-ocid": "dashboard.countdown.card",
+		className: "rounded-lg border-border py-5 shadow-subtle",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
+			className: "space-y-5 px-5",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+					type: "button",
+					onClick: toggle,
+					"aria-expanded": expanded,
+					"aria-controls": regionId,
+					"data-ocid": "dashboard.countdown.header_toggle",
+					className: "flex w-full flex-col gap-4 rounded-md text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:flex-row sm:items-center sm:justify-between",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "flex items-center gap-3",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Flag, {
+								className: "h-5 w-5",
+								"aria-hidden": "true"
+							})
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+							children: t("dashboard.countdown.label")
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "font-display text-lg font-bold uppercase tracking-wide text-foreground",
+							children: openingDate !== null ? formatDateOnlyLong(openingDate) : t("dashboard.countdown.noDate")
+						})] })]
+					}), countdown ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "flex items-center gap-2",
+						"data-ocid": "dashboard.countdown.timer",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CountdownUnit, {
+								value: countdown.days,
+								label: t("dashboard.countdown.days")
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CountdownUnit, {
+								value: countdown.hours,
+								label: t("dashboard.countdown.hours")
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CountdownUnit, {
+								value: countdown.minutes,
+								label: t("dashboard.countdown.minutes")
+							})
+						]
+					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-sm text-muted-foreground",
+						children: t("dashboard.countdown.noDate")
+					})]
+				}),
+				!expanded && nextEvent && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+					className: "text-sm text-muted-foreground",
+					"data-ocid": "dashboard.timeline.next",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-display text-xs font-semibold uppercase tracking-widest text-primary",
+							children: "Next:"
+						}),
+						" ",
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-medium text-foreground",
+							children: nextEvent.name
+						}),
+						" · ",
+						formatTimestampMediumDate(nextEvent.start, timeZone)
+					]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					id: regionId,
+					"data-ocid": "dashboard.timeline.region",
+					className: cn("grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none", expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"),
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "overflow-hidden",
+						children: ordered.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", {
+							className: "relative space-y-1 border-l border-border pl-5",
+							"data-ocid": "dashboard.timeline.list",
+							children: ordered.map((event, index) => {
+								const isCurrent = index === currentIndex;
+								const isPast = index < currentIndex;
+								return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+									"data-ocid": `dashboard.timeline.item.${index + 1}`,
+									className: "relative py-2",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										"aria-hidden": "true",
+										className: cn("absolute -left-[26px] top-3.5 h-3 w-3 rounded-full border-2", isCurrent ? "border-primary bg-primary" : isPast ? "border-accent bg-accent" : "border-border bg-card")
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+										className: cn("flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md px-3 py-2", isCurrent && "bg-primary/5 ring-1 ring-primary/30"),
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+											className: "min-w-0",
+											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+												className: cn("truncate font-display text-sm font-semibold uppercase tracking-wide", isCurrent ? "text-primary" : "text-foreground"),
+												children: event.name
+											}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+												className: "text-xs text-muted-foreground",
+												children: eventKindLabel(event.kind)
+											})]
+										}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+											className: "flex items-center gap-2",
+											children: [isCurrent && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+												className: "rounded-full bg-primary px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-widest text-primary-foreground",
+												children: t("dashboard.timeline.now")
+											}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+												className: "flex items-center gap-1.5 text-xs text-muted-foreground",
+												children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CalendarClock, {
+													className: "h-3.5 w-3.5",
+													"aria-hidden": "true"
+												}), formatTimestampMediumDate(event.start, timeZone)]
+											})]
+										})]
+									})]
+								}, event.id.toString());
+							})
+						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "text-sm text-muted-foreground",
+							children: t("dashboard.timeline.empty")
+						})
+					})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+					type: "button",
+					onClick: toggle,
+					"aria-expanded": expanded,
+					"aria-controls": regionId,
+					"data-ocid": "dashboard.timeline.toggle",
+					className: "touch-target flex w-full items-center justify-center gap-2 rounded-md border border-border bg-muted/40 px-4 py-3 font-display text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+					children: [toggleLabel, /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, {
+						"aria-hidden": "true",
+						className: cn("h-4 w-4 transition-transform duration-300 ease-out motion-reduce:transition-none", expanded && "rotate-180")
+					})]
+				})
+			]
+		})
+	});
+}
+//#endregion
+//#region src/components/dashboard/PositionPanel.tsx
+function AdjustStepper({ label, value, disabled, onDelta, ocid }) {
+	const { t } = useDashboardCopy();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "flex items-center justify-between gap-2",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			className: "text-xs font-medium text-muted-foreground",
+			children: label
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "flex items-center gap-1",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+					type: "button",
+					variant: "outline",
+					size: "icon",
+					"aria-label": t("dashboard.adjust.decrease", { label }),
+					"data-ocid": `${ocid}.minus_button`,
+					className: "touch-target",
+					disabled: disabled || value <= 0,
+					onClick: () => onDelta(-1n),
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Minus, {
+						className: "h-4 w-4",
+						"aria-hidden": "true"
+					})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					className: "w-8 text-center font-display text-base font-bold tabular-nums",
+					children: value
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+					type: "button",
+					variant: "outline",
+					size: "icon",
+					"aria-label": t("dashboard.adjust.increase", { label }),
+					"data-ocid": `${ocid}.plus_button`,
+					className: "touch-target",
+					disabled,
+					onClick: () => onDelta(1n),
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, {
+						className: "h-4 w-4",
+						"aria-hidden": "true"
+					})
+				})
+			]
+		})]
+	});
+}
+function PositionRow({ position, summary, adjustMode, canAdjust, onOpenRoster }) {
+	const { t } = useDashboardCopy();
+	const { data: roster } = useRosterForPosition(position.id);
+	const adjust = useAdjustBuildTo();
+	const [error, setError] = (0, import_react.useState)(null);
+	const rosterOnHand = (roster ?? []).filter((r) => r.status !== RoadieStatus.archived).length;
+	const onHand = summary ? Number(summary.onHand) : rosterOnHand;
+	const target = summary ? Number(summary.buildTo) : Number(position.openingBuildTo);
+	const pct = target > 0 ? Math.min(100, Math.round(onHand / target * 100)) : 0;
+	const needed = target - onHand;
+	const openSpots = summary ? Number(summary.openSpots) : Math.max(0, needed);
+	const over = needed < 0;
+	const activeCount = summary ? Number(summary.active) : (roster ?? []).filter((r) => r.status !== RoadieStatus.archived && r.rosterState === RosterState.active).length;
+	const pendingCount = summary ? Number(summary.pending) : (roster ?? []).filter((r) => r.status !== RoadieStatus.archived && r.rosterState === RosterState.pending).length;
+	const applyDelta = (field, delta) => {
+		setError(null);
+		adjust.mutate({
+			positionId: position.id,
+			openingDelta: field === "opening" ? delta : 0n,
+			afterOpeningDelta: field === "afterOpening" ? delta : 0n
+		}, { onError: (err) => setError(err instanceof Error ? err.message : t("dashboard.adjust.error")) });
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+		"data-ocid": "dashboard.position.item",
+		className: "rounded-md border border-border bg-card p-3",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex items-start justify-between gap-3",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+					type: "button",
+					"data-ocid": "dashboard.position.open_button",
+					onClick: () => onOpenRoster(position),
+					className: "group flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+						className: "min-w-0",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "block truncate font-display text-sm font-semibold uppercase tracking-wide text-foreground group-hover:text-primary",
+								children: position.name
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "block text-xs text-muted-foreground",
+								children: t("dashboard.position.onHandOf", {
+									onHand,
+									target
+								})
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+								"data-ocid": "dashboard.position.counts",
+								className: "mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-medium",
+								children: [
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "text-accent",
+										children: t("dashboard.position.active", { count: activeCount })
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "text-muted-foreground",
+										"aria-hidden": "true",
+										children: "·"
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "text-primary",
+										children: t("dashboard.position.pending", { count: pendingCount })
+									})
+								]
+							})
+						]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, {
+						className: "h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary",
+						"aria-hidden": "true"
+					})]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					"data-ocid": "dashboard.position.needed",
+					className: cn("shrink-0 rounded-full px-2.5 py-1 font-display text-[11px] font-semibold uppercase tracking-wider", over ? "bg-accent/10 text-accent" : needed === 0 ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"),
+					children: over ? t("dashboard.position.over", { count: Math.abs(needed) }) : openSpots === 0 ? t("dashboard.position.filled") : t("dashboard.position.needed", { count: openSpots })
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "mt-2 h-2 w-full overflow-hidden rounded-full bg-muted",
+				role: "progressbar",
+				tabIndex: 0,
+				"aria-valuenow": pct,
+				"aria-valuemin": 0,
+				"aria-valuemax": 100,
+				"aria-label": t("dashboard.position.progressLabel", {
+					name: position.name,
+					onHand,
+					target
+				}),
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: cn("h-full rounded-full transition-all", over ? "bg-accent" : "bg-primary"),
+					style: { width: `${pct}%` }
+				})
+			}),
+			adjustMode && canAdjust && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "mt-3 space-y-2 rounded-md border border-border bg-muted/30 p-3",
+				"data-ocid": "dashboard.adjust.panel",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AdjustStepper, {
+						label: t("dashboard.adjust.opening"),
+						value: Number(position.openingBuildTo),
+						disabled: adjust.isPending,
+						onDelta: (delta) => applyDelta("opening", delta),
+						ocid: "dashboard.adjust.opening"
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AdjustStepper, {
+						label: t("dashboard.adjust.afterOpening"),
+						value: Number(position.afterOpeningBuildTo),
+						disabled: adjust.isPending,
+						onDelta: (delta) => applyDelta("afterOpening", delta),
+						ocid: "dashboard.adjust.after_opening"
+					}),
+					adjust.isPending && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+						className: "flex items-center gap-2 text-xs text-muted-foreground",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
+							className: "h-3 w-3 animate-spin",
+							"aria-hidden": "true"
+						}), t("dashboard.adjust.saving")]
+					}),
+					error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-xs text-destructive",
+						role: "alert",
+						children: error
+					})
+				]
+			})
+		]
+	});
+}
+/** One house panel (front of house / back of house) with its position rows. */
+function PositionPanel({ titleKey, positions, summaryByPosition, adjustMode, canAdjust, onOpenRoster, ocid }) {
+	const { t } = useDashboardCopy();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
+		"data-ocid": ocid,
+		className: "rounded-lg border-border py-5 shadow-subtle",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
+			className: "space-y-3 px-5",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+				className: "font-display text-lg font-bold uppercase tracking-wide text-foreground",
+				children: t(titleKey)
+			}), positions.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-sm text-muted-foreground",
+				children: t("dashboard.panel.empty")
+			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
+				className: "space-y-2",
+				children: positions.map((position) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PositionRow, {
+					position,
+					summary: summaryByPosition.get(position.id.toString()),
+					adjustMode,
+					canAdjust,
+					onOpenRoster
+				}, position.id.toString()))
+			})]
+		})
+	});
+}
+//#endregion
+//#region src/components/dashboard/PositionRosterDialog.tsx
+function OpenSpotTile({ index }) {
+	const { t } = useDashboardCopy();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+		"data-ocid": `dashboard.roster.open_spot.${index}`,
+		className: "flex min-h-32 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 p-3 text-center",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(UserPlus, {
+			className: "h-6 w-6 text-muted-foreground",
+			"aria-hidden": "true"
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			className: "font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground",
+			children: t("dashboard.roster.openSpot")
+		})]
+	});
+}
+function ArchivedRow({ roadie, canRehire, timeZone }) {
+	const { t } = useDashboardCopy();
+	const rehire = useRehireRoadie$1();
+	const [error, setError] = (0, import_react.useState)(null);
+	const name = roadie.profile.preferredName || roadie.profile.name;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+		"data-ocid": "dashboard.roster.archived.item",
+		className: "flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-muted/30 p-3",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "min-w-0",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "truncate font-display text-sm font-semibold uppercase tracking-wide text-foreground",
+					children: name
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+					className: "text-xs text-muted-foreground",
+					children: [archiveReasonLabel$1(roadie.archivedReason), roadie.archivedAt !== void 0 ? ` · ${formatTimestamp(roadie.archivedAt, timeZone)}` : ""]
+				}),
+				error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "mt-1 text-xs text-destructive",
+					role: "alert",
+					children: error
+				})
+			]
+		}), canRehire && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+			type: "button",
+			variant: "outline",
+			className: "touch-target",
+			"data-ocid": "dashboard.roster.rehire_button",
+			disabled: rehire.isPending,
+			onClick: () => {
+				setError(null);
+				rehire.mutate({
+					id: roadie.id,
+					reason: null
+				}, { onError: (err) => setError(err instanceof Error ? err.message : t("dashboard.roster.rehireError")) });
+			},
+			children: [rehire.isPending ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
+				className: "mr-2 h-4 w-4 animate-spin",
+				"aria-hidden": "true"
+			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RotateCcw, {
+				className: "mr-2 h-4 w-4",
+				"aria-hidden": "true"
+			}), t("dashboard.roster.rehire")]
+		})]
+	});
+}
+/**
+* The roster for one position: active photo tiles, dashed open-spot tiles for
+* each still-needed hire, and a "Show former (n)" toggle that reveals archived
+* roadies in a separate "No longer a roadie" section with rehire for managers.
+* Tapping an active tile opens the shared card pop-up.
+*/
+function PositionRosterDialog({ position, open, onOpenChange, canRehire }) {
+	const { t } = useDashboardCopy();
+	const { data: storeInfo } = useStoreInfo();
+	const timeZone = storeInfo?.timeZone || "America/Chicago";
+	const access = useAccessState();
+	const mayOpenFullProfile = canArchive(access.kind === "granted" ? access.grant.role : void 0);
+	const { data: roster, isLoading, isError } = useRosterForPosition(position?.id);
+	const { active, archived } = (0, import_react.useMemo)(() => {
+		const list = roster ?? [];
+		return {
+			active: list.filter((r) => r.status !== RoadieStatus.archived),
+			archived: list.filter((r) => r.status === RoadieStatus.archived)
+		};
+	}, [roster]);
+	const activeCount = active.filter((r) => r.rosterState === RosterState.active).length;
+	const pendingCount = active.filter((r) => r.rosterState === RosterState.pending).length;
+	const [showFormer, setShowFormer] = (0, import_react.useState)(true);
+	const [cardIndex, setCardIndex] = (0, import_react.useState)(null);
+	const entries = (0, import_react.useMemo)(() => active.map((roadie) => ({
+		key: roadie.id.toString(),
+		roadie
+	})), [active]);
+	const target = position ? Number(position.openingBuildTo) : 0;
+	const openSpots = Math.max(0, target - active.length);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Dialog, {
+		open,
+		onOpenChange,
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, {
+			"data-ocid": "dashboard.roster.dialog",
+			className: "max-h-[85vh] overflow-y-auto sm:max-w-2xl",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					"data-ocid": "dashboard.roster.banner",
+					className: "flex items-center gap-3 rounded-lg bg-secondary px-4 py-3 text-secondary-foreground",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, { className: "h-12 w-12" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: "min-w-0 truncate font-display text-sm font-bold uppercase tracking-widest text-white",
+						children: storeInfo?.locationName || storeInfo?.appName || ""
+					})]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogHeader, { children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, {
+						className: "font-display text-xl font-bold uppercase tracking-wide",
+						children: position?.name ?? t("dashboard.roster.title")
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogDescription, { children: t("dashboard.roster.summary", {
+						onHand: active.length,
+						target
+					}) }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						"data-ocid": "dashboard.roster.counts",
+						className: "flex flex-wrap items-center gap-2 pt-1",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-1 font-display text-[11px] font-semibold uppercase tracking-wider text-accent",
+							children: t("dashboard.roster.active", { count: activeCount })
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-display text-[11px] font-semibold uppercase tracking-wider text-primary",
+							children: t("dashboard.roster.pending", { count: pendingCount })
+						})]
+					})
+				] }),
+				isLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+					className: "flex items-center gap-2 py-6 text-sm text-muted-foreground",
+					"data-ocid": "dashboard.roster.loading_state",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoaderCircle, {
+						className: "h-4 w-4 animate-spin",
+						"aria-hidden": "true"
+					}), t("dashboard.roster.loading")]
+				}),
+				isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "py-6 text-sm text-destructive",
+					role: "alert",
+					"data-ocid": "dashboard.roster.error_state",
+					children: t("dashboard.roster.error")
+				}),
+				!isLoading && !isError && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [active.length === 0 && openSpots === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "py-6 text-sm text-muted-foreground",
+					"data-ocid": "dashboard.roster.empty_state",
+					children: t("dashboard.roster.empty")
+				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("ul", {
+					className: "grid grid-cols-2 gap-3 sm:grid-cols-3",
+					"data-ocid": "dashboard.roster.list",
+					children: [active.map((roadie, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadieTile, {
+						roadie,
+						onOpen: () => setCardIndex(index),
+						ocid: "dashboard.roster.item",
+						statusOcid: "dashboard.roster.item.status",
+						photoOcid: "dashboard.roster.item.photo"
+					}, roadie.id.toString())), Array.from({ length: openSpots }, (_, i) => `open-${i}`).map((id, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(OpenSpotTile, { index: index + 1 }, id))]
+				}), archived.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+					className: "mt-2 space-y-2",
+					"data-ocid": "dashboard.roster.archived.section",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+						type: "button",
+						variant: "ghost",
+						className: "touch-target w-full justify-between",
+						"aria-expanded": showFormer,
+						"data-ocid": "dashboard.roster.former.toggle",
+						onClick: () => setShowFormer((on) => !on),
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-display text-sm font-bold uppercase tracking-widest text-muted-foreground",
+							children: showFormer ? t("dashboard.roster.hideFormer", { count: archived.length }) : t("dashboard.roster.showFormer", { count: archived.length })
+						}), showFormer ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronUp, {
+							className: "h-4 w-4",
+							"aria-hidden": "true"
+						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, {
+							className: "h-4 w-4",
+							"aria-hidden": "true"
+						})]
+					}), showFormer && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
+						className: "space-y-2",
+						children: archived.map((roadie) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArchivedRow, {
+							roadie,
+							canRehire,
+							timeZone
+						}, roadie.id.toString()))
+					})]
+				})] })
+			]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadieCardModal, {
+			entries,
+			index: cardIndex ?? 0,
+			open: cardIndex !== null,
+			onOpenChange: (next) => {
+				if (!next) setCardIndex(null);
+			},
+			onIndexChange: setCardIndex,
+			renderFullProfile: mayOpenFullProfile ? (entry) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FullProfileLink, { entry }) : void 0
+		})]
+	});
+}
+//#endregion
+//#region src/pages/Dashboard.tsx
+/**
+* The dashboard hero banner: a navy panel with the red-and-white flag stripe,
+* the store's secondary logo at about 96px on phones and 120px from the small
+* breakpoint up, and the store name and opening date beside it. On phones the
+* logo is centered above the name and date; from the small breakpoint up it
+* sits on the left alongside them. When no secondary logo has been uploaded the
+* banner shows just the name and date, with no star fallback.
+*/
+function DashboardHero({ storeInfo }) {
+	const storeName = storeInfo?.locationName || storeInfo?.appName || "";
+	const openingDate = storeInfo ? formatDateOnly(storeInfo.openingDate) : null;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		"data-ocid": "dashboard.hero",
+		className: "overflow-hidden rounded-lg bg-secondary text-secondary-foreground shadow-subtle",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "flex flex-col items-center gap-4 px-5 py-6 text-center sm:flex-row sm:items-center sm:gap-6 sm:px-8 sm:py-7 sm:text-left",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StoreLogo, {
+				variant: "secondary",
+				className: "h-24 shrink-0 sm:h-[120px]",
+				title: storeName || "Roadie store"
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "min-w-0",
+				children: [storeName && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+					className: "font-display text-2xl font-bold uppercase leading-tight tracking-wide text-white md:text-3xl",
+					children: storeName
+				}), !!openingDate && openingDate !== "—" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+					className: "mt-1 text-sm text-white/80 md:text-base",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-display uppercase tracking-wider text-white/60",
+							children: "Opening"
+						}),
+						" ",
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-medium text-white",
+							children: openingDate
+						})
+					]
+				})]
+			})]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			className: "stripe-flag",
+			"aria-hidden": "true"
+		})]
+	});
+}
+/** The backend alerts store, readable by Admin and Store Manager only. */
+function useAlerts(enabled) {
+	const { actor, isFetching } = useActor(createActor);
+	return useQuery({
+		queryKey: ["alerts"],
+		queryFn: async () => {
+			if (!actor) return [];
+			return actor.listAlerts();
+		},
+		enabled: enabled && !!actor && !isFetching
+	});
+}
+/**
+* The dashboard alerts: a red "Paperwork incomplete" flag for every roadie past
+* the paperwork due date whose paperwork is not 100% complete, plus any
+* unacknowledged backend alerts. Rendered only for managers, who are the roles
+* that may read the check-off and the alerts store.
+*/
+function DashboardAlerts({ paperworkNames, alerts }) {
+	const { t } = useDashboardCopy();
+	const openAlerts = alerts.filter((alert) => !alert.acknowledged);
+	if (paperworkNames.length === 0 && openAlerts.length === 0) return null;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		"data-ocid": "dashboard.alerts",
+		className: "space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-4",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h2", {
+				className: "flex items-center gap-2 font-display text-sm font-bold uppercase tracking-widest text-destructive",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TriangleAlert, {
+					className: "h-4 w-4",
+					"aria-hidden": "true"
+				}), t("dashboard.alerts.title")]
+			}),
+			paperworkNames.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				"data-ocid": "dashboard.alerts.paperwork",
+				className: "rounded-md border border-destructive/30 bg-card px-3 py-2",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "font-display text-xs font-semibold uppercase tracking-wider text-destructive",
+					children: t("dashboard.alerts.paperwork", { count: paperworkNames.length })
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "mt-0.5 text-sm text-foreground",
+					children: paperworkNames.join(", ")
+				})]
+			}),
+			openAlerts.map((alert) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				"data-ocid": "dashboard.alerts.item",
+				className: "rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground",
+				children: alert.message
+			}, alert.id.toString()))
+		]
+	});
+}
+function DashboardPage() {
+	const { t } = useDashboardCopy();
+	const access = useAccessState();
+	const role = access.kind === "granted" ? access.grant.role : void 0;
+	const canAdjust = canArchive(role);
+	const canRehire = canArchive(role);
+	const { data, isLoading, isError, refetch } = useDashboard();
+	const { data: schedule } = useSchedule();
+	const { data: storeInfo } = useStoreInfo();
+	const { data: rosterSummary } = useRosterSummary();
+	const { data: roadies } = useRoadies();
+	const { data: alerts } = useAlerts(canAdjust);
+	const hasNoPositions = !!data && data.foh.length === 0 && data.boh.length === 0;
+	useSeedWhenEmpty(!!data, hasNoPositions);
+	const summaryByPosition = (0, import_react.useMemo)(() => {
+		const map = /* @__PURE__ */ new Map();
+		for (const row of rosterSummary ?? []) map.set(row.positionId.toString(), row);
+		return map;
+	}, [rosterSummary]);
+	const paperworkFlags = usePaperworkIncompleteMap(roadies ?? [], canAdjust);
+	const paperworkNames = (0, import_react.useMemo)(() => {
+		if (!canAdjust) return [];
+		return (roadies ?? []).filter((roadie) => paperworkFlags.get(roadie.id.toString())).map((roadie) => roadie.profile.preferredName || roadie.profile.name);
+	}, [
+		canAdjust,
+		roadies,
+		paperworkFlags
+	]);
+	const [adjustMode, setAdjustMode] = (0, import_react.useState)(false);
+	const [selected, setSelected] = (0, import_react.useState)(null);
+	const [rosterOpen, setRosterOpen] = (0, import_react.useState)(false);
+	const openRoster = (position) => {
+		setSelected(position);
+		setRosterOpen(true);
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-6",
+		"data-ocid": "dashboard.page",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DashboardHero, { storeInfo: storeInfo ?? null }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
+				title: t("dashboard.title"),
+				subtitle: t("dashboard.subtitle"),
+				action: canAdjust ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+					type: "button",
+					variant: adjustMode ? "default" : "outline",
+					className: "touch-target",
+					"aria-pressed": adjustMode,
+					"data-ocid": "dashboard.adjust.toggle",
+					onClick: () => setAdjustMode((on) => !on),
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlidersHorizontal, {
+						className: "mr-2 h-4 w-4",
+						"aria-hidden": "true"
+					}), adjustMode ? t("dashboard.adjust.done") : t("dashboard.adjust.mode")]
+				}) : void 0
+			}),
+			isLoading && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoadingState, { label: t("dashboard.loading") }),
+			isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorState, {
+				message: t("dashboard.error"),
+				onRetry: () => void refetch()
+			}),
+			data && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(OpeningTimeline, {
+					events: schedule ?? [],
+					openingDate: storeInfo?.openingDate ?? null
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DashboardAlerts, {
+					paperworkNames,
+					alerts: alerts ?? []
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KpiTiles, {
+					hired: data.hired,
+					active: data.active,
+					pending: data.pending,
+					buildToTotal: data.buildToTotal,
+					stillNeeded: data.stillNeeded,
+					showedAtOrientation: data.showedAtOrientation,
+					certified: data.certified
+				}),
+				adjustMode && canAdjust && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-foreground",
+					"data-ocid": "dashboard.adjust.hint",
+					children: t("dashboard.adjust.hint")
+				}),
+				data.foh.length === 0 && data.boh.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EmptyState, { title: t("dashboard.empty") }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "grid gap-6 lg:grid-cols-2",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PositionPanel, {
+						titleKey: "dashboard.section.foh",
+						positions: data.foh,
+						summaryByPosition,
+						adjustMode,
+						canAdjust,
+						onOpenRoster: openRoster,
+						ocid: "dashboard.foh.section"
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PositionPanel, {
+						titleKey: "dashboard.section.boh",
+						positions: data.boh,
+						summaryByPosition,
+						adjustMode,
+						canAdjust,
+						onOpenRoster: openRoster,
+						ocid: "dashboard.boh.section"
+					})]
+				})
+			] }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PositionRosterDialog, {
+				position: selected,
+				open: rosterOpen,
+				onOpenChange: setRosterOpen,
+				canRehire
+			})
+		]
+	});
+}
+//#endregion
+//#region src/lib/export.ts
 var OVERVIEW_SHEET = "Staff Pars and Overview";
 /** Excel sheet names are capped at 31 chars and forbid : \ / ? * [ ]. */
 function safeSheetName(name, used) {
@@ -97225,300 +98706,6 @@ function GiftBagsPage() {
 	});
 }
 //#endregion
-//#region src/components/kiosk/copy.ts
-/**
-* Kiosk-scoped copy. The shared dictionary in `lib/copy.ts` is owned by the
-* foundation; these keys live here so the kiosk flow stays self-contained.
-*/
-var kioskCopy = {
-	en: {
-		"lang.label": "Choose your language",
-		"welcome.title": "Welcome to the team",
-		"welcome.body": "Apply to join the crew. It takes about five minutes — we'll ask for a photo, your details, when you can work, and your signature.",
-		"welcome.point1": "Tell us about yourself",
-		"welcome.point2": "Take a quick photo",
-		"welcome.point3": "Pick the shifts you want",
-		"welcome.point4": "Sign with your finger",
-		"welcome.start": "Start my application",
-		"welcome.privacy": "Your answers go straight to the hiring team. Nothing is shared with the next person who uses this kiosk.",
-		progressLabel: "Application progress",
-		"step.photo": "Photo",
-		"step.details": "About you",
-		"step.contact": "Contact",
-		"step.availability": "Availability",
-		"step.signature": "Signature",
-		"step.review": "Review",
-		"photo.title": "Take your photo",
-		"photo.body": "Look at the camera and take a clear photo of your face. You can retake it as many times as you like.",
-		"photo.previewAlt": "Your captured photo",
-		"photo.capture": "Take photo",
-		"photo.retake": "Retake photo",
-		"photo.remove": "Remove photo",
-		"photo.switchToBack": "Use back camera",
-		"photo.switchToFront": "Use front camera",
-		"photo.useFile": "Upload a photo instead",
-		"photo.idle": "Starting the camera…",
-		"photo.starting": "Getting the camera ready…",
-		"photo.unsupported": "This device has no camera. Upload a photo instead.",
-		"photo.error.permission": "We need camera permission to take your photo. Allow access and try again, or upload a photo instead.",
-		"photo.error.generic": "We couldn't start the camera. Try again or upload a photo instead.",
-		"photo.noteLabel": "Photo status",
-		"photo.noteHint": "A photo is optional but helps the team recognise you.",
-		"photo.ready": "Photo captured and ready to submit.",
-		"photo.notReady": "No photo captured yet.",
-		"details.title": "Tell us about you",
-		"details.body": "These answers help the hiring team get to know you. Only your name and the position you want are required.",
-		"field.name": "Full name",
-		"field.preferredName": "Preferred name",
-		"field.preferredNameHint": "What should we call you?",
-		"field.hometown": "Hometown",
-		"field.position": "Position applied for",
-		"field.positionPlaceholder": "e.g. Cashier, Cook, Server",
-		"field.shirtSize": "Shirt size",
-		"field.hatSize": "Hat size",
-		"hat.oneSize": "One size",
-		"hat.sm": "S/M",
-		"hat.lxl": "L/XL",
-		"field.shiftsWanted": "Shifts wanted per week",
-		"field.shiftsWantedHint": "How many shifts would you like each week?",
-		"field.weekdayLunch": "Available for weekday lunch shifts?",
-		"field.weekdayLunchHint": "Lunch shifts run during the day, Monday to Friday.",
-		"field.hobbies": "What do you do on your day off?",
-		"field.favoriteSnack": "Favorite candy or snack (brand)",
-		"field.favoriteSnackPlaceholder": "e.g. Snickers, Hot Cheetos",
-		"field.favoriteTeam": "Favorite sports team",
-		"field.favoriteTeamPlaceholder": "e.g. LSU Tigers, Saints",
-		"field.favoriteDrink": "Favorite drink",
-		"field.favoriteDrinkPlaceholder": "Soda, energy drink, or coffee order",
-		"field.favoriteColor": "Favorite color",
-		"field.favoriteColorPlaceholder": "e.g. Navy blue",
-		"field.funFact": "Fun fact",
-		"field.goalHere": "Your goal here",
-		"field.selectPlaceholder": "Select…",
-		"contact.title": "How can we reach you?",
-		"contact.body": "We use these details to schedule your interview and reach someone in an emergency.",
-		"field.email": "Email",
-		"field.phone": "Phone",
-		"field.dateOfBirth": "Date of birth",
-		"field.dateOfBirthHint": "Some roles have age requirements.",
-		"field.emergencyContact": "Emergency contact name",
-		"field.emergencyPhone": "Emergency contact phone",
-		"availability.title": "When can you work?",
-		"availability.body": "Tap every shift you can work. You can pick as many as you like.",
-		"availability.day": "Day",
-		"availability.am": "AM",
-		"availability.pm": "PM",
-		"availability.available": "Yes",
-		"availability.unavailable": "No",
-		"availability.selected": "{count} shifts selected",
-		"availability.noneSelected": "No shifts selected",
-		"weekday.wed": "Wednesday",
-		"weekday.thu": "Thursday",
-		"weekday.fri": "Friday",
-		"weekday.sat": "Saturday",
-		"weekday.sun": "Sunday",
-		"weekday.mon": "Monday",
-		"weekday.tue": "Tuesday",
-		"kiosk.weekday.wed": "Wednesday",
-		"kiosk.weekday.thu": "Thursday",
-		"kiosk.weekday.fri": "Friday",
-		"kiosk.weekday.sat": "Saturday",
-		"kiosk.weekday.sun": "Sunday",
-		"kiosk.weekday.mon": "Monday",
-		"kiosk.weekday.tue": "Tuesday",
-		"signature.title": "Sign your availability",
-		"signature.body": "Draw your signature in the box with your finger or a stylus to confirm the shifts you selected.",
-		"signature.canvasLabel": "Signature drawing area",
-		"signature.prompt": "Draw your signature above.",
-		"signature.captured": "Signature captured.",
-		"signature.clear": "Clear",
-		"signature.signAsTest": "Sign as Test",
-		"review.title": "Check your answers",
-		"review.body": "Review everything below. Use Back to fix anything before you submit.",
-		"review.photo": "Photo",
-		"review.photoReady": "Captured",
-		"review.signature": "Signature",
-		"review.signatureReady": "Signed",
-		"success.title": "Application submitted",
-		"success.body": "Thank you! The hiring team will review your application and reach out soon.",
-		"success.next": "Start a new application",
-		"success.auto": "This screen clears automatically so the next person starts fresh.",
-		next: "Next",
-		back: "Back",
-		cancel: "Cancel",
-		submit: "Submit application",
-		submitting: "Submitting…",
-		"common.none": "Not provided",
-		"common.yes": "Yes",
-		"common.no": "No",
-		"common.retry": "Retry",
-		"error.nameRequired": "Enter your full name.",
-		"error.positionRequired": "Enter the position you're applying for.",
-		"error.emailInvalid": "Enter a valid email address.",
-		"error.phoneRequired": "Enter your phone number.",
-		"error.phoneInvalid": "Enter a valid phone number.",
-		"error.dobRequired": "Enter your date of birth.",
-		"error.dobInvalid": "Enter a valid date of birth.",
-		"error.dobPast": "Date of birth must be in the past.",
-		"error.dobAge": "You must be between 14 and 100 years old.",
-		"error.shiftsRange": "Enter a number of shifts between 0 and 7.",
-		"error.emergencyRequired": "Enter an emergency contact name.",
-		"error.emergencyPhoneRequired": "Enter an emergency contact phone.",
-		"error.emergencyPhoneInvalid": "Enter a valid emergency contact phone.",
-		"error.availabilityRequired": "Select at least one shift.",
-		"error.signatureRequired": "Draw your signature to continue.",
-		"error.submit": "We couldn't submit your application. Please try again."
-	},
-	es: {
-		"lang.label": "Elige tu idioma",
-		"welcome.title": "Bienvenido al equipo",
-		"welcome.body": "Solicita unirte al equipo. Toma unos cinco minutos: pediremos una foto, tus datos, cuándo puedes trabajar y tu firma.",
-		"welcome.point1": "Cuéntanos sobre ti",
-		"welcome.point2": "Toma una foto rápida",
-		"welcome.point3": "Elige los turnos que quieres",
-		"welcome.point4": "Firma con el dedo",
-		"welcome.start": "Comenzar mi solicitud",
-		"welcome.privacy": "Tus respuestas van directo al equipo de contratación. Nada se comparte con la siguiente persona que use este quiosco.",
-		progressLabel: "Progreso de la solicitud",
-		"step.photo": "Foto",
-		"step.details": "Sobre ti",
-		"step.contact": "Contacto",
-		"step.availability": "Disponibilidad",
-		"step.signature": "Firma",
-		"step.review": "Revisar",
-		"photo.title": "Toma tu foto",
-		"photo.body": "Mira a la cámara y toma una foto clara de tu rostro. Puedes repetirla cuantas veces quieras.",
-		"photo.previewAlt": "Tu foto capturada",
-		"photo.capture": "Tomar foto",
-		"photo.retake": "Repetir foto",
-		"photo.remove": "Quitar foto",
-		"photo.switchToBack": "Usar cámara trasera",
-		"photo.switchToFront": "Usar cámara frontal",
-		"photo.useFile": "Subir una foto en su lugar",
-		"photo.idle": "Iniciando la cámara…",
-		"photo.starting": "Preparando la cámara…",
-		"photo.unsupported": "Este dispositivo no tiene cámara. Sube una foto en su lugar.",
-		"photo.error.permission": "Necesitamos permiso de cámara para tomar tu foto. Permite el acceso e inténtalo de nuevo, o sube una foto.",
-		"photo.error.generic": "No pudimos iniciar la cámara. Inténtalo de nuevo o sube una foto.",
-		"photo.noteLabel": "Estado de la foto",
-		"photo.noteHint": "La foto es opcional, pero ayuda al equipo a reconocerte.",
-		"photo.ready": "Foto capturada y lista para enviar.",
-		"photo.notReady": "Aún no se ha capturado ninguna foto.",
-		"details.title": "Cuéntanos sobre ti",
-		"details.body": "Estas respuestas ayudan al equipo a conocerte. Solo tu nombre y el puesto que quieres son obligatorios.",
-		"field.name": "Nombre completo",
-		"field.preferredName": "Nombre preferido",
-		"field.preferredNameHint": "¿Cómo te llamamos?",
-		"field.hometown": "Ciudad natal",
-		"field.position": "Puesto solicitado",
-		"field.positionPlaceholder": "p. ej. Cajero, Cocinero, Mesero",
-		"field.shirtSize": "Talla de camiseta",
-		"field.hatSize": "Talla de gorra",
-		"hat.oneSize": "Talla única",
-		"hat.sm": "S/M",
-		"hat.lxl": "L/XL",
-		"field.shiftsWanted": "Turnos por semana",
-		"field.shiftsWantedHint": "¿Cuántos turnos quieres cada semana?",
-		"field.weekdayLunch": "¿Disponible para turnos de almuerzo?",
-		"field.weekdayLunchHint": "Los turnos de almuerzo son de día, de lunes a viernes.",
-		"field.hobbies": "¿Qué haces en tu día libre?",
-		"field.favoriteSnack": "Dulce o snack favorito (marca)",
-		"field.favoriteSnackPlaceholder": "ej. Snickers, Hot Cheetos",
-		"field.favoriteTeam": "Equipo deportivo favorito",
-		"field.favoriteTeamPlaceholder": "ej. LSU Tigers, Saints",
-		"field.favoriteDrink": "Bebida favorita",
-		"field.favoriteDrinkPlaceholder": "Refresco, bebida energética o tu café",
-		"field.favoriteColor": "Color favorito",
-		"field.favoriteColorPlaceholder": "ej. Azul marino",
-		"field.funFact": "Dato curioso",
-		"field.goalHere": "Tu meta aquí",
-		"field.selectPlaceholder": "Selecciona…",
-		"contact.title": "¿Cómo te contactamos?",
-		"contact.body": "Usamos estos datos para programar tu entrevista y contactar a alguien en una emergencia.",
-		"field.email": "Correo",
-		"field.phone": "Teléfono",
-		"field.dateOfBirth": "Fecha de nacimiento",
-		"field.dateOfBirthHint": "Algunos puestos tienen requisitos de edad.",
-		"field.emergencyContact": "Nombre del contacto de emergencia",
-		"field.emergencyPhone": "Teléfono del contacto de emergencia",
-		"availability.title": "¿Cuándo puedes trabajar?",
-		"availability.body": "Toca cada turno en el que puedas trabajar. Puedes elegir todos los que quieras.",
-		"availability.day": "Día",
-		"availability.am": "AM",
-		"availability.pm": "PM",
-		"availability.available": "Sí",
-		"availability.unavailable": "No",
-		"availability.selected": "{count} turnos seleccionados",
-		"availability.noneSelected": "Ningún turno seleccionado",
-		"weekday.wed": "Miércoles",
-		"weekday.thu": "Jueves",
-		"weekday.fri": "Viernes",
-		"weekday.sat": "Sábado",
-		"weekday.sun": "Domingo",
-		"weekday.mon": "Lunes",
-		"weekday.tue": "Martes",
-		"kiosk.weekday.wed": "Miércoles",
-		"kiosk.weekday.thu": "Jueves",
-		"kiosk.weekday.fri": "Viernes",
-		"kiosk.weekday.sat": "Sábado",
-		"kiosk.weekday.sun": "Domingo",
-		"kiosk.weekday.mon": "Lunes",
-		"kiosk.weekday.tue": "Martes",
-		"signature.title": "Firma tu disponibilidad",
-		"signature.body": "Dibuja tu firma en el recuadro con el dedo o un lápiz para confirmar los turnos que elegiste.",
-		"signature.canvasLabel": "Área para dibujar la firma",
-		"signature.prompt": "Dibuja tu firma arriba.",
-		"signature.captured": "Firma capturada.",
-		"signature.clear": "Borrar",
-		"signature.signAsTest": "Firmar como prueba",
-		"review.title": "Revisa tus respuestas",
-		"review.body": "Revisa todo lo de abajo. Usa Atrás para corregir algo antes de enviar.",
-		"review.photo": "Foto",
-		"review.photoReady": "Capturada",
-		"review.signature": "Firma",
-		"review.signatureReady": "Firmada",
-		"success.title": "Solicitud enviada",
-		"success.body": "¡Gracias! El equipo de contratación revisará tu solicitud y se comunicará pronto.",
-		"success.next": "Comenzar una nueva solicitud",
-		"success.auto": "Esta pantalla se limpia automáticamente para que la siguiente persona empiece de cero.",
-		next: "Siguiente",
-		back: "Atrás",
-		cancel: "Cancelar",
-		submit: "Enviar solicitud",
-		submitting: "Enviando…",
-		"common.none": "No proporcionado",
-		"common.yes": "Sí",
-		"common.no": "No",
-		"common.retry": "Reintentar",
-		"error.nameRequired": "Ingresa tu nombre completo.",
-		"error.positionRequired": "Ingresa el puesto al que aplicas.",
-		"error.emailInvalid": "Ingresa un correo válido.",
-		"error.phoneRequired": "Ingresa tu número de teléfono.",
-		"error.phoneInvalid": "Ingresa un número de teléfono válido.",
-		"error.dobRequired": "Ingresa tu fecha de nacimiento.",
-		"error.dobInvalid": "Ingresa una fecha de nacimiento válida.",
-		"error.dobPast": "La fecha de nacimiento debe ser en el pasado.",
-		"error.dobAge": "Debes tener entre 14 y 100 años.",
-		"error.shiftsRange": "Ingresa un número de turnos entre 0 y 7.",
-		"error.emergencyRequired": "Ingresa un nombre de contacto de emergencia.",
-		"error.emergencyPhoneRequired": "Ingresa un teléfono de contacto de emergencia.",
-		"error.emergencyPhoneInvalid": "Ingresa un teléfono de contacto de emergencia válido.",
-		"error.availabilityRequired": "Selecciona al menos un turno.",
-		"error.signatureRequired": "Dibuja tu firma para continuar.",
-		"error.submit": "No pudimos enviar tu solicitud. Inténtalo de nuevo."
-	}
-};
-/** Translate a kiosk-scoped key, interpolating `{name}` placeholders. */
-function useKioskCopy() {
-	const { locale } = useI18n();
-	const dict = kioskCopy[locale] ?? kioskCopy.en;
-	return (key, vars) => {
-		let value = dict[key] ?? kioskCopy.en[key] ?? key;
-		if (vars) for (const [name, replacement] of Object.entries(vars)) value = value.replaceAll(`{${name}}`, String(replacement));
-		return value;
-	};
-}
-//#endregion
 //#region src/components/kiosk/KioskAvailabilityStep.tsx
 /** The kiosk availability grid order: Wednesday through Tuesday. */
 var WEEKDAY_ORDER = [
@@ -97766,6 +98953,95 @@ function KioskContactStep({ value, onChange, errors }) {
 		})]
 	});
 }
+RoadieStatus.hired, RoadieStatus.paperworkDone, RoadieStatus.archived;
+/** Archive reasons offered when moving a roadie out of the roster. */
+var ARCHIVE_REASONS = [
+	{
+		value: "noShow",
+		labelKey: "roadie.reason.noShow"
+	},
+	{
+		value: "quitDuringTraining",
+		labelKey: "roadie.reason.quitDuringTraining"
+	},
+	{
+		value: "tookAnotherJob",
+		labelKey: "roadie.reason.tookAnotherJob"
+	},
+	{
+		value: "letGo",
+		labelKey: "roadie.reason.letGo"
+	},
+	{
+		value: "other",
+		labelKey: "roadie.reason.other"
+	}
+];
+/** Reasons that require a warning and a mandatory reason on rehire. */
+var REHIRE_WARN_REASONS = ["noShow", "letGo"];
+/** Weekday display order and copy keys. */
+var WEEKDAYS = [
+	{
+		value: Weekday.mon,
+		labelKey: "roadie.weekday.mon"
+	},
+	{
+		value: Weekday.tue,
+		labelKey: "roadie.weekday.tue"
+	},
+	{
+		value: Weekday.wed,
+		labelKey: "roadie.weekday.wed"
+	},
+	{
+		value: Weekday.thu,
+		labelKey: "roadie.weekday.thu"
+	},
+	{
+		value: Weekday.fri,
+		labelKey: "roadie.weekday.fri"
+	},
+	{
+		value: Weekday.sat,
+		labelKey: "roadie.weekday.sat"
+	},
+	{
+		value: Weekday.sun,
+		labelKey: "roadie.weekday.sun"
+	}
+];
+/** Shift display order and copy keys. */
+var SHIFTS = [{
+	value: Shift.am,
+	labelKey: "roadie.shift.am"
+}, {
+	value: Shift.pm,
+	labelKey: "roadie.shift.pm"
+}];
+/** Human label for an archive reason value. */
+function archiveReasonLabel(reason, t) {
+	const match = ARCHIVE_REASONS.find((item) => item.value === reason);
+	return match ? t(match.labelKey) : reason;
+}
+/**
+* The shared uniform size vocabulary. Shirt sizes run XS through 3XL and hat
+* sizes are One size, S/M and L/XL, matching the kiosk and staff profile
+* vocabulary so a size chosen anywhere is understood everywhere.
+*/
+var SHIRT_SIZES = [
+	"XS",
+	"S",
+	"M",
+	"L",
+	"XL",
+	"2XL",
+	"3XL"
+];
+var HAT_SIZES = [
+	"One size",
+	"S/M",
+	"L/XL"
+];
 //#endregion
 //#region src/components/kiosk/KioskDetailsStep.tsx
 var EMPTY_DETAILS = {
@@ -97786,30 +99062,6 @@ var EMPTY_DETAILS = {
 	shiftsWantedPerWeek: "",
 	weekdayLunch: ""
 };
-var SHIRT_SIZES = [
-	"XS",
-	"S",
-	"M",
-	"L",
-	"XL",
-	"2XL",
-	"3XL"
-];
-/** Hat sizes carry a copy key so the option label is translated. */
-var HAT_SIZES = [
-	{
-		value: "One size",
-		key: "hat.oneSize"
-	},
-	{
-		value: "S/M",
-		key: "hat.sm"
-	},
-	{
-		value: "L/XL",
-		key: "hat.lxl"
-	}
-];
 /** Details step: identity, personality and role preferences. */
 function KioskDetailsStep({ value, onChange, errors }) {
 	const t = useKioskCopy();
@@ -97921,9 +99173,9 @@ function KioskDetailsStep({ value, onChange, errors }) {
 								className: "touch-target w-full",
 								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("field.selectPlaceholder") })
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: HAT_SIZES.map((size) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-								value: size.value,
-								children: t(size.key)
-							}, size.value)) })]
+								value: size,
+								children: hatSizeLabel(size, t)
+							}, size)) })]
 						})
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskField, {
@@ -98554,7 +99806,7 @@ function KioskReviewStep({ details, contact, availability, hasPhoto, hasSignatur
 		},
 		{
 			label: t("field.hatSize"),
-			value: details.hatSize || t("common.none")
+			value: details.hatSize ? hatSizeLabel(details.hatSize, t) : t("common.none")
 		},
 		{
 			label: t("field.shiftsWanted"),
@@ -101197,76 +102449,6 @@ function OrientationSessionControl({ roadie }) {
 		]
 	});
 }
-RoadieStatus.hired, RoadieStatus.paperworkDone, RoadieStatus.archived;
-/** Archive reasons offered when moving a roadie out of the roster. */
-var ARCHIVE_REASONS = [
-	{
-		value: "noShow",
-		labelKey: "roadie.reason.noShow"
-	},
-	{
-		value: "quitDuringTraining",
-		labelKey: "roadie.reason.quitDuringTraining"
-	},
-	{
-		value: "tookAnotherJob",
-		labelKey: "roadie.reason.tookAnotherJob"
-	},
-	{
-		value: "letGo",
-		labelKey: "roadie.reason.letGo"
-	},
-	{
-		value: "other",
-		labelKey: "roadie.reason.other"
-	}
-];
-/** Reasons that require a warning and a mandatory reason on rehire. */
-var REHIRE_WARN_REASONS = ["noShow", "letGo"];
-/** Weekday display order and copy keys. */
-var WEEKDAYS = [
-	{
-		value: Weekday.mon,
-		labelKey: "roadie.weekday.mon"
-	},
-	{
-		value: Weekday.tue,
-		labelKey: "roadie.weekday.tue"
-	},
-	{
-		value: Weekday.wed,
-		labelKey: "roadie.weekday.wed"
-	},
-	{
-		value: Weekday.thu,
-		labelKey: "roadie.weekday.thu"
-	},
-	{
-		value: Weekday.fri,
-		labelKey: "roadie.weekday.fri"
-	},
-	{
-		value: Weekday.sat,
-		labelKey: "roadie.weekday.sat"
-	},
-	{
-		value: Weekday.sun,
-		labelKey: "roadie.weekday.sun"
-	}
-];
-/** Shift display order and copy keys. */
-var SHIFTS = [{
-	value: Shift.am,
-	labelKey: "roadie.shift.am"
-}, {
-	value: Shift.pm,
-	labelKey: "roadie.shift.pm"
-}];
-/** Human label for an archive reason value. */
-function archiveReasonLabel(reason, t) {
-	const match = ARCHIVE_REASONS.find((item) => item.value === reason);
-	return match ? t(match.labelKey) : reason;
-}
 //#endregion
 //#region src/components/roadie/ManagerTab.tsx
 function Field({ label, value }) {
@@ -101753,6 +102935,116 @@ function PaperworkChecklist({ roadie }) {
 		]
 	});
 }
+/**
+* Shirt and hat size editor. Sizes are not contact information, so they are
+* shown to any read-capable role; only Admin and Store Manager may change them,
+* saving through the existing `updateRoadieDetails` path. The hat option labels
+* reuse the shared kiosk copy so a size reads the same everywhere.
+*/
+function SizesEditor({ roadie }) {
+	const { t } = useI18n();
+	const access = useAccessState();
+	const mayEdit = canEditRoadie(access.kind === "granted" ? access.grant.role : void 0);
+	const update = useUpdateRoadieDetails();
+	const [draft, setDraft] = (0, import_react.useState)({
+		shirtSize: roadie.profile.shirtSize ?? "",
+		hatSize: roadie.profile.hatSize ?? ""
+	});
+	const save = (next) => {
+		update.mutate({
+			id: roadie.id,
+			profile: {
+				...roadie.profile,
+				shirtSize: next.shirtSize || void 0,
+				hatSize: next.hatSize || void 0
+			}
+		});
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-4",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-sm text-muted-foreground",
+				children: t("manager.sizes.body")
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "grid grid-cols-1 gap-4 sm:grid-cols-2",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "space-y-1.5",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+						htmlFor: "manager-shirt-size",
+						children: t("roadie.field.shirtSize")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+						value: draft.shirtSize || void 0,
+						disabled: !mayEdit || update.isPending,
+						onValueChange: (next) => {
+							setDraft((current) => ({
+								...current,
+								shirtSize: next
+							}));
+							save({
+								...draft,
+								shirtSize: next
+							});
+						},
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+							id: "manager-shirt-size",
+							"data-ocid": "roadie.manager.shirt_size.select",
+							className: "touch-target w-full",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("roadie.field.none") })
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: SHIRT_SIZES.map((size) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+							value: size,
+							children: size
+						}, size)) })]
+					})]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "space-y-1.5",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+						htmlFor: "manager-hat-size",
+						children: t("roadie.field.hatSize")
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+						value: draft.hatSize || void 0,
+						disabled: !mayEdit || update.isPending,
+						onValueChange: (next) => {
+							setDraft((current) => ({
+								...current,
+								hatSize: next
+							}));
+							save({
+								...draft,
+								hatSize: next
+							});
+						},
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+							id: "manager-hat-size",
+							"data-ocid": "roadie.manager.hat_size.select",
+							className: "touch-target w-full",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: t("roadie.field.none") })
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: HAT_SIZES.map((size) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+							value: size,
+							children: hatSizeLabel(size, t, {
+								"One size": "profile.hat.oneSize",
+								"S/M": "profile.hat.sm",
+								"L/XL": "profile.hat.lxl"
+							})
+						}, size)) })]
+					})]
+				})]
+			}),
+			update.isSuccess && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("output", {
+				"data-ocid": "roadie.manager.sizes.success_state",
+				className: "text-sm text-accent",
+				children: t("roadie.edit.saved")
+			}),
+			update.isError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+				role: "alert",
+				"data-ocid": "roadie.manager.sizes.error_state",
+				className: "text-sm text-destructive",
+				children: t("roadie.edit.error")
+			})
+		]
+	});
+}
 /** The manager-only tab: contact set, availability, paperwork, history. */
 function ManagerTab({ roadie }) {
 	const { t } = useI18n();
@@ -101766,6 +103058,11 @@ function ManagerTab({ roadie }) {
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				className: "text-sm text-muted-foreground",
 				children: t("roadie.managerOnly")
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Section, {
+				title: t("manager.sizes.title"),
+				ocid: "roadie.manager.sizes",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SizesEditor, { roadie })
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Section, {
 				title: t("roadie.section.contact"),
@@ -103292,6 +104589,14 @@ function GuardedOrientation() {
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(OrientationPage, {})
 	});
 }
+/** The Uniforms surface, blocked for roles that cannot view it. */
+function GuardedUniforms() {
+	const role = useRole();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RouteGuard, {
+		allowed: canUniforms(role),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(UniformsPage, {})
+	});
+}
 var indexRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/",
@@ -103362,6 +104667,11 @@ var orientationRoute = createRoute({
 	path: "/orientation",
 	component: GuardedOrientation
 });
+var uniformsRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/uniforms",
+	component: GuardedUniforms
+});
 var router = createRouter({ routeTree: rootRoute.addChildren([
 	indexRoute,
 	todayRoute,
@@ -103376,7 +104686,8 @@ var router = createRouter({ routeTree: rootRoute.addChildren([
 	giftBagsRoute,
 	leadersRoute,
 	leaderCardRoute,
-	orientationRoute
+	orientationRoute,
+	uniformsRoute
 ]) });
 function App() {
 	const [locale, setLocale] = (0, import_react.useState)("en");

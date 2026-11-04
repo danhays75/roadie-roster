@@ -22,6 +22,7 @@ import {
   canGiftBags,
   canLeaders,
   canOrientation,
+  canUniforms,
   useAccessState,
 } from "@/hooks/useAccess";
 import { I18nContext, translate, useI18n } from "@/hooks/useI18n";
@@ -39,6 +40,7 @@ import OrientationPage from "@/pages/Orientation";
 import RoadieCardPage from "@/pages/RoadieCard";
 import RosterPage from "@/pages/Roster";
 import TodayPage from "@/pages/Today";
+import UniformsPage from "@/pages/Uniforms";
 import { useActor } from "@caffeineai/core-infrastructure";
 import {
   Outlet,
@@ -323,6 +325,16 @@ function GuardedOrientation() {
   );
 }
 
+/** The Uniforms surface, blocked for roles that cannot view it. */
+function GuardedUniforms() {
+  const role = useRole();
+  return (
+    <RouteGuard allowed={canUniforms(role)}>
+      <UniformsPage />
+    </RouteGuard>
+  );
+}
+
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
@@ -407,6 +419,12 @@ const orientationRoute = createRoute({
   component: GuardedOrientation,
 });
 
+const uniformsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/uniforms",
+  component: GuardedUniforms,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   todayRoute,
@@ -422,6 +440,7 @@ const routeTree = rootRoute.addChildren([
   leadersRoute,
   leaderCardRoute,
   orientationRoute,
+  uniformsRoute,
 ]);
 
 const router = createRouter({ routeTree });

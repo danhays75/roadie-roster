@@ -30,6 +30,9 @@ import {
   type Timestamp,
   type UnassignedRoadieRow,
   type UniformCheckoffView,
+  type UniformHouseFilter,
+  type UniformOrderView,
+  type UniformSettings,
   createActor,
 } from "@/backend";
 import { useActor } from "@caffeineai/core-infrastructure";
@@ -1371,5 +1374,66 @@ export function useSetPaperworkItems() {
       void queryClient.invalidateQueries({ queryKey: ["alerts"] });
       void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
     },
+  });
+}
+
+/* ---------------------------------------------------------------------------
+   Uniforms
+--------------------------------------------------------------------------- */
+
+/**
+ * The uniform settings: the shirt and hat size curve plus the buffer percent
+ * applied to the projected order. Readable by Admin, Store Manager and Training
+ * Manager, so callers pass `enabled` (typically `canUniforms(role)`) to avoid a
+ * trapping read for other roles.
+ */
+export function useUniformSettings(enabled = true) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["uniformSettings"],
+    queryFn: async (): Promise<UniformSettings | null> => {
+      if (!actor) return null;
+      return actor.getUniformSettings();
+    },
+    enabled: enabled && !!actor && !isFetching,
+  });
+}
+
+/**
+ * Save the uniform settings (Admin/Store Manager only). The backend guards the
+ * write with requireRealSettingsManager, so it traps while demo mode is on. The
+ * settings and the derived order are invalidated so both refresh.
+ */
+export function useUpdateUniformSettings() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (settings: UniformSettings) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.updateUniformSettings(settings);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["uniformSettings"] });
+      void queryClient.invalidateQueries({ queryKey: ["uniformOrder"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * The uniform order for one house filter: per-item size rows with hired,
+ * projected and order totals, the size-unknown roadies and the buffer percent
+ * used. Readable by Admin, Store Manager and Training Manager, so callers pass
+ * `enabled` (typically `canUniforms(role)`) to avoid a trapping read.
+ */
+export function useUniformOrder(filter: UniformHouseFilter, enabled = true) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["uniformOrder", filter],
+    queryFn: async (): Promise<UniformOrderView | null> => {
+      if (!actor) return null;
+      return actor.getUniformOrder(filter);
+    },
+    enabled: enabled && !!actor && !isFetching,
   });
 }

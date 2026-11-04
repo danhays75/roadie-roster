@@ -148,6 +148,10 @@ const POSITION: Position = {
   needsAlcoholCert: false,
   defaultShirts: 3n,
   defaultHats: 2n,
+  shirtType: "Polo",
+  shirtQty: 2n,
+  hatType: "Cap",
+  hatQty: 1n,
 };
 
 const ROADIE: Roadie = {

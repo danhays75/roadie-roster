@@ -28,6 +28,10 @@ const POSITION: Position = {
   needsAlcoholCert: false,
   defaultShirts: 3n,
   defaultHats: 2n,
+  shirtType: "Polo",
+  shirtQty: 2n,
+  hatType: "Cap",
+  hatQty: 1n,
 };
 
 /** A roadie with no photo, as the backend returns it to a non-manager. */

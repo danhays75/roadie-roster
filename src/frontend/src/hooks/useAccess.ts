@@ -36,6 +36,20 @@ export const GIFT_BAGS_ROLES: Role[] = [
 ];
 
 /**
+ * Roles allowed to view the Uniforms surface: Admin, Store Manager and
+ * Training Manager. Training Manager may view the order but not edit the
+ * settings, which is what UNIFORM_EDITOR_ROLES gates.
+ */
+export const UNIFORM_VIEWER_ROLES: Role[] = [
+  Role.admin,
+  Role.storeManager,
+  Role.trainingManager,
+];
+
+/** Roles allowed to edit the uniform settings (size curve and buffer). */
+export const UNIFORM_EDITOR_ROLES: Role[] = [Role.admin, Role.storeManager];
+
+/**
  * Roles allowed to see the Leaders surface. Every readable role except Kiosk
  * and Integration, which have no roster read access.
  */
@@ -84,6 +98,11 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.giftBags",
     to: "/gift-bags",
     allowedRoles: GIFT_BAGS_ROLES,
+  },
+  {
+    labelKey: "nav.uniforms",
+    to: "/uniforms",
+    allowedRoles: UNIFORM_VIEWER_ROLES,
   },
 ];
 
@@ -241,4 +260,14 @@ export function canLeaders(role: Role | undefined): boolean {
 /** Whether the given role may open the Orientation check-in surface. */
 export function canOrientation(role: Role | undefined): boolean {
   return !!role && ORIENTATION_ROLES.includes(role);
+}
+
+/** Whether the given role may view the Uniforms surface. */
+export function canUniforms(role: Role | undefined): boolean {
+  return !!role && UNIFORM_VIEWER_ROLES.includes(role);
+}
+
+/** Whether the given role may edit the uniform settings. */
+export function canEditUniforms(role: Role | undefined): boolean {
+  return !!role && UNIFORM_EDITOR_ROLES.includes(role);
 }

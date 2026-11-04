@@ -33,6 +33,7 @@ module {
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     checklists : { var value : Store.Checklists },
     retention : { var value : Store.RetentionSettings },
+    uniformSettings : { var value : Store.UniformSettings },
     counters : Counters,
     caller : Principal,
   ) : Bool {
@@ -54,6 +55,7 @@ module {
       paperwork = seedPaperwork();
     };
     retention.value := seedRetention();
+    uniformSettings.value := seedUniformSettings();
     // Advance the counters past the seeded identifiers so new records do not
     // collide with the seed.
     if (counters.nextPositionId < 18) {
@@ -72,25 +74,50 @@ module {
 
   func seedPositions() : [Store.Position] {
     [
-      { id = 0; name = "Servers"; house = #foh; code = "SRV"; openingBuildTo = 65; afterOpeningBuildTo = 65; needsAlcoholCert = true; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 1; name = "Hosts"; house = #foh; code = "HST"; openingBuildTo = 18; afterOpeningBuildTo = 18; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 2; name = "Bartenders"; house = #foh; code = "BAR"; openingBuildTo = 12; afterOpeningBuildTo = 12; needsAlcoholCert = true; minimumAge = 21; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 3; name = "Server assistants"; house = #foh; code = "SA"; openingBuildTo = 12; afterOpeningBuildTo = 12; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 4; name = "To-go"; house = #foh; code = "TG"; openingBuildTo = 10; afterOpeningBuildTo = 10; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 5; name = "Fry / Salad"; house = #boh; code = "FS"; openingBuildTo = 16; afterOpeningBuildTo = 16; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 6; name = "Dish"; house = #boh; code = "DSH"; openingBuildTo = 14; afterOpeningBuildTo = 14; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 7; name = "Pizza"; house = #boh; code = "PIZ"; openingBuildTo = 12; afterOpeningBuildTo = 12; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 8; name = "Broil / Saute"; house = #boh; code = "BRS"; openingBuildTo = 10; afterOpeningBuildTo = 10; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 9; name = "Hot prep"; house = #boh; code = "HP"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 10; name = "Cold prep"; house = #boh; code = "CP"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 11; name = "Point / Build"; house = #boh; code = "PB"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 12; name = "Sear"; house = #boh; code = "SEA"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 13; name = "Expo"; house = #boh; code = "EXP"; openingBuildTo = 6; afterOpeningBuildTo = 6; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 14; name = "Bake"; house = #boh; code = "BAK"; openingBuildTo = 5; afterOpeningBuildTo = 5; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 15; name = "Silverware roller"; house = #boh; code = "SWR"; openingBuildTo = 4; afterOpeningBuildTo = 4; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 16; name = "Meat cutter"; house = #boh; code = "MTC"; openingBuildTo = 3; afterOpeningBuildTo = 3; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
-      { id = 17; name = "DMO prep"; house = #boh; code = "DMO"; openingBuildTo = 3; afterOpeningBuildTo = 3; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2 },
+      { id = 0; name = "Servers"; house = #foh; code = "SRV"; openingBuildTo = 65; afterOpeningBuildTo = 65; needsAlcoholCert = true; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 1; name = "Hosts"; house = #foh; code = "HST"; openingBuildTo = 18; afterOpeningBuildTo = 18; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 2; name = "Bartenders"; house = #foh; code = "BAR"; openingBuildTo = 12; afterOpeningBuildTo = 12; needsAlcoholCert = true; minimumAge = 21; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 3; name = "Server assistants"; house = #foh; code = "SA"; openingBuildTo = 12; afterOpeningBuildTo = 12; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 4; name = "To-go"; house = #foh; code = "TG"; openingBuildTo = 10; afterOpeningBuildTo = 10; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 5; name = "Fry / Salad"; house = #boh; code = "FS"; openingBuildTo = 16; afterOpeningBuildTo = 16; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 6; name = "Dish"; house = #boh; code = "DSH"; openingBuildTo = 14; afterOpeningBuildTo = 14; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 7; name = "Pizza"; house = #boh; code = "PIZ"; openingBuildTo = 12; afterOpeningBuildTo = 12; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 8; name = "Broil / Saute"; house = #boh; code = "BRS"; openingBuildTo = 10; afterOpeningBuildTo = 10; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 9; name = "Hot prep"; house = #boh; code = "HP"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 10; name = "Cold prep"; house = #boh; code = "CP"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 11; name = "Point / Build"; house = #boh; code = "PB"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 12; name = "Sear"; house = #boh; code = "SEA"; openingBuildTo = 7; afterOpeningBuildTo = 7; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 13; name = "Expo"; house = #boh; code = "EXP"; openingBuildTo = 6; afterOpeningBuildTo = 6; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 14; name = "Bake"; house = #boh; code = "BAK"; openingBuildTo = 5; afterOpeningBuildTo = 5; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 15; name = "Silverware roller"; house = #boh; code = "SWR"; openingBuildTo = 4; afterOpeningBuildTo = 4; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 16; name = "Meat cutter"; house = #boh; code = "MTC"; openingBuildTo = 3; afterOpeningBuildTo = 3; needsAlcoholCert = false; minimumAge = 18; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
+      { id = 17; name = "DMO prep"; house = #boh; code = "DMO"; openingBuildTo = 3; afterOpeningBuildTo = 3; needsAlcoholCert = false; minimumAge = 16; shirtsRequired = 2; hatsRequired = 1; crewManager = null; defaultShirts = 3; defaultHats = 2; shirtType = "Polo"; shirtQty = 2; hatType = "Cap"; hatQty = 1 },
     ];
+  };
+
+  /// The seeded uniform settings: the size curve (shirts XS 3, S 12, M 25,
+  /// L 28, XL 18, 2XL 10, 3XL 4; hats One size 60, S/M 20, L/XL 20) and the
+  /// default 10% order buffer. Each set totals 100%.
+  func seedUniformSettings() : Store.UniformSettings {
+    {
+      sizeCurve = {
+        shirts = [
+          { size = "XS"; percent = 3 },
+          { size = "S"; percent = 12 },
+          { size = "M"; percent = 25 },
+          { size = "L"; percent = 28 },
+          { size = "XL"; percent = 18 },
+          { size = "2XL"; percent = 10 },
+          { size = "3XL"; percent = 4 },
+        ];
+        hats = [
+          { size = "One size"; percent = 60 },
+          { size = "S/M"; percent = 20 },
+          { size = "L/XL"; percent = 20 },
+        ];
+      };
+      bufferPercent = 10;
+    };
   };
 
   func seedSchedule() : [Store.ScheduleEvent] {

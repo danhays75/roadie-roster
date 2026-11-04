@@ -18,6 +18,10 @@ const CASHIER: Position = {
   needsAlcoholCert: false,
   defaultShirts: 3n,
   defaultHats: 2n,
+  shirtType: "Polo",
+  shirtQty: 2n,
+  hatType: "Cap",
+  hatQty: 1n,
 };
 
 /** A dashboard payload with no configured positions. */

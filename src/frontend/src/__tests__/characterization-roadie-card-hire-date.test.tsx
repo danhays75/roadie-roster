@@ -43,6 +43,10 @@ const POSITION: Position = {
   needsAlcoholCert: false,
   defaultShirts: 3n,
   defaultHats: 2n,
+  shirtType: "Polo",
+  shirtQty: 2n,
+  hatType: "Cap",
+  hatQty: 1n,
 };
 
 const SECOND_POSITION: Position = {
@@ -58,6 +62,10 @@ const SECOND_POSITION: Position = {
   needsAlcoholCert: false,
   defaultShirts: 3n,
   defaultHats: 2n,
+  shirtType: "Polo",
+  shirtQty: 2n,
+  hatType: "Cap",
+  hatQty: 1n,
 };
 
 const CREW: Crew = { id: 7n, name: "Opening Crew", isDemo: false };

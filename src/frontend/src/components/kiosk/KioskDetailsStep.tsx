@@ -1,5 +1,6 @@
 import { KioskField } from "@/components/kiosk/KioskField";
-import { useKioskCopy } from "@/components/kiosk/copy";
+import { hatSizeLabel, useKioskCopy } from "@/components/kiosk/copy";
+import { HAT_SIZES, SHIRT_SIZES } from "@/components/roadie/constants";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -48,14 +49,6 @@ export const EMPTY_DETAILS: KioskDetails = {
   shiftsWantedPerWeek: "",
   weekdayLunch: "",
 };
-
-const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"] as const;
-/** Hat sizes carry a copy key so the option label is translated. */
-const HAT_SIZES = [
-  { value: "One size", key: "hat.oneSize" },
-  { value: "S/M", key: "hat.sm" },
-  { value: "L/XL", key: "hat.lxl" },
-] as const;
 
 /** Details step: identity, personality and role preferences. */
 export function KioskDetailsStep({
@@ -179,8 +172,8 @@ export function KioskDetailsStep({
             </SelectTrigger>
             <SelectContent>
               {HAT_SIZES.map((size) => (
-                <SelectItem key={size.value} value={size.value}>
-                  {t(size.key)}
+                <SelectItem key={size} value={size}>
+                  {hatSizeLabel(size, t)}
                 </SelectItem>
               ))}
             </SelectContent>

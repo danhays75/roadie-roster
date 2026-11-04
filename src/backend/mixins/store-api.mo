@@ -15,6 +15,7 @@ mixin (
   schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
   checklists : { var value : Store.Checklists },
   retention : { var value : Store.RetentionSettings },
+  uniformSettings : { var value : Store.UniformSettings },
   storeTemplates : Map.Map<Text, Store.StoreTemplate>,
   roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
   attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
@@ -121,5 +122,22 @@ mixin (
   /// (Admin only). Refuses when any roadie exists.
   public shared ({ caller }) func loadStoreTemplate(file : Store.StoreTemplateFile) : async Store.TemplateLoadResult {
     StoreLib.loadStoreTemplate(accessGrants, demoState, storeInfo, positions, schedule, checklists, roadies, changeLog, counters, caller, file);
+  };
+
+  /// Read the uniform settings (size curve and order buffer). Admin, Store
+  /// Manager and Training Manager.
+  public query ({ caller }) func getUniformSettings() : async Store.UniformSettings {
+    StoreLib.getUniformSettings(accessGrants, demoState, uniformSettings, caller);
+  };
+
+  /// Update the uniform settings (Admin or Store Manager only, logged).
+  public shared ({ caller }) func updateUniformSettings(settings : Store.UniformSettings) : async () {
+    StoreLib.updateUniformSettings(accessGrants, demoState, uniformSettings, changeLog, counters, caller, settings);
+  };
+
+  /// Build the uniform order for one house filter (Admin, Store Manager or
+  /// Training Manager).
+  public query ({ caller }) func getUniformOrder(filter : Store.UniformHouseFilter) : async Store.UniformOrderView {
+    StoreLib.getUniformOrder(accessGrants, demoState, roadies, positions, uniformSettings, caller, filter);
   };
 };

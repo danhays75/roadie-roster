@@ -370,6 +370,19 @@
   right: 2.2cqw;
   background: var(--gold);
 }
+.rc .tag.birthday {
+  top: 8.4cqw;
+  left: auto;
+  right: 2.2cqw;
+  background: var(--cream);
+  color: var(--red);
+  border: .5cqw solid var(--red);
+}
+.rc .stats {
+  display: flex;
+  flex-direction: column;
+  gap: .4cqw;
+}
 .rc .b-top {
   display: flex;
   align-items: center;

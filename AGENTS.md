@@ -13,6 +13,10 @@
 - Leaders never count toward on-hand or build-to and never appear in the position roster
 - No contact information on any card or gift bag label
 - Do not touch tests and change nothing else
+- Uniform defaults, size curve and buffer are Admin/Store Manager editable; the Uniforms page is viewable by Admin, Store Manager and Training Manager
+- Roadie shirt and hat sizes are not contact information and are visible to leaders
+- Keep demo-mode partitioning and the requireReal* guards on every new uniform write
+- Do not touch tests and change nothing outside the uniforms batch
 
 ## Accepted Requirements
 
@@ -108,11 +112,6 @@
 
 ## Learnings
 
-- The admin demo switch is src/frontend/src/components/admin/DemoModePanel.tsx rendered by components/admin/StoreInfoPanel.tsx; the Sign as Test button is in components/kiosk/KioskSignatureStep.tsx and components/approvals/ManagerSignaturePad.tsx.
-- pretendDateToInstant in src/frontend/src/lib/format.ts maps a PretendDate (UTC day + AM/PM) to a JS Date; OpeningTimeline's useNow and Kiosk's effectiveNow consume it while demo mode is on.
-- The inherited suite has 22 pre-existing failing tests that predate this draft and remain failing; the demo mode work added passing tests without changing them.
-- The per-caller demo role lives in demoState.demoRoles : Map<Principal, DemoRoleEntry> in src/backend/types/common.mo, with migration src/backend/migrations/00000011_000000.mo dropping the old global demoRole/demoTrainerStations; Auth.demoRoleFor defaults a signed-in caller with no entry to #admin and returns null for anonymous.
-- Auth.requireRealSettingsAdmin/requireRealSettingsManager call requireRealAdmin/Manager first, then trap 'Turn off demo mode to change real settings' while demoActive; they guard approveUser, updateUserRole, removeUser, updateAccessEnd, updateTrainerStations, setKioskPin, updateStoreInfo, position/schedule/checklist/retention writes, adjustBuildTo and the store template writes, while reads keep requireReadable.
 - getMyAccess returns MyAccessView { grant : ?AccessGrant; demoRole : ?DemoRole }; hooks/useAccess.ts normalizeAccessView tolerates a bare AccessGrant so inherited mocks keep passing.
 - listAccessGrants filters isDemoLeader(g) == demoActive(demoState) and listPendingUsers returns [] while demo is on, so real grants and pending requests never leak.
 - Admin.tsx hides the real-settings tabs while demo is on but keeps the Store tab so an Admin can reach the demo switch; activeTab falls back to store if a hidden tab was selected. Panels that self-gate on demo.enabled must place the early return after every hook.
@@ -133,3 +132,8 @@
 - Migration src/backend/migrations/00000013_000000.mo reassigns only rosterState == #pending roadies whose orientationEventId is null or names a missing/non-orientation event to the earliest upcoming orientation session, leaving all others untouched.
 - Map.map on a Map<Nat, Roadie> returning Roadie needs explicit <Nat, Roadie, Roadie> when the lambda's branches do not let inference pick V2 (M0098).
 - pnpm fix (biome --write) reformats test files under src/__tests__; revert them with git checkout after running it so the tester-owned tests stay untouched.
+- Uniform order rows are grouped by the backend item label (Polo/Cap) via groupOrderRows; the Uniforms page renders one table per group.
+- getUniformOrder filters r.isDemo == Auth.demoActive(demoState), so demo and real uniform counts never mix.
+- Position uniform defaults (shirtType/shirtQty/hatType/hatQty) round-trip through TemplatePosition in both download and load.
+- Roadie shirt/hat sizes live in profile, not the contact set, so redact() leaves them visible to read-capable roles.
+- FlipCard's bottle-cap badge aria-label is the static t('roadie.card.badge') copy, not the async store number; the front badge order is secondary logo, then main logo, then the drawn StoreSeal.

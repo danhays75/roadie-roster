@@ -1,19 +1,33 @@
 import type { ChecklistItem, ContactSet, Roadie, RoadieId } from "@/backend";
 import { EmptyState, LoadingState } from "@/components/States";
 import { StatusBadge } from "@/components/StatusBadge";
+import { hatSizeLabel } from "@/components/kiosk/copy";
 import { OrientationSessionControl } from "@/components/roadie/OrientationSessionControl";
-import { SHIFTS, WEEKDAYS } from "@/components/roadie/constants";
+import {
+  HAT_SIZES,
+  SHIFTS,
+  SHIRT_SIZES,
+  WEEKDAYS,
+} from "@/components/roadie/constants";
 import {
   useChecklists,
   useContactSet,
   useResignAvailability,
   useRoadieChangeLog,
   useUpdateContactSet,
+  useUpdateRoadieDetails,
 } from "@/components/roadie/useRoadieActions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { canEditRoadie, useAccessState } from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
 import {
@@ -599,6 +613,121 @@ function PaperworkChecklist({ roadie }: { roadie: Roadie }) {
   );
 }
 
+/**
+ * Shirt and hat size editor. Sizes are not contact information, so they are
+ * shown to any read-capable role; only Admin and Store Manager may change them,
+ * saving through the existing `updateRoadieDetails` path. The hat option labels
+ * reuse the shared kiosk copy so a size reads the same everywhere.
+ */
+function SizesEditor({ roadie }: { roadie: Roadie }) {
+  const { t } = useI18n();
+  const access = useAccessState();
+  const role = access.kind === "granted" ? access.grant.role : undefined;
+  const mayEdit = canEditRoadie(role);
+  const update = useUpdateRoadieDetails();
+  const [draft, setDraft] = useState({
+    shirtSize: roadie.profile.shirtSize ?? "",
+    hatSize: roadie.profile.hatSize ?? "",
+  });
+
+  const save = (next: { shirtSize: string; hatSize: string }) => {
+    update.mutate({
+      id: roadie.id,
+      profile: {
+        ...roadie.profile,
+        shirtSize: next.shirtSize || undefined,
+        hatSize: next.hatSize || undefined,
+      },
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">{t("manager.sizes.body")}</p>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="manager-shirt-size">
+            {t("roadie.field.shirtSize")}
+          </Label>
+          <Select
+            value={draft.shirtSize || undefined}
+            disabled={!mayEdit || update.isPending}
+            onValueChange={(next) => {
+              setDraft((current) => ({ ...current, shirtSize: next }));
+              save({ ...draft, shirtSize: next });
+            }}
+          >
+            <SelectTrigger
+              id="manager-shirt-size"
+              data-ocid="roadie.manager.shirt_size.select"
+              className="touch-target w-full"
+            >
+              <SelectValue placeholder={t("roadie.field.none")} />
+            </SelectTrigger>
+            <SelectContent>
+              {SHIRT_SIZES.map((size) => (
+                <SelectItem key={size} value={size}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="manager-hat-size">{t("roadie.field.hatSize")}</Label>
+          <Select
+            value={draft.hatSize || undefined}
+            disabled={!mayEdit || update.isPending}
+            onValueChange={(next) => {
+              setDraft((current) => ({ ...current, hatSize: next }));
+              save({ ...draft, hatSize: next });
+            }}
+          >
+            <SelectTrigger
+              id="manager-hat-size"
+              data-ocid="roadie.manager.hat_size.select"
+              className="touch-target w-full"
+            >
+              <SelectValue placeholder={t("roadie.field.none")} />
+            </SelectTrigger>
+            <SelectContent>
+              {HAT_SIZES.map((size) => (
+                <SelectItem key={size} value={size}>
+                  {hatSizeLabel(size, t, {
+                    "One size": "profile.hat.oneSize",
+                    "S/M": "profile.hat.sm",
+                    "L/XL": "profile.hat.lxl",
+                  })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {update.isSuccess && (
+        <output
+          data-ocid="roadie.manager.sizes.success_state"
+          className="text-sm text-accent"
+        >
+          {t("roadie.edit.saved")}
+        </output>
+      )}
+      {update.isError && (
+        <span
+          role="alert"
+          data-ocid="roadie.manager.sizes.error_state"
+          className="text-sm text-destructive"
+        >
+          {t("roadie.edit.error")}
+        </span>
+      )}
+    </div>
+  );
+}
+
 /** The manager-only tab: contact set, availability, paperwork, history. */
 export function ManagerTab({ roadie }: { roadie: Roadie }) {
   const { t } = useI18n();
@@ -609,6 +738,10 @@ export function ManagerTab({ roadie }: { roadie: Roadie }) {
   return (
     <div className="space-y-5" data-ocid="roadie.manager.panel">
       <p className="text-sm text-muted-foreground">{t("roadie.managerOnly")}</p>
+
+      <Section title={t("manager.sizes.title")} ocid="roadie.manager.sizes">
+        <SizesEditor roadie={roadie} />
+      </Section>
 
       <Section
         title={t("roadie.section.contact")}

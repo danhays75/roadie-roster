@@ -2,7 +2,7 @@ import { renderPageWithActor } from "@/__tests__/router-test-utils";
 import type { ContactSet, Roadie, backendInterface } from "@/backend";
 import { RoadieStatus, Role, RosterState } from "@/backend";
 import RoadieCardPage from "@/pages/RoadieCard";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -51,6 +51,9 @@ function actor(role: Role) {
     getContactSet: vi.fn<backendInterface["getContactSet"]>(async () =>
       isManager ? [CONTACT] : [],
     ),
+    updateContactSet: vi.fn<backendInterface["updateContactSet"]>(
+      async () => {},
+    ),
     getChecklists: vi.fn<backendInterface["getChecklists"]>(async () => ({
       paperwork: [],
       orientationUniform: [],
@@ -90,6 +93,29 @@ describe("Roadie card contact-set visibility", () => {
     expect(await screen.findByTestId("roadie.contact.phone_input")).toHaveValue(
       "+1-555-0100",
     );
+  });
+
+  it("saves an edited phone through updateContactSet, preserving the other fields", async () => {
+    const user = userEvent.setup();
+    const a = actor(Role.storeManager);
+    renderPageWithActor(RoadieCardPage, a, {
+      path: "/roster/$roadieId",
+      initialEntry: "/roster/1",
+    });
+
+    await user.click(await screen.findByTestId("roadie.manager.tab"));
+    const phone = await screen.findByTestId("roadie.contact.phone_input");
+    await user.clear(phone);
+    await user.type(phone, "+1-555-0199");
+    await user.click(screen.getByTestId("roadie.contact.save_button"));
+
+    await waitFor(() => expect(a.updateContactSet).toHaveBeenCalledTimes(1));
+    const [id, saved] = a.updateContactSet.mock.calls[0];
+    expect(id).toBe(1n);
+    // Only the edited field changes; the untouched fields are carried through.
+    expect(saved.phone).toBe("+1-555-0199");
+    expect(saved.email).toBe("ada@example.com");
+    expect(saved.emergencyContactName).toBe("Grace");
   });
 
   it("never renders the contact set for a Trainer", async () => {

@@ -34,6 +34,11 @@ import {
 import { Loader2, Minus, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+/* ---------------------------------------------------------------------------
+   Per-position uniform defaults. The labels live in the admin copy dictionary
+   (copy.ts) and are read through useAdminCopy().
+--------------------------------------------------------------------------- */
+
 interface PositionDraft {
   id: bigint;
   name: string;
@@ -45,6 +50,10 @@ interface PositionDraft {
   hatsRequired: string;
   defaultShirts: string;
   defaultHats: string;
+  shirtType: string;
+  shirtQty: string;
+  hatType: string;
+  hatQty: string;
   crewManager: string;
 }
 
@@ -60,6 +69,10 @@ function emptyDraft(): PositionDraft {
     hatsRequired: "0",
     defaultShirts: "3",
     defaultHats: "2",
+    shirtType: "",
+    shirtQty: "0",
+    hatType: "",
+    hatQty: "0",
     crewManager: "",
   };
 }
@@ -76,6 +89,10 @@ function toDraft(position: Position): PositionDraft {
     hatsRequired: position.hatsRequired.toString(),
     defaultShirts: position.defaultShirts.toString(),
     defaultHats: position.defaultHats.toString(),
+    shirtType: position.shirtType,
+    shirtQty: position.shirtQty.toString(),
+    hatType: position.hatType,
+    hatQty: position.hatQty.toString(),
     crewManager: position.crewManager ?? "",
   };
 }
@@ -105,6 +122,10 @@ function toPosition(
     hatsRequired: toCount(draft.hatsRequired),
     defaultShirts: toCount(draft.defaultShirts),
     defaultHats: toCount(draft.defaultHats),
+    shirtType: draft.shirtType.trim(),
+    shirtQty: toCount(draft.shirtQty),
+    hatType: draft.hatType.trim(),
+    hatQty: toCount(draft.hatQty),
     crewManager: draft.crewManager.trim()
       ? draft.crewManager.trim()
       : undefined,
@@ -266,6 +287,17 @@ function PositionRow({
             opening: position.openingBuildTo.toString(),
             after: position.afterOpeningBuildTo.toString(),
             age: position.minimumAge.toString(),
+          })}
+        </p>
+        <p
+          className="mt-1 text-xs text-muted-foreground"
+          data-ocid="admin.positions.uniform_summary"
+        >
+          {fill(c.positionsUniformSummary, {
+            shirtQty: position.shirtQty.toString(),
+            shirtType: position.shirtType || c.positionsShirtType,
+            hatQty: position.hatQty.toString(),
+            hatType: position.hatType || c.positionsHatType,
           })}
         </p>
         {!readOnly && (
@@ -541,6 +573,53 @@ export function PositionsPanel() {
                     className="touch-target"
                     value={draft.defaultHats}
                     onChange={(event) => set("defaultHats", event.target.value)}
+                  />
+                </FormField>
+                <FormField
+                  label={c.positionsShirtType}
+                  htmlFor="pos-shirt-type"
+                >
+                  <Input
+                    id="pos-shirt-type"
+                    data-ocid="admin.positions.shirt_type.input"
+                    className="touch-target"
+                    placeholder={c.positionsShirtTypePlaceholder}
+                    value={draft.shirtType}
+                    onChange={(event) => set("shirtType", event.target.value)}
+                  />
+                </FormField>
+                <FormField label={c.positionsShirtQty} htmlFor="pos-shirt-qty">
+                  <Input
+                    id="pos-shirt-qty"
+                    type="number"
+                    min={0}
+                    step={1}
+                    data-ocid="admin.positions.shirt_qty.input"
+                    className="touch-target"
+                    value={draft.shirtQty}
+                    onChange={(event) => set("shirtQty", event.target.value)}
+                  />
+                </FormField>
+                <FormField label={c.positionsHatType} htmlFor="pos-hat-type">
+                  <Input
+                    id="pos-hat-type"
+                    data-ocid="admin.positions.hat_type.input"
+                    className="touch-target"
+                    placeholder={c.positionsHatTypePlaceholder}
+                    value={draft.hatType}
+                    onChange={(event) => set("hatType", event.target.value)}
+                  />
+                </FormField>
+                <FormField label={c.positionsHatQty} htmlFor="pos-hat-qty">
+                  <Input
+                    id="pos-hat-qty"
+                    type="number"
+                    min={0}
+                    step={1}
+                    data-ocid="admin.positions.hat_qty.input"
+                    className="touch-target"
+                    value={draft.hatQty}
+                    onChange={(event) => set("hatQty", event.target.value)}
                   />
                 </FormField>
                 <FormField

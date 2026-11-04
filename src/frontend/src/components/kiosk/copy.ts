@@ -2,6 +2,27 @@ import { useI18n } from "@/hooks/useI18n";
 import type { Locale } from "@/lib/copy";
 
 /**
+ * Copy keys for the shared hat-size vocabulary. The stored value is the plain
+ * size string ("One size", "S/M", "L/XL"); this maps it to its translated label
+ * so the kiosk and the review step render the same wording.
+ */
+export const HAT_SIZE_COPY_KEYS: Record<string, string> = {
+  "One size": "hat.oneSize",
+  "S/M": "hat.sm",
+  "L/XL": "hat.lxl",
+};
+
+/** Translate a stored hat-size value, falling back to the raw value. */
+export function hatSizeLabel(
+  value: string,
+  t: (key: string) => string,
+  keys: Record<string, string> = HAT_SIZE_COPY_KEYS,
+): string {
+  const key = keys[value];
+  return key ? t(key) : value;
+}
+
+/**
  * Kiosk-scoped copy. The shared dictionary in `lib/copy.ts` is owned by the
  * foundation; these keys live here so the kiosk flow stays self-contained.
  */
@@ -63,6 +84,9 @@ const kioskCopy: Record<Locale, Record<string, string>> = {
     "hat.oneSize": "One size",
     "hat.sm": "S/M",
     "hat.lxl": "L/XL",
+    "manager.sizes.title": "Uniform sizes",
+    "manager.sizes.body":
+      "Shirt and hat sizes are not contact information and are visible to leaders.",
     "field.shiftsWanted": "Shifts wanted per week",
     "field.shiftsWantedHint": "How many shifts would you like each week?",
     "field.weekdayLunch": "Available for weekday lunch shifts?",
@@ -227,6 +251,9 @@ const kioskCopy: Record<Locale, Record<string, string>> = {
     "hat.oneSize": "Talla única",
     "hat.sm": "S/M",
     "hat.lxl": "L/XL",
+    "manager.sizes.title": "Tallas de uniforme",
+    "manager.sizes.body":
+      "Las tallas de camiseta y gorra no son datos de contacto y son visibles para los líderes.",
     "field.shiftsWanted": "Turnos por semana",
     "field.shiftsWantedHint": "¿Cuántos turnos quieres cada semana?",
     "field.weekdayLunch": "¿Disponible para turnos de almuerzo?",

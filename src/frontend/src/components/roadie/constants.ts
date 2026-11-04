@@ -46,3 +46,15 @@ export function archiveReasonLabel(
   const match = ARCHIVE_REASONS.find((item) => item.value === reason);
   return match ? t(match.labelKey) : reason;
 }
+
+/**
+ * The shared uniform size vocabulary. Shirt sizes run XS through 3XL and hat
+ * sizes are One size, S/M and L/XL, matching the kiosk and staff profile
+ * vocabulary so a size chosen anywhere is understood everywhere.
+ */
+export const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"] as const;
+
+export const HAT_SIZES = ["One size", "S/M", "L/XL"] as const;
+
+export type ShirtSizeValue = (typeof SHIRT_SIZES)[number];
+export type HatSizeValue = (typeof HAT_SIZES)[number];
