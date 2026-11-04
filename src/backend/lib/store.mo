@@ -346,6 +346,8 @@ module {
           afterOpeningBuildTo = p.afterOpeningBuildTo;
           minimumAge = p.minimumAge;
           needsAlcoholCert = p.needsAlcoholCert;
+          defaultShirts = p.defaultShirts;
+          defaultHats = p.defaultHats;
           shirtType = p.shirtType;
           shirtQty = p.shirtQty;
           hatType = p.hatType;
@@ -398,6 +400,8 @@ module {
         shirtsRequired = 2;
         hatsRequired = 1;
         crewManager = null;
+        defaultShirts = p.defaultShirts;
+        defaultHats = p.defaultHats;
         shirtType = p.shirtType;
         shirtQty = p.shirtQty;
         hatType = p.hatType;

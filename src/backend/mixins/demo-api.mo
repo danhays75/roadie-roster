@@ -19,7 +19,8 @@ mixin (
   attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
   trainerNotes : Map.Map<Nat, Phase23.TrainerNote>,
   orientationCheckoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
-  trainingGroups : Map.Map<Common.TrainingGroupId, Phase23.TrainingGroup>,
+  shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+  groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
   leaderTalks : Map.Map<Common.LeaderTalkId, Phase23.LeaderTalk>,
   finalSignOffs : Map.Map<Common.RoadieId, Phase23.FinalSignOff>,
   positions : Map.Map<Common.PositionId, Store.Position>,
@@ -90,6 +91,6 @@ mixin (
   /// Remove every demo record (Admin, demo mode only). Real records are never
   /// touched.
   public shared ({ caller }) func clearDemoData() : async Common.DemoDataSummary {
-    DemoLib.clearDemoData(accessGrants, demoState, roadies, signups, crews, attendance, trainerNotes, orientationCheckoffs, trainingGroups, leaderTalks, finalSignOffs, changeLog, counters, caller);
+    DemoLib.clearDemoData(accessGrants, demoState, roadies, signups, crews, attendance, trainerNotes, orientationCheckoffs, shiftBoards, groupChangeNotices, leaderTalks, finalSignOffs, changeLog, counters, caller);
   };
 };

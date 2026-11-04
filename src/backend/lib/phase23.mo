@@ -1,5 +1,7 @@
 import Int "mo:core/Int";
+import List "mo:core/List";
 import Map "mo:core/Map";
+import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
@@ -14,6 +16,7 @@ import ChangeLog "changelog";
 module {
   public type Counters = {
     var nextTrainingGroupId : Nat;
+    var nextGroupChangeNoticeId : Nat;
     var nextLeaderTalkId : Nat;
     var nextAlertId : Nat;
     var nextAttendanceId : Nat;
@@ -573,75 +576,668 @@ module {
     logWrite(changeLog, counters, demoState, caller, "setPaperworkItems", ?roadieId, false, "Set paperwork items");
   };
 
-  // --- Training groups ---
+  // --- Shift boards ---
 
-  /// Read a training group with its unassigned and off-shift lists (Admin/Store
-  /// Manager/Trainer). Demo groups are visible only while demo mode is on.
-  public func getTrainingGroup(
-    accessGrants : Map.Map<Principal, Access.AccessGrant>,
-    demoState : Common.DemoState,
-    trainingGroups : Map.Map<Common.TrainingGroupId, Phase23.TrainingGroup>,
+  /// The map key for one shift board: the event id and shift, so a board is
+  /// unique per shift. Matches the migration and the OQL entity key.
+  func boardKey(eventId : Common.EventId, shift : Common.Shift) : Text {
+    eventId.toText() # ":" # (switch shift { case (#am) "am"; case (#pm) "pm" });
+  };
+
+  /// Internal: the shift label for a board, e.g. "Day 2 AM" or "F&F PM".
+  func shiftLabel(event : ?Store.ScheduleEvent, shift : Common.Shift) : Text {
+    let suffix = switch (shift) { case (#am) "AM"; case (#pm) "PM" };
+    switch (event) {
+      case (?e) { e.name # " " # suffix };
+      case null { suffix };
+    };
+  };
+
+  /// Internal: the weekday of a timestamp in store time. The store's opening
+  /// schedule is authored in UTC-midnight dates, so the weekday is derived from
+  /// the UTC date.
+  func weekdayOf(ts : Common.Timestamp) : Common.Weekday {
+    // 1970-01-01 was a Thursday. Days since epoch modulo 7 gives the weekday.
+    let days = ts / 86_400_000_000_000;
+    let rem = days % 7;
+    let r = if (rem < 0) { rem + 7 } else { rem };
+    if (r == 0) { #thu }
+    else if (r == 1) { #fri }
+    else if (r == 2) { #sat }
+    else if (r == 3) { #sun }
+    else if (r == 4) { #mon }
+    else if (r == 5) { #tue }
+    else { #wed };
+  };
+
+  /// Internal: whether a roadie marked themselves unavailable for the given
+  /// weekday and shift on the kiosk. A roadie with no contact set or no
+  /// availability is treated as available.
+  func markedUnavailable(roadie : Roadie.Roadie, day : Common.Weekday, shift : Common.Shift) : Bool {
+    switch (roadie.contactSet) {
+      case (?cs) {
+        let slots = cs.availability;
+        // Unavailable when the roadie has at least one availability slot and
+        // none of them covers this weekday and shift.
+        if (slots.size() == 0) { return false };
+        not slots.any(func(s) = s.day == day and s.shift == shift);
+      };
+      case null { false };
+    };
+  };
+
+  /// Internal: build one roadie chip for a shift board.
+  func roadieChip(
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
-    caller : Principal,
-    id : Common.TrainingGroupId,
-  ) : ?Phase23.TrainingGroupView {
-    ignore Auth.requireReadable(accessGrants, demoState, caller);
-    let demo = Auth.demoActive(demoState);
-    switch (trainingGroups.get(id)) {
-      case (?group) {
-        if (group.isDemo != demo) { return null };
-        let active = roadies.values().filter(func r = r.isDemo == demo and r.status != #archived).toArray();
-        let unassigned = active.filter(func r =
-          r.mainPositionId == group.positionId
-          and not group.memberRoadieIds.any(func m = m == r.id)
-        ).map(func r = r.id);
-        let offThisShift = active.filter(func r =
-          r.mainPositionId != group.positionId
-          and not group.memberRoadieIds.any(func m = m == r.id)
-        ).map(func r = r.id);
-        ?{ group; unassigned; offThisShift };
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    day : Common.Weekday,
+    shift : Common.Shift,
+    roadieId : Common.RoadieId,
+  ) : ?Phase23.ShiftBoardRoadie {
+    switch (roadies.get(roadieId)) {
+      case (?r) {
+        let positionCode = switch (positions.get(r.mainPositionId)) {
+          case (?p) { p.code };
+          case null { "" };
+        };
+        ?{
+          roadieId = r.id;
+          name = displayName(r);
+          photo = r.photo;
+          positionId = r.mainPositionId;
+          positionCode;
+          markedUnavailable = markedUnavailable(r, day, shift);
+        };
       };
       case null { null };
     };
   };
 
-  /// Create a training group (Admin/Store Manager only). A group created while
-  /// demo mode is on is a demo group.
-  public func createTrainingGroup(
-    accessGrants : Map.Map<Principal, Access.AccessGrant>,
-    demoState : Common.DemoState,
-    trainingGroups : Map.Map<Common.TrainingGroupId, Phase23.TrainingGroup>,
-    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
-    counters : Counters,
-    caller : Principal,
-    group : Phase23.TrainingGroup,
-  ) : Common.TrainingGroupId {
-    Auth.requireManager(accessGrants, demoState, caller);
-    let id = counters.nextTrainingGroupId;
-    counters.nextTrainingGroupId := id + 1;
-    trainingGroups.add(id, { group with id; isDemo = Auth.demoActive(demoState) });
-    logWrite(changeLog, counters, demoState, caller, "createTrainingGroup", null, false, "Created training group");
-    id;
+  /// Internal: build the full read view of a board.
+  func buildBoardView(
+    board : Phase23.ShiftBoard,
+    event : ?Store.ScheduleEvent,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+  ) : Phase23.ShiftBoardView {
+    let day = switch (event) {
+      case (?e) { weekdayOf(e.start) };
+      case null { #wed };
+    };
+    let shift = board.shift;
+    let groups = board.groups.map(func(g) {
+      let chips = g.roadieIds.filterMap(func(rid) = roadieChip(roadies, positions, day, shift, rid));
+      {
+        trainerPrincipal = g.trainerPrincipal;
+        capacity = g.capacity;
+        roadies = chips;
+      };
+    });
+    // Every roadie id already placed in a group or in Off.
+    let placed = List.empty<Common.RoadieId>();
+    for (g in board.groups.values()) {
+      for (rid in g.roadieIds.values()) { placed.add(rid) };
+    };
+    for (rid in board.offRoadieIds.values()) { placed.add(rid) };
+    let offThisShift = board.offRoadieIds.filterMap(func(rid) = roadieChip(roadies, positions, day, shift, rid));
+    // Unassigned: active roadies in the partition not placed in a group or Off.
+    let unassigned = roadies.values()
+      .filter(func r =
+        r.isDemo == board.isDemo
+        and r.status != #archived
+        and r.rosterState == #active
+        and not placed.contains(r.id)
+      )
+      .map(func(r) {
+        let positionCode = switch (positions.get(r.mainPositionId)) {
+          case (?p) { p.code };
+          case null { "" };
+        };
+        {
+          roadieId = r.id;
+          name = displayName(r);
+          photo = r.photo;
+          positionId = r.mainPositionId;
+          positionCode;
+          markedUnavailable = markedUnavailable(r, day, shift);
+        };
+      })
+      .toArray();
+    {
+      eventId = board.eventId;
+      shift = board.shift;
+      groups;
+      unassigned;
+      offThisShift;
+      editedAt = board.editedAt;
+      isDemo = board.isDemo;
+    };
   };
 
-  /// Update a training group's membership (Admin/Store Manager only). A write
-  /// to the other partition is rejected.
-  public func updateTrainingGroup(
+  /// Read one shift board with its trainer columns, Unassigned tray and Off
+  /// this shift tray. Read-only for every read role except kiosk and
+  /// integration. Demo boards are visible only while demo mode is on.
+  public func getShiftBoard(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
-    trainingGroups : Map.Map<Common.TrainingGroupId, Phase23.TrainingGroup>,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    caller : Principal,
+    eventId : Common.EventId,
+    shift : Common.Shift,
+  ) : ?Phase23.ShiftBoardView {
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    switch (shiftBoards.get(boardKey(eventId, shift))) {
+      case (?board) {
+        if (board.isDemo != demo) { return null };
+        ?buildBoardView(board, schedule.get(eventId), roadies, positions);
+      };
+      case null { null };
+    };
+  };
+
+  /// List every shift board for the current partition, ordered by event and
+  /// shift. Read-only for every read role except kiosk and integration.
+  public func listShiftBoards(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    caller : Principal,
+  ) : [Phase23.ShiftBoardView] {
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    let boards = shiftBoards.values()
+      .filter(func b = b.isDemo == demo)
+      .toArray();
+    let views = boards.map(func(b) = buildBoardView(b, schedule.get(b.eventId), roadies, positions));
+    views.sort(func(a, b) {
+      let c = Int.compare(a.eventId, b.eventId);
+      if (c != #equal) { c } else {
+        let sa = switch (a.shift) { case (#am) 0; case (#pm) 1 };
+        let sb = switch (b.shift) { case (#am) 0; case (#pm) 1 };
+        Int.compare(sa, sb);
+      };
+    });
+  };
+
+  /// Internal: reject a board whose roadies appear in more than one group or in
+  /// both a group and Off.
+  func validateBoard(board : Phase23.ShiftBoard) : () {
+    let seen = List.empty<Common.RoadieId>();
+    for (g in board.groups.values()) {
+      for (rid in g.roadieIds.values()) {
+        if (seen.contains(rid)) {
+          Runtime.trap("A roadie may appear in at most one group or in Off");
+        };
+        seen.add(rid);
+      };
+    };
+    for (rid in board.offRoadieIds.values()) {
+      if (seen.contains(rid)) {
+        Runtime.trap("A roadie may appear in at most one group or in Off");
+      };
+      seen.add(rid);
+    };
+  };
+
+  /// Internal: the display name for a principal, from their access grant's
+  /// staff profile, falling back to a short principal form.
+  func principalName(accessGrants : Map.Map<Principal, Access.AccessGrant>, p : Principal) : Text {
+    switch (accessGrants.get(p)) {
+      case (?grant) {
+        switch (grant.staffProfile) {
+          case (?sp) {
+            switch (sp.preferredName) {
+              case (?pn) { if (pn.size() > 0) { pn } else { sp.fullName } };
+              case null { sp.fullName };
+            };
+          };
+          case null { p.toText() };
+        };
+      };
+      case null { p.toText() };
+    };
+  };
+
+  /// Internal: record a group-change notice for each trainer whose group
+  /// membership changed between the previous board and the new one, for a
+  /// current or future shift. `event` supplies the shift label; `now` is the
+  /// effective clock.
+  func recordGroupChanges(
+    groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
+    counters : Counters,
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    demoState : Common.DemoState,
+    previous : ?Phase23.ShiftBoard,
+    next : Phase23.ShiftBoard,
+    event : ?Store.ScheduleEvent,
+    editor : Principal,
+  ) : () {
+    // Only current or future shifts produce notices.
+    switch (event) {
+      case (?e) {
+        if (e.start < effectiveNow(demoState)) { return };
+      };
+      case null { return };
+    };
+    let shiftText = shiftLabel(event, next.shift);
+    let editorName = principalName(accessGrants, editor);
+    let demo = Auth.demoActive(demoState);
+    // The set of trainers on the previous board, so a trainer removed entirely
+    // still gets a notice.
+    let trainers = List.empty<Principal>();
+    switch (previous) {
+      case (?p) {
+        for (g in p.groups.values()) {
+          if (not trainers.contains(g.trainerPrincipal)) { trainers.add(g.trainerPrincipal) };
+        };
+      };
+      case null {};
+    };
+    for (g in next.groups.values()) {
+      if (not trainers.contains(g.trainerPrincipal)) { trainers.add(g.trainerPrincipal) };
+    };
+    for (trainer in trainers.values()) {
+      let before = groupRoadieIds(previous, trainer);
+      let after = groupRoadieIds(?next, trainer);
+      let added = after.filter(func(rid) = not before.contains(rid));
+      let removed = before.filter(func(rid) = not after.contains(rid));
+      if (added.size() > 0 or removed.size() > 0) {
+        let id = counters.nextGroupChangeNoticeId;
+        counters.nextGroupChangeNoticeId := id + 1;
+        groupChangeNotices.add(id, {
+          id;
+          trainerPrincipal = trainer;
+          eventId = next.eventId;
+          shift = next.shift;
+          shiftLabel = shiftText;
+          addedNames = added.map(func(rid) = roadieName(roadies, rid));
+          removedNames = removed.map(func(rid) = roadieName(roadies, rid));
+          editorName;
+          createdAt = effectiveNow(demoState);
+          dismissed = false;
+          isDemo = demo;
+        });
+      };
+    };
+  };
+
+  /// Internal: the roadie ids in one trainer's group on a board, or an empty
+  /// array when the trainer has no group.
+  func groupRoadieIds(board : ?Phase23.ShiftBoard, trainer : Principal) : [Common.RoadieId] {
+    switch (board) {
+      case (?b) {
+        switch (b.groups.find(func(g) = g.trainerPrincipal == trainer)) {
+          case (?g) { g.roadieIds };
+          case null { [] };
+        };
+      };
+      case null { [] };
+    };
+  };
+
+  /// Internal: a roadie's display name, or a fallback when the roadie is gone.
+  func roadieName(roadies : Map.Map<Common.RoadieId, Roadie.Roadie>, id : Common.RoadieId) : Text {
+    switch (roadies.get(id)) {
+      case (?r) { displayName(r) };
+      case null { "Roadie " # id.toText() };
+    };
+  };
+
+  /// Replace one shift board's groups, capacities and Off list (Admin, Store
+  /// Manager or Training Manager). Rejects a roadie placed in more than one
+  /// group or in both a group and Off. Real boards are blocked by the demo
+  /// real-settings guard while demo mode is on; demo boards stay editable.
+  public func saveShiftBoard(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
     caller : Principal,
-    group : Phase23.TrainingGroup,
+    board : Phase23.ShiftBoard,
   ) : () {
-    Auth.requireManager(accessGrants, demoState, caller);
-    let existing = trainingGroups.get(group.id) ?? Runtime.trap("Training group not found");
-    if (existing.isDemo != Auth.demoActive(demoState)) {
-      Runtime.trap("Training group not found");
+    Auth.requireGroupEditor(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    validateBoard(board);
+    let key = boardKey(board.eventId, board.shift);
+    let previous = shiftBoards.get(key);
+    // A write targets the current partition only: a real board cannot be
+    // changed while demo mode is on, and a demo board cannot be changed while
+    // it is off.
+    switch (previous) {
+      case (?p) {
+        if (p.isDemo != demo) {
+          Runtime.trap("Shift board belongs to the other partition");
+        };
+      };
+      case null {};
     };
-    trainingGroups.add(group.id, group);
-    logWrite(changeLog, counters, demoState, caller, "updateTrainingGroup", null, false, "Updated training group");
+    let stored : Phase23.ShiftBoard = {
+      board with
+      editedAt = effectiveNow(demoState);
+      isDemo = demo;
+    };
+    shiftBoards.add(key, stored);
+    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, previous, stored, schedule.get(board.eventId), caller);
+    logWrite(changeLog, counters, demoState, caller, "saveShiftBoard", null, false, "Saved shift board " # key);
+  };
+
+  /// Copy another shift's groups, capacities and Off list onto this shift,
+  /// replacing the current board (Admin, Store Manager or Training Manager).
+  public func copyShiftBoard(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    eventId : Common.EventId,
+    shift : Common.Shift,
+    fromEventId : Common.EventId,
+    fromShift : Common.Shift,
+  ) : () {
+    Auth.requireGroupEditor(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    let source = shiftBoards.get(boardKey(fromEventId, fromShift)) ?? Runtime.trap("Source shift board not found");
+    if (source.isDemo != demo) {
+      Runtime.trap("Source shift board not found");
+    };
+    let key = boardKey(eventId, shift);
+    let previous = shiftBoards.get(key);
+    switch (previous) {
+      case (?p) {
+        if (p.isDemo != demo) {
+          Runtime.trap("Shift board belongs to the other partition");
+        };
+      };
+      case null {};
+    };
+    let stored : Phase23.ShiftBoard = {
+      eventId;
+      shift;
+      groups = source.groups;
+      offRoadieIds = source.offRoadieIds;
+      editedAt = effectiveNow(demoState);
+      isDemo = demo;
+    };
+    validateBoard(stored);
+    shiftBoards.add(key, stored);
+    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, previous, stored, schedule.get(eventId), caller);
+    logWrite(changeLog, counters, demoState, caller, "copyShiftBoard", null, false, "Copied shift board " # boardKey(fromEventId, fromShift) # " to " # key);
+  };
+
+  /// Fill empty capacity from the Unassigned tray: same station as the trainer
+  /// first, only roadies available that shift, then balanced evenly. Never
+  /// moves an already-placed roadie (Admin, Store Manager or Training Manager).
+  public func autoFillShiftBoard(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    eventId : Common.EventId,
+    shift : Common.Shift,
+  ) : () {
+    Auth.requireGroupEditor(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    let key = boardKey(eventId, shift);
+    let board = shiftBoards.get(key) ?? Runtime.trap("Shift board not found");
+    if (board.isDemo != demo) {
+      Runtime.trap("Shift board not found");
+    };
+    // The roadies already placed on this board are never moved.
+    let placed = List.empty<Common.RoadieId>();
+    for (g in board.groups.values()) {
+      for (rid in g.roadieIds.values()) { placed.add(rid) };
+    };
+    for (rid in board.offRoadieIds.values()) { placed.add(rid) };
+    // Candidate pool: active roadies in the partition, not placed, available
+    // that shift. Availability is by weekday; the weekday comes from the
+    // event's start date.
+    let day = switch (schedule.get(eventId)) {
+      case (?e) { weekdayOf(e.start) };
+      case null { #wed };
+    };
+    let candidates = roadies.values()
+      .filter(func r =
+        r.isDemo == demo
+        and r.status != #archived
+        and r.rosterState == #active
+        and not placed.contains(r.id)
+        and not markedUnavailable(r, day, shift)
+      )
+      .toArray();
+    // Fill each group's empty capacity: same station as the trainer first, then
+    // any remaining candidate, balancing evenly across groups. A candidate is
+    // consumed once, tracked in `used`.
+    let used = List.empty<Common.RoadieId>();
+    let newGroups = board.groups.map(func(g) {
+      let current = g.roadieIds;
+      let empty = saturatingSub(g.capacity, current.size());
+      if (empty == 0) { return g };
+      let trainerStations = trainerStationsFor(accessGrants, demoState, g.trainerPrincipal);
+      let picked = List.empty<Common.RoadieId>();
+      // First pass: same station as the trainer.
+      for (c in candidates.values()) {
+        if (picked.size() < empty and not used.contains(c.id)) {
+          if (trainerStations.contains(c.mainPositionId)) {
+            picked.add(c.id);
+            used.add(c.id);
+          };
+        };
+      };
+      // Second pass: any remaining candidate, balanced evenly.
+      for (c in candidates.values()) {
+        if (picked.size() < empty and not used.contains(c.id)) {
+          picked.add(c.id);
+          used.add(c.id);
+        };
+      };
+      { g with roadieIds = current.concat(picked.toArray()) };
+    });
+    let stored : Phase23.ShiftBoard = {
+      board with
+      groups = newGroups;
+      editedAt = effectiveNow(demoState);
+    };
+    validateBoard(stored);
+    shiftBoards.add(key, stored);
+    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, ?board, stored, schedule.get(eventId), caller);
+    logWrite(changeLog, counters, demoState, caller, "autoFillShiftBoard", null, false, "Auto-filled shift board " # key);
+  };
+
+  /// Internal: the stations a trainer covers, from their access grant (or their
+  /// demo stations while demo mode is on).
+  func trainerStationsFor(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    trainer : Principal,
+  ) : [Common.PositionId] {
+    if (Auth.demoActive(demoState)) {
+      Auth.demoTrainerStationsFor(demoState, trainer);
+    } else {
+      switch (accessGrants.get(trainer)) {
+        case (?grant) { grant.trainerPositionIds };
+        case null { [] };
+      };
+    };
+  };
+
+  /// Clear one shift board's groups and Off list (Admin, Store Manager or
+  /// Training Manager).
+  public func clearShiftBoard(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    eventId : Common.EventId,
+    shift : Common.Shift,
+  ) : () {
+    Auth.requireGroupEditor(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    let key = boardKey(eventId, shift);
+    let previous = shiftBoards.get(key);
+    switch (previous) {
+      case (?p) {
+        if (p.isDemo != demo) {
+          Runtime.trap("Shift board belongs to the other partition");
+        };
+      };
+      case null {};
+    };
+    let stored : Phase23.ShiftBoard = {
+      eventId;
+      shift;
+      groups = [];
+      offRoadieIds = [];
+      editedAt = effectiveNow(demoState);
+      isDemo = demo;
+    };
+    shiftBoards.add(key, stored);
+    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, previous, stored, schedule.get(eventId), caller);
+    logWrite(changeLog, counters, demoState, caller, "clearShiftBoard", null, false, "Cleared shift board " # key);
+  };
+
+  /// List the caller's undismissed group-change notices, newest first.
+  public func listGroupChangeNotices(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
+    caller : Principal,
+  ) : [Phase23.GroupChangeNotice] {
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    let notices = groupChangeNotices.values()
+      .filter(func n = n.isDemo == demo and n.trainerPrincipal == caller and not n.dismissed)
+      .toArray();
+    notices.sort(func(a, b) = Int.compare(b.createdAt, a.createdAt));
+  };
+
+  /// Dismiss one of the caller's own group-change notices.
+  public func dismissGroupChangeNotice(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    id : Nat,
+  ) : () {
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
+    let notice = groupChangeNotices.get(id) ?? Runtime.trap("Group change notice not found");
+    if (notice.isDemo != Auth.demoActive(demoState) or notice.trainerPrincipal != caller) {
+      Runtime.trap("Group change notice not found");
+    };
+    groupChangeNotices.add(id, { notice with dismissed = true });
+    logWrite(changeLog, counters, demoState, caller, "dismissGroupChangeNotice", null, false, "Dismissed group change notice");
+  };
+
+  /// The caller's own group for the current or next shift, for the Today
+  /// screen. Returns null when the caller trains no group on that shift.
+  public func getMyGroup(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    caller : Principal,
+  ) : ?Phase23.MyGroupView {
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    let now = effectiveNow(demoState);
+    // Find the caller's group on the current or next shift by time. Event ids
+    // are creation order, not time order, so compare each candidate event's
+    // start against the effective clock: the earliest shift at or after now,
+    // falling back to the latest past shift when every shift has passed.
+    var best : ?(Common.EventId, Common.Shift, Phase23.ShiftBoardGroup, Common.Timestamp) = null;
+    for (board in shiftBoards.values()) {
+      if (board.isDemo == demo) {
+        switch (board.groups.find(func(g) = g.trainerPrincipal == caller)) {
+          case (?g) {
+            switch (schedule.get(board.eventId)) {
+              case (?event) {
+                let better = switch (best) {
+                  case (?b) {
+                    let (_, _, _, bestStart) = b;
+                    let bestUpcoming = bestStart >= now;
+                    let candUpcoming = event.start >= now;
+                    if (candUpcoming and not bestUpcoming) {
+                      true;
+                    } else if (bestUpcoming and not candUpcoming) {
+                      false;
+                    } else if (candUpcoming) {
+                      // Both upcoming: the earlier start wins; AM before PM on a tie.
+                      let c = Int.compare(event.start, bestStart);
+                      if (c == #less) { true } else if (c == #greater) { false } else {
+                        let sa = switch (board.shift) { case (#am) 0; case (#pm) 1 };
+                        let sb = switch (b.1) { case (#am) 0; case (#pm) 1 };
+                        sa < sb;
+                      };
+                    } else {
+                      // Both past: the later start wins; PM after AM on a tie.
+                      let c = Int.compare(event.start, bestStart);
+                      if (c == #greater) { true } else if (c == #less) { false } else {
+                        let sa = switch (board.shift) { case (#am) 0; case (#pm) 1 };
+                        let sb = switch (b.1) { case (#am) 0; case (#pm) 1 };
+                        sa > sb;
+                      };
+                    };
+                  };
+                  case null { true };
+                };
+                if (better) { best := ?(board.eventId, board.shift, g, event.start) };
+              };
+              case null {};
+            };
+          };
+          case null {};
+        };
+      };
+    };
+    switch (best) {
+      case (?b) {
+        let (eventId, shift, group, _) = b;
+        let event = schedule.get(eventId);
+        let day = switch (event) {
+          case (?e) { weekdayOf(e.start) };
+          case null { #wed };
+        };
+        let chips = group.roadieIds.filterMap(func(rid) = roadieChip(roadies, positions, day, shift, rid));
+        ?{
+          eventId;
+          shift;
+          shiftLabel = shiftLabel(event, shift);
+          capacity = group.capacity;
+          roadies = chips;
+        };
+      };
+      case null { null };
+    };
   };
 
   /// Add a trainer note (Trainer/Admin/Store Manager only). A note added while

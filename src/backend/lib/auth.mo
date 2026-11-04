@@ -292,6 +292,27 @@ module {
     };
   };
 
+  /// Require a group-editor caller (Admin, Store Manager or Training Manager);
+  /// trap otherwise. While demo mode is on, the caller's own impersonated demo
+  /// role is consulted. Real boards are additionally blocked by the demo
+  /// real-settings guard at the call site; demo boards stay editable in demo.
+  public func requireGroupEditor(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    caller : Principal,
+  ) : () {
+    switch (effectiveRole(accessGrants, demoState, caller)) {
+      case (?role) {
+        if (role != #admin and role != #storeManager and role != #trainingManager) {
+          Runtime.trap("Access denied: Admin, Store Manager or Training Manager role required");
+        };
+      };
+      case null {
+        Runtime.trap("Access denied: Admin, Store Manager or Training Manager role required");
+      };
+    };
+  };
+
   /// Require a read-capable caller (any role except Kiosk); trap otherwise.
   /// While demo mode is on, the caller's own impersonated demo role is
   /// consulted.

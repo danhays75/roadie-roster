@@ -45,6 +45,11 @@ module {
     shirtsRequired : Nat;
     hatsRequired : Nat;
     crewManager : ?Text;
+    /// Legacy default shirt and hat counts for this position, kept on the
+    /// public API for the orientation and roster screens. Part of the store
+    /// template.
+    defaultShirts : Nat;
+    defaultHats : Nat;
     /// Uniform defaults for this position: the shirt type (free text) and how
     /// many shirts, and the hat type (free text) and how many hats. Quantities
     /// accept 0. Part of the store template.
@@ -127,6 +132,8 @@ module {
     afterOpeningBuildTo : Nat;
     minimumAge : Nat;
     needsAlcoholCert : Bool;
+    defaultShirts : Nat;
+    defaultHats : Nat;
     shirtType : Text;
     shirtQty : Nat;
     hatType : Text;

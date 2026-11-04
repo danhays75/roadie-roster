@@ -30,6 +30,8 @@ const POSITION: Position = {
   shirtQty: 2n,
   hatType: "Cap",
   hatQty: 1n,
+  defaultShirts: 2n,
+  defaultHats: 1n,
 };
 
 /** A roadie with no photo, as the backend returns it to a non-manager. */

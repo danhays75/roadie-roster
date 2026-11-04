@@ -9,7 +9,9 @@ import {
   type DemoStateView,
   type DuplicateMatch,
   type EventId,
+  type GroupChangeNotice,
   type LeaderSummary,
+  type MyGroupView,
   type OrientationSessionOption,
   type OrientationSessionView,
   type PhotoRef,
@@ -20,6 +22,9 @@ import {
   type RoadieId,
   type Role,
   type ScheduleEvent,
+  type Shift,
+  type ShiftBoard,
+  type ShiftBoardView,
   type SignatureRef,
   type SignupId,
   type SignupSubmission,
@@ -1441,5 +1446,202 @@ export function useUniformOrder(filter: UniformHouseFilter, enabled = true) {
       return actor.getUniformOrder(filter);
     },
     enabled: enabled && !!actor && !isFetching,
+  });
+}
+
+/* ---------------------------------------------------------------------------
+   Groups & shift boards
+--------------------------------------------------------------------------- */
+
+/**
+ * One shift board with its trainer columns, Unassigned tray and Off this shift
+ * tray. Readable by every read role except Kiosk and Integration, so callers
+ * pass `enabled` (typically `canGroups(role)`) to avoid a trapping read for
+ * those roles.
+ */
+export function useShiftBoard(
+  eventId: EventId | undefined,
+  shift: Shift | undefined,
+  enabled = true,
+) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["shiftBoard", eventId?.toString(), shift],
+    queryFn: async (): Promise<ShiftBoardView | null> => {
+      if (!actor || eventId === undefined || shift === undefined) return null;
+      return actor.getShiftBoard(eventId, shift);
+    },
+    enabled:
+      enabled &&
+      !!actor &&
+      !isFetching &&
+      eventId !== undefined &&
+      shift !== undefined,
+  });
+}
+
+/**
+ * Every shift board for the current partition. Readable by every read role
+ * except Kiosk and Integration, so callers pass `enabled` (typically
+ * `canGroups(role)`) to avoid a trapping read for those roles.
+ */
+export function useShiftBoards(enabled = true) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["shiftBoards"],
+    queryFn: async (): Promise<ShiftBoardView[]> => {
+      if (!actor) return [];
+      return actor.listShiftBoards();
+    },
+    enabled: enabled && !!actor && !isFetching,
+  });
+}
+
+/**
+ * Replace one shift board's groups, capacities and Off list (Admin, Store
+ * Manager or Training Manager). Invalidates the board, the board list and the
+ * caller's own group so every surface reflects the save.
+ */
+export function useSaveShiftBoard() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (board: ShiftBoard) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.saveShiftBoard(board);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["shiftBoard"] });
+      void queryClient.invalidateQueries({ queryKey: ["shiftBoards"] });
+      void queryClient.invalidateQueries({ queryKey: ["myGroup"] });
+      void queryClient.invalidateQueries({ queryKey: ["groupChangeNotices"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Copy another shift's groups, capacities and Off list onto this shift (Admin,
+ * Store Manager or Training Manager). Invalidates the affected boards.
+ */
+export function useCopyShiftBoard() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      eventId: EventId;
+      shift: Shift;
+      fromEventId: EventId;
+      fromShift: Shift;
+    }) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.copyShiftBoard(
+        args.eventId,
+        args.shift,
+        args.fromEventId,
+        args.fromShift,
+      );
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["shiftBoard"] });
+      void queryClient.invalidateQueries({ queryKey: ["shiftBoards"] });
+      void queryClient.invalidateQueries({ queryKey: ["myGroup"] });
+      void queryClient.invalidateQueries({ queryKey: ["groupChangeNotices"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Fill a shift board's groups automatically from the unassigned roadies
+ * (Admin, Store Manager or Training Manager). Invalidates the affected boards.
+ */
+export function useAutoFillShiftBoard() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { eventId: EventId; shift: Shift }) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.autoFillShiftBoard(args.eventId, args.shift);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["shiftBoard"] });
+      void queryClient.invalidateQueries({ queryKey: ["shiftBoards"] });
+      void queryClient.invalidateQueries({ queryKey: ["myGroup"] });
+      void queryClient.invalidateQueries({ queryKey: ["groupChangeNotices"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Clear one shift board's groups and Off list (Admin, Store Manager or Training
+ * Manager). Invalidates the affected boards.
+ */
+export function useClearShiftBoard() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { eventId: EventId; shift: Shift }) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.clearShiftBoard(args.eventId, args.shift);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["shiftBoard"] });
+      void queryClient.invalidateQueries({ queryKey: ["shiftBoards"] });
+      void queryClient.invalidateQueries({ queryKey: ["myGroup"] });
+      void queryClient.invalidateQueries({ queryKey: ["groupChangeNotices"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * The caller's own "Your group changed" notices, newest first. Readable by any
+ * signed-in caller, so no `enabled` gate is needed.
+ */
+export function useGroupChangeNotices() {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["groupChangeNotices"],
+    queryFn: async (): Promise<GroupChangeNotice[]> => {
+      if (!actor) return [];
+      return actor.listGroupChangeNotices();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+/**
+ * Dismiss one "Your group changed" notice. Invalidates the notices list so the
+ * dismissed card drops out.
+ */
+export function useDismissGroupChangeNotice() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.dismissGroupChangeNotice(id);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["groupChangeNotices"] });
+    },
+  });
+}
+
+/**
+ * The caller's own group for the current or next shift, for the Today screen.
+ * Null when the caller trains no group on that shift.
+ */
+export function useMyGroup() {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["myGroup"],
+    queryFn: async (): Promise<MyGroupView | null> => {
+      if (!actor) return null;
+      return actor.getMyGroup();
+    },
+    enabled: !!actor && !isFetching,
   });
 }

@@ -68,7 +68,8 @@ actor {
 
   let orientationCheckoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>;
   let attendance : Map.Map<Nat, Phase23.AttendanceRecord>;
-  let trainingGroups : Map.Map<Common.TrainingGroupId, Phase23.TrainingGroup>;
+  let shiftBoards : Map.Map<Text, Phase23.ShiftBoard>;
+  let groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>;
   let trainerNotes : Map.Map<Nat, Phase23.TrainerNote>;
   let leaderTalks : Map.Map<Common.LeaderTalkId, Phase23.LeaderTalk>;
   let finalSignOffs : Map.Map<Common.RoadieId, Phase23.FinalSignOff>;
@@ -87,6 +88,7 @@ actor {
     var nextAttendanceId : Nat;
     var nextTrainerNoteId : Nat;
     var nextBuildToAdjustmentId : Nat;
+    var nextGroupChangeNoticeId : Nat;
   };
 
   // --- Domain APIs ---
@@ -118,7 +120,8 @@ actor {
     checklists,
     orientationCheckoffs,
     attendance,
-    trainingGroups,
+    shiftBoards,
+    groupChangeNotices,
     trainerNotes,
     leaderTalks,
     finalSignOffs,
@@ -141,7 +144,8 @@ actor {
     attendance,
     trainerNotes,
     orientationCheckoffs,
-    trainingGroups,
+    shiftBoards,
+    groupChangeNotices,
     leaderTalks,
     finalSignOffs,
     positions,
@@ -189,6 +193,8 @@ actor {
           shirtsRequired = 0;
           hatsRequired = 0;
           crewManager = null;
+          defaultShirts = 0;
+          defaultHats = 0;
           shirtType = "";
           shirtQty = 0;
           hatType = "";
@@ -391,21 +397,49 @@ actor {
         .payload("approvedAt", func g = g.approvedAt)
         .controllerOnly()
         .build(),
-      trainingGroups.toEntityManual("trainingGroup", "TrainingGroup", "id")
+      shiftBoards.toEntityManual("shiftBoard", "ShiftBoard", "key")
         .sample({
-          id = 0;
-          day = 0;
+          eventId = 0;
           shift = #am;
-          positionId = 0;
-          trainerPrincipal = null;
-          memberRoadieIds = [];
+          groups = [];
+          offRoadieIds = [];
+          editedAt = 0;
           isDemo = false;
         })
-        .payload("id", func g = g.id)
-        .payload("day", func g = g.day)
-        .payload("shift", func g = switch g.shift { case (#am) "am"; case (#pm) "pm" })
-        .payload("positionId", func g = g.positionId)
-        .payload("memberCount", func g = g.memberRoadieIds.size())
+        .payload("key", func b = b.eventId.toText() # ":" # (switch b.shift { case (#am) "am"; case (#pm) "pm" }))
+        .payload("eventId", func b = b.eventId)
+        .payload("shift", func b = switch b.shift { case (#am) "am"; case (#pm) "pm" })
+        .payload("groupCount", func b = b.groups.size())
+        .payload("offCount", func b = b.offRoadieIds.size())
+        .payload("editedAt", func b = b.editedAt)
+        .payload("isDemo", func b = b.isDemo)
+        .controllerOnly()
+        .build(),
+      groupChangeNotices.toEntityManual("groupChangeNotice", "GroupChangeNotice", "id")
+        .sample({
+          id = 0;
+          trainerPrincipal = Principal.fromText("aaaaa-aa");
+          eventId = 0;
+          shift = #am;
+          shiftLabel = "";
+          addedNames = [];
+          removedNames = [];
+          editorName = "";
+          createdAt = 0;
+          dismissed = false;
+          isDemo = false;
+        })
+        .payload("id", func n = n.id)
+        .payload("trainerPrincipal", func n = n.trainerPrincipal)
+        .payload("eventId", func n = n.eventId)
+        .payload("shift", func n = switch n.shift { case (#am) "am"; case (#pm) "pm" })
+        .payload("shiftLabel", func n = n.shiftLabel)
+        .payload("addedCount", func n = n.addedNames.size())
+        .payload("removedCount", func n = n.removedNames.size())
+        .payload("editorName", func n = n.editorName)
+        .payload("createdAt", func n = n.createdAt)
+        .payload("dismissed", func n = n.dismissed)
+        .payload("isDemo", func n = n.isDemo)
         .controllerOnly()
         .build(),
       leaderTalks.toEntityManual("leaderTalk", "LeaderTalk", "id")

@@ -108,23 +108,6 @@ type UnassignedRoadieRow =
    positionName: text;
    roadieId: RoadieId;
  };
-type TrainingGroupView = 
- record {
-   group: TrainingGroup;
-   offThisShift: vec RoadieId;
-   unassigned: vec RoadieId;
- };
-type TrainingGroupId = nat;
-type TrainingGroup = 
- record {
-   day: DateOnly;
-   id: TrainingGroupId;
-   isDemo: bool;
-   memberRoadieIds: vec RoadieId;
-   positionId: PositionId;
-   shift: Shift;
-   trainerPrincipal: opt principal;
- };
 type TrainerNote = 
  record {
    author: principal;
@@ -159,6 +142,8 @@ type TemplatePosition =
  record {
    afterOpeningBuildTo: nat;
    code: text;
+   defaultHats: nat;
+   defaultShirts: nat;
    hatQty: nat;
    hatType: text;
    house: House;
@@ -269,6 +254,46 @@ type SignOffOutcome =
    needsMoreTime: text;
  };
 type ShirtSize = text;
+type ShiftBoardView = 
+ record {
+   editedAt: Timestamp;
+   eventId: EventId;
+   groups: vec ShiftBoardGroupView;
+   isDemo: bool;
+   offThisShift: vec ShiftBoardRoadie;
+   shift: Shift;
+   unassigned: vec ShiftBoardRoadie;
+ };
+type ShiftBoardRoadie = 
+ record {
+   markedUnavailable: bool;
+   name: text;
+   photo: opt PhotoRef;
+   positionCode: text;
+   positionId: PositionId;
+   roadieId: RoadieId;
+ };
+type ShiftBoardGroupView = 
+ record {
+   capacity: nat;
+   roadies: vec ShiftBoardRoadie;
+   trainerPrincipal: principal;
+ };
+type ShiftBoardGroup = 
+ record {
+   capacity: nat;
+   roadieIds: vec RoadieId;
+   trainerPrincipal: principal;
+ };
+type ShiftBoard = 
+ record {
+   editedAt: Timestamp;
+   eventId: EventId;
+   groups: vec ShiftBoardGroup;
+   isDemo: bool;
+   offRoadieIds: vec RoadieId;
+   shift: Shift;
+ };
 type Shift = 
  variant {
    am;
@@ -391,6 +416,8 @@ type Position =
    afterOpeningBuildTo: nat;
    code: text;
    crewManager: opt text;
+   defaultHats: nat;
+   defaultShirts: nat;
    hatQty: nat;
    hatType: text;
    hatsRequired: nat;
@@ -475,6 +502,14 @@ type OrientationCheckoff =
    uniformItems: vec text;
    updatedAt: Timestamp;
  };
+type MyGroupView = 
+ record {
+   capacity: nat;
+   eventId: EventId;
+   roadies: vec ShiftBoardRoadie;
+   shift: Shift;
+   shiftLabel: text;
+ };
 type MyAccessView = 
  record {
    demoRole: opt DemoRole;
@@ -505,6 +540,20 @@ type House =
    foh;
  };
 type HatSize = text;
+type GroupChangeNotice = 
+ record {
+   addedNames: vec text;
+   createdAt: Timestamp;
+   dismissed: bool;
+   editorName: text;
+   eventId: EventId;
+   id: nat;
+   isDemo: bool;
+   removedNames: vec text;
+   shift: Shift;
+   shiftLabel: text;
+   trainerPrincipal: principal;
+ };
 type GiftBagsData = 
  record {
    groups: vec GiftBagGroup;
@@ -855,6 +904,9 @@ service : {
   /// Archive a roadie (Admin/Store Manager only).
   archiveRoadie: (id: RoadieId, reason: ArchiveReason) -> ();
   assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  /// Fill empty capacity from the Unassigned tray (Admin, Store Manager or
+  /// Training Manager).
+  autoFillShiftBoard: (eventId: EventId, shift: Shift) -> ();
   /// Bootstrap the first app Admin from the platform's shared authorization
   /// grant. The first principal to sign in is made an admin by the platform
   /// mixin; this bridges that grant into the app's access model so the first
@@ -873,6 +925,13 @@ service : {
   /// Remove every demo record (Admin, demo mode only). Real records are never
   /// touched.
   clearDemoData: () -> (DemoDataSummary);
+  /// Clear one shift board's groups and Off list (Admin, Store Manager or
+  /// Training Manager).
+  clearShiftBoard: (eventId: EventId, shift: Shift) -> ();
+  /// Copy another shift's groups, capacities and Off list onto this shift,
+  /// replacing the current board (Admin, Store Manager or Training Manager).
+  copyShiftBoard: (eventId: EventId, shift: Shift, fromEventId: EventId,
+   fromShift: Shift) -> ();
   /// Create a crew (Admin/Store Manager only).
   createCrew: (name: text) -> (CrewId);
   /// Create a leader talk (Admin/Store Manager only).
@@ -881,8 +940,6 @@ service : {
   createPosition: (position: Position) -> (PositionId);
   /// Create a schedule event (Admin only).
   createScheduleEvent: (event: ScheduleEvent) -> (EventId);
-  /// Create a training group (Admin/Store Manager only).
-  createTrainingGroup: (group: TrainingGroup) -> (TrainingGroupId);
   /// Delete a crew (Admin/Store Manager only). Refuses while any roadie is
   /// assigned to the crew.
   deleteCrew: (id: CrewId) -> ();
@@ -890,6 +947,8 @@ service : {
   deletePosition: (id: PositionId) -> ();
   /// Delete a schedule event (Admin only).
   deleteScheduleEvent: (id: EventId) -> ();
+  /// Dismiss one of the caller's own group-change notices.
+  dismissGroupChangeNotice: (id: nat) -> ();
   /// Build the downloadable store template file (Admin only).
   downloadStoreTemplate: () -> (StoreTemplateFile) query;
   /// Re-seed the store when it has no positions yet. Idempotent; returns true
@@ -926,6 +985,9 @@ service : {
   /// on, or null when demo mode is off. Returns null grant until an Admin has
   /// approved the caller, so the frontend keeps showing the waiting screen.
   getMyAccess: () -> (MyAccessView) query;
+  /// The caller's own group for the current or next shift, for the Today
+  /// screen. Null when the caller trains no group on that shift.
+  getMyGroup: () -> (opt MyGroupView) query;
   /// Read the caller's own pending access request, if any. Returns null when
   /// the caller has no pending entry; otherwise the requestedAt of that pending
   /// entry and hasProfile = true when a staff profile has been submitted.
@@ -947,6 +1009,10 @@ service : {
   getRoadie: (id: RoadieId) -> (opt Roadie) query;
   /// Per-position roster counts: on-hand roadies and open spots.
   getRosterSummary: () -> (vec RosterSummary) query;
+  /// Read one shift board with its trainer columns, Unassigned tray and Off
+  /// this shift tray (every read role except kiosk and integration).
+  getShiftBoard: (eventId: EventId, shift: Shift) ->
+   (opt ShiftBoardView) query;
   /// Read one submission (Admin/Store Manager only).
   getSignup: (id: SignupId) -> (opt SignupSubmission) query;
   /// Read a pending submission's photo bytes by id (Admin/Store Manager only).
@@ -957,8 +1023,6 @@ service : {
   /// Read both store logos (main and secondary). Any caller, including Kiosk
   /// and unregistered users.
   getStoreLogo: () -> (StoreLogos) query;
-  /// Read a training group with its unassigned and off-shift lists.
-  getTrainingGroup: (id: TrainingGroupId) -> (opt TrainingGroupView) query;
   /// The uniform check-off for a roadie (Admin, Store Manager, Training Manager
   /// or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
   getUniformCheckoff: (roadieId: RoadieId) -> (opt UniformCheckoffView) query;
@@ -983,6 +1047,8 @@ service : {
   listChangeLog: () -> (vec ChangeLogEntry) query;
   /// List crews.
   listCrews: () -> (vec Crew) query;
+  /// List the caller's undismissed group-change notices, newest first.
+  listGroupChangeNotices: () -> (vec GroupChangeNotice) query;
   /// List the leaders shown on the Leaders page: the manager, trainer and
   /// leadership roles. Readable by every role except Kiosk and Integration.
   /// Never carries phone or email.
@@ -1002,6 +1068,9 @@ service : {
   listRosterForPosition: (positionId: PositionId) -> (vec Roadie) query;
   /// List the opening schedule.
   listSchedule: () -> (vec ScheduleEvent) query;
+  /// List every shift board for the current partition (every read role except
+  /// kiosk and integration).
+  listShiftBoards: () -> (vec ShiftBoardView) query;
   /// List trainer notes for a roadie. Restricted the same way roadies are:
   /// Integration sees nothing, and a trainer sees notes only for roadies in
   /// their assigned stations.
@@ -1044,6 +1113,9 @@ service : {
   requestAccess: () -> (bool);
   /// Re-sign a roadie's availability (Admin/Store Manager only).
   resignAvailability: (id: RoadieId, signature: SignatureRef) -> ();
+  /// Replace one shift board's groups, capacities and Off list (Admin, Store
+  /// Manager or Training Manager).
+  saveShiftBoard: (board: ShiftBoard) -> ();
   /// Save the current store configuration as a template (Admin only).
   saveStoreTemplate: (name: text) -> ();
   /// Save the uniform check-off for a roadie (Admin, Store Manager, Training
@@ -1111,8 +1183,6 @@ service : {
   /// Update a user's trainer stations (Admin only).
   updateTrainerStations: ("principal": principal, positionIds:
    vec PositionId) -> ();
-  /// Update a training group's membership (Admin/Store Manager only).
-  updateTrainingGroup: (group: TrainingGroup) -> ();
   /// Update the uniform settings (Admin or Store Manager only, logged).
   updateUniformSettings: (settings: UniformSettings) -> ();
   /// Change an existing user's role (Admin only).

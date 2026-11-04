@@ -253,6 +253,19 @@ export interface GiftBagsData {
   'groups' : Array<GiftBagGroup>,
   'labels' : Array<GiftBagLabel>,
 }
+export interface GroupChangeNotice {
+  'id' : bigint,
+  'eventId' : EventId,
+  'addedNames' : Array<string>,
+  'createdAt' : Timestamp,
+  'isDemo' : boolean,
+  'removedNames' : Array<string>,
+  'trainerPrincipal' : Principal,
+  'shift' : Shift,
+  'shiftLabel' : string,
+  'editorName' : string,
+  'dismissed' : boolean,
+}
 export type HatSize = string;
 export type House = { 'boh' : null } |
   { 'foh' : null };
@@ -276,6 +289,13 @@ export type LeaderTalkId = bigint;
 export interface MyAccessView {
   'demoRole' : [] | [DemoRole],
   'grant' : [] | [AccessGrant],
+}
+export interface MyGroupView {
+  'roadies' : Array<ShiftBoardRoadie>,
+  'eventId' : EventId,
+  'shift' : Shift,
+  'shiftLabel' : string,
+  'capacity' : bigint,
 }
 export interface OrientationCheckoff {
   'hatsCount' : bigint,
@@ -338,6 +358,8 @@ export type PhotoRef = Uint8Array;
 export interface Position {
   'id' : PositionId,
   'openingBuildTo' : bigint,
+  'defaultHats' : bigint,
+  'defaultShirts' : bigint,
   'crewManager' : [] | [string],
   'house' : House,
   'afterOpeningBuildTo' : bigint,
@@ -441,6 +463,41 @@ export interface ScheduleEvent {
 }
 export type Shift = { 'am' : null } |
   { 'pm' : null };
+export interface ShiftBoard {
+  'eventId' : EventId,
+  'groups' : Array<ShiftBoardGroup>,
+  'offRoadieIds' : Array<RoadieId>,
+  'isDemo' : boolean,
+  'shift' : Shift,
+  'editedAt' : Timestamp,
+}
+export interface ShiftBoardGroup {
+  'roadieIds' : Array<RoadieId>,
+  'trainerPrincipal' : Principal,
+  'capacity' : bigint,
+}
+export interface ShiftBoardGroupView {
+  'roadies' : Array<ShiftBoardRoadie>,
+  'trainerPrincipal' : Principal,
+  'capacity' : bigint,
+}
+export interface ShiftBoardRoadie {
+  'markedUnavailable' : boolean,
+  'roadieId' : RoadieId,
+  'name' : string,
+  'positionCode' : string,
+  'positionId' : PositionId,
+  'photo' : [] | [PhotoRef],
+}
+export interface ShiftBoardView {
+  'offThisShift' : Array<ShiftBoardRoadie>,
+  'eventId' : EventId,
+  'groups' : Array<ShiftBoardGroupView>,
+  'isDemo' : boolean,
+  'shift' : Shift,
+  'unassigned' : Array<ShiftBoardRoadie>,
+  'editedAt' : Timestamp,
+}
 export type ShirtSize = string;
 export type SignOffOutcome = { 'certified' : null } |
   { 'needsMoreTime' : string };
@@ -524,6 +581,8 @@ export type TemplateLoadResult = { 'ok' : TemplatePreview } |
   { 'err' : string };
 export interface TemplatePosition {
   'openingBuildTo' : bigint,
+  'defaultHats' : bigint,
+  'defaultShirts' : bigint,
   'house' : House,
   'afterOpeningBuildTo' : bigint,
   'minimumAge' : bigint,
@@ -561,21 +620,6 @@ export interface TrainerNote {
   'author' : Principal,
   'shift' : Shift,
   'workOn' : string,
-}
-export interface TrainingGroup {
-  'id' : TrainingGroupId,
-  'day' : DateOnly,
-  'isDemo' : boolean,
-  'trainerPrincipal' : [] | [Principal],
-  'memberRoadieIds' : Array<RoadieId>,
-  'positionId' : PositionId,
-  'shift' : Shift,
-}
-export type TrainingGroupId = bigint;
-export interface TrainingGroupView {
-  'offThisShift' : Array<RoadieId>,
-  'unassigned' : Array<RoadieId>,
-  'group' : TrainingGroup,
 }
 export interface UnassignedRoadieRow {
   'roadieId' : RoadieId,
@@ -729,6 +773,11 @@ export interface _SERVICE {
   'archiveRoadie' : ActorMethod<[RoadieId, ArchiveReason], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   /**
+   * / Fill empty capacity from the Unassigned tray (Admin, Store Manager or
+   * / Training Manager).
+   */
+  'autoFillShiftBoard' : ActorMethod<[EventId, Shift], undefined>,
+  /**
    * / Bootstrap the first app Admin from the platform's shared authorization
    * / grant. The first principal to sign in is made an admin by the platform
    * / mixin; this bridges that grant into the app's access model so the first
@@ -761,6 +810,16 @@ export interface _SERVICE {
    */
   'clearDemoData' : ActorMethod<[], DemoDataSummary>,
   /**
+   * / Clear one shift board's groups and Off list (Admin, Store Manager or
+   * / Training Manager).
+   */
+  'clearShiftBoard' : ActorMethod<[EventId, Shift], undefined>,
+  /**
+   * / Copy another shift's groups, capacities and Off list onto this shift,
+   * / replacing the current board (Admin, Store Manager or Training Manager).
+   */
+  'copyShiftBoard' : ActorMethod<[EventId, Shift, EventId, Shift], undefined>,
+  /**
    * / Create a crew (Admin/Store Manager only).
    */
   'createCrew' : ActorMethod<[string], CrewId>,
@@ -777,10 +836,6 @@ export interface _SERVICE {
    */
   'createScheduleEvent' : ActorMethod<[ScheduleEvent], EventId>,
   /**
-   * / Create a training group (Admin/Store Manager only).
-   */
-  'createTrainingGroup' : ActorMethod<[TrainingGroup], TrainingGroupId>,
-  /**
    * / Delete a crew (Admin/Store Manager only). Refuses while any roadie is
    * / assigned to the crew.
    */
@@ -793,6 +848,10 @@ export interface _SERVICE {
    * / Delete a schedule event (Admin only).
    */
   'deleteScheduleEvent' : ActorMethod<[EventId], undefined>,
+  /**
+   * / Dismiss one of the caller's own group-change notices.
+   */
+  'dismissGroupChangeNotice' : ActorMethod<[bigint], undefined>,
   /**
    * / Build the downloadable store template file (Admin only).
    */
@@ -852,6 +911,11 @@ export interface _SERVICE {
    */
   'getMyAccess' : ActorMethod<[], MyAccessView>,
   /**
+   * / The caller's own group for the current or next shift, for the Today
+   * / screen. Null when the caller trains no group on that shift.
+   */
+  'getMyGroup' : ActorMethod<[], [] | [MyGroupView]>,
+  /**
    * / Read the caller's own pending access request, if any. Returns null when
    * / the caller has no pending entry; otherwise the requestedAt of that pending
    * / entry and hasProfile = true when a staff profile has been submitted.
@@ -891,6 +955,11 @@ export interface _SERVICE {
    */
   'getRosterSummary' : ActorMethod<[], Array<RosterSummary>>,
   /**
+   * / Read one shift board with its trainer columns, Unassigned tray and Off
+   * / this shift tray (every read role except kiosk and integration).
+   */
+  'getShiftBoard' : ActorMethod<[EventId, Shift], [] | [ShiftBoardView]>,
+  /**
    * / Read one submission (Admin/Store Manager only).
    */
   'getSignup' : ActorMethod<[SignupId], [] | [SignupSubmission]>,
@@ -908,10 +977,6 @@ export interface _SERVICE {
    * / and unregistered users.
    */
   'getStoreLogo' : ActorMethod<[], StoreLogos>,
-  /**
-   * / Read a training group with its unassigned and off-shift lists.
-   */
-  'getTrainingGroup' : ActorMethod<[TrainingGroupId], [] | [TrainingGroupView]>,
   /**
    * / The uniform check-off for a roadie (Admin, Store Manager, Training Manager
    * / or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
@@ -957,6 +1022,10 @@ export interface _SERVICE {
    */
   'listCrews' : ActorMethod<[], Array<Crew>>,
   /**
+   * / List the caller's undismissed group-change notices, newest first.
+   */
+  'listGroupChangeNotices' : ActorMethod<[], Array<GroupChangeNotice>>,
+  /**
    * / List the leaders shown on the Leaders page: the manager, trainer and
    * / leadership roles. Readable by every role except Kiosk and Integration.
    * / Never carries phone or email.
@@ -991,6 +1060,11 @@ export interface _SERVICE {
    * / List the opening schedule.
    */
   'listSchedule' : ActorMethod<[], Array<ScheduleEvent>>,
+  /**
+   * / List every shift board for the current partition (every read role except
+   * / kiosk and integration).
+   */
+  'listShiftBoards' : ActorMethod<[], Array<ShiftBoardView>>,
   /**
    * / List trainer notes for a roadie. Restricted the same way roadies are:
    * / Integration sees nothing, and a trainer sees notes only for roadies in
@@ -1059,6 +1133,11 @@ export interface _SERVICE {
    * / Re-sign a roadie's availability (Admin/Store Manager only).
    */
   'resignAvailability' : ActorMethod<[RoadieId, SignatureRef], undefined>,
+  /**
+   * / Replace one shift board's groups, capacities and Off list (Admin, Store
+   * / Manager or Training Manager).
+   */
+  'saveShiftBoard' : ActorMethod<[ShiftBoard], undefined>,
   /**
    * / Save the current store configuration as a template (Admin only).
    */
@@ -1178,10 +1257,6 @@ export interface _SERVICE {
     [Principal, Array<PositionId>],
     undefined
   >,
-  /**
-   * / Update a training group's membership (Admin/Store Manager only).
-   */
-  'updateTrainingGroup' : ActorMethod<[TrainingGroup], undefined>,
   /**
    * / Update the uniform settings (Admin or Store Manager only, logged).
    */

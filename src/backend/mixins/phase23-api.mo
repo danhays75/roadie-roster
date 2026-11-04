@@ -16,7 +16,8 @@ mixin (
   checklists : { var value : Store.Checklists },
   orientationCheckoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
   attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
-  trainingGroups : Map.Map<Common.TrainingGroupId, Phase23.TrainingGroup>,
+  shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+  groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
   trainerNotes : Map.Map<Nat, Phase23.TrainerNote>,
   leaderTalks : Map.Map<Common.LeaderTalkId, Phase23.LeaderTalk>,
   finalSignOffs : Map.Map<Common.RoadieId, Phase23.FinalSignOff>,
@@ -116,19 +117,56 @@ mixin (
     Phase23Lib.setPaperworkItems(accessGrants, demoState, roadies, orientationCheckoffs, changeLog, counters, caller, roadieId, paperworkItems);
   };
 
-  /// Read a training group with its unassigned and off-shift lists.
-  public query ({ caller }) func getTrainingGroup(id : Common.TrainingGroupId) : async ?Phase23.TrainingGroupView {
-    Phase23Lib.getTrainingGroup(accessGrants, demoState, trainingGroups, roadies, caller, id);
+  /// Read one shift board with its trainer columns, Unassigned tray and Off
+  /// this shift tray (every read role except kiosk and integration).
+  public query ({ caller }) func getShiftBoard(eventId : Common.EventId, shift : Common.Shift) : async ?Phase23.ShiftBoardView {
+    Phase23Lib.getShiftBoard(accessGrants, demoState, shiftBoards, roadies, positions, schedule, caller, eventId, shift);
   };
 
-  /// Create a training group (Admin/Store Manager only).
-  public shared ({ caller }) func createTrainingGroup(group : Phase23.TrainingGroup) : async Common.TrainingGroupId {
-    Phase23Lib.createTrainingGroup(accessGrants, demoState, trainingGroups, changeLog, counters, caller, group);
+  /// List every shift board for the current partition (every read role except
+  /// kiosk and integration).
+  public query ({ caller }) func listShiftBoards() : async [Phase23.ShiftBoardView] {
+    Phase23Lib.listShiftBoards(accessGrants, demoState, shiftBoards, roadies, positions, schedule, caller);
   };
 
-  /// Update a training group's membership (Admin/Store Manager only).
-  public shared ({ caller }) func updateTrainingGroup(group : Phase23.TrainingGroup) : async () {
-    Phase23Lib.updateTrainingGroup(accessGrants, demoState, trainingGroups, changeLog, counters, caller, group);
+  /// Replace one shift board's groups, capacities and Off list (Admin, Store
+  /// Manager or Training Manager).
+  public shared ({ caller }) func saveShiftBoard(board : Phase23.ShiftBoard) : async () {
+    Phase23Lib.saveShiftBoard(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, changeLog, counters, caller, board);
+  };
+
+  /// Copy another shift's groups, capacities and Off list onto this shift,
+  /// replacing the current board (Admin, Store Manager or Training Manager).
+  public shared ({ caller }) func copyShiftBoard(eventId : Common.EventId, shift : Common.Shift, fromEventId : Common.EventId, fromShift : Common.Shift) : async () {
+    Phase23Lib.copyShiftBoard(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, changeLog, counters, caller, eventId, shift, fromEventId, fromShift);
+  };
+
+  /// Fill empty capacity from the Unassigned tray (Admin, Store Manager or
+  /// Training Manager).
+  public shared ({ caller }) func autoFillShiftBoard(eventId : Common.EventId, shift : Common.Shift) : async () {
+    Phase23Lib.autoFillShiftBoard(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, positions, schedule, changeLog, counters, caller, eventId, shift);
+  };
+
+  /// Clear one shift board's groups and Off list (Admin, Store Manager or
+  /// Training Manager).
+  public shared ({ caller }) func clearShiftBoard(eventId : Common.EventId, shift : Common.Shift) : async () {
+    Phase23Lib.clearShiftBoard(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, changeLog, counters, caller, eventId, shift);
+  };
+
+  /// List the caller's undismissed group-change notices, newest first.
+  public query ({ caller }) func listGroupChangeNotices() : async [Phase23.GroupChangeNotice] {
+    Phase23Lib.listGroupChangeNotices(accessGrants, demoState, groupChangeNotices, caller);
+  };
+
+  /// Dismiss one of the caller's own group-change notices.
+  public shared ({ caller }) func dismissGroupChangeNotice(id : Nat) : async () {
+    Phase23Lib.dismissGroupChangeNotice(accessGrants, demoState, groupChangeNotices, changeLog, counters, caller, id);
+  };
+
+  /// The caller's own group for the current or next shift, for the Today
+  /// screen. Null when the caller trains no group on that shift.
+  public query ({ caller }) func getMyGroup() : async ?Phase23.MyGroupView {
+    Phase23Lib.getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, schedule, caller);
   };
 
   /// Add a trainer note (Trainer/Admin/Store Manager only).

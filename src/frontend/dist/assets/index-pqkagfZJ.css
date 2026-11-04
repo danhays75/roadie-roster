@@ -1316,6 +1316,9 @@ video {
 .bottom-0 {
   bottom: 0px;
 }
+.bottom-4 {
+  bottom: 1rem;
+}
 .left-0 {
   left: 0px;
 }
@@ -1692,6 +1695,9 @@ video {
 .min-h-16 {
   min-height: 4rem;
 }
+.min-h-24 {
+  min-height: 6rem;
+}
 .min-h-32 {
   min-height: 8rem;
 }
@@ -1985,6 +1991,12 @@ video {
 .cursor-default {
   cursor: default;
 }
+.cursor-grab {
+  cursor: grab;
+}
+.cursor-not-allowed {
+  cursor: not-allowed;
+}
 .cursor-pointer {
   cursor: pointer;
 }
@@ -2258,6 +2270,9 @@ video {
 .border {
   border-width: 1px;
 }
+.border-0 {
+  border-width: 0px;
+}
 .border-2 {
   border-width: 2px;
 }
@@ -2270,6 +2285,9 @@ video {
 }
 .border-b {
   border-bottom-width: 1px;
+}
+.border-b-2 {
+  border-bottom-width: 2px;
 }
 .border-l {
   border-left-width: 1px;
@@ -2285,6 +2303,9 @@ video {
 }
 .border-dashed {
   border-style: dashed;
+}
+.border-\[oklch\(0\.75_0\.14_85\)\] {
+  border-color: oklch(0.75 0.14 85);
 }
 .border-accent {
   --tw-border-opacity: 1;
@@ -2340,6 +2361,15 @@ video {
 .bg-\[oklch\(0\.72_0\.19_55\)\] {
   background-color: oklch(0.72 0.19 55);
 }
+.bg-\[oklch\(0\.82_0\.16_85\)\] {
+  background-color: oklch(0.82 0.16 85);
+}
+.bg-\[oklch\(0\.96_0\.06_90\)\] {
+  background-color: oklch(0.96 0.06 90);
+}
+.bg-\[oklch\(0\.9_0\.14_85\)\] {
+  background-color: oklch(0.9 0.14 85);
+}
 .bg-accent {
   --tw-bg-opacity: 1;
   background-color: oklch(var(--accent) / var(--tw-bg-opacity, 1));
@@ -2391,6 +2421,9 @@ video {
 }
 .bg-primary\/10 {
   background-color: oklch(var(--primary) / 0.1);
+}
+.bg-primary\/15 {
+  background-color: oklch(var(--primary) / 0.15);
 }
 .bg-primary\/20 {
   background-color: oklch(var(--primary) / 0.2);
@@ -2520,6 +2553,10 @@ video {
 .py-2 {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
+}
+.py-2\.5 {
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
 }
 .py-3 {
   padding-top: 0.75rem;
@@ -2710,6 +2747,12 @@ video {
 .text-\[oklch\(0\.2_0\.05_55\)\] {
   color: oklch(0.2 0.05 55);
 }
+.text-\[oklch\(0\.35_0\.08_85\)\] {
+  color: oklch(0.35 0.08 85);
+}
+.text-\[oklch\(0\.35_0\.1_85\)\] {
+  color: oklch(0.35 0.1 85);
+}
 .text-accent {
   --tw-text-opacity: 1;
   color: oklch(var(--accent) / var(--tw-text-opacity, 1));
@@ -2791,6 +2834,9 @@ video {
 .opacity-0 {
   opacity: 0;
 }
+.opacity-40 {
+  opacity: 0.4;
+}
 .opacity-50 {
   opacity: 0.5;
 }
@@ -2808,6 +2854,11 @@ video {
 .shadow-\[0_0_0_1px_hsl\(var\(--sidebar-border\)\)\] {
   --tw-shadow: 0 0 0 1px hsl(var(--sidebar-border));
   --tw-shadow-colored: 0 0 0 1px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+.shadow-elevated {
+  --tw-shadow: 0 6px 20px -6px rgba(20,40,75,0.18), 0 2px 6px -2px rgba(20,40,75,0.10);
+  --tw-shadow-colored: 0 6px 20px -6px var(--tw-shadow-color), 0 2px 6px -2px var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 .shadow-lg {
@@ -2867,8 +2918,19 @@ video {
   --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);
   box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
 }
+.ring-2 {
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+}
+.ring-\[oklch\(0\.6_0\.14_85\)\] {
+  --tw-ring-color: oklch(0.6 0.14 85);
+}
 .ring-primary\/30 {
   --tw-ring-color: oklch(var(--primary) / 0.3);
+}
+.ring-primary\/40 {
+  --tw-ring-color: oklch(var(--primary) / 0.4);
 }
 .ring-ring\/50 {
   --tw-ring-color: oklch(var(--ring) / 0.5);
@@ -3444,6 +3506,9 @@ video {
 .hover\:bg-sidebar-accent:hover {
   background-color: oklch(var(--sidebar-accent));
 }
+.hover\:bg-transparent:hover {
+  background-color: transparent;
+}
 .hover\:bg-white\/10:hover {
   background-color: rgb(255 255 255 / 0.1);
 }
@@ -3586,6 +3651,9 @@ video {
 }
 .focus-visible\:ring-offset-2:focus-visible {
   --tw-ring-offset-width: 2px;
+}
+.active\:cursor-grabbing:active {
+  cursor: grabbing;
 }
 .active\:bg-sidebar-accent:active {
   background-color: oklch(var(--sidebar-accent));

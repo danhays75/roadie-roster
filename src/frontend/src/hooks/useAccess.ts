@@ -73,6 +73,27 @@ export const ORIENTATION_ROLES: Role[] = [
   Role.visitingManager,
 ];
 
+/**
+ * Roles allowed to view the Groups shift boards: every read role except Kiosk
+ * and Integration, which have no roster read access. Editing a board is gated
+ * separately by GROUP_EDITOR_ROLES.
+ */
+export const GROUPS_ROLES: Role[] = [
+  Role.admin,
+  Role.storeManager,
+  Role.trainingManager,
+  Role.trainer,
+  Role.visitingManager,
+  Role.leadership,
+];
+
+/** Roles allowed to edit a shift board (Admin, Store Manager, Training Manager). */
+export const GROUP_EDITOR_ROLES: Role[] = [
+  Role.admin,
+  Role.storeManager,
+  Role.trainingManager,
+];
+
 /** The full navigation model; each item declares which roles may see it. */
 export const NAV_ITEMS: NavItem[] = [
   { labelKey: "nav.today", to: "/today", allowedRoles: [] },
@@ -80,6 +101,7 @@ export const NAV_ITEMS: NavItem[] = [
   { labelKey: "nav.roster", to: "/roster", allowedRoles: [] },
   { labelKey: "nav.myProfile", to: "/my-profile", allowedRoles: [] },
   { labelKey: "nav.leaders", to: "/leaders", allowedRoles: LEADERS_ROLES },
+  { labelKey: "nav.groups", to: "/groups", allowedRoles: GROUPS_ROLES },
   {
     labelKey: "nav.orientation",
     to: "/orientation",
@@ -255,6 +277,16 @@ export function canGiftBags(role: Role | undefined): boolean {
 /** Whether the given role may open the Leaders surface. */
 export function canLeaders(role: Role | undefined): boolean {
   return !!role && LEADERS_ROLES.includes(role);
+}
+
+/** Whether the given role may view the Groups shift boards. */
+export function canGroups(role: Role | undefined): boolean {
+  return !!role && GROUPS_ROLES.includes(role);
+}
+
+/** Whether the given role may edit a shift board. */
+export function canEditGroups(role: Role | undefined): boolean {
+  return !!role && GROUP_EDITOR_ROLES.includes(role);
 }
 
 /** Whether the given role may open the Orientation check-in surface. */

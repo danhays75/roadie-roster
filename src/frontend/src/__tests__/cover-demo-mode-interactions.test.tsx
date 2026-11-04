@@ -167,6 +167,8 @@ describe("demo banner View as picker drives the backend", () => {
           shirtQty: 2n,
           hatType: "Cap",
           hatQty: 1n,
+          defaultShirts: 2n,
+          defaultHats: 1n,
         },
       ]),
       setDemoRole,

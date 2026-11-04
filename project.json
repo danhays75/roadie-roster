@@ -1,18 +1,21 @@
 {
-  "overview": "A store hiring dashboard for tracking roadie recruitment, orientation and certification progress.",
+  "overview": "Roadie Roster is an opening-week staffing app for a retail store: it hires and tracks roadies, manages schedules, uniforms, crews, leaders and orientation, and now assigns roadies to trainers on per-shift training group boards.",
   "features": [
-    "One hiring progress bar showing hired of build-to",
-    "Always-shown HIRED and STILL NEEDED tiles",
-    "SHOWED UP tile that appears during the orientation window",
-    "CERTIFIED tile that appears after final sign-off",
-    "Per-position rows with hired and needed counts"
+    "Per-shift training group boards assigning roadies to trainers",
+    "Drag-and-drop board on laptop and iPad with a phone list view",
+    "Shift picker across Training Days 1-4 and Friends & Family nights",
+    "Copy from another shift, make groups automatically, and clear a board",
+    "Warnings for unassigned roadies, over-capacity trainers and unavailable roadies",
+    "Group-change notices for trainers on Today and Groups",
+    "Trainer My group view on Today"
   ],
   "category": "productivity",
   "tags": [
-    "hiring",
-    "dashboard",
-    "roster",
-    "retail"
+    "staffing",
+    "scheduling",
+    "retail",
+    "training",
+    "roster"
   ],
-  "last_updated": "2026-11-04T06:34:22.873Z"
+  "last_updated": "2026-11-04T13:21:45.768Z"
 }

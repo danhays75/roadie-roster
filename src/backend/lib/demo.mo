@@ -2,6 +2,7 @@ import Map "mo:core/Map";
 import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
 import Order "mo:core/Order";
+import Text "mo:core/Text";
 import Time "mo:core/Time";
 import Common "../types/common";
 import Demo "../types/demo";
@@ -362,7 +363,8 @@ module {
     attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
     trainerNotes : Map.Map<Nat, Phase23.TrainerNote>,
     orientationCheckoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
-    trainingGroups : Map.Map<Common.TrainingGroupId, Phase23.TrainingGroup>,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
     leaderTalks : Map.Map<Common.LeaderTalkId, Phase23.LeaderTalk>,
     finalSignOffs : Map.Map<Common.RoadieId, Phase23.FinalSignOff>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
@@ -382,7 +384,8 @@ module {
     removeWhere(attendance, Nat.compare, func(a) = a.isDemo);
     removeWhere(trainerNotes, Nat.compare, func(n) = n.isDemo);
     removeWhere(orientationCheckoffs, Nat.compare, func(c) = c.isDemo);
-    removeWhere(trainingGroups, Nat.compare, func(g) = g.isDemo);
+    removeWhere(shiftBoards, Text.compare, func(b) = b.isDemo);
+    removeWhere(groupChangeNotices, Nat.compare, func(n) = n.isDemo);
     removeWhere(leaderTalks, Nat.compare, func(t) = t.isDemo);
     removeWhere(finalSignOffs, Nat.compare, func(s) = s.isDemo);
     removeWhere(accessGrants, Principal.compare, func(g) = isDemoLeader(g));

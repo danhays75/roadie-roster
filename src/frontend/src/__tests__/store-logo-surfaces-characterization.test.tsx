@@ -153,6 +153,8 @@ describe("StoreLogo renders on every affected surface", () => {
       shirtQty: 2n,
       hatType: "Cap",
       hatQty: 1n,
+      defaultShirts: 2n,
+      defaultHats: 1n,
     };
     const ROADIE: Roadie = {
       id: 1n,
@@ -215,6 +217,8 @@ describe("StoreLogo renders on every affected surface", () => {
       shirtQty: 2n,
       hatType: "Cap",
       hatQty: 1n,
+      defaultShirts: 2n,
+      defaultHats: 1n,
     };
     const ROADIE: Roadie = {
       id: 1n,

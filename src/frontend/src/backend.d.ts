@@ -296,6 +296,19 @@ export interface GiftBagsData {
     groups: Array<GiftBagGroup>;
     labels: Array<GiftBagLabel>;
 }
+export interface GroupChangeNotice {
+    id: bigint;
+    eventId: EventId;
+    addedNames: Array<string>;
+    createdAt: Timestamp;
+    isDemo: boolean;
+    removedNames: Array<string>;
+    trainerPrincipal: Principal;
+    shift: Shift;
+    shiftLabel: string;
+    editorName: string;
+    dismissed: boolean;
+}
 export type HatSize = string;
 export interface LeaderSummary {
     title: string;
@@ -317,6 +330,13 @@ export type LeaderTalkId = bigint;
 export interface MyAccessView {
     demoRole?: DemoRole;
     grant?: AccessGrant;
+}
+export interface MyGroupView {
+    roadies: Array<ShiftBoardRoadie>;
+    eventId: EventId;
+    shift: Shift;
+    shiftLabel: string;
+    capacity: bigint;
 }
 export interface OrientationCheckoff {
     hatsCount: bigint;
@@ -377,6 +397,8 @@ export type PhotoRef = Uint8Array;
 export interface Position {
     id: PositionId;
     openingBuildTo: bigint;
+    defaultHats: bigint;
+    defaultShirts: bigint;
     crewManager?: string;
     house: House;
     afterOpeningBuildTo: bigint;
@@ -470,6 +492,41 @@ export interface ScheduleEvent {
     kind: EventKind;
     name: string;
     start: DateTime;
+}
+export interface ShiftBoard {
+    eventId: EventId;
+    groups: Array<ShiftBoardGroup>;
+    offRoadieIds: Array<RoadieId>;
+    isDemo: boolean;
+    shift: Shift;
+    editedAt: Timestamp;
+}
+export interface ShiftBoardGroup {
+    roadieIds: Array<RoadieId>;
+    trainerPrincipal: Principal;
+    capacity: bigint;
+}
+export interface ShiftBoardGroupView {
+    roadies: Array<ShiftBoardRoadie>;
+    trainerPrincipal: Principal;
+    capacity: bigint;
+}
+export interface ShiftBoardRoadie {
+    markedUnavailable: boolean;
+    roadieId: RoadieId;
+    name: string;
+    positionCode: string;
+    positionId: PositionId;
+    photo?: PhotoRef;
+}
+export interface ShiftBoardView {
+    offThisShift: Array<ShiftBoardRoadie>;
+    eventId: EventId;
+    groups: Array<ShiftBoardGroupView>;
+    isDemo: boolean;
+    shift: Shift;
+    unassigned: Array<ShiftBoardRoadie>;
+    editedAt: Timestamp;
 }
 export type ShirtSize = string;
 export type SignOffOutcome = {
@@ -574,6 +631,8 @@ export type TemplateLoadResult = {
 };
 export interface TemplatePosition {
     openingBuildTo: bigint;
+    defaultHats: bigint;
+    defaultShirts: bigint;
     house: House;
     afterOpeningBuildTo: bigint;
     minimumAge: bigint;
@@ -611,21 +670,6 @@ export interface TrainerNote {
     author: Principal;
     shift: Shift;
     workOn: string;
-}
-export interface TrainingGroup {
-    id: TrainingGroupId;
-    day: DateOnly;
-    isDemo: boolean;
-    trainerPrincipal?: Principal;
-    memberRoadieIds: Array<RoadieId>;
-    positionId: PositionId;
-    shift: Shift;
-}
-export type TrainingGroupId = bigint;
-export interface TrainingGroupView {
-    offThisShift: Array<RoadieId>;
-    unassigned: Array<RoadieId>;
-    group: TrainingGroup;
 }
 export interface UnassignedRoadieRow {
     roadieId: RoadieId;
@@ -836,6 +880,11 @@ export interface backendInterface {
     archiveRoadie(id: RoadieId, reason: ArchiveReason): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     /**
+     * / Fill empty capacity from the Unassigned tray (Admin, Store Manager or
+     * / Training Manager).
+     */
+    autoFillShiftBoard(eventId: EventId, shift: Shift): Promise<void>;
+    /**
      * / Bootstrap the first app Admin from the platform's shared authorization
      * / grant. The first principal to sign in is made an admin by the platform
      * / mixin; this bridges that grant into the app's access model so the first
@@ -865,6 +914,16 @@ export interface backendInterface {
      */
     clearDemoData(): Promise<DemoDataSummary>;
     /**
+     * / Clear one shift board's groups and Off list (Admin, Store Manager or
+     * / Training Manager).
+     */
+    clearShiftBoard(eventId: EventId, shift: Shift): Promise<void>;
+    /**
+     * / Copy another shift's groups, capacities and Off list onto this shift,
+     * / replacing the current board (Admin, Store Manager or Training Manager).
+     */
+    copyShiftBoard(eventId: EventId, shift: Shift, fromEventId: EventId, fromShift: Shift): Promise<void>;
+    /**
      * / Create a crew (Admin/Store Manager only).
      */
     createCrew(name: string): Promise<CrewId>;
@@ -881,10 +940,6 @@ export interface backendInterface {
      */
     createScheduleEvent(event: ScheduleEvent): Promise<EventId>;
     /**
-     * / Create a training group (Admin/Store Manager only).
-     */
-    createTrainingGroup(group: TrainingGroup): Promise<TrainingGroupId>;
-    /**
      * / Delete a crew (Admin/Store Manager only). Refuses while any roadie is
      * / assigned to the crew.
      */
@@ -897,6 +952,10 @@ export interface backendInterface {
      * / Delete a schedule event (Admin only).
      */
     deleteScheduleEvent(id: EventId): Promise<void>;
+    /**
+     * / Dismiss one of the caller's own group-change notices.
+     */
+    dismissGroupChangeNotice(id: bigint): Promise<void>;
     /**
      * / Build the downloadable store template file (Admin only).
      */
@@ -956,6 +1015,11 @@ export interface backendInterface {
      */
     getMyAccess(): Promise<MyAccessView>;
     /**
+     * / The caller's own group for the current or next shift, for the Today
+     * / screen. Null when the caller trains no group on that shift.
+     */
+    getMyGroup(): Promise<MyGroupView | null>;
+    /**
      * / Read the caller's own pending access request, if any. Returns null when
      * / the caller has no pending entry; otherwise the requestedAt of that pending
      * / entry and hasProfile = true when a staff profile has been submitted.
@@ -989,6 +1053,11 @@ export interface backendInterface {
      */
     getRosterSummary(): Promise<Array<RosterSummary>>;
     /**
+     * / Read one shift board with its trainer columns, Unassigned tray and Off
+     * / this shift tray (every read role except kiosk and integration).
+     */
+    getShiftBoard(eventId: EventId, shift: Shift): Promise<ShiftBoardView | null>;
+    /**
      * / Read one submission (Admin/Store Manager only).
      */
     getSignup(id: SignupId): Promise<SignupSubmission | null>;
@@ -1006,10 +1075,6 @@ export interface backendInterface {
      * / and unregistered users.
      */
     getStoreLogo(): Promise<StoreLogos>;
-    /**
-     * / Read a training group with its unassigned and off-shift lists.
-     */
-    getTrainingGroup(id: TrainingGroupId): Promise<TrainingGroupView | null>;
     /**
      * / The uniform check-off for a roadie (Admin, Store Manager, Training Manager
      * / or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
@@ -1055,6 +1120,10 @@ export interface backendInterface {
      */
     listCrews(): Promise<Array<Crew>>;
     /**
+     * / List the caller's undismissed group-change notices, newest first.
+     */
+    listGroupChangeNotices(): Promise<Array<GroupChangeNotice>>;
+    /**
      * / List the leaders shown on the Leaders page: the manager, trainer and
      * / leadership roles. Readable by every role except Kiosk and Integration.
      * / Never carries phone or email.
@@ -1089,6 +1158,11 @@ export interface backendInterface {
      * / List the opening schedule.
      */
     listSchedule(): Promise<Array<ScheduleEvent>>;
+    /**
+     * / List every shift board for the current partition (every read role except
+     * / kiosk and integration).
+     */
+    listShiftBoards(): Promise<Array<ShiftBoardView>>;
     /**
      * / List trainer notes for a roadie. Restricted the same way roadies are:
      * / Integration sees nothing, and a trainer sees notes only for roadies in
@@ -1157,6 +1231,11 @@ export interface backendInterface {
      * / Re-sign a roadie's availability (Admin/Store Manager only).
      */
     resignAvailability(id: RoadieId, signature: SignatureRef): Promise<void>;
+    /**
+     * / Replace one shift board's groups, capacities and Off list (Admin, Store
+     * / Manager or Training Manager).
+     */
+    saveShiftBoard(board: ShiftBoard): Promise<void>;
     /**
      * / Save the current store configuration as a template (Admin only).
      */
@@ -1264,10 +1343,6 @@ export interface backendInterface {
      * / Update a user's trainer stations (Admin only).
      */
     updateTrainerStations(principal: Principal, positionIds: Array<PositionId>): Promise<void>;
-    /**
-     * / Update a training group's membership (Admin/Store Manager only).
-     */
-    updateTrainingGroup(group: TrainingGroup): Promise<void>;
     /**
      * / Update the uniform settings (Admin or Store Manager only, logged).
      */

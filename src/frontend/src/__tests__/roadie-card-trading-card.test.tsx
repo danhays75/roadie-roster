@@ -35,6 +35,8 @@ const POSITION: Position = {
   shirtQty: 2n,
   hatType: "Cap",
   hatQty: 1n,
+  defaultShirts: 2n,
+  defaultHats: 1n,
 };
 
 const SECOND_POSITION: Position = {
@@ -52,6 +54,8 @@ const SECOND_POSITION: Position = {
   shirtQty: 2n,
   hatType: "Cap",
   hatQty: 1n,
+  defaultShirts: 2n,
+  defaultHats: 1n,
 };
 
 const CREW: Crew = { id: 7n, name: "Opening Crew", isDemo: false };

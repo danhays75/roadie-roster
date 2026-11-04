@@ -588,10 +588,10 @@ module {
     };
   };
 
-  /// Internal: whether a roadie is visible to a role. A trainer sees only
-  /// roadies in their approved stations; a trainer with no approved stations
-  /// sees no roadies. Integration sees only the Shareable export. While demo
-  /// mode is on, a demo NSO Trainer sees only the chosen demo stations.
+  /// Internal: whether a roadie is visible to a role. Every read role except
+  /// Integration sees every roadie card (names, photos and card fields);
+  /// contact-set fields are still stripped for non-managers by `redact`.
+  /// Integration sees only the Shareable export, never roadie cards.
   func visibleToRole(
     roadie : Roadie.Roadie,
     role : Common.Role,
@@ -601,19 +601,6 @@ module {
   ) : Bool {
     switch (role) {
       case (#integration) { false };
-      case (#trainer) {
-        let stations = if (Auth.demoActive(demoState)) {
-          Auth.demoTrainerStationsFor(demoState, caller);
-        } else {
-          switch (accessGrants.get(caller)) {
-            case (?grant) { grant.trainerPositionIds };
-            case null { [] };
-          };
-        };
-        stations.any(func(pid) =
-          pid == roadie.mainPositionId or roadie.secondPositionId == ?pid
-        );
-      };
       case (_) { true };
     };
   };

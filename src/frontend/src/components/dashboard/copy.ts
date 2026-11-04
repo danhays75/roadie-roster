@@ -201,6 +201,19 @@ const dashboardCopy: Record<string, { en: string; es: string }> = {
     en: "Roadie card. Swipe or use the arrow keys to move between cards.",
     es: "Ficha del roadie. Desliza o usa las flechas para moverte entre fichas.",
   },
+  "today.myGroup.loading": {
+    en: "Loading your group…",
+    es: "Cargando tu grupo…",
+  },
+  "today.myGroup.error": {
+    en: "We couldn't load your group.",
+    es: "No pudimos cargar tu grupo.",
+  },
+  "today.notice.shift": { en: "Shift", es: "Turno" },
+  "today.notice.dismissed": {
+    en: "Notice dismissed.",
+    es: "Aviso descartado.",
+  },
 };
 
 function interpolate(

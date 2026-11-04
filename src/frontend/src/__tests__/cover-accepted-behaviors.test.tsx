@@ -479,6 +479,8 @@ describe("archived dates show as timestamps in the store time zone", () => {
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   };
 
   // 2027-02-09T05:59:59Z, which is 2027-02-08 23:59:59 in America/Chicago.

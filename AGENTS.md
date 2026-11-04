@@ -22,6 +22,7 @@
 - The card front keeps the MINOR tag but never a birthday tag
 - Position uniforms use one field set: shirtType, shirtQty, hatType, hatQty
 - Never change app behavior to satisfy outdated tests
+- Keep demo-mode partitioning and the requireReal* guards on every new write
 
 ## Accepted Requirements
 
@@ -117,19 +118,32 @@
 - Per-position rows show one line 'N hired · need M' plus the NEEDED badge, with the pending/active split only during the orientation window
 - All dates come from the schedule and respect the demo 'Pretend it's' date
 - Keep the countdown card, the timeline and the per-position lists; do not touch tests
+- Replace the unused TrainingGroup shape with a per-shift ShiftBoard model (groups of trainer+capacity+roadieIds, plus offRoadieIds)
+- A roadie may appear in at most one group, or in Off, per shift; the backend rejects duplicates
+- Default capacity comes from Admin trainingGroupSize (default 4); the Training Manager can change it per trainer per shift
+- Edit boards: Admin, Store Manager, Training Manager (new Auth.requireGroupEditor); demo boards editable in demo, real boards blocked by the real-settings guard
+- View all boards read-only: every read role except kiosk and integration
+- Trainers can see all roadie cards (names, photos, card fields); contact info stays Admin/Store Manager only
+- New nav item 'Groups' with a shift picker of day chips (Training Day 1-4, F&F nights) plus AM/PM defaulting to the current or next shift
+- Laptop/iPad drag-and-drop board with one column per trainer, an Unassigned tray and an Off this shift tray
+- Keyboard-accessible 'Move to…' alternative to dragging
+- Phone list grouped by trainer with tap-then-'Move to…' (a trainer, Off this shift, or the same day's other shift)
+- Roadie chip shows photo, name and position code plus a yellow dot with 'Marked unavailable' tooltip when scheduled while unavailable
+- Add trainer to this shift from approved NSO trainers whose access covers that date, plus managers and the Training Manager
+- Toolbar: 'Copy from…', 'Make groups for me' and 'Clear board'
+- Warnings banner (yellow, never blocking): unassigned active roadies, trainer over capacity, roadies scheduled while unavailable
+- 'Your group changed' notices stored per trainer and shown as a dismissible card on Today and Groups
+- Trainer 'My group · <shift>' view on Today with roadie photos and names and a link to all groups
+- Every new record carries isDemo and follows the demo partition; every write is logged
 
 ## Verified Commands
 
 - **typecheck**: `pnpm typecheck`
-- **fix**: `pnpm fix`
-- **build**: `pnpm build`
+- **fix**: `mops check --fix`
+- **build**: `mops build`
 
 ## Learnings
 
-- Orientation.tsx separates canPresent (canOrientation, includes trainingManager/visitingManager) from canManage (canArchive, Admin/Store Manager only) so the Present button is enabled for orientation staff while archive/move/undo/override stay manager-only.
-- Roster.tsx defaults to an All tab (Pending + Active together) and passes rosterStateLabel to RoadieTile only on the All tab; the CardList type includes 'all'.
-- ManagerTab.tsx wires the paperwork checkboxes to setPaperworkItems with applicable-item filtering, a 'Paperwork n of m' count and a Complete badge; useSetPaperworkItems invalidates roster, orientation session and alerts.
-- Orientation session assignment: listOrientationSessions() returns #orientation events ordered by start; listUnassignedPendingRoadies() returns pending roadies whose orientationEventId is null or dangling; moveAllRoadiesToSession(fromEventId, toEventId) moves every non-archived roadie between sessions and logs the count; moveRoadieToSession(roadieId, eventId) stays the single-roadie change.
 - UnassignedSection assigns each unassigned roadie through the per-roadie moveRoadieToSession, not the bulk move, because the bulk move only relocates roadies already attached to a source session.
 - SchedulePanel gates Move everyone on ARCHIVE_ROLES (admin/storeManager) and event.kind === orientation, matching the backend requireManager guard on moveAllRoadiesToSession.
 - Migration src/backend/migrations/00000013_000000.mo reassigns only rosterState == #pending roadies whose orientationEventId is null or names a missing/non-orientation event to the earliest upcoming orientation session, leaving all others untouched.
@@ -151,3 +165,7 @@
 - Dashboard-local components/dashboard/copy.ts supplies the new KPI keys; shared lib/copy.ts still holds the base hired/stillNeeded/certified labels.
 - PositionPanel rows read 'N hired · need M' with the NEEDED badge, and the pending/active split renders only when showSplit (orientation window open).
 - The demo pretend-date and demo-mode mutations in src/frontend/src/hooks/useQueries.ts call queryClient.invalidateQueries() with no arguments on success, so every screen refetches when the pretend date changes or demo mode toggles.
+- getMyGroup ranks candidate shifts by event.start vs effectiveNow: earliest upcoming wins, latest past is the fallback.
+- Migration 00000016 restores Position.defaultShirts/defaultHats with an OldPosition/NewPosition split; every Position and TemplatePosition record (including seeded ones) must carry both fields.
+- The Position type requires defaultShirts/defaultHats, so any test fixture constructing a Position must supply them or the frontend type-check fails.
+- The tester owns test files under src/frontend/src/__tests__ and test/pocketic; production workers must not edit them.

@@ -36,22 +36,86 @@ module {
     isDemo : Bool;
   };
 
-  /// A training group for one day and shift. `isDemo` marks a demo group.
-  public type TrainingGroup = {
-    id : Common.TrainingGroupId;
-    day : Common.DateOnly;
+  /// One trainer's column on a shift board: the trainer, the group's capacity
+  /// and the roadies assigned to it. `capacity` defaults from the Admin
+  /// `trainingGroupSize` setting and the Training Manager may change it per
+  /// trainer per shift.
+  public type ShiftBoardGroup = {
+    trainerPrincipal : Principal;
+    capacity : Nat;
+    roadieIds : [Common.RoadieId];
+  };
+
+  /// The board for one shift: a `#trainingDay` or `#friendsAndFamily` schedule
+  /// event plus `#am` or `#pm`. Friends & Family events have a single `#pm`
+  /// shift only. `groups` holds one entry per trainer; `offRoadieIds` holds the
+  /// roadies marked Off this shift. A roadie may appear in at most one group or
+  /// in Off, never both. `isDemo` marks a demo board.
+  public type ShiftBoard = {
+    eventId : Common.EventId;
     shift : Common.Shift;
-    positionId : Common.PositionId;
-    trainerPrincipal : ?Principal;
-    memberRoadieIds : [Common.RoadieId];
+    groups : [ShiftBoardGroup];
+    offRoadieIds : [Common.RoadieId];
+    editedAt : Common.Timestamp;
     isDemo : Bool;
   };
 
-  /// The per-shift view of a training group's membership.
-  public type TrainingGroupView = {
-    group : TrainingGroup;
-    unassigned : [Common.RoadieId];
-    offThisShift : [Common.RoadieId];
+  /// One roadie chip on a shift board: photo, name, position code and whether
+  /// they are scheduled on a shift they marked unavailable on the kiosk.
+  public type ShiftBoardRoadie = {
+    roadieId : Common.RoadieId;
+    name : Text;
+    photo : ?Common.PhotoRef;
+    positionId : Common.PositionId;
+    positionCode : Text;
+    markedUnavailable : Bool;
+  };
+
+  /// One trainer column on a shift board, with its roadie chips.
+  public type ShiftBoardGroupView = {
+    trainerPrincipal : Principal;
+    capacity : Nat;
+    roadies : [ShiftBoardRoadie];
+  };
+
+  /// The full read view of one shift board: the trainer columns, the
+  /// Unassigned tray (active roadies not in a group or Off for this shift) and
+  /// the Off this shift tray.
+  public type ShiftBoardView = {
+    eventId : Common.EventId;
+    shift : Common.Shift;
+    groups : [ShiftBoardGroupView];
+    unassigned : [ShiftBoardRoadie];
+    offThisShift : [ShiftBoardRoadie];
+    editedAt : Common.Timestamp;
+    isDemo : Bool;
+  };
+
+  /// A per-trainer notice that their group changed on a current or future
+  /// shift: the shift label, the added and removed roadie names and the editor's
+  /// name. Shown as a dismissible card until dismissed. `isDemo` marks a demo
+  /// notice.
+  public type GroupChangeNotice = {
+    id : Nat;
+    trainerPrincipal : Principal;
+    eventId : Common.EventId;
+    shift : Common.Shift;
+    shiftLabel : Text;
+    addedNames : [Text];
+    removedNames : [Text];
+    editorName : Text;
+    createdAt : Common.Timestamp;
+    dismissed : Bool;
+    isDemo : Bool;
+  };
+
+  /// A trainer's own group for the current or next shift, for the Today screen.
+  public type MyGroupView = {
+    eventId : Common.EventId;
+    shift : Common.Shift;
+    shiftLabel : Text;
+    capacity : Nat;
+    roadies : [ShiftBoardRoadie];
   };
 
   /// A trainer note about one roadie for one shift. `isDemo` marks a demo note.

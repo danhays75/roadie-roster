@@ -41,6 +41,8 @@ describe("RosterPage", () => {
           shirtQty: 2n,
           hatType: "Cap",
           hatQty: 1n,
+          defaultShirts: 2n,
+          defaultHats: 1n,
         },
       ]),
       listCrews: vi.fn(async () => []),

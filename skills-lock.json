@@ -54,7 +54,7 @@
     "extension-authorization": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "dd77d00f22899a239041ca8de18d8eaacbd7fe9909bf0b8449f0728315560208"
+      "computedHash": "db70899f3cb88028de8500e75d78cad85a1a729288432bb00d0ceedc9363d7df"
     },
     "extension-camera": {
       "source": "caffeinelabs/skills",
@@ -124,7 +124,7 @@
     "extension-oql": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "9ca1a75b66d2281bc5b156560bd391966a438000cc79076992121fdaa254c28d"
+      "computedHash": "e7415e79ced0a0b2d8324a1b08b6ae0629777cb404351a8924017e7fac760337"
     },
     "extension-posting-to-x": {
       "source": "caffeinelabs/skills",
@@ -139,12 +139,12 @@
     "extension-querying-oql": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "57b6263b6700ce266db4d6dd1e1753a75d405c776d3f8ddd27ab88db5f288663"
+      "computedHash": "87d19c4c20eb0a2b446ccd05178be0f18f63b4c240e364a0ec0de465246346c8"
     },
     "extension-stripe": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "4767c5151179ac53ecedf4ba7e8d7db62fac0ce9c17a0d7290b6e882de8afc47"
+      "computedHash": "e6050f45245860d0494a4cbfa95f0f103bae80023edbd11c03e0ea9919117fee"
     },
     "extension-user-approval": {
       "source": "caffeinelabs/skills",

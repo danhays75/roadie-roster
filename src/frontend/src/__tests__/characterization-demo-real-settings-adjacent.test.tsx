@@ -59,6 +59,8 @@ const SERVERS: Position = {
   shirtQty: 2n,
   hatType: "Cap",
   hatQty: 1n,
+  defaultShirts: 2n,
+  defaultHats: 1n,
 };
 
 const CHECKLISTS: Checklists = {

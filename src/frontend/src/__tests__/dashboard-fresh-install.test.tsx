@@ -30,6 +30,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 1n,
@@ -46,6 +48,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 2n,
@@ -62,6 +66,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 3n,
@@ -78,6 +84,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 4n,
@@ -94,6 +102,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 5n,
@@ -110,6 +120,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 6n,
@@ -126,6 +138,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 7n,
@@ -142,6 +156,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 8n,
@@ -158,6 +174,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 9n,
@@ -174,6 +192,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 10n,
@@ -190,6 +210,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 11n,
@@ -206,6 +228,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 12n,
@@ -222,6 +246,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 13n,
@@ -238,6 +264,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 14n,
@@ -254,6 +282,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 15n,
@@ -270,6 +300,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 16n,
@@ -286,6 +318,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
   {
     id: 17n,
@@ -302,6 +336,8 @@ const SEEDED_POSITIONS: Position[] = [
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   },
 ];
 

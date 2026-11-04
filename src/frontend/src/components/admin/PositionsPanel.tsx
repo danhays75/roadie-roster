@@ -48,6 +48,8 @@ interface PositionDraft {
   minimumAge: string;
   shirtsRequired: string;
   hatsRequired: string;
+  defaultShirts: string;
+  defaultHats: string;
   shirtType: string;
   shirtQty: string;
   hatType: string;
@@ -65,6 +67,8 @@ function emptyDraft(): PositionDraft {
     minimumAge: "16",
     shirtsRequired: "0",
     hatsRequired: "0",
+    defaultShirts: "0",
+    defaultHats: "0",
     shirtType: "",
     shirtQty: "0",
     hatType: "",
@@ -83,6 +87,8 @@ function toDraft(position: Position): PositionDraft {
     minimumAge: position.minimumAge.toString(),
     shirtsRequired: position.shirtsRequired.toString(),
     hatsRequired: position.hatsRequired.toString(),
+    defaultShirts: position.defaultShirts.toString(),
+    defaultHats: position.defaultHats.toString(),
     shirtType: position.shirtType,
     shirtQty: position.shirtQty.toString(),
     hatType: position.hatType,
@@ -114,6 +120,8 @@ function toPosition(
     minimumAge: toCount(draft.minimumAge),
     shirtsRequired: toCount(draft.shirtsRequired),
     hatsRequired: toCount(draft.hatsRequired),
+    defaultShirts: toCount(draft.defaultShirts),
+    defaultHats: toCount(draft.defaultHats),
     shirtType: draft.shirtType.trim(),
     shirtQty: toCount(draft.shirtQty),
     hatType: draft.hatType.trim(),

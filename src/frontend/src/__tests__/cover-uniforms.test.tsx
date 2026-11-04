@@ -328,6 +328,8 @@ describe("Admin > Positions uniform defaults", () => {
     shirtQty: 2n,
     hatType: "Cap",
     hatQty: 1n,
+    defaultShirts: 2n,
+    defaultHats: 1n,
   };
 
   function positionsActor() {
@@ -515,6 +517,8 @@ const MANAGER_POSITION: Position = {
   shirtQty: 2n,
   hatType: "Cap",
   hatQty: 1n,
+  defaultShirts: 2n,
+  defaultHats: 1n,
 };
 
 const MANAGER_STORE: StoreInfo = {
@@ -695,6 +699,8 @@ const TEMPLATE_WITH_UNIFORMS: StoreTemplateFile = {
       shirtQty: 2n,
       hatType: "Cap",
       hatQty: 1n,
+      defaultShirts: 2n,
+      defaultHats: 1n,
     },
   ],
   schedule: [],

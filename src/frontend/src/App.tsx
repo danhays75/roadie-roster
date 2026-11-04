@@ -20,6 +20,7 @@ import {
   canApprove,
   canExport,
   canGiftBags,
+  canGroups,
   canLeaders,
   canOrientation,
   canUniforms,
@@ -32,6 +33,7 @@ import ApprovalsPage from "@/pages/Approvals";
 import DashboardPage from "@/pages/Dashboard";
 import ExportPage from "@/pages/Export";
 import GiftBagsPage from "@/pages/GiftBags";
+import GroupsPage from "@/pages/Groups";
 import KioskPage from "@/pages/Kiosk";
 import LeaderCardPage from "@/pages/LeaderCard";
 import LeadersPage from "@/pages/Leaders";
@@ -305,6 +307,16 @@ function GuardedLeaders() {
   );
 }
 
+/** The Groups shift boards, blocked for roles that cannot view them. */
+function GuardedGroups() {
+  const role = useRole();
+  return (
+    <RouteGuard allowed={canGroups(role)}>
+      <GroupsPage />
+    </RouteGuard>
+  );
+}
+
 /** A single leader card, blocked for roles that cannot read leaders. */
 function GuardedLeaderCard() {
   const role = useRole();
@@ -407,6 +419,12 @@ const leadersRoute = createRoute({
   component: GuardedLeaders,
 });
 
+const groupsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/groups",
+  component: GuardedGroups,
+});
+
 const leaderCardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/leaders/$leaderId",
@@ -439,6 +457,7 @@ const routeTree = rootRoute.addChildren([
   giftBagsRoute,
   leadersRoute,
   leaderCardRoute,
+  groupsRoute,
   orientationRoute,
   uniformsRoute,
 ]);

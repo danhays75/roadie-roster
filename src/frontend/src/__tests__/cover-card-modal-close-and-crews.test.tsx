@@ -56,6 +56,8 @@ const POSITION: Position = {
   shirtQty: 2n,
   hatType: "Cap",
   hatQty: 1n,
+  defaultShirts: 2n,
+  defaultHats: 1n,
 };
 
 const PHOTO_BYTES = new Uint8Array([1, 2, 3, 4]);
