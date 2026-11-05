@@ -246,6 +246,7 @@ module {
       id = roadieId;
       profile = submission.profile;
       photo = submission.photo;
+      demoPhotoUrl = null;
       mainPositionId = decision.mainPositionId;
       secondPositionId = decision.secondPositionId;
       crossTrainedPositionId = null;

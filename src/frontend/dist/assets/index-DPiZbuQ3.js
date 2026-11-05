@@ -33158,6 +33158,7 @@ var HatSize = Text;
 var PhotoRef = Vec(Nat8);
 var StaffProfile = Record({
 	"title": Text,
+	"demoPhotoUrl": Opt(Text),
 	"arrivalDate": Opt(DateOnly),
 	"workEmail": Opt(Email),
 	"favoriteSnack": Opt(Text),
@@ -33377,6 +33378,7 @@ var CheckInState$1 = Variant({
 });
 var CheckInBoardView = Record({
 	"roadies": Vec(Record({
+		"demoPhotoUrl": Opt(Text),
 		"roadieId": RoadieId,
 		"name": Text,
 		"lateAt": Opt(Timestamp),
@@ -33502,6 +33504,7 @@ var MyAccessView = Record({
 });
 var ShiftBoardRoadie = Record({
 	"markedUnavailable": Bool,
+	"demoPhotoUrl": Opt(Text),
 	"roadieId": RoadieId,
 	"name": Text,
 	"positionCode": Text,
@@ -33538,6 +33541,7 @@ var PaperworkStatus$1 = Variant({
 	"complete": Null
 });
 var OrientationRoadieRow$1 = Record({
+	"demoPhotoUrl": Opt(Text),
 	"noShow": Bool,
 	"roadieId": RoadieId,
 	"present": Bool,
@@ -33598,6 +33602,7 @@ var Roadie = Record({
 	"status": RoadieStatus$1,
 	"orientationEventId": Opt(EventId),
 	"mainPositionId": PositionId,
+	"demoPhotoUrl": Opt(Text),
 	"crossTrainedPositionId": Opt(PositionId),
 	"hireDate": Opt(Timestamp),
 	"corporateEmployeeId": Opt(Text),
@@ -33695,6 +33700,7 @@ var ShiftCheckInSummary = Record({
 var AbsentAlertView = Record({
 	"id": AlertId,
 	"eventId": EventId,
+	"demoPhotoUrl": Opt(Text),
 	"roadieId": RoadieId,
 	"name": Text,
 	"createdAt": Timestamp,
@@ -33821,6 +33827,7 @@ var GroupChangeNotice = Record({
 var LeaderSummary = Record({
 	"title": Text,
 	"principal": Principal,
+	"demoPhotoUrl": Opt(Text),
 	"arrivalDate": Opt(DateOnly),
 	"departureDate": Opt(DateOnly),
 	"role": Role$1,
@@ -33839,6 +33846,7 @@ var PendingUser = Record({
 	"requestedAt": Timestamp
 });
 var UnassignedRoadieRow = Record({
+	"demoPhotoUrl": Opt(Text),
 	"roadieId": RoadieId,
 	"name": Text,
 	"positionName": Text,
@@ -34145,6 +34153,7 @@ var idlFactory = ({ IDL }) => {
 	const PhotoRef = IDL.Vec(IDL.Nat8);
 	const StaffProfile = IDL.Record({
 		"title": IDL.Text,
+		"demoPhotoUrl": IDL.Opt(IDL.Text),
 		"arrivalDate": IDL.Opt(DateOnly),
 		"workEmail": IDL.Opt(Email),
 		"favoriteSnack": IDL.Opt(IDL.Text),
@@ -34365,6 +34374,7 @@ var idlFactory = ({ IDL }) => {
 		"absent": IDL.Null
 	});
 	const CheckInRow = IDL.Record({
+		"demoPhotoUrl": IDL.Opt(IDL.Text),
 		"roadieId": RoadieId,
 		"name": IDL.Text,
 		"lateAt": IDL.Opt(Timestamp),
@@ -34493,6 +34503,7 @@ var idlFactory = ({ IDL }) => {
 	});
 	const ShiftBoardRoadie = IDL.Record({
 		"markedUnavailable": IDL.Bool,
+		"demoPhotoUrl": IDL.Opt(IDL.Text),
 		"roadieId": RoadieId,
 		"name": IDL.Text,
 		"positionCode": IDL.Text,
@@ -34529,6 +34540,7 @@ var idlFactory = ({ IDL }) => {
 		"complete": IDL.Null
 	});
 	const OrientationRoadieRow = IDL.Record({
+		"demoPhotoUrl": IDL.Opt(IDL.Text),
 		"noShow": IDL.Bool,
 		"roadieId": RoadieId,
 		"present": IDL.Bool,
@@ -34589,6 +34601,7 @@ var idlFactory = ({ IDL }) => {
 		"status": RoadieStatus,
 		"orientationEventId": IDL.Opt(EventId),
 		"mainPositionId": PositionId,
+		"demoPhotoUrl": IDL.Opt(IDL.Text),
 		"crossTrainedPositionId": IDL.Opt(PositionId),
 		"hireDate": IDL.Opt(Timestamp),
 		"corporateEmployeeId": IDL.Opt(IDL.Text),
@@ -34687,6 +34700,7 @@ var idlFactory = ({ IDL }) => {
 	const AbsentAlertView = IDL.Record({
 		"id": AlertId,
 		"eventId": EventId,
+		"demoPhotoUrl": IDL.Opt(IDL.Text),
 		"roadieId": RoadieId,
 		"name": IDL.Text,
 		"createdAt": Timestamp,
@@ -34815,6 +34829,7 @@ var idlFactory = ({ IDL }) => {
 	const LeaderSummary = IDL.Record({
 		"title": IDL.Text,
 		"principal": IDL.Principal,
+		"demoPhotoUrl": IDL.Opt(IDL.Text),
 		"arrivalDate": IDL.Opt(DateOnly),
 		"departureDate": IDL.Opt(DateOnly),
 		"role": Role,
@@ -34833,6 +34848,7 @@ var idlFactory = ({ IDL }) => {
 		"requestedAt": Timestamp
 	});
 	const UnassignedRoadieRow = IDL.Record({
+		"demoPhotoUrl": IDL.Opt(IDL.Text),
 		"roadieId": RoadieId,
 		"name": IDL.Text,
 		"positionName": IDL.Text,
@@ -36966,6 +36982,7 @@ function from_candid_record_n121(_uploadFile, _downloadFile, value) {
 function from_candid_record_n126(_uploadFile, _downloadFile, value) {
 	return {
 		title: value.title,
+		demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
 		arrivalDate: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.arrivalDate)),
 		workEmail: record_opt_to_undefined(from_candid_opt_n39(_uploadFile, _downloadFile, value.workEmail)),
 		favoriteSnack: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteSnack)),
@@ -37001,6 +37018,7 @@ function from_candid_record_n131(_uploadFile, _downloadFile, value) {
 function from_candid_record_n134(_uploadFile, _downloadFile, value) {
 	return {
 		markedUnavailable: value.markedUnavailable,
+		demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
 		roadieId: value.roadieId,
 		name: value.name,
 		positionCode: value.positionCode,
@@ -37021,6 +37039,7 @@ function from_candid_record_n139(_uploadFile, _downloadFile, value) {
 }
 function from_candid_record_n143(_uploadFile, _downloadFile, value) {
 	return {
+		demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
 		noShow: value.noShow,
 		roadieId: value.roadieId,
 		present: value.present,
@@ -37040,6 +37059,7 @@ function from_candid_record_n149(_uploadFile, _downloadFile, value) {
 		status: from_candid_RoadieStatus_n150(_uploadFile, _downloadFile, value.status),
 		orientationEventId: record_opt_to_undefined(from_candid_opt_n151(_uploadFile, _downloadFile, value.orientationEventId)),
 		mainPositionId: value.mainPositionId,
+		demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
 		crossTrainedPositionId: record_opt_to_undefined(from_candid_opt_n152(_uploadFile, _downloadFile, value.crossTrainedPositionId)),
 		hireDate: record_opt_to_undefined(from_candid_opt_n81(_uploadFile, _downloadFile, value.hireDate)),
 		corporateEmployeeId: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.corporateEmployeeId)),
@@ -37160,6 +37180,7 @@ function from_candid_record_n182(_uploadFile, _downloadFile, value) {
 	return {
 		id: value.id,
 		eventId: value.eventId,
+		demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
 		roadieId: value.roadieId,
 		name: value.name,
 		createdAt: value.createdAt,
@@ -37248,6 +37269,7 @@ function from_candid_record_n210(_uploadFile, _downloadFile, value) {
 	return {
 		title: value.title,
 		principal: value.principal,
+		demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
 		arrivalDate: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.arrivalDate)),
 		departureDate: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.departureDate)),
 		role: from_candid_Role_n123(_uploadFile, _downloadFile, value.role),
@@ -37294,6 +37316,7 @@ function from_candid_record_n225(_uploadFile, _downloadFile, value) {
 }
 function from_candid_record_n228(_uploadFile, _downloadFile, value) {
 	return {
+		demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
 		roadieId: value.roadieId,
 		name: value.name,
 		positionName: value.positionName,
@@ -37423,6 +37446,7 @@ function from_candid_record_n77(_uploadFile, _downloadFile, value) {
 }
 function from_candid_record_n80(_uploadFile, _downloadFile, value) {
 	return {
+		demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
 		roadieId: value.roadieId,
 		name: value.name,
 		lateAt: record_opt_to_undefined(from_candid_opt_n81(_uploadFile, _downloadFile, value.lateAt)),
@@ -37893,6 +37917,7 @@ function to_candid_record_n18(_uploadFile, _downloadFile, value) {
 function to_candid_record_n21(_uploadFile, _downloadFile, value) {
 	return {
 		title: value.title,
+		demoPhotoUrl: value.demoPhotoUrl ? candid_some(value.demoPhotoUrl) : candid_none(),
 		arrivalDate: value.arrivalDate ? candid_some(value.arrivalDate) : candid_none(),
 		workEmail: value.workEmail ? candid_some(value.workEmail) : candid_none(),
 		favoriteSnack: value.favoriteSnack ? candid_some(value.favoriteSnack) : candid_none(),
@@ -59714,10 +59739,14 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 	const { data: storeInfo } = useStoreInfo();
 	const { data: photo } = useRoadiePhoto(roadie?.id);
 	const leaderPhotoUrl = (0, import_react.useMemo)(() => refToDataUrl(leader?.staffProfile?.photo), [leader?.staffProfile?.photo]);
-	const photoUrl = (0, import_react.useMemo)(() => leader ? leaderPhotoUrl : refToDataUrl(photo), [
+	const photoUrl = (0, import_react.useMemo)(() => {
+		if (leader) return leaderPhotoUrl ?? leader.demoPhotoUrl ?? null;
+		return refToDataUrl(photo) ?? roadie?.demoPhotoUrl ?? null;
+	}, [
 		leader,
 		leaderPhotoUrl,
-		photo
+		photo,
+		roadie?.demoPhotoUrl
 	]);
 	const isLeader = !!leader;
 	const leaderProfile = leader?.staffProfile;
@@ -59869,11 +59898,14 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "cream" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 											className: "ph",
 											"data-ocid": "roadie.card.photo",
-											style: photoUrl ? { backgroundImage: `url(${photoUrl})` } : void 0,
+											style: photoUrl ? {
+												backgroundImage: `url(${photoUrl})`,
+												backgroundPosition: "center top"
+											} : void 0,
 											children: photoUrl ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
 												src: photoUrl,
 												alt: name,
-												className: "h-full w-full object-cover"
+												className: "h-full w-full object-cover object-top"
 											}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 												className: "flex h-full w-full items-center justify-center text-[16cqw] text-[#f4efe3]",
 												style: { fontFamily: "\"Archivo Black\", sans-serif" },
@@ -59938,7 +59970,10 @@ function FlipCard({ roadie, leader, position, secondPosition, crossTrainedPositi
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 									className: "b-head",
 									"data-ocid": "roadie.card.headshot",
-									style: photoUrl ? { backgroundImage: `url(${photoUrl})` } : void 0
+									style: photoUrl ? {
+										backgroundImage: `url(${photoUrl})`,
+										backgroundPosition: "center top"
+									} : void 0
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -60401,7 +60436,7 @@ function usePaperworkIncompleteMap(roadies, enabled) {
 */
 function RoadieTile({ roadie, positionName, crewName, crewLabel, paperworkIncomplete: paperworkFlag, rosterStateLabel, onOpen, ocid = "roadie.tile", statusOcid, photoOcid, className }) {
 	const { data: photo } = useRoadiePhoto(roadie.id);
-	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(photo), [photo]);
+	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(photo) ?? roadie.demoPhotoUrl ?? null, [photo, roadie.demoPhotoUrl]);
 	const name = roadie.profile.preferredName || roadie.profile.name;
 	const isArchived = roadie.status === RoadieStatus.archived;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", {
@@ -60418,7 +60453,7 @@ function RoadieTile({ roadie, positionName, crewName, crewLabel, paperworkIncomp
 				children: [photoUrl ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
 					src: photoUrl,
 					alt: name,
-					className: "h-full w-full object-cover"
+					className: "h-full w-full object-cover object-top"
 				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 					className: "flex h-full w-full items-center justify-center font-display text-3xl font-bold uppercase tracking-wide text-[#14284B]",
 					"aria-hidden": "true",
@@ -100706,10 +100741,23 @@ function isShiftEvent(kind) {
 	return kind === EventKind.trainingDay || kind === EventKind.friendsAndFamily;
 }
 /**
+* The structural identity of an option's day label, independent of the active
+* language. Two options with the same key render the same day label: every
+* Friends & Family night shares one label, a training day is unique per number,
+* and any other option falls back to its event name.
+*/
+function dayLabelKey(option) {
+	if (option.kind === EventKind.friendsAndFamily) return "friendsAndFamily";
+	if (option.trainingDay !== void 0) return `trainingDay:${option.trainingDay}`;
+	return `name:${option.name}`;
+}
+/**
 * Build the ordered list of selectable shifts from the schedule. Training days
 * are numbered chronologically (Training Day 1, 2, …) so the labels renumber
 * when a day is added or removed. Friends & Family nights are PM only, so they
-* contribute a single PM option. Every other event kind is ignored.
+* contribute a single PM option. Every other event kind is ignored. Options
+* whose day label collides with another option are flagged so the tab label can
+* add the short date.
 */
 function buildShiftOptions(schedule) {
 	const trainingDays = schedule.filter((event) => event.kind === EventKind.trainingDay).sort((a, b) => a.start < b.start ? -1 : a.start > b.start ? 1 : 0);
@@ -100752,6 +100800,12 @@ function buildShiftOptions(schedule) {
 		if (a.start !== b.start) return a.start < b.start ? -1 : 1;
 		return a.shift === Shift.am ? -1 : 1;
 	});
+	const labelCounts = /* @__PURE__ */ new Map();
+	for (const option of options) {
+		const key = dayLabelKey(option);
+		labelCounts.set(key, (labelCounts.get(key) ?? 0) + 1);
+	}
+	for (const option of options) if ((labelCounts.get(dayLabelKey(option)) ?? 0) > 1) option.duplicateDayLabel = true;
 	return options;
 }
 /**
@@ -100777,16 +100831,38 @@ function defaultShiftOption(options, now) {
 	if (upcoming) return upcoming;
 	return options[options.length - 1];
 }
-/** The label for a shift option, e.g. "Training Day 2 · AM" or "F&F · PM". */
+/** The short date ("Feb 5") of an option's event start, or null when invalid. */
+function shiftOptionShortDate(option) {
+	const date = timestampToDate(option.start);
+	if (!date) return null;
+	return formatDateOnlyMonthDay(dateToDateOnly(date));
+}
+/**
+* The label for a shift option, e.g. "Training Day 2 · AM" or "F&F · PM". When
+* another option shares the same day label, the short date replaces the shift
+* suffix so the two read apart, e.g. "Friends & Family · Feb 5".
+*/
 function shiftOptionLabel(option, t) {
 	const shiftLabel = option.shift === Shift.am ? t("groups.board.shiftAm") : t("groups.board.shiftPm");
-	if (option.kind === EventKind.friendsAndFamily) return `${t("groups.board.friendsFamilyChip")} · ${shiftLabel}`;
-	return `${option.trainingDay !== void 0 ? t("groups.board.dayChip", { day: option.trainingDay }) : option.name} · ${shiftLabel}`;
+	const day = option.kind === EventKind.friendsAndFamily ? t("groups.board.friendsFamilyChip") : option.trainingDay !== void 0 ? t("groups.board.dayChip", { day: option.trainingDay }) : option.name;
+	if (option.duplicateDayLabel) {
+		const shortDate = shiftOptionShortDate(option);
+		if (shortDate) return `${day} · ${shortDate}`;
+	}
+	return `${day} · ${shiftLabel}`;
 }
-/** The short chip label for a shift option's day, without the AM/PM suffix. */
+/**
+* The short chip label for a shift option's day, without the AM/PM suffix. When
+* another option shares the same day label, the short date is appended so the
+* two chips read apart, e.g. "Friends & Family · Feb 5".
+*/
 function shiftOptionDayLabel(option, t) {
-	if (option.kind === EventKind.friendsAndFamily) return t("groups.board.friendsFamilyChip");
-	return option.trainingDay !== void 0 ? t("groups.board.dayChip", { day: option.trainingDay }) : option.name;
+	const day = option.kind === EventKind.friendsAndFamily ? t("groups.board.friendsFamilyChip") : option.trainingDay !== void 0 ? t("groups.board.dayChip", { day: option.trainingDay }) : option.name;
+	if (option.duplicateDayLabel) {
+		const shortDate = shiftOptionShortDate(option);
+		if (shortDate) return `${day} · ${shortDate}`;
+	}
+	return day;
 }
 /** A stable key for a shift option, matching the backend board key. */
 function shiftOptionKey(option) {
@@ -101185,7 +101261,7 @@ function initialsOf$4(name) {
 */
 function RoadieChip({ roadie, selected, draggable, onOpenCard, onToggleSelect, onDragStart, onDragEnd, ocid }) {
 	const { t } = useGroupsCopy();
-	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(roadie.photo), [roadie.photo]);
+	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(roadie.photo) ?? roadie.demoPhotoUrl ?? null, [roadie.photo, roadie.demoPhotoUrl]);
 	const position = roadie.positionCode || t("roadie.field.none");
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
 		"data-ocid": ocid,
@@ -101220,7 +101296,7 @@ function RoadieChip({ roadie, selected, draggable, onOpenCard, onToggleSelect, o
 					children: photoUrl ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
 						src: photoUrl,
 						alt: t("groups.board.roadiePhotoAlt"),
-						className: "h-full w-full object-cover"
+						className: "h-full w-full object-cover object-top"
 					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 						className: "font-display text-xs font-bold uppercase text-muted-foreground",
 						"aria-hidden": "true",
@@ -101417,7 +101493,7 @@ function initialsOf$3(name) {
 function TrainerColumn({ roadies, capacity, leader, stationNames, editable, selectedId, onOpenCard, onToggleSelect, onDropRoadie, onDragStart, onDragEnd, onCapacityChange, onRemoveTrainer, ocid }) {
 	const { t } = useGroupsCopy();
 	const [dragOver, setDragOver] = (0, import_react.useState)(false);
-	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(leader?.staffProfile?.photo), [leader?.staffProfile?.photo]);
+	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(leader?.staffProfile?.photo) ?? leader?.demoPhotoUrl ?? null, [leader?.staffProfile?.photo, leader?.demoPhotoUrl]);
 	const name = leader ? staffDisplayName(leader.staffProfile, t("groups.board.unnamedTrainer")) : t("groups.board.unnamedTrainer");
 	const count = roadies.length;
 	const over = count > capacity;
@@ -101451,7 +101527,7 @@ function TrainerColumn({ roadies, capacity, leader, stationNames, editable, sele
 						children: photoUrl ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
 							src: photoUrl,
 							alt: t("groups.board.trainerPhotoAlt"),
-							className: "h-full w-full object-cover"
+							className: "h-full w-full object-cover object-top"
 						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 							className: "font-display text-sm font-bold uppercase text-muted-foreground",
 							"aria-hidden": "true",
@@ -101891,7 +101967,19 @@ function GroupsPage() {
 		name: position.name
 	})), [positions.data]);
 	const view = board.data ?? null;
-	const editableBoard = editor.board;
+	const editableBoard = (0, import_react.useMemo)(() => {
+		if (editor.board) return editor.board;
+		if (!view) return null;
+		return {
+			groups: view.groups.map((group) => ({
+				trainerPrincipalText: group.trainerPrincipal.toString(),
+				capacity: Number(group.capacity),
+				roadieIds: group.roadies.map((roadie) => roadie.roadieId)
+			})),
+			offRoadieIds: view.offThisShift.map((roadie) => roadie.roadieId),
+			unassigned: view.unassigned
+		};
+	}, [editor.board, view]);
 	const allChips = (0, import_react.useMemo)(() => {
 		if (!view) return [];
 		return [
@@ -104258,7 +104346,7 @@ function LeaderTile({ leader, onOpen }) {
 	const { t } = useI18n();
 	const name = staffDisplayName(leader.staffProfile, t("profile.unnamed"));
 	const title = leader.title?.trim() || t("roadie.field.none");
-	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(leader.staffProfile?.photo), [leader.staffProfile?.photo]);
+	const photoUrl = (0, import_react.useMemo)(() => refToDataUrl(leader.staffProfile?.photo) ?? leader.demoPhotoUrl ?? null, [leader.staffProfile?.photo, leader.demoPhotoUrl]);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", {
 		"data-ocid": "leaders.item",
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
@@ -104278,7 +104366,7 @@ function LeaderTile({ leader, onOpen }) {
 					children: photoUrl ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
 						src: photoUrl,
 						alt: name,
-						className: "h-full w-full object-cover"
+						className: "h-full w-full object-cover object-top"
 					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 						className: "font-display text-xl font-semibold uppercase tracking-wide text-muted-foreground",
 						"aria-hidden": "true",
@@ -108155,16 +108243,16 @@ function MoveAlertDialog({ alertId, name, open, onOpenChange }) {
 * A roadie with no stored photo shows the placeholder icon, never a broken
 * image.
 */
-function RoadiePhoto({ id, name, className, iconClassName, ocid, fallback }) {
+function RoadiePhoto({ id, name, demoPhotoUrl, className, iconClassName, ocid, fallback }) {
 	const { data: photo } = useRoadiePhoto(id);
-	const src = (0, import_react.useMemo)(() => refToDataUrl(photo), [photo]);
+	const src = (0, import_react.useMemo)(() => refToDataUrl(photo), [photo]) ?? demoPhotoUrl ?? null;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 		"data-ocid": ocid,
 		className: cn("flex items-center justify-center overflow-hidden rounded-full border-2 border-primary bg-muted", className),
 		children: src ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
 			src,
 			alt: name,
-			className: "h-full w-full object-cover"
+			className: "h-full w-full object-cover object-top"
 		}) : fallback ?? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Image$1, {
 			className: cn("h-6 w-6 text-muted-foreground", iconClassName),
 			"aria-hidden": "true"
@@ -108194,6 +108282,7 @@ function AbsentAlertCard({ alert, index, role }) {
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadiePhoto, {
 				id: alert.roadieId,
 				name: alert.name,
+				demoPhotoUrl: alert.demoPhotoUrl,
 				className: "h-16 w-16 shrink-0",
 				iconClassName: "h-7 w-7",
 				ocid: `alerts.item.${index}.photo`,
@@ -108628,6 +108717,7 @@ function CheckInRowItem({ row, index, eventId, shift, locked, timeZone }) {
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadiePhoto, {
 					id: row.roadieId,
 					name: row.name,
+					demoPhotoUrl: row.demoPhotoUrl,
 					className: "h-12 w-12 shrink-0",
 					ocid: `today.checkIn.row.${index}.photo`,
 					fallback: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {

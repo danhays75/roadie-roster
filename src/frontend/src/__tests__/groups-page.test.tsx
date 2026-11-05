@@ -359,6 +359,66 @@ describe("Groups page", () => {
     expect(dot).toHaveAttribute("title", "Marked unavailable");
   });
 
+  it("shows the demo photo URL on a roadie chip when no stored photo exists", async () => {
+    const DEMO_PHOTO_URL = "https://cdn.example.test/demo/chip.webp";
+    const a = actor(Role.admin);
+    a.getShiftBoard.mockResolvedValue(
+      boardView(EVENT_1, Shift.am, {
+        groups: [
+          {
+            trainerPrincipal: principal(TRAINER_A),
+            capacity: 4n,
+            roadies: [
+              {
+                ...chip(1n, "Ada Roadie", "SRV"),
+                demoPhotoUrl: DEMO_PHOTO_URL,
+              },
+            ],
+          },
+        ],
+        unassigned: [],
+      }),
+    );
+    renderPageWithActor(GroupsPage, a, { path: "/groups" });
+
+    const column = await screen.findByTestId(
+      `groups.board.trainer.${TRAINER_A}`,
+    );
+    const img = within(column).getByRole("img", { name: "Roadie photo" });
+    expect(img).toHaveAttribute("src", DEMO_PHOTO_URL);
+  });
+
+  it("prefers a stored photo over the demo photo URL on a roadie chip", async () => {
+    const DEMO_PHOTO_URL = "https://cdn.example.test/demo/chip.webp";
+    const a = actor(Role.admin);
+    a.getShiftBoard.mockResolvedValue(
+      boardView(EVENT_1, Shift.am, {
+        groups: [
+          {
+            trainerPrincipal: principal(TRAINER_A),
+            capacity: 4n,
+            roadies: [
+              {
+                ...chip(1n, "Ada Roadie", "SRV"),
+                demoPhotoUrl: DEMO_PHOTO_URL,
+                photo: new Uint8Array([1, 2, 3, 4]),
+              },
+            ],
+          },
+        ],
+        unassigned: [],
+      }),
+    );
+    renderPageWithActor(GroupsPage, a, { path: "/groups" });
+
+    const column = await screen.findByTestId(
+      `groups.board.trainer.${TRAINER_A}`,
+    );
+    const img = within(column).getByRole("img", { name: "Roadie photo" });
+    expect(img).toHaveAttribute("src", expect.stringContaining("data:image/"));
+    expect(img).not.toHaveAttribute("src", DEMO_PHOTO_URL);
+  });
+
   it("moves a roadie between columns and trays by drag and drop", async () => {
     const a = actor(Role.admin);
     renderPageWithActor(GroupsPage, a, { path: "/groups" });
@@ -476,11 +536,16 @@ describe("Groups page", () => {
       within(dialog).getByTestId("groups.toolbar.copy_confirm_button"),
     ).toBeDisabled();
 
-    // Choose Training Day 2 · AM as the source.
+    // Choose Training Day 2 as the source. Its label now carries the short
+    // date (the accepted change), and both AM and PM options share that day
+    // label, so pick the first matching option.
     await user.click(
       within(dialog).getByTestId("groups.toolbar.copy_source_select"),
     );
-    await user.click(await screen.findByText("Training Day 2 · AM"));
+    const dayTwoOptions = await screen.findAllByRole("option", {
+      name: /^Training Day 2 · /,
+    });
+    await user.click(dayTwoOptions[0]);
     await user.click(
       within(dialog).getByTestId("groups.toolbar.copy_confirm_button"),
     );
@@ -641,7 +706,10 @@ describe("Groups page", () => {
     await user.click(
       within(dialog).getByTestId("groups.toolbar.copy_source_select"),
     );
-    await user.click(await screen.findByText("Training Day 2 · AM"));
+    const dayTwoOptions = await screen.findAllByRole("option", {
+      name: /^Training Day 2 · /,
+    });
+    await user.click(dayTwoOptions[0]);
     await user.click(
       within(dialog).getByTestId("groups.toolbar.copy_confirm_button"),
     );
@@ -682,6 +750,218 @@ describe("Groups page", () => {
     expect(
       await screen.findByTestId("groups.board.unsaved"),
     ).toBeInTheDocument();
+  });
+
+  it("still shows the empty state when the board read returns null", async () => {
+    // Adjacent behavior: a null board read (no stored board and no matching
+    // event) still renders the empty state rather than a board.
+    const a = actor(Role.admin);
+    a.getShiftBoard.mockResolvedValue(null);
+    renderPageWithActor(GroupsPage, a, { path: "/groups" });
+
+    expect(await screen.findByTestId("page.empty_state")).toBeInTheDocument();
+    expect(screen.queryByTestId("groups.board")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("groups.toolbar")).not.toBeInTheDocument();
+  });
+
+  it("still numbers training days chronologically and ignores other event kinds", async () => {
+    // Adjacent behavior: the picker's day chips renumber by start time and a
+    // non-shift event kind contributes no chip.
+    const a = actor(Role.admin);
+    const other: ScheduleEvent = {
+      id: 9n,
+      name: "Opening Day",
+      kind: EventKind.openingDay,
+      start: NOW_NS + DAY_NS,
+    };
+    a.listSchedule.mockResolvedValue([
+      trainingDay(EVENT_2, "Training Day Two", NOW_NS + 2n * DAY_NS),
+      other,
+      trainingDay(EVENT_1, "Training Day One", NOW_NS + DAY_NS),
+    ]);
+    renderPageWithActor(GroupsPage, a, { path: "/groups" });
+
+    await screen.findByTestId("groups.board");
+    // The earlier training day is numbered 1 even though it is listed second.
+    expect(screen.getByTestId(`groups.shift.day.${EVENT_1}`)).toHaveTextContent(
+      "Training Day 1",
+    );
+    expect(screen.getByTestId(`groups.shift.day.${EVENT_2}`)).toHaveTextContent(
+      "Training Day 2",
+    );
+    // The opening-day event contributes no chip.
+    expect(screen.queryByTestId("groups.shift.day.9")).not.toBeInTheDocument();
+  });
+
+  it("still disables the AM toggle for a Friends & Family night", async () => {
+    // Adjacent behavior: F&F nights are PM only, so their chip disables AM.
+    const a = actor(Role.admin);
+    const user = userEvent.setup();
+    renderPageWithActor(GroupsPage, a, { path: "/groups" });
+
+    await screen.findByTestId("groups.board");
+    await user.click(screen.getByTestId(`groups.shift.day.${EVENT_FF}`));
+
+    expect(screen.getByTestId("groups.shift.am")).toBeDisabled();
+    expect(screen.getByTestId("groups.shift.pm")).not.toBeDisabled();
+  });
+
+  it("shows the board and toolbar for an unsaved empty view instead of the empty state", async () => {
+    // Accepted change: when no board is stored but the event exists, the read
+    // returns an unsaved empty view (no trainer columns, every active roadie in
+    // Unassigned, Off empty, editedAt 0). The page must render the board and
+    // toolbar for editors, not the empty state.
+    const a = actor(Role.admin);
+    a.getShiftBoard.mockResolvedValue(
+      boardView(EVENT_1, Shift.am, {
+        groups: [],
+        offThisShift: [],
+        unassigned: [
+          chip(1n, "Ada Roadie", "SRV"),
+          chip(2n, "Bea Roadie", "HST"),
+        ],
+        editedAt: 0n,
+      }),
+    );
+    renderPageWithActor(GroupsPage, a, { path: "/groups" });
+
+    // The board and its toolbar render; the empty state does not.
+    expect(await screen.findByTestId("groups.board")).toBeInTheDocument();
+    expect(screen.getByTestId("groups.toolbar")).toBeInTheDocument();
+    expect(screen.queryByTestId("page.empty_state")).not.toBeInTheDocument();
+
+    // No trainer columns yet, and both active roadies sit in Unassigned.
+    expect(
+      screen.queryByTestId(`groups.board.trainer.${TRAINER_A}`),
+    ).not.toBeInTheDocument();
+    const unassigned = screen.getByTestId("groups.board.unassigned");
+    expect(within(unassigned).getByText("Ada Roadie")).toBeInTheDocument();
+    expect(within(unassigned).getByText("Bea Roadie")).toBeInTheDocument();
+    // Off this shift is empty.
+    expect(
+      within(screen.getByTestId("groups.board.off")).queryByText("Ada Roadie"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("saves a brand-new unsaved board, creating it", async () => {
+    // Accepted change: saving the unsaved view creates the board.
+    const a = actor(Role.admin);
+    a.getShiftBoard.mockResolvedValue(
+      boardView(EVENT_1, Shift.am, {
+        groups: [],
+        offThisShift: [],
+        unassigned: [chip(1n, "Ada Roadie", "SRV")],
+        editedAt: 0n,
+      }),
+    );
+    const user = userEvent.setup();
+    renderPageWithActor(GroupsPage, a, { path: "/groups" });
+
+    await screen.findByTestId("groups.board");
+    // Add a trainer so the board is dirty, then save it.
+    await user.click(screen.getByTestId("groups.board.add_trainer_button"));
+    const dialog = await screen.findByTestId("groups.add_trainer.dialog");
+    await user.click(
+      within(dialog).getByTestId(`groups.add_trainer.option.${TRAINER_A}`),
+    );
+    await user.click(
+      within(dialog).getByTestId("groups.add_trainer.confirm_button"),
+    );
+
+    await user.click(await screen.findByTestId("groups.board.save_button"));
+    await waitFor(() => expect(a.saveShiftBoard).toHaveBeenCalledTimes(1));
+    const saved = a.saveShiftBoard.mock.calls[0][0];
+    expect(saved.eventId).toBe(EVENT_1);
+    expect(saved.shift).toBe(Shift.am);
+    expect(
+      saved.groups.some(
+        (group) => group.trainerPrincipal.toString() === TRAINER_A,
+      ),
+    ).toBe(true);
+  });
+
+  it("creates trainer columns from eligible trainers and fills round-robin on auto-fill", async () => {
+    // Accepted change: auto-fill on a brand-new board starts columns for every
+    // eligible trainer and fills roadies round-robin. The first read is the
+    // unsaved empty view; the refetch after auto-fill has the filled columns.
+    const a = actor(Role.admin);
+    a.getShiftBoard
+      .mockResolvedValueOnce(
+        boardView(EVENT_1, Shift.am, {
+          groups: [],
+          offThisShift: [],
+          unassigned: [
+            chip(1n, "Ada Roadie", "SRV"),
+            chip(2n, "Bea Roadie", "HST"),
+          ],
+          editedAt: 0n,
+        }),
+      )
+      .mockResolvedValue(
+        boardView(EVENT_1, Shift.am, {
+          groups: [
+            {
+              trainerPrincipal: principal(TRAINER_A),
+              capacity: 4n,
+              roadies: [chip(1n, "Ada Roadie", "SRV")],
+            },
+            {
+              trainerPrincipal: principal(TRAINER_B),
+              capacity: 4n,
+              roadies: [chip(2n, "Bea Roadie", "HST")],
+            },
+          ],
+          offThisShift: [],
+          unassigned: [],
+        }),
+      );
+    const user = userEvent.setup();
+    renderPageWithActor(GroupsPage, a, { path: "/groups" });
+
+    await screen.findByTestId("groups.board");
+    await user.click(screen.getByTestId("groups.toolbar.auto_fill_button"));
+    await waitFor(() => expect(a.autoFillShiftBoard).toHaveBeenCalledTimes(1));
+    expect(a.autoFillShiftBoard).toHaveBeenCalledWith(EVENT_1, Shift.am);
+
+    // Both eligible trainers get a column, each with one roadie.
+    const columnA = await screen.findByTestId(
+      `groups.board.trainer.${TRAINER_A}`,
+    );
+    const columnB = await screen.findByTestId(
+      `groups.board.trainer.${TRAINER_B}`,
+    );
+    expect(within(columnA).getByText("Ada Roadie")).toBeInTheDocument();
+    expect(within(columnB).getByText("Bea Roadie")).toBeInTheDocument();
+  });
+
+  it("adds the short date to shift tabs when two events share a label", async () => {
+    // Accepted change: two Friends & Family nights share the day label, so each
+    // tab includes the short date to tell them apart.
+    const a = actor(Role.admin);
+    const ff1 = friendsAndFamily(
+      3n,
+      "Friends & Family Night",
+      NOW_NS + 3n * DAY_NS,
+    );
+    const ff2 = friendsAndFamily(
+      4n,
+      "Friends & Family Night",
+      NOW_NS + 4n * DAY_NS,
+    );
+    a.listSchedule.mockResolvedValue([
+      trainingDay(EVENT_1, "Training Day One", NOW_NS + DAY_NS),
+      ff1,
+      ff2,
+    ]);
+    renderPageWithActor(GroupsPage, a, { path: "/groups" });
+
+    await screen.findByTestId("groups.board");
+    const tab1 = screen.getByTestId("groups.shift.day.3");
+    const tab2 = screen.getByTestId("groups.shift.day.4");
+    // Both carry the shared label plus a distinct short date.
+    expect(tab1).toHaveTextContent("Friends & Family ·");
+    expect(tab2).toHaveTextContent("Friends & Family ·");
+    expect(tab1.textContent).not.toEqual(tab2.textContent);
   });
 
   it("offers a trainer, Off this shift and the other shift in the phone Move to… dialog", async () => {

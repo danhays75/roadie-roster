@@ -185,14 +185,18 @@ export function FlipCard({
 
   // A leader has no roadie id, so their photo comes from the staff profile
   // instead of the roadie photo query. Both faces share the resolved data URL.
+  // A record with no stored photo falls back to its demo-only photo URL, so a
+  // real upload always wins and demo URLs never touch real records.
   const leaderPhotoUrl = useMemo(
     () => refToDataUrl(leader?.staffProfile?.photo),
     [leader?.staffProfile?.photo],
   );
-  const photoUrl = useMemo(
-    () => (leader ? leaderPhotoUrl : refToDataUrl(photo)),
-    [leader, leaderPhotoUrl, photo],
-  );
+  const photoUrl = useMemo(() => {
+    if (leader) {
+      return leaderPhotoUrl ?? leader.demoPhotoUrl ?? null;
+    }
+    return refToDataUrl(photo) ?? roadie?.demoPhotoUrl ?? null;
+  }, [leader, leaderPhotoUrl, photo, roadie?.demoPhotoUrl]);
 
   const isLeader = !!leader;
   const leaderProfile = leader?.staffProfile;
@@ -367,7 +371,10 @@ export function FlipCard({
                     data-ocid="roadie.card.photo"
                     style={
                       photoUrl
-                        ? { backgroundImage: `url(${photoUrl})` }
+                        ? {
+                            backgroundImage: `url(${photoUrl})`,
+                            backgroundPosition: "center top",
+                          }
                         : undefined
                     }
                   >
@@ -375,7 +382,7 @@ export function FlipCard({
                       <img
                         src={photoUrl}
                         alt={name}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover object-top"
                       />
                     ) : (
                       <span
@@ -445,7 +452,10 @@ export function FlipCard({
                   data-ocid="roadie.card.headshot"
                   style={
                     photoUrl
-                      ? { backgroundImage: `url(${photoUrl})` }
+                      ? {
+                          backgroundImage: `url(${photoUrl})`,
+                          backgroundPosition: "center top",
+                        }
                       : undefined
                   }
                 />

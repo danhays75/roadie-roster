@@ -40,7 +40,12 @@ export function RoadieChip({
   ocid: string;
 }) {
   const { t } = useGroupsCopy();
-  const photoUrl = useMemo(() => refToDataUrl(roadie.photo), [roadie.photo]);
+  // A stored photo always wins; a record with no stored photo falls back to its
+  // demo-only photo URL, which never touches real records.
+  const photoUrl = useMemo(
+    () => refToDataUrl(roadie.photo) ?? roadie.demoPhotoUrl ?? null,
+    [roadie.photo, roadie.demoPhotoUrl],
+  );
   const position = roadie.positionCode || t("roadie.field.none");
 
   return (
@@ -87,7 +92,7 @@ export function RoadieChip({
             <img
               src={photoUrl}
               alt={t("groups.board.roadiePhotoAlt")}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover object-top"
             />
           ) : (
             <span

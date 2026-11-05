@@ -156,6 +156,10 @@ module {
           case (?p) { ?redactProfile(p) };
           case null { null };
         };
+        demoPhotoUrl = switch (g.staffProfile) {
+          case (?p) { p.demoPhotoUrl };
+          case null { null };
+        };
         trainerPositionIds = g.trainerPositionIds;
         arrivalDate = switch (g.staffProfile) {
           case (?p) { p.arrivalDate };

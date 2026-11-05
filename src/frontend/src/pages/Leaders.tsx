@@ -86,9 +86,12 @@ function LeaderTile({
   const { t } = useI18n();
   const name = staffDisplayName(leader.staffProfile, t("profile.unnamed"));
   const title = leader.title?.trim() || t("roadie.field.none");
+  // A stored photo always wins; a leader with no stored photo falls back to
+  // their demo-only photo URL, which never touches real records.
   const photoUrl = useMemo(
-    () => refToDataUrl(leader.staffProfile?.photo),
-    [leader.staffProfile?.photo],
+    () =>
+      refToDataUrl(leader.staffProfile?.photo) ?? leader.demoPhotoUrl ?? null,
+    [leader.staffProfile?.photo, leader.demoPhotoUrl],
   );
 
   return (
@@ -114,7 +117,7 @@ function LeaderTile({
             <img
               src={photoUrl}
               alt={name}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover object-top"
             />
           ) : (
             <span

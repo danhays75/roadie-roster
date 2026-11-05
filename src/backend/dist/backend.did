@@ -102,6 +102,7 @@ type UnassignedRoadieRow =
  record {
    crewId: opt CrewId;
    crewName: opt text;
+   demoPhotoUrl: opt text;
    name: text;
    photo: opt PhotoRef;
    positionId: PositionId;
@@ -205,6 +206,7 @@ type StoreInfo =
 type StaffProfile = 
  record {
    arrivalDate: opt DateOnly;
+   demoPhotoUrl: opt text;
    departureDate: opt DateOnly;
    favoriteColor: opt text;
    favoriteDrink: opt text;
@@ -284,6 +286,7 @@ type ShiftBoardView =
  };
 type ShiftBoardRoadie = 
  record {
+   demoPhotoUrl: opt text;
    markedUnavailable: bool;
    name: text;
    photo: opt PhotoRef;
@@ -391,6 +394,7 @@ type Roadie =
    corporateEmployeeId: opt text;
    crewId: opt CrewId;
    crossTrainedPositionId: opt PositionId;
+   demoPhotoUrl: opt text;
    hireDate: opt Timestamp;
    hiredAt: Timestamp;
    id: RoadieId;
@@ -493,6 +497,7 @@ type OrientationRoadieRow =
  record {
    crewId: opt CrewId;
    crewName: opt text;
+   demoPhotoUrl: opt text;
    name: text;
    noShow: bool;
    paperworkStatus: PaperworkStatus;
@@ -549,6 +554,7 @@ type LeaderTalk =
 type LeaderSummary = 
  record {
    arrivalDate: opt DateOnly;
+   demoPhotoUrl: opt text;
    departureDate: opt DateOnly;
    "principal": principal;
    role: Role;
@@ -813,6 +819,7 @@ type CheckInState =
  };
 type CheckInRow = 
  record {
+   demoPhotoUrl: opt text;
    excused: opt text;
    lateAt: opt Timestamp;
    name: text;
@@ -918,6 +925,7 @@ type AbsentAlertView =
  record {
    archived: bool;
    createdAt: Timestamp;
+   demoPhotoUrl: opt text;
    eventId: EventId;
    excused: opt text;
    id: AlertId;

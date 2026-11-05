@@ -15,6 +15,9 @@ module {
     workPhone : ?Common.Phone;
     workEmail : ?Common.Email;
     photo : ?Common.PhotoRef;
+    /// Demo-only photo URL. Set only by Load demo data; null for every real
+    /// record. Used as the image when `photo` is absent.
+    demoPhotoUrl : ?Text;
     trainerPositionIds : [Common.PositionId];
     arrivalDate : ?Common.DateOnly;
     departureDate : ?Common.DateOnly;
@@ -40,6 +43,8 @@ module {
     role : Common.Role;
     title : Text;
     staffProfile : ?StaffProfile;
+    /// Demo-only photo URL carried alongside the leader's name/photo.
+    demoPhotoUrl : ?Text;
     trainerPositionIds : [Common.PositionId];
     arrivalDate : ?Common.DateOnly;
     departureDate : ?Common.DateOnly;

@@ -88,6 +88,9 @@ const POSITION: Position = {
 /** A single byte is enough to produce a non-empty data URL. */
 const PHOTO_BYTES = new Uint8Array([1, 2, 3, 4]);
 
+/** A demo-only photo URL, as Load demo data writes onto a demo record. */
+const DEMO_PHOTO_URL = "https://cdn.example.test/demo/roadie.webp";
+
 /** A roadie as the list payload returns it: no photo bytes on the record. */
 function roadie(overrides: Partial<Roadie> = {}): Roadie {
   return {
@@ -218,6 +221,66 @@ describe("roster list photo", () => {
     rerender(pageElement(RosterPage, "/roster", "/roster", queryClient));
     await screen.findByRole("img", { name: "Ada" });
     expect(getPhoto).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("demo photo URL fallback", () => {
+  it("shows the demo photo URL on the roster list when no stored photo exists", async () => {
+    const getPhoto = vi.fn<backendInterface["getPhoto"]>(async () => null);
+    renderPageWithActor(
+      RosterPage,
+      rosterActor([roadie({ demoPhotoUrl: DEMO_PHOTO_URL })], getPhoto),
+      { path: "/roster" },
+    );
+
+    await screen.findByText("Ada");
+    const img = await screen.findByRole("img", { name: "Ada" });
+    expect(img).toHaveAttribute("src", DEMO_PHOTO_URL);
+  });
+
+  it("prefers a stored photo over the demo photo URL on the roster list", async () => {
+    const getPhoto = vi.fn<backendInterface["getPhoto"]>(
+      async () => PHOTO_BYTES,
+    );
+    renderPageWithActor(
+      RosterPage,
+      rosterActor([roadie({ demoPhotoUrl: DEMO_PHOTO_URL })], getPhoto),
+      { path: "/roster" },
+    );
+
+    await screen.findByText("Ada");
+    const img = await screen.findByRole("img", { name: "Ada" });
+    expect(img).toHaveAttribute("src", expect.stringContaining("data:image/"));
+    expect(img).not.toHaveAttribute("src", DEMO_PHOTO_URL);
+  });
+
+  it("shows the demo photo URL on the card when no stored photo exists", async () => {
+    const getPhoto = vi.fn<backendInterface["getPhoto"]>(async () => null);
+    renderPageWithActor(
+      RoadieCardPage,
+      cardActor(roadie({ demoPhotoUrl: DEMO_PHOTO_URL }), Role.admin, getPhoto),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await screen.findByTestId("roadie.flip_card");
+    const img = await screen.findByRole("img", { name: "Ada" });
+    expect(img).toHaveAttribute("src", DEMO_PHOTO_URL);
+  });
+
+  it("prefers a stored photo over the demo photo URL on the card", async () => {
+    const getPhoto = vi.fn<backendInterface["getPhoto"]>(
+      async () => PHOTO_BYTES,
+    );
+    renderPageWithActor(
+      RoadieCardPage,
+      cardActor(roadie({ demoPhotoUrl: DEMO_PHOTO_URL }), Role.admin, getPhoto),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await screen.findByTestId("roadie.flip_card");
+    const img = await screen.findByRole("img", { name: "Ada" });
+    expect(img).toHaveAttribute("src", expect.stringContaining("data:image/"));
+    expect(img).not.toHaveAttribute("src", DEMO_PHOTO_URL);
   });
 });
 

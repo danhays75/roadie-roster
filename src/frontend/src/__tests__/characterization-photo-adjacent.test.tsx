@@ -104,6 +104,32 @@ describe("roster list without a stored photo", () => {
   });
 });
 
+describe("real roadie without a stored photo keeps the placeholder", () => {
+  it("does not substitute a demo photo for a real record on the roster list", async () => {
+    // The accepted change adds a demo-photo fallback for demo records only. A
+    // real (non-demo) roadie with no stored photo must still show the
+    // placeholder, never a demo photo URL.
+    const real = roadieWithoutPhoto();
+    expect(real.isDemo).toBe(false);
+    renderPageWithActor(RosterPage, rosterActor([real]), { path: "/roster" });
+
+    await screen.findByText("Ada");
+    expect(document.querySelectorAll("img")).toHaveLength(0);
+  });
+
+  it("does not substitute a demo photo for a real record on the card", async () => {
+    const real = roadieWithoutPhoto();
+    expect(real.isDemo).toBe(false);
+    renderPageWithActor(RoadieCardPage, cardActor(real, Role.admin), {
+      path: "/roster/$roadieId",
+      initialEntry: "/roster/1",
+    });
+
+    await screen.findByTestId("roadie.flip_card");
+    expect(document.querySelectorAll("img")).toHaveLength(0);
+  });
+});
+
 describe("roadie card without a stored photo", () => {
   it("renders the card fields and the placeholder icon", async () => {
     renderPageWithActor(

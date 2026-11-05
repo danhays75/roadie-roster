@@ -5,6 +5,7 @@ import type {
   ShiftCheckInSummary,
   StoreInfo,
   TodayView,
+  backendInterface,
 } from "@/backend";
 import { Role, Shift } from "@/backend";
 import TodayPage from "@/pages/Today";
@@ -104,7 +105,9 @@ function actor(
     excuseAbsentAlert: vi.fn(async () => undefined),
     archiveAbsentAlert: vi.fn(async () => undefined),
     moveAbsentRoadieToOtherShift: vi.fn(async () => undefined),
-    getPhoto: vi.fn(async () => new Uint8Array([1, 2, 3, 4])),
+    getPhoto: vi.fn<backendInterface["getPhoto"]>(
+      async () => new Uint8Array([1, 2, 3, 4]),
+    ),
   };
 }
 
@@ -265,5 +268,32 @@ describe("Today absent alerts", () => {
     renderPageWithActor(TodayPage, a, { path: "/today" });
 
     expect(await screen.findByTestId("alerts.empty_state")).toBeInTheDocument();
+  });
+
+  it("shows the demo photo URL on an alert when no stored photo exists", async () => {
+    const DEMO_PHOTO_URL = "https://cdn.example.test/demo/alert.webp";
+    const a = actor(Role.admin, {
+      alerts: [alert({ demoPhotoUrl: DEMO_PHOTO_URL })],
+    });
+    // No stored photo, so the demo URL is the only photo source.
+    a.getPhoto.mockImplementation(async () => null);
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    const photo = await screen.findByTestId("alerts.item.0.photo");
+    const img = within(photo).getByRole("img", { name: "Ada Roadie" });
+    expect(img).toHaveAttribute("src", DEMO_PHOTO_URL);
+  });
+
+  it("prefers a stored photo over the demo photo URL on an alert", async () => {
+    const DEMO_PHOTO_URL = "https://cdn.example.test/demo/alert.webp";
+    const a = actor(Role.admin, {
+      alerts: [alert({ demoPhotoUrl: DEMO_PHOTO_URL })],
+    });
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    const photo = await screen.findByTestId("alerts.item.0.photo");
+    const img = within(photo).getByRole("img", { name: "Ada Roadie" });
+    expect(img).toHaveAttribute("src", expect.stringContaining("data:image/"));
+    expect(img).not.toHaveAttribute("src", DEMO_PHOTO_URL);
   });
 });

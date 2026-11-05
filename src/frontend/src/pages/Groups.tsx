@@ -32,7 +32,10 @@ import {
   shiftOptionKey,
   shiftOptionLabel,
 } from "@/components/groups/shiftOptions";
-import { useBoardEditor } from "@/components/groups/useBoardEditor";
+import {
+  type EditableBoard,
+  useBoardEditor,
+} from "@/components/groups/useBoardEditor";
 import {
   type CardEntry,
   FullProfileLink,
@@ -154,7 +157,25 @@ export default function GroupsPage() {
   );
 
   const view: ShiftBoardView | null = board.data ?? null;
-  const editableBoard = editor.board;
+
+  // The editable board. `useBoardEditor` initializes its local copy in an
+  // effect, so `editor.board` is null on the first render after the read
+  // arrives. Derive the same shape synchronously from the read view in that
+  // window so a brand-new (unsaved) board renders its columns and toolbar
+  // immediately; once the editor initializes, its state is the source of truth.
+  const editableBoard = useMemo<EditableBoard | null>(() => {
+    if (editor.board) return editor.board;
+    if (!view) return null;
+    return {
+      groups: view.groups.map((group) => ({
+        trainerPrincipalText: group.trainerPrincipal.toString(),
+        capacity: Number(group.capacity),
+        roadieIds: group.roadies.map((roadie) => roadie.roadieId),
+      })),
+      offRoadieIds: view.offThisShift.map((roadie) => roadie.roadieId),
+      unassigned: view.unassigned,
+    };
+  }, [editor.board, view]);
 
   // The roadie chips for the card pop-up, in board order.
   const allChips = useMemo<ShiftBoardRoadie[]>(() => {

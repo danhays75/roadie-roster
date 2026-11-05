@@ -87,6 +87,7 @@ export const HatSize = IDL.Text;
 export const PhotoRef = IDL.Vec(IDL.Nat8);
 export const StaffProfile = IDL.Record({
   'title' : IDL.Text,
+  'demoPhotoUrl' : IDL.Opt(IDL.Text),
   'arrivalDate' : IDL.Opt(DateOnly),
   'workEmail' : IDL.Opt(Email),
   'favoriteSnack' : IDL.Opt(IDL.Text),
@@ -301,6 +302,7 @@ export const CheckInState = IDL.Variant({
   'absent' : IDL.Null,
 });
 export const CheckInRow = IDL.Record({
+  'demoPhotoUrl' : IDL.Opt(IDL.Text),
   'roadieId' : RoadieId,
   'name' : IDL.Text,
   'lateAt' : IDL.Opt(Timestamp),
@@ -426,6 +428,7 @@ export const MyAccessView = IDL.Record({
 });
 export const ShiftBoardRoadie = IDL.Record({
   'markedUnavailable' : IDL.Bool,
+  'demoPhotoUrl' : IDL.Opt(IDL.Text),
   'roadieId' : RoadieId,
   'name' : IDL.Text,
   'positionCode' : IDL.Text,
@@ -462,6 +465,7 @@ export const PaperworkStatus = IDL.Variant({
   'complete' : IDL.Null,
 });
 export const OrientationRoadieRow = IDL.Record({
+  'demoPhotoUrl' : IDL.Opt(IDL.Text),
   'noShow' : IDL.Bool,
   'roadieId' : RoadieId,
   'present' : IDL.Bool,
@@ -522,6 +526,7 @@ export const Roadie = IDL.Record({
   'status' : RoadieStatus,
   'orientationEventId' : IDL.Opt(EventId),
   'mainPositionId' : PositionId,
+  'demoPhotoUrl' : IDL.Opt(IDL.Text),
   'crossTrainedPositionId' : IDL.Opt(PositionId),
   'hireDate' : IDL.Opt(Timestamp),
   'corporateEmployeeId' : IDL.Opt(IDL.Text),
@@ -620,6 +625,7 @@ export const ShiftCheckInSummary = IDL.Record({
 export const AbsentAlertView = IDL.Record({
   'id' : AlertId,
   'eventId' : EventId,
+  'demoPhotoUrl' : IDL.Opt(IDL.Text),
   'roadieId' : RoadieId,
   'name' : IDL.Text,
   'createdAt' : Timestamp,
@@ -748,6 +754,7 @@ export const GroupChangeNotice = IDL.Record({
 export const LeaderSummary = IDL.Record({
   'title' : IDL.Text,
   'principal' : IDL.Principal,
+  'demoPhotoUrl' : IDL.Opt(IDL.Text),
   'arrivalDate' : IDL.Opt(DateOnly),
   'departureDate' : IDL.Opt(DateOnly),
   'role' : Role,
@@ -766,6 +773,7 @@ export const PendingUser = IDL.Record({
   'requestedAt' : Timestamp,
 });
 export const UnassignedRoadieRow = IDL.Record({
+  'demoPhotoUrl' : IDL.Opt(IDL.Text),
   'roadieId' : RoadieId,
   'name' : IDL.Text,
   'positionName' : IDL.Text,
@@ -1140,6 +1148,7 @@ export const idlFactory = ({ IDL }) => {
   const PhotoRef = IDL.Vec(IDL.Nat8);
   const StaffProfile = IDL.Record({
     'title' : IDL.Text,
+    'demoPhotoUrl' : IDL.Opt(IDL.Text),
     'arrivalDate' : IDL.Opt(DateOnly),
     'workEmail' : IDL.Opt(Email),
     'favoriteSnack' : IDL.Opt(IDL.Text),
@@ -1354,6 +1363,7 @@ export const idlFactory = ({ IDL }) => {
     'absent' : IDL.Null,
   });
   const CheckInRow = IDL.Record({
+    'demoPhotoUrl' : IDL.Opt(IDL.Text),
     'roadieId' : RoadieId,
     'name' : IDL.Text,
     'lateAt' : IDL.Opt(Timestamp),
@@ -1473,6 +1483,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const ShiftBoardRoadie = IDL.Record({
     'markedUnavailable' : IDL.Bool,
+    'demoPhotoUrl' : IDL.Opt(IDL.Text),
     'roadieId' : RoadieId,
     'name' : IDL.Text,
     'positionCode' : IDL.Text,
@@ -1509,6 +1520,7 @@ export const idlFactory = ({ IDL }) => {
     'complete' : IDL.Null,
   });
   const OrientationRoadieRow = IDL.Record({
+    'demoPhotoUrl' : IDL.Opt(IDL.Text),
     'noShow' : IDL.Bool,
     'roadieId' : RoadieId,
     'present' : IDL.Bool,
@@ -1569,6 +1581,7 @@ export const idlFactory = ({ IDL }) => {
     'status' : RoadieStatus,
     'orientationEventId' : IDL.Opt(EventId),
     'mainPositionId' : PositionId,
+    'demoPhotoUrl' : IDL.Opt(IDL.Text),
     'crossTrainedPositionId' : IDL.Opt(PositionId),
     'hireDate' : IDL.Opt(Timestamp),
     'corporateEmployeeId' : IDL.Opt(IDL.Text),
@@ -1667,6 +1680,7 @@ export const idlFactory = ({ IDL }) => {
   const AbsentAlertView = IDL.Record({
     'id' : AlertId,
     'eventId' : EventId,
+    'demoPhotoUrl' : IDL.Opt(IDL.Text),
     'roadieId' : RoadieId,
     'name' : IDL.Text,
     'createdAt' : Timestamp,
@@ -1792,6 +1806,7 @@ export const idlFactory = ({ IDL }) => {
   const LeaderSummary = IDL.Record({
     'title' : IDL.Text,
     'principal' : IDL.Principal,
+    'demoPhotoUrl' : IDL.Opt(IDL.Text),
     'arrivalDate' : IDL.Opt(DateOnly),
     'departureDate' : IDL.Opt(DateOnly),
     'role' : Role,
@@ -1810,6 +1825,7 @@ export const idlFactory = ({ IDL }) => {
     'requestedAt' : Timestamp,
   });
   const UnassignedRoadieRow = IDL.Record({
+    'demoPhotoUrl' : IDL.Opt(IDL.Text),
     'roadieId' : RoadieId,
     'name' : IDL.Text,
     'positionName' : IDL.Text,

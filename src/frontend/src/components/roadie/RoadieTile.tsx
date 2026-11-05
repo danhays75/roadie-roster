@@ -214,7 +214,12 @@ export function RoadieTile({
   className?: string;
 }) {
   const { data: photo } = useRoadiePhoto(roadie.id);
-  const photoUrl = useMemo(() => refToDataUrl(photo), [photo]);
+  // A stored photo always wins; a record with no stored photo falls back to its
+  // demo-only photo URL, which never touches real records.
+  const photoUrl = useMemo(
+    () => refToDataUrl(photo) ?? roadie.demoPhotoUrl ?? null,
+    [photo, roadie.demoPhotoUrl],
+  );
   const name = roadie.profile.preferredName || roadie.profile.name;
   const isArchived = roadie.status === RoadieStatus.archived;
 
@@ -237,7 +242,7 @@ export function RoadieTile({
             <img
               src={photoUrl}
               alt={name}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover object-top"
             />
           ) : (
             <span

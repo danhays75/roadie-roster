@@ -169,6 +169,7 @@ export function CheckInRowItem({
         <RoadiePhoto
           id={row.roadieId}
           name={row.name}
+          demoPhotoUrl={row.demoPhotoUrl}
           className="h-12 w-12 shrink-0"
           ocid={`today.checkIn.row.${index}.photo`}
           fallback={

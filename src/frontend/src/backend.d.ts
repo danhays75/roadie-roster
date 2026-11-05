@@ -10,6 +10,7 @@ export type Option<T> = Some<T> | None;
 export interface AbsentAlertView {
     id: AlertId;
     eventId: EventId;
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     createdAt: Timestamp;
@@ -112,6 +113,7 @@ export interface CheckInBoardView {
     shiftLabel: string;
 }
 export interface CheckInRow {
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     lateAt?: Timestamp;
@@ -344,6 +346,7 @@ export type HatSize = string;
 export interface LeaderSummary {
     title: string;
     principal: Principal;
+    demoPhotoUrl?: string;
     arrivalDate?: DateOnly;
     departureDate?: DateOnly;
     role: Role;
@@ -386,6 +389,7 @@ export interface OrientationCheckoff {
     shirtsCount: bigint;
 }
 export interface OrientationRoadieRow {
+    demoPhotoUrl?: string;
     noShow: boolean;
     roadieId: RoadieId;
     present: boolean;
@@ -474,6 +478,7 @@ export interface Roadie {
     status: RoadieStatus;
     orientationEventId?: EventId;
     mainPositionId: PositionId;
+    demoPhotoUrl?: string;
     crossTrainedPositionId?: PositionId;
     hireDate?: Timestamp;
     corporateEmployeeId?: string;
@@ -547,6 +552,7 @@ export interface ShiftBoardGroupView {
 }
 export interface ShiftBoardRoadie {
     markedUnavailable: boolean;
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     positionCode: string;
@@ -611,6 +617,7 @@ export interface SizeCurveEntry {
 }
 export interface StaffProfile {
     title: string;
+    demoPhotoUrl?: string;
     arrivalDate?: DateOnly;
     workEmail?: Email;
     favoriteSnack?: string;
@@ -722,6 +729,7 @@ export interface TrainerNote {
     workOn: string;
 }
 export interface UnassignedRoadieRow {
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     positionName: string;

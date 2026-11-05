@@ -54,6 +54,7 @@ function AbsentAlertCard({
       <RoadiePhoto
         id={alert.roadieId}
         name={alert.name}
+        demoPhotoUrl={alert.demoPhotoUrl}
         className="h-16 w-16 shrink-0"
         iconClassName="h-7 w-7"
         ocid={`alerts.item.${index}.photo`}

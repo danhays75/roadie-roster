@@ -169,7 +169,15 @@ describe("backend ShiftBoard contract", () => {
 
   it("answers an empty-state read instead of trapping", async () => {
     await expect(admin.listShiftBoards()).resolves.toEqual([]);
-    await expect(admin.getShiftBoard(1n, { am: null })).resolves.toEqual([]);
+    // Event 1 is the seeded orientation session, so the accepted contract
+    // returns an unsaved empty view (a present option) rather than null.
+    const view = await admin.getShiftBoard(1n, { am: null });
+    expect(view).toHaveLength(1);
+    expect(view[0].groups).toEqual([]);
+    expect(view[0].offThisShift).toEqual([]);
+    expect(view[0].editedAt).toBe(0n);
+    // A read for an event that does not exist is the only null case.
+    await expect(admin.getShiftBoard(9999n, { am: null })).resolves.toEqual([]);
   });
 
   it("round-trips a board through save and get", async () => {

@@ -15,6 +15,7 @@ import { useMemo } from "react";
 export function RoadiePhoto({
   id,
   name,
+  demoPhotoUrl,
   className,
   iconClassName,
   ocid,
@@ -22,6 +23,11 @@ export function RoadiePhoto({
 }: {
   id: RoadieId;
   name: string;
+  /**
+   * A demo-only photo URL. Used only when the roadie has no stored photo, so a
+   * real upload always wins. Demo URLs never touch real records.
+   */
+  demoPhotoUrl?: string;
   className?: string;
   iconClassName?: string;
   ocid?: string;
@@ -29,7 +35,8 @@ export function RoadiePhoto({
   fallback?: React.ReactNode;
 }) {
   const { data: photo } = useRoadiePhoto(id);
-  const src = useMemo(() => refToDataUrl(photo), [photo]);
+  const storedSrc = useMemo(() => refToDataUrl(photo), [photo]);
+  const src = storedSrc ?? demoPhotoUrl ?? null;
 
   return (
     <span
@@ -40,7 +47,11 @@ export function RoadiePhoto({
       )}
     >
       {src ? (
-        <img src={src} alt={name} className="h-full w-full object-cover" />
+        <img
+          src={src}
+          alt={name}
+          className="h-full w-full object-cover object-top"
+        />
       ) : (
         (fallback ?? (
           <ImageIcon

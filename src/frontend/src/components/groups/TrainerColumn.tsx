@@ -54,9 +54,12 @@ export function TrainerColumn({
 }) {
   const { t } = useGroupsCopy();
   const [dragOver, setDragOver] = useState(false);
+  // A stored photo always wins; a leader with no stored photo falls back to
+  // their demo-only photo URL, which never touches real records.
   const photoUrl = useMemo(
-    () => refToDataUrl(leader?.staffProfile?.photo),
-    [leader?.staffProfile?.photo],
+    () =>
+      refToDataUrl(leader?.staffProfile?.photo) ?? leader?.demoPhotoUrl ?? null,
+    [leader?.staffProfile?.photo, leader?.demoPhotoUrl],
   );
   const name = leader
     ? staffDisplayName(leader.staffProfile, t("groups.board.unnamedTrainer"))
@@ -98,7 +101,7 @@ export function TrainerColumn({
             <img
               src={photoUrl}
               alt={t("groups.board.trainerPhotoAlt")}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover object-top"
             />
           ) : (
             <span

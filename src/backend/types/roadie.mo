@@ -83,6 +83,9 @@ module {
     id : Common.RoadieId;
     profile : RoadieProfile;
     photo : ?Common.PhotoRef;
+    /// Demo-only photo URL. Set only by Load demo data; null for every real
+    /// record. Used as the image when `photo` is absent.
+    demoPhotoUrl : ?Text;
     mainPositionId : Common.PositionId;
     secondPositionId : ?Common.PositionId;
     crossTrainedPositionId : ?Common.PositionId;

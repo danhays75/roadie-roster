@@ -239,6 +239,7 @@ actor {
             weekdayLunch = null;
           };
           photo = null;
+          demoPhotoUrl = null;
           mainPositionId = 0;
           secondPositionId = null;
           crossTrainedPositionId = null;

@@ -26,6 +26,8 @@
 - Do not touch tests and change nothing outside the current batch
 - Every new record carries isDemo and every write is logged
 - Use effectiveNow (the pretend date) everywhere for schedule windows and check-in availability
+- Demo people use realistic names, ages, positions and About Me answers with photo URLs; no placeholder text
+- Demo photo URLs are demo-only and never touch real records
 
 ## Accepted Requirements
 
@@ -147,16 +149,6 @@
 
 ## Learnings
 
-- The Position type requires defaultShirts/defaultHats, so any test fixture constructing a Position must supply them or the frontend type-check fails.
-- The tester owns test files under src/frontend/src/__tests__ and test/pocketic; production workers must not edit them.
-- boardKey(eventId,shift,isDemo) in src/backend/lib/phase23.mo is the single partition-key builder for shift boards; all board reads/writes and migration 00000017 use it.
-- Retired fields (StoreInfo.paperworkDueDate, Position.crewManager, Position.shirtsRequired/hatsRequired) survive only in old migrations and tester-owned tests, never in app source.
-- components/admin/copy.ts keeps unused positionsShirtsRequired/positionsHatsRequired/positionsCrewManager keys; no .tsx references them.
-- The app's existing regression suite has known pre-existing failures (19 frontend, 4 backend) unrelated to the requested fixes; the user asked for them to be handled separately.
-- Archiving a roadie now removes them from current and future shift boards in the same partition and records a 'Your group changed' notice for their trainer; the helper is Phase23Lib.removeArchivedRoadieFromBoards in src/backend/lib/phase23.mo, called from archiveRoadie and archiveNoShows.
-- saveShiftBoard, copyShiftBoard and autoFillShiftBoard silently drop archived roadies from the incoming board instead of trapping; they still trap for roadies that do not exist or are in the other partition.
-- RoadieLib.archiveRoadie now takes shiftBoards, groupChangeNotices, schedule and counters; the RoadieApi mixin and main.mo include pass shiftBoards and groupChangeNotices, and Phase23Lib.archiveNoShows takes the same two extra arguments.
-- TrainerToday mounts NextEventCard when the trainer has no group and today.nextEvent exists; the today.placeholder testid remains the no-event fallback.
 - Today routes by exact role: trainer -> TrainerToday, alert roles -> ManagerToday, read-only roles -> ReadOnlyToday.
 - The app's existing regression suite has known pre-existing failures (19 frontend) unrelated to the check-in and Today work; the user asked for them to be handled separately.
 - The PocketIC backend lane did not run on the draft-start tree (no_backend_wasm), so its 8 backend failures are judged as new; they were not repaired within the in-draft recovery budget.
@@ -172,3 +164,13 @@
 - setDemoTrainerAs in src/backend/lib/demo.mo rejects a trainerPrincipal not in demoGroupLeaders(accessGrants) with #err("Pick a demo trainer").
 - pretendDateToInstant in src/frontend/src/lib/format.ts takes the store time zone and shift start times and returns local midnight of the pretend calendar date in the store zone plus (amShiftStart|pmShiftStart) plus 30 minutes, matching the backend effectiveNow; call sites are Dashboard.tsx, OpeningTimeline.tsx, CheckInRow.tsx, Kiosk.tsx and shiftOptions.ts.
 - The PocketIC backend lane's archive/board failures are caused by its default canister clock (2021-05-06) versus tests that build events from real Date.now(); the backend comparison is correct with a real clock.
+- getShiftBoard in src/backend/lib/phase23.mo returns an unsaved empty ShiftBoardView (groups=[], offThisShift=[], editedAt=0, isDemo=active partition, all active non-archived roadies in unassigned) when the event exists but no board is stored; null only when the event is missing.
+- autoFillShiftBoard in src/backend/lib/phase23.mo starts a board from trainer-eligible leaders in the active partition when none is stored (demo: demo #trainer leaders; real: trainer-capable roles) and traps 'Add a trainer first' when none exist.
+- autoFillShiftBoard receives storeInfo already unwrapped to Store.StoreInfo, so defaultGroupCapacity must read storeInfo.trainingGroupSize, not .value.
+- pages/Groups.tsx derives the editable board synchronously from the read view while useBoardEditor's effect has not initialized, so a brand-new unsaved board renders its columns and toolbar immediately.
+- components/groups/shiftOptions.ts shiftOptionDayLabel appends the short date when duplicateDayLabel is set, so two same-label events render distinct ShiftPicker day chips.
+- The PocketIC backend lane's remaining failures are stale tests encoding the pre-fix contract and clock artifacts (the canister clock is fixed at 2021-05-06 while tests build events from Date.now()); they are not app defects.
+- demoPhotoUrl is a ?Text on Roadie, StaffProfile and LeaderSummary plus the phase23 view types (ShiftBoardRoadie, CheckInRow, AbsentAlertView, OrientationRoadieRow, UnassignedRoadieRow); every photo surface resolves storedSrc ?? demoPhotoUrl ?? null so a real upload always wins.
+- Demo seed position matching is case-insensitive via positionIdFor in src/backend/lib/demo.mo with an i % positions fallback when no name matches.
+- Demo date of birth is derived from age plus a varied MM-DD using Hinnant civil-date helpers so the two minors stay isMinor true.
+- The app's existing regression suite has known pre-existing failures (19 frontend, 9 backend) unrelated to the demo photo work; the user asked for them to be handled separately.

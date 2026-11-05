@@ -66,6 +66,8 @@ module {
     roadieId : Common.RoadieId;
     name : Text;
     photo : ?Common.PhotoRef;
+    /// Demo-only photo URL, used as the image when `photo` is absent.
+    demoPhotoUrl : ?Text;
     positionId : Common.PositionId;
     positionCode : Text;
     markedUnavailable : Bool;
@@ -181,6 +183,8 @@ module {
     roadieId : Common.RoadieId;
     name : Text;
     photo : ?Common.PhotoRef;
+    /// Demo-only photo URL, used as the image when `photo` is absent.
+    demoPhotoUrl : ?Text;
     positionId : Common.PositionId;
     positionName : Text;
     crewId : ?Common.CrewId;
@@ -219,6 +223,8 @@ module {
     roadieId : Common.RoadieId;
     name : Text;
     photo : ?Common.PhotoRef;
+    /// Demo-only photo URL, used as the image when `photo` is absent.
+    demoPhotoUrl : ?Text;
     positionId : Common.PositionId;
     positionName : Text;
     crewId : ?Common.CrewId;
@@ -315,6 +321,8 @@ module {
     roadieId : Common.RoadieId;
     name : Text;
     photo : ?Common.PhotoRef;
+    /// Demo-only photo URL, used as the image when `photo` is absent.
+    demoPhotoUrl : ?Text;
     state : ?CheckInState;
     lateAt : ?Common.Timestamp;
     excused : ?Text;
@@ -344,6 +352,8 @@ module {
     roadieId : Common.RoadieId;
     name : Text;
     photo : ?Common.PhotoRef;
+    /// Demo-only photo URL, used as the image when `photo` is absent.
+    demoPhotoUrl : ?Text;
     excused : ?Text;
     archived : Bool;
     phone : ?Common.Phone;

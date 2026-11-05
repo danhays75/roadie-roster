@@ -56,6 +56,7 @@ export { ExternalBlob } from "@caffeineai/object-storage";
 export interface AbsentAlertView {
     id: AlertId;
     eventId: EventId;
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     createdAt: Timestamp;
@@ -158,6 +159,7 @@ export interface CheckInBoardView {
     shiftLabel: string;
 }
 export interface CheckInRow {
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     lateAt?: Timestamp;
@@ -390,6 +392,7 @@ export type HatSize = string;
 export interface LeaderSummary {
     title: string;
     principal: Principal;
+    demoPhotoUrl?: string;
     arrivalDate?: DateOnly;
     departureDate?: DateOnly;
     role: Role;
@@ -432,6 +435,7 @@ export interface OrientationCheckoff {
     shirtsCount: bigint;
 }
 export interface OrientationRoadieRow {
+    demoPhotoUrl?: string;
     noShow: boolean;
     roadieId: RoadieId;
     present: boolean;
@@ -520,6 +524,7 @@ export interface Roadie {
     status: RoadieStatus;
     orientationEventId?: EventId;
     mainPositionId: PositionId;
+    demoPhotoUrl?: string;
     crossTrainedPositionId?: PositionId;
     hireDate?: Timestamp;
     corporateEmployeeId?: string;
@@ -593,6 +598,7 @@ export interface ShiftBoardGroupView {
 }
 export interface ShiftBoardRoadie {
     markedUnavailable: boolean;
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     positionCode: string;
@@ -657,6 +663,7 @@ export interface SizeCurveEntry {
 }
 export interface StaffProfile {
     title: string;
+    demoPhotoUrl?: string;
     arrivalDate?: DateOnly;
     workEmail?: Email;
     favoriteSnack?: string;
@@ -768,6 +775,7 @@ export interface TrainerNote {
     workOn: string;
 }
 export interface UnassignedRoadieRow {
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     positionName: string;
@@ -3830,6 +3838,7 @@ function from_candid_record_n121(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }
 function from_candid_record_n126(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     title: string;
+    demoPhotoUrl: [] | [string];
     arrivalDate: [] | [_DateOnly];
     workEmail: [] | [_Email];
     favoriteSnack: [] | [string];
@@ -3853,6 +3862,7 @@ function from_candid_record_n126(_uploadFile: (file: ExternalBlob) => Promise<Ui
     favoriteColor: [] | [string];
 }): {
     title: string;
+    demoPhotoUrl?: string;
     arrivalDate?: DateOnly;
     workEmail?: Email;
     favoriteSnack?: string;
@@ -3877,6 +3887,7 @@ function from_candid_record_n126(_uploadFile: (file: ExternalBlob) => Promise<Ui
 } {
     return {
         title: value.title,
+        demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
         arrivalDate: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.arrivalDate)),
         workEmail: record_opt_to_undefined(from_candid_opt_n39(_uploadFile, _downloadFile, value.workEmail)),
         favoriteSnack: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.favoriteSnack)),
@@ -3923,6 +3934,7 @@ function from_candid_record_n131(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }
 function from_candid_record_n134(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     markedUnavailable: boolean;
+    demoPhotoUrl: [] | [string];
     roadieId: _RoadieId;
     name: string;
     positionCode: string;
@@ -3930,6 +3942,7 @@ function from_candid_record_n134(_uploadFile: (file: ExternalBlob) => Promise<Ui
     photo: [] | [_PhotoRef];
 }): {
     markedUnavailable: boolean;
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     positionCode: string;
@@ -3938,6 +3951,7 @@ function from_candid_record_n134(_uploadFile: (file: ExternalBlob) => Promise<Ui
 } {
     return {
         markedUnavailable: value.markedUnavailable,
+        demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
         roadieId: value.roadieId,
         name: value.name,
         positionCode: value.positionCode,
@@ -3973,6 +3987,7 @@ function from_candid_record_n139(_uploadFile: (file: ExternalBlob) => Promise<Ui
     };
 }
 function from_candid_record_n143(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    demoPhotoUrl: [] | [string];
     noShow: boolean;
     roadieId: _RoadieId;
     present: boolean;
@@ -3985,6 +4000,7 @@ function from_candid_record_n143(_uploadFile: (file: ExternalBlob) => Promise<Ui
     crewName: [] | [string];
     photo: [] | [_PhotoRef];
 }): {
+    demoPhotoUrl?: string;
     noShow: boolean;
     roadieId: RoadieId;
     present: boolean;
@@ -3998,6 +4014,7 @@ function from_candid_record_n143(_uploadFile: (file: ExternalBlob) => Promise<Ui
     photo?: PhotoRef;
 } {
     return {
+        demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
         noShow: value.noShow,
         roadieId: value.roadieId,
         present: value.present,
@@ -4016,6 +4033,7 @@ function from_candid_record_n149(_uploadFile: (file: ExternalBlob) => Promise<Ui
     status: _RoadieStatus;
     orientationEventId: [] | [_EventId];
     mainPositionId: _PositionId;
+    demoPhotoUrl: [] | [string];
     crossTrainedPositionId: [] | [_PositionId];
     hireDate: [] | [_Timestamp];
     corporateEmployeeId: [] | [string];
@@ -4038,6 +4056,7 @@ function from_candid_record_n149(_uploadFile: (file: ExternalBlob) => Promise<Ui
     status: RoadieStatus;
     orientationEventId?: EventId;
     mainPositionId: PositionId;
+    demoPhotoUrl?: string;
     crossTrainedPositionId?: PositionId;
     hireDate?: Timestamp;
     corporateEmployeeId?: string;
@@ -4061,6 +4080,7 @@ function from_candid_record_n149(_uploadFile: (file: ExternalBlob) => Promise<Ui
         status: from_candid_RoadieStatus_n150(_uploadFile, _downloadFile, value.status),
         orientationEventId: record_opt_to_undefined(from_candid_opt_n151(_uploadFile, _downloadFile, value.orientationEventId)),
         mainPositionId: value.mainPositionId,
+        demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
         crossTrainedPositionId: record_opt_to_undefined(from_candid_opt_n152(_uploadFile, _downloadFile, value.crossTrainedPositionId)),
         hireDate: record_opt_to_undefined(from_candid_opt_n81(_uploadFile, _downloadFile, value.hireDate)),
         corporateEmployeeId: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.corporateEmployeeId)),
@@ -4326,6 +4346,7 @@ function from_candid_record_n179(_uploadFile: (file: ExternalBlob) => Promise<Ui
 function from_candid_record_n182(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: _AlertId;
     eventId: _EventId;
+    demoPhotoUrl: [] | [string];
     roadieId: _RoadieId;
     name: string;
     createdAt: _Timestamp;
@@ -4338,6 +4359,7 @@ function from_candid_record_n182(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): {
     id: AlertId;
     eventId: EventId;
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     createdAt: Timestamp;
@@ -4351,6 +4373,7 @@ function from_candid_record_n182(_uploadFile: (file: ExternalBlob) => Promise<Ui
     return {
         id: value.id,
         eventId: value.eventId,
+        demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
         roadieId: value.roadieId,
         name: value.name,
         createdAt: value.createdAt,
@@ -4542,6 +4565,7 @@ function from_candid_record_n207(_uploadFile: (file: ExternalBlob) => Promise<Ui
 function from_candid_record_n210(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     title: string;
     principal: Principal;
+    demoPhotoUrl: [] | [string];
     arrivalDate: [] | [_DateOnly];
     departureDate: [] | [_DateOnly];
     role: _Role;
@@ -4550,6 +4574,7 @@ function from_candid_record_n210(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): {
     title: string;
     principal: Principal;
+    demoPhotoUrl?: string;
     arrivalDate?: DateOnly;
     departureDate?: DateOnly;
     role: Role;
@@ -4559,6 +4584,7 @@ function from_candid_record_n210(_uploadFile: (file: ExternalBlob) => Promise<Ui
     return {
         title: value.title,
         principal: value.principal,
+        demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
         arrivalDate: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.arrivalDate)),
         departureDate: record_opt_to_undefined(from_candid_opt_n32(_uploadFile, _downloadFile, value.departureDate)),
         role: from_candid_Role_n123(_uploadFile, _downloadFile, value.role),
@@ -4654,6 +4680,7 @@ function from_candid_record_n225(_uploadFile: (file: ExternalBlob) => Promise<Ui
     };
 }
 function from_candid_record_n228(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    demoPhotoUrl: [] | [string];
     roadieId: _RoadieId;
     name: string;
     positionName: string;
@@ -4662,6 +4689,7 @@ function from_candid_record_n228(_uploadFile: (file: ExternalBlob) => Promise<Ui
     crewName: [] | [string];
     photo: [] | [_PhotoRef];
 }): {
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     positionName: string;
@@ -4671,6 +4699,7 @@ function from_candid_record_n228(_uploadFile: (file: ExternalBlob) => Promise<Ui
     photo?: PhotoRef;
 } {
     return {
+        demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
         roadieId: value.roadieId,
         name: value.name,
         positionName: value.positionName,
@@ -4969,6 +4998,7 @@ function from_candid_record_n77(_uploadFile: (file: ExternalBlob) => Promise<Uin
     };
 }
 function from_candid_record_n80(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    demoPhotoUrl: [] | [string];
     roadieId: _RoadieId;
     name: string;
     lateAt: [] | [_Timestamp];
@@ -4976,6 +5006,7 @@ function from_candid_record_n80(_uploadFile: (file: ExternalBlob) => Promise<Uin
     excused: [] | [string];
     photo: [] | [_PhotoRef];
 }): {
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     lateAt?: Timestamp;
@@ -4984,6 +5015,7 @@ function from_candid_record_n80(_uploadFile: (file: ExternalBlob) => Promise<Uin
     photo?: PhotoRef;
 } {
     return {
+        demoPhotoUrl: record_opt_to_undefined(from_candid_opt_n33(_uploadFile, _downloadFile, value.demoPhotoUrl)),
         roadieId: value.roadieId,
         name: value.name,
         lateAt: record_opt_to_undefined(from_candid_opt_n81(_uploadFile, _downloadFile, value.lateAt)),
@@ -5903,6 +5935,7 @@ function to_candid_record_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8
 }
 function to_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     title: string;
+    demoPhotoUrl?: string;
     arrivalDate?: DateOnly;
     workEmail?: Email;
     favoriteSnack?: string;
@@ -5926,6 +5959,7 @@ function to_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     favoriteColor?: string;
 }): {
     title: string;
+    demoPhotoUrl: [] | [string];
     arrivalDate: [] | [_DateOnly];
     workEmail: [] | [_Email];
     favoriteSnack: [] | [string];
@@ -5950,6 +5984,7 @@ function to_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8
 } {
     return {
         title: value.title,
+        demoPhotoUrl: value.demoPhotoUrl ? candid_some(value.demoPhotoUrl) : candid_none(),
         arrivalDate: value.arrivalDate ? candid_some(value.arrivalDate) : candid_none(),
         workEmail: value.workEmail ? candid_some(value.workEmail) : candid_none(),
         favoriteSnack: value.favoriteSnack ? candid_some(value.favoriteSnack) : candid_none(),

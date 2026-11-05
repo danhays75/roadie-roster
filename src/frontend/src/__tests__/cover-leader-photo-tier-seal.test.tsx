@@ -85,11 +85,15 @@ function grant(role: Role, staffProfile?: StaffProfile): AccessGrant {
   };
 }
 
+/** A demo-only photo URL, as Load demo data writes onto a demo leader. */
+const DEMO_PHOTO_URL = "https://cdn.example.test/demo/leader.webp";
+
 /** A leader summary with a full staff profile and the given role. */
 function leader(
   role: Role,
   principalText: string,
   profile: Partial<StaffProfile> = {},
+  demoPhotoUrl?: string,
 ): LeaderSummary {
   return {
     principal: {
@@ -99,6 +103,7 @@ function leader(
     role,
     title: profile.title ?? "Manager",
     trainerPositionIds: [],
+    demoPhotoUrl,
     staffProfile: {
       fullName: "Jordan Rivera",
       preferredName: "Jordan",
@@ -270,6 +275,88 @@ describe("Leaders grid: leader photo on the tile", () => {
     // The display name "Pat · Manager" yields the initials "PM".
     expect(within(tile).getByText("PM")).toBeInTheDocument();
     expect(within(tile).queryByRole("img")).not.toBeInTheDocument();
+  });
+
+  it("shows the demo photo URL in the grid tile when no stored photo exists", async () => {
+    const leaders = [
+      leader(
+        Role.storeManager,
+        "plat-1",
+        { preferredName: "Pat" },
+        DEMO_PHOTO_URL,
+      ),
+    ];
+    renderPageWithActor(LeadersPage, leadersActor(leaders), {
+      path: "/leaders",
+    });
+
+    const tile = await screen.findByTestId("leaders.item.photo");
+    const img = within(tile).getByRole("img", { name: "Pat · Manager" });
+    expect(img).toHaveAttribute("src", DEMO_PHOTO_URL);
+  });
+
+  it("prefers a stored photo over the demo photo URL in the grid tile", async () => {
+    const leaders = [
+      leader(
+        Role.storeManager,
+        "plat-1",
+        { preferredName: "Pat", photo: PHOTO_BYTES },
+        DEMO_PHOTO_URL,
+      ),
+    ];
+    renderPageWithActor(LeadersPage, leadersActor(leaders), {
+      path: "/leaders",
+    });
+
+    const tile = await screen.findByTestId("leaders.item.photo");
+    const img = within(tile).getByRole("img", { name: "Pat · Manager" });
+    expect(img).toHaveAttribute("src", PHOTO_DATA_URL);
+    expect(img).not.toHaveAttribute("src", DEMO_PHOTO_URL);
+  });
+});
+
+describe("leader demo photo URL fallback", () => {
+  it("shows the demo photo URL on the leader card when no stored photo exists", async () => {
+    const leaders = [
+      leader(
+        Role.storeManager,
+        "plat-1",
+        { preferredName: "Pat" },
+        DEMO_PHOTO_URL,
+      ),
+    ];
+    renderLeaderCard(leaders, "plat-1");
+
+    const front = await visibleFace();
+    const img = within(front.getByTestId("roadie.card.photo")).getByRole(
+      "img",
+      {
+        name: "Pat",
+      },
+    );
+    expect(img).toHaveAttribute("src", DEMO_PHOTO_URL);
+  });
+
+  it("prefers a stored photo over the demo photo URL on the leader card", async () => {
+    const leaders = [
+      leader(
+        Role.storeManager,
+        "plat-1",
+        { preferredName: "Pat", photo: PHOTO_BYTES },
+        DEMO_PHOTO_URL,
+      ),
+    ];
+    renderLeaderCard(leaders, "plat-1");
+
+    const front = await visibleFace();
+    const img = within(front.getByTestId("roadie.card.photo")).getByRole(
+      "img",
+      {
+        name: "Pat",
+      },
+    );
+    expect(img).toHaveAttribute("src", PHOTO_DATA_URL);
+    expect(img).not.toHaveAttribute("src", DEMO_PHOTO_URL);
   });
 });
 

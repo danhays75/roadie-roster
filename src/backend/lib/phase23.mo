@@ -171,6 +171,7 @@ module {
         roadieId = r.id;
         name = displayName(r);
         photo = r.photo;
+        demoPhotoUrl = r.demoPhotoUrl;
         positionId = r.mainPositionId;
         positionName;
         crewId = r.crewId;
@@ -350,6 +351,7 @@ module {
           roadieId = r.id;
           name = displayName(r);
           photo = r.photo;
+          demoPhotoUrl = r.demoPhotoUrl;
           positionId = r.mainPositionId;
           positionName;
           crewId = r.crewId;
@@ -669,6 +671,7 @@ module {
           roadieId = r.id;
           name = displayName(r);
           photo = r.photo;
+          demoPhotoUrl = r.demoPhotoUrl;
           positionId = r.mainPositionId;
           positionCode;
           markedUnavailable = markedUnavailable(r, day, shift);
@@ -722,6 +725,7 @@ module {
           roadieId = r.id;
           name = displayName(r);
           photo = r.photo;
+          demoPhotoUrl = r.demoPhotoUrl;
           positionId = r.mainPositionId;
           positionCode;
           markedUnavailable = markedUnavailable(r, day, shift);
@@ -760,7 +764,25 @@ module {
         if (board.isDemo != demo) { return null };
         ?buildBoardView(board, schedule.get(eventId), roadies, positions);
       };
-      case null { null };
+      case null {
+        // No board stored in the active partition. When the event exists,
+        // return an unsaved empty view so a brand-new board can be started;
+        // return null only when the event does not exist.
+        switch (schedule.get(eventId)) {
+          case (?event) {
+            let empty : Phase23.ShiftBoard = {
+              eventId;
+              shift;
+              groups = [];
+              offRoadieIds = [];
+              editedAt = 0;
+              isDemo = demo;
+            };
+            ?buildBoardView(empty, ?event, roadies, positions);
+          };
+          case null { null };
+        };
+      };
     };
   };
 
@@ -901,6 +923,35 @@ module {
         case null { false };
       };
     };
+  };
+
+  /// Internal: every trainer-eligible leader in the active partition, ordered by
+  /// principal so a new board's columns are stable. In demo mode these are the
+  /// demo leaders with the NSO Trainer role; in real mode the approved NSO
+  /// Trainers (any trainer-capable role).
+  func eligibleTrainers(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+  ) : [Principal] {
+    if (Auth.demoActive(demoState)) {
+      accessGrants.values()
+        .filter(func(g) = Auth.isDemoLeader(g) and g.role == #trainer)
+        .map(func(g) = g.principal)
+        .toArray()
+        .sort();
+    } else {
+      accessGrants.values()
+        .filter(func(g) = isTrainerRole(g.role))
+        .map(func(g) = g.principal)
+        .toArray()
+        .sort();
+    };
+  };
+
+  /// Internal: the default capacity for a new group column, from the Admin
+  /// `trainingGroupSize` store setting.
+  func defaultGroupCapacity(storeInfo : Store.StoreInfo) : Nat {
+    storeInfo.trainingGroupSize;
   };
 
   /// Internal: the display name for a principal, from their access grant's
@@ -1184,9 +1235,32 @@ module {
     Auth.requireGroupEditor(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
     let key = boardKey(eventId, shift, demo);
-    let storedBoard = shiftBoards.get(key) ?? Runtime.trap("Shift board not found");
-    if (storedBoard.isDemo != demo) {
-      Runtime.trap("Shift board not found");
+    // When no board is stored yet, start one whose trainer columns are every
+    // trainer-eligible leader in the active partition. In demo mode those are
+    // the demo leaders with the NSO Trainer role; in real mode the approved
+    // NSO Trainers. A stored board keeps its existing columns.
+    let storedBoard = switch (shiftBoards.get(key)) {
+      case (?b) {
+        if (b.isDemo != demo) {
+          Runtime.trap("Shift board not found");
+        };
+        b;
+      };
+      case null {
+        let trainers = eligibleTrainers(accessGrants, demoState);
+        if (trainers.size() == 0) {
+          Runtime.trap("Add a trainer first");
+        };
+        let capacity = defaultGroupCapacity(storeInfo);
+        {
+          eventId;
+          shift;
+          groups = trainers.map(func(t) = { trainerPrincipal = t; capacity; roadieIds = [] });
+          offRoadieIds = [];
+          editedAt = 0;
+          isDemo = demo;
+        };
+      };
     };
     // Archived roadies are silently dropped from the incoming board before it
     // is filled.
@@ -1959,6 +2033,7 @@ module {
             roadieId = rid;
             name = displayName(r);
             photo = r.photo;
+            demoPhotoUrl = r.demoPhotoUrl;
             state = switch (stored) { case (?c) { ?c.state }; case null { null } };
             lateAt = switch (stored) { case (?c) { c.lateAt }; case null { null } };
             excused = switch (stored) { case (?c) { c.excused }; case null { null } };
@@ -2000,6 +2075,7 @@ module {
         let roadie = roadies.get(a.roadieId);
         let name = switch (roadie) { case (?r) { displayName(r) }; case null { "Roadie " # a.roadieId.toText() } };
         let photo = switch (roadie) { case (?r) { r.photo }; case null { null } };
+        let demoPhotoUrl = switch (roadie) { case (?r) { r.demoPhotoUrl }; case null { null } };
         let phone = if (canSeePhone) {
           switch (roadie) {
             case (?r) {
@@ -2016,6 +2092,7 @@ module {
           roadieId = a.roadieId;
           name;
           photo;
+          demoPhotoUrl;
           excused = a.excused;
           archived = a.archived;
           phone;
