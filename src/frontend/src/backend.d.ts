@@ -7,6 +7,19 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface AbsentAlertView {
+    id: AlertId;
+    eventId: EventId;
+    roadieId: RoadieId;
+    name: string;
+    createdAt: Timestamp;
+    shift: Shift;
+    shiftLabel: string;
+    excused?: string;
+    phone?: Phone;
+    photo?: PhotoRef;
+    archived: boolean;
+}
 export interface AccessGrant {
     principal: Principal;
     linkedRoadieId?: RoadieId;
@@ -89,6 +102,23 @@ export interface ChangeLogEntry {
     subjectRoadieId?: RoadieId;
 }
 export type ChangeLogId = bigint;
+export interface CheckInBoardView {
+    roadies: Array<CheckInRow>;
+    eventId: EventId;
+    checkedInCount: bigint;
+    totalCount: bigint;
+    locked: boolean;
+    shift: Shift;
+    shiftLabel: string;
+}
+export interface CheckInRow {
+    roadieId: RoadieId;
+    name: string;
+    lateAt?: Timestamp;
+    state?: CheckInState;
+    excused?: string;
+    photo?: PhotoRef;
+}
 export interface ChecklistItem {
     id: bigint;
     requiresAlcoholCert: boolean;
@@ -338,6 +368,12 @@ export interface MyGroupView {
     shiftLabel: string;
     capacity: bigint;
 }
+export interface NextEventView {
+    eventId: EventId;
+    name: string;
+    start: Timestamp;
+    startsInMs: bigint;
+}
 export interface OrientationCheckoff {
     hatsCount: bigint;
     roadieId: RoadieId;
@@ -525,6 +561,15 @@ export interface ShiftBoardView {
     unassigned: Array<ShiftBoardRoadie>;
     editedAt: Timestamp;
 }
+export interface ShiftCheckInSummary {
+    eventId: EventId;
+    total: bigint;
+    present: bigint;
+    late: bigint;
+    shift: Shift;
+    shiftLabel: string;
+    absent: bigint;
+}
 export type ShirtSize = string;
 export type SignOffOutcome = {
     __kind__: "certified";
@@ -656,6 +701,14 @@ export interface TemplateScheduleEvent {
 export type TimeOfDay = bigint;
 export type TimeZone = string;
 export type Timestamp = bigint;
+export interface TodayView {
+    checkIn?: CheckInBoardView;
+    nextEvent?: NextEventView;
+    shiftSummaries: Array<ShiftCheckInSummary>;
+    myGroup?: MyGroupView;
+    role: Role;
+    absentAlerts: Array<AbsentAlertView>;
+}
 export interface TrainerNote {
     id: bigint;
     day: DateOnly;
@@ -740,6 +793,11 @@ export type Value = {
     text: string;
 };
 export enum AttendanceState {
+    present = "present",
+    late = "late",
+    absent = "absent"
+}
+export enum CheckInState {
     present = "present",
     late = "late",
     absent = "absent"
@@ -866,6 +924,10 @@ export interface backendInterface {
      */
     approveUser(request: ApprovalRequest): Promise<void>;
     /**
+     * / Archive an absent alert (Admin, Store Manager or Training Manager).
+     */
+    archiveAbsentAlert(id: AlertId): Promise<void>;
+    /**
      * / Archive every no-show at a session as NCNS Orientation (Admin/Store
      * / Manager only). Returns the archived roadie ids.
      */
@@ -961,6 +1023,11 @@ export interface backendInterface {
      * / when a seed was applied, false when the store already had positions.
      */
     ensureSeeded(): Promise<boolean>;
+    /**
+     * / Excuse an absent roadie with a short reason (Admin, Store Manager or
+     * / Training Manager).
+     */
+    excuseAbsentAlert(id: AlertId, reason: string): Promise<void>;
     execute(qJson: string): Promise<Result>;
     /**
      * / Find duplicate cards matching a submission (Admin/Store Manager only).
@@ -972,6 +1039,10 @@ export interface backendInterface {
      */
     getApiDoc(): Promise<string>;
     getCallerUserRole(): Promise<UserRole>;
+    /**
+     * / The trainer check-in screen for the caller's own group on one shift.
+     */
+    getCheckInBoard(eventId: EventId, shift: Shift): Promise<CheckInBoardView | null>;
     /**
      * / Read the editable checklists.
      */
@@ -1072,6 +1143,10 @@ export interface backendInterface {
      */
     getStoreLogo(): Promise<StoreLogos>;
     /**
+     * / The Today page payload, shaped by the caller's role.
+     */
+    getToday(): Promise<TodayView>;
+    /**
      * / The uniform check-off for a roadie (Admin, Store Manager, Training Manager
      * / or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
      */
@@ -1095,6 +1170,11 @@ export interface backendInterface {
      * / Compute whether a roadie is a minor as of now.
      */
     isMinor(id: RoadieId): Promise<boolean>;
+    /**
+     * / List the unarchived absent alerts (Admin, Store Manager or Training
+     * / Manager). `phone` is present only for Admin and Store Manager.
+     */
+    listAbsentAlerts(): Promise<Array<AbsentAlertView>>;
     /**
      * / List all access grants (Admin only).
      */
@@ -1188,6 +1268,11 @@ export interface backendInterface {
      */
     markPresent(roadieId: RoadieId, eventId: EventId, overrideReason: string | null): Promise<void>;
     /**
+     * / Move an absent roadie to the same day's other shift, into that shift's
+     * / Unassigned tray (Admin, Store Manager or Training Manager).
+     */
+    moveAbsentRoadieToOtherShift(id: AlertId): Promise<void>;
+    /**
      * / Move every non-archived roadie from one orientation session to another
      * / (Admin/Store Manager only, logged). Returns the number moved.
      */
@@ -1200,6 +1285,15 @@ export interface backendInterface {
      * / Record attendance for a roadie (Admin/Store Manager only).
      */
     recordAttendance(record: AttendanceRecord): Promise<void>;
+    /**
+     * / Create or change one roadie's check-in record for a shift (upsert). Admin,
+     * / Store Manager and Training Manager may check in anyone; a trainer may
+     * / check in only roadies in their own group on that shift's board. A trainer
+     * / may write only from 30 minutes before the shift start until 2 hours after
+     * / the shift end; after that only Admin, Store Manager or Training Manager
+     * / may change records. Marking a roadie absent raises an absent alert.
+     */
+    recordCheckIn(eventId: EventId, shift: Shift, roadieId: RoadieId, state: CheckInState, lateAt: Timestamp | null, excused: string | null): Promise<void>;
     /**
      * / Record a final sign-off for a roadie (Admin/Store Manager only).
      */

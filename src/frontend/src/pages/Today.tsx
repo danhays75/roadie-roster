@@ -1,6 +1,16 @@
-import type { GroupChangeNotice, Roadie, ShiftBoardRoadie } from "@/backend";
+import type {
+  GroupChangeNotice,
+  MyGroupView,
+  NextEventView,
+  Roadie,
+  ShiftBoardRoadie,
+  ShiftCheckInSummary,
+} from "@/backend";
+import { Role } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
+import { AbsentAlertsList } from "@/components/alerts/AbsentAlertsList";
+import { CheckInBoard } from "@/components/checkin/CheckInBoard";
 import { useDashboardCopy } from "@/components/dashboard/copy";
 import {
   type CardEntry,
@@ -8,15 +18,30 @@ import {
 } from "@/components/roadie/RoadieCardModal";
 import { RoadiePhoto } from "@/components/roadie/RoadiePhoto";
 import { Button } from "@/components/ui/button";
-import { canGroups, useAccessState } from "@/hooks/useAccess";
+import {
+  canCheckIn,
+  canSeeManagerToday,
+  isTodayReadOnly,
+  useAccessState,
+} from "@/hooks/useAccess";
 import {
   useDismissGroupChangeNotice,
   useGroupChangeNotices,
   useMyGroup,
   useRoadies,
+  useToday,
 } from "@/hooks/useQueries";
+import { formatTimestamp } from "@/lib/format";
 import { Link } from "@tanstack/react-router";
-import { BellRing, Loader2, Users, X } from "lucide-react";
+import {
+  BellRing,
+  CalendarClock,
+  ChevronRight,
+  Clock,
+  Loader2,
+  Users,
+  X,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 /**
@@ -160,12 +185,10 @@ function GroupRoadieCard({
 /**
  * The trainer's own group for the current or next shift: the shift label, the
  * filled-of-capacity count, the roadies' photos and names, and a link to all
- * groups. Tapping a roadie opens the shared card pop-up. Renders nothing when
- * the caller trains no group on that shift.
+ * groups. Tapping a roadie opens the shared card pop-up.
  */
-function MyGroupSection() {
+function MyGroupSection({ group }: { group: MyGroupView }) {
   const { t } = useDashboardCopy();
-  const { data: group } = useMyGroup();
   const { data: allRoadies } = useRoadies();
   const [cardIndex, setCardIndex] = useState<number | null>(null);
 
@@ -177,7 +200,7 @@ function MyGroupSection() {
     return map;
   }, [allRoadies]);
 
-  const groupRoadies = group?.roadies ?? [];
+  const groupRoadies = group.roadies;
   const entries: CardEntry[] = useMemo(() => {
     const list: CardEntry[] = [];
     for (const boardRoadie of groupRoadies) {
@@ -194,8 +217,6 @@ function MyGroupSection() {
     entries.forEach((entry, index) => map.set(entry.key, index));
     return map;
   }, [entries]);
-
-  if (!group) return null;
 
   return (
     <section className="space-y-4" data-ocid="today.myGroup.section">
@@ -259,14 +280,16 @@ function MyGroupSection() {
 
 /**
  * The trainer-facing Today content: the undismissed "Your group changed"
- * notices at the top, then the caller's own group for the current or next
- * shift. Only mounted for roles that may read the shift boards, so the group
- * and notice reads never run for a role the backend would reject.
+ * notices at the top, then the trainer check-in board for the caller's own
+ * group on the current or next shift, then the group's roadie tiles. Only
+ * mounted for roles that may read the shift boards, so the group and notice
+ * reads never run for a role the backend would reject.
  */
-function TrainerToday() {
+function TrainerToday({ mayCheckIn }: { mayCheckIn: boolean }) {
   const { t } = useDashboardCopy();
   const { data: group, isLoading, isError, refetch } = useMyGroup();
   const { data: notices } = useGroupChangeNotices();
+  const { data: today } = useToday();
 
   return (
     <>
@@ -289,18 +312,33 @@ function TrainerToday() {
         />
       )}
 
-      {!isLoading && !isError && group && <MyGroupSection />}
+      {!isLoading && !isError && group && (
+        <>
+          {mayCheckIn && (
+            <CheckInBoard
+              eventId={group.eventId}
+              shift={group.shift}
+              shiftLabel={group.shiftLabel}
+            />
+          )}
+          <MyGroupSection group={group} />
+        </>
+      )}
 
-      {!isLoading && !isError && !group && (
+      {!isLoading && !isError && !group && today?.nextEvent && (
+        <NextEventCard event={today.nextEvent} />
+      )}
+
+      {!isLoading && !isError && !group && !today?.nextEvent && (
         <section
           data-ocid="today.placeholder"
           className="rounded-lg border border-dashed border-border bg-card p-8 text-center"
         >
           <h2 className="font-display text-xl font-semibold uppercase tracking-wide">
-            {t("today.placeholder.title")}
+            {t("today.noGroup.title")}
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
-            {t("today.placeholder.body")}
+            {t("today.noGroup.body")}
           </p>
         </section>
       )}
@@ -308,24 +346,307 @@ function TrainerToday() {
   );
 }
 
+/** Format a millisecond span as a compact "2h 15m" / "45m" countdown. */
+function formatCountdown(ms: bigint): string {
+  const totalMinutes = Math.max(0, Math.floor(Number(ms) / 60_000));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
 /**
- * The Today page. A trainer sees their own group for the current or next shift
- * with their roadies' photos and names, plus any undismissed "Your group
- * changed" notices at the top. Every other role, and a trainer with no group,
- * sees the existing placeholder content.
+ * The next upcoming event with a live countdown, shown when no shift is
+ * scheduled today. The countdown is derived from the backend's `startsInMs`
+ * so it respects the demo "Pretend it's" date.
+ */
+function NextEventCard({ event }: { event: NextEventView }) {
+  const { t } = useDashboardCopy();
+  const startsInMs = event.startsInMs;
+  const happeningNow = startsInMs <= 0n;
+
+  return (
+    <section
+      data-ocid="today.nextEvent.card"
+      className="rounded-lg border border-border bg-card p-6 shadow-subtle"
+    >
+      <div className="flex items-start gap-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+          <CalendarClock className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            {t("today.nextEvent.title")}
+          </p>
+          <h2
+            data-ocid="today.nextEvent.name"
+            className="mt-1 truncate font-display text-xl font-bold uppercase tracking-wide text-foreground"
+          >
+            {event.name}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("today.nextEvent.startsAt", {
+              time: formatTimestamp(event.start),
+            })}
+          </p>
+          <p
+            data-ocid="today.nextEvent.countdown"
+            className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 font-display text-sm font-semibold uppercase tracking-wide text-primary"
+          >
+            <Clock className="h-4 w-4" aria-hidden="true" />
+            {happeningNow
+              ? t("today.nextEvent.now")
+              : t("today.nextEvent.startsIn", {
+                  time: formatCountdown(startsInMs),
+                })}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * One shift's check-in summary row for managers: the shift label, the
+ * "x / y checked in" count and a tappable link that opens that shift's
+ * check-in board on the Groups page.
+ */
+function ShiftSummaryRow({
+  summary,
+  index,
+}: {
+  summary: ShiftCheckInSummary;
+  index: number;
+}) {
+  const { t } = useDashboardCopy();
+  const checkedIn = Number(summary.present) + Number(summary.late);
+  const total = Number(summary.total);
+
+  return (
+    <li data-ocid={`today.shifts.item.${index}`}>
+      <Link
+        to="/groups"
+        data-ocid={`today.shifts.item.${index}.link`}
+        className="group flex min-h-[44px] items-center gap-4 rounded-lg border border-border bg-card p-4 shadow-subtle transition-smooth hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold uppercase text-primary">
+          {summary.shift === "am" ? "AM" : "PM"}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-display text-base font-semibold uppercase tracking-wide text-foreground">
+            {summary.shiftLabel}
+          </span>
+          <span
+            data-ocid={`today.shifts.item.${index}.count`}
+            className="mt-0.5 block text-sm text-muted-foreground"
+          >
+            {t("today.shifts.checkedIn", { checkedIn, total })}
+          </span>
+        </span>
+        <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary">
+          {t("today.shifts.open")}
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+/**
+ * One shift's read-only attendance summary for Leadership and Visiting
+ * Managers: the shift label and the present, late and absent counts.
+ */
+function ShiftAttendanceRow({
+  summary,
+  index,
+}: {
+  summary: ShiftCheckInSummary;
+  index: number;
+}) {
+  const { t } = useDashboardCopy();
+
+  return (
+    <li
+      data-ocid={`today.shifts.item.${index}`}
+      className="rounded-lg border border-border bg-card p-4 shadow-subtle"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-display text-base font-semibold uppercase tracking-wide text-foreground">
+          {summary.shiftLabel}
+        </span>
+        <span
+          data-ocid={`today.shifts.item.${index}.read_only`}
+          className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+        >
+          {t("today.shifts.readOnly")}
+        </span>
+      </div>
+      <p
+        data-ocid={`today.shifts.item.${index}.summary`}
+        className="mt-2 text-sm text-muted-foreground"
+      >
+        {t("today.shifts.summary", {
+          present: Number(summary.present),
+          late: Number(summary.late),
+          absent: Number(summary.absent),
+        })}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t("today.shifts.total", { total: Number(summary.total) })}
+      </p>
+    </li>
+  );
+}
+
+/**
+ * The manager-facing Today content: the absent alerts list first, then today's
+ * shifts with an "x / y checked in" count per shift, each tappable to open that
+ * shift's check-in board on the Groups page.
+ */
+function ManagerToday({ role }: { role: Role | undefined }) {
+  const { t } = useDashboardCopy();
+  const { data: today, isLoading, isError, refetch } = useToday();
+  const summaries = today?.shiftSummaries ?? [];
+
+  return (
+    <>
+      <AbsentAlertsList role={role} />
+
+      <section className="space-y-4" data-ocid="today.shifts.section">
+        <h2 className="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+          {t("today.shifts.title")}
+        </h2>
+
+        {isLoading && (
+          <LoadingState
+            label={t("today.loading")}
+            ocid="today.shifts.loading_state"
+          />
+        )}
+
+        {isError && (
+          <ErrorState
+            message={t("today.error")}
+            onRetry={() => void refetch()}
+            ocid="today.shifts.error_state"
+          />
+        )}
+
+        {!isLoading && !isError && summaries.length === 0 && (
+          <EmptyState
+            title={t("today.shifts.empty")}
+            ocid="today.shifts.empty_state"
+          />
+        )}
+
+        {!isLoading && !isError && summaries.length > 0 && (
+          <ul className="space-y-3" data-ocid="today.shifts.list">
+            {summaries.map((summary, index) => (
+              <ShiftSummaryRow
+                key={`${summary.eventId.toString()}-${summary.shift}`}
+                summary={summary}
+                index={index}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {!isLoading && !isError && today?.nextEvent && summaries.length === 0 && (
+        <NextEventCard event={today.nextEvent} />
+      )}
+    </>
+  );
+}
+
+/**
+ * The read-only Today content for Leadership and Visiting Managers: today's
+ * attendance summary per shift with present, late and absent counts, plus the
+ * next upcoming event when no shift is scheduled today.
+ */
+function ReadOnlyToday() {
+  const { t } = useDashboardCopy();
+  const { data: today, isLoading, isError, refetch } = useToday();
+  const summaries = today?.shiftSummaries ?? [];
+
+  return (
+    <section className="space-y-4" data-ocid="today.shifts.section">
+      <h2 className="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+        {t("today.shifts.title")}
+      </h2>
+
+      {isLoading && (
+        <LoadingState
+          label={t("today.loading")}
+          ocid="today.shifts.loading_state"
+        />
+      )}
+
+      {isError && (
+        <ErrorState
+          message={t("today.error")}
+          onRetry={() => void refetch()}
+          ocid="today.shifts.error_state"
+        />
+      )}
+
+      {!isLoading && !isError && summaries.length === 0 && (
+        <EmptyState
+          title={t("today.shifts.empty")}
+          ocid="today.shifts.empty_state"
+        />
+      )}
+
+      {!isLoading && !isError && summaries.length > 0 && (
+        <ul className="space-y-3" data-ocid="today.shifts.list">
+          {summaries.map((summary, index) => (
+            <ShiftAttendanceRow
+              key={`${summary.eventId.toString()}-${summary.shift}`}
+              summary={summary}
+              index={index}
+            />
+          ))}
+        </ul>
+      )}
+
+      {!isLoading && !isError && today?.nextEvent && summaries.length === 0 && (
+        <NextEventCard event={today.nextEvent} />
+      )}
+    </section>
+  );
+}
+
+/**
+ * The Today page. A trainer sees the check-in board for their own group on the
+ * current or next shift — one row per roadie with Present / Late / Absent — plus
+ * their roadies' photos and names and any undismissed "Your group changed"
+ * notices at the top. Admin, Store Manager and Training Manager see the absent
+ * alerts list first, then today's shifts with an "x / y checked in" count per
+ * shift. Leadership and Visiting Managers see a read-only attendance summary per
+ * shift. When no shift is scheduled today, the next upcoming event and a
+ * countdown are shown.
  */
 export default function TodayPage() {
   const { t } = useDashboardCopy();
   const access = useAccessState();
   const role = access.kind === "granted" ? access.grant.role : undefined;
-  const mayViewGroups = canGroups(role);
+  const isTrainer = role === Role.trainer;
+  const mayCheckIn = canCheckIn(role);
+  const maySeeManager = canSeeManagerToday(role);
+  const readOnly = isTodayReadOnly(role);
 
   return (
     <div className="space-y-6" data-ocid="today.page">
       <PageHeader title={t("today.title")} subtitle={t("app.tagline")} />
 
-      {mayViewGroups ? (
-        <TrainerToday />
+      {isTrainer ? (
+        <TrainerToday mayCheckIn={mayCheckIn} />
+      ) : maySeeManager ? (
+        <ManagerToday role={role} />
+      ) : readOnly ? (
+        <ReadOnlyToday />
       ) : (
         <section
           data-ocid="today.placeholder"

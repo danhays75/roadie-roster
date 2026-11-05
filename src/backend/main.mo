@@ -74,6 +74,8 @@ actor {
   let leaderTalks : Map.Map<Common.LeaderTalkId, Phase23.LeaderTalk>;
   let finalSignOffs : Map.Map<Common.RoadieId, Phase23.FinalSignOff>;
   let alerts : Map.Map<Common.AlertId, Phase23.Alert>;
+  let checkIns : Map.Map<Text, Phase23.CheckInRecord>;
+  let absentAlerts : Map.Map<Common.AlertId, Phase23.AbsentAlert>;
 
   let counters : {
     var nextRoadieId : Nat;
@@ -89,6 +91,7 @@ actor {
     var nextTrainerNoteId : Nat;
     var nextBuildToAdjustmentId : Nat;
     var nextGroupChangeNoticeId : Nat;
+    var nextAbsentAlertId : Nat;
   };
 
   // --- Domain APIs ---
@@ -126,6 +129,9 @@ actor {
     leaderTalks,
     finalSignOffs,
     alerts,
+    checkIns,
+    absentAlerts,
+    storeInfo,
     changeLog,
     counters,
     demoState,
@@ -520,6 +526,56 @@ actor {
           case (#absent) "absent";
         })
         .payload("recordedAt", func a = a.recordedAt)
+        .controllerOnly()
+        .build(),
+      checkIns.toEntityManual("checkIn", "CheckInRecord", "key")
+        .sample({
+          eventId = 0;
+          shift = #am;
+          roadieId = 0;
+          state = #present;
+          lateAt = ?0;
+          excused = ?"";
+          recordedBy = Principal.fromText("aaaaa-aa");
+          recordedAt = 0;
+          isDemo = false;
+        })
+        .payload("key", func c = (if c.isDemo { "demo:" } else { "real:" }) # c.eventId.toText() # ":" # (switch c.shift { case (#am) "am"; case (#pm) "pm" }) # ":" # c.roadieId.toText())
+        .payload("eventId", func c = c.eventId)
+        .payload("shift", func c = switch c.shift { case (#am) "am"; case (#pm) "pm" })
+        .payload("roadieId", func c = c.roadieId)
+        .payload("state", func c = switch c.state {
+          case (#present) "present";
+          case (#late) "late";
+          case (#absent) "absent";
+        })
+        .payload("lateAt", func c = c.lateAt)
+        .payload("excused", func c = c.excused)
+        .payload("recordedAt", func c = c.recordedAt)
+        .payload("isDemo", func c = c.isDemo)
+        .controllerOnly()
+        .build(),
+      absentAlerts.toEntityManual("absentAlert", "AbsentAlert", "id")
+        .sample({
+          id = 0;
+          eventId = 0;
+          shift = #am;
+          roadieId = 0;
+          kind = #absent;
+          excused = ?"";
+          archived = false;
+          createdAt = 0;
+          isDemo = false;
+        })
+        .payload("id", func a = a.id)
+        .payload("eventId", func a = a.eventId)
+        .payload("shift", func a = switch a.shift { case (#am) "am"; case (#pm) "pm" })
+        .payload("roadieId", func a = a.roadieId)
+        .payload("kind", func a = switch a.kind { case (#absent) "absent" })
+        .payload("excused", func a = a.excused)
+        .payload("archived", func a = a.archived)
+        .payload("createdAt", func a = a.createdAt)
+        .payload("isDemo", func a = a.isDemo)
         .controllerOnly()
         .build(),
       trainerNotes.toEntityManual("trainerNote", "TrainerNote", "id")

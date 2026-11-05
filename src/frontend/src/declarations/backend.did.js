@@ -295,6 +295,28 @@ export const DuplicateMatch = IDL.Record({
   'mainPositionName' : IDL.Text,
   'archived' : IDL.Bool,
 });
+export const CheckInState = IDL.Variant({
+  'present' : IDL.Null,
+  'late' : IDL.Null,
+  'absent' : IDL.Null,
+});
+export const CheckInRow = IDL.Record({
+  'roadieId' : RoadieId,
+  'name' : IDL.Text,
+  'lateAt' : IDL.Opt(Timestamp),
+  'state' : IDL.Opt(CheckInState),
+  'excused' : IDL.Opt(IDL.Text),
+  'photo' : IDL.Opt(PhotoRef),
+});
+export const CheckInBoardView = IDL.Record({
+  'roadies' : IDL.Vec(CheckInRow),
+  'eventId' : EventId,
+  'checkedInCount' : IDL.Nat,
+  'totalCount' : IDL.Nat,
+  'locked' : IDL.Bool,
+  'shift' : Shift,
+  'shiftLabel' : IDL.Text,
+});
 export const AvailabilitySlot = IDL.Record({
   'day' : Weekday,
   'shift' : Shift,
@@ -579,6 +601,42 @@ export const StoreLogos = IDL.Record({
   'logo' : IDL.Opt(PhotoRef),
   'secondaryLogo' : IDL.Opt(PhotoRef),
 });
+export const NextEventView = IDL.Record({
+  'eventId' : EventId,
+  'name' : IDL.Text,
+  'start' : Timestamp,
+  'startsInMs' : IDL.Int,
+});
+export const ShiftCheckInSummary = IDL.Record({
+  'eventId' : EventId,
+  'total' : IDL.Nat,
+  'present' : IDL.Nat,
+  'late' : IDL.Nat,
+  'shift' : Shift,
+  'shiftLabel' : IDL.Text,
+  'absent' : IDL.Nat,
+});
+export const AbsentAlertView = IDL.Record({
+  'id' : AlertId,
+  'eventId' : EventId,
+  'roadieId' : RoadieId,
+  'name' : IDL.Text,
+  'createdAt' : Timestamp,
+  'shift' : Shift,
+  'shiftLabel' : IDL.Text,
+  'excused' : IDL.Opt(IDL.Text),
+  'phone' : IDL.Opt(Phone),
+  'photo' : IDL.Opt(PhotoRef),
+  'archived' : IDL.Bool,
+});
+export const TodayView = IDL.Record({
+  'checkIn' : IDL.Opt(CheckInBoardView),
+  'nextEvent' : IDL.Opt(NextEventView),
+  'shiftSummaries' : IDL.Vec(ShiftCheckInSummary),
+  'myGroup' : IDL.Opt(MyGroupView),
+  'role' : Role,
+  'absentAlerts' : IDL.Vec(AbsentAlertView),
+});
 export const UniformCheckoffItem = IDL.Record({
   'itemId' : IDL.Nat,
   'checked' : IDL.Bool,
@@ -797,6 +855,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'approveUser' : IDL.Func([ApprovalRequest], [], []),
+  'archiveAbsentAlert' : IDL.Func([AlertId], [], []),
   'archiveNoShows' : IDL.Func([EventId], [IDL.Vec(RoadieId)], []),
   'archiveRoadie' : IDL.Func([RoadieId, ArchiveReason], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
@@ -823,10 +882,16 @@ export const idlService = IDL.Service({
   'dismissGroupChangeNotice' : IDL.Func([IDL.Nat], [], []),
   'downloadStoreTemplate' : IDL.Func([], [StoreTemplateFile], ['query']),
   'ensureSeeded' : IDL.Func([], [IDL.Bool], []),
+  'excuseAbsentAlert' : IDL.Func([AlertId, IDL.Text], [], []),
   'execute' : IDL.Func([IDL.Text], [Result], ['query']),
   'findDuplicates' : IDL.Func([SignupId], [IDL.Vec(DuplicateMatch)], ['query']),
   'getApiDoc' : IDL.Func([], [IDL.Text], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getCheckInBoard' : IDL.Func(
+      [EventId, Shift],
+      [IDL.Opt(CheckInBoardView)],
+      ['query'],
+    ),
   'getChecklists' : IDL.Func([], [Checklists], ['query']),
   'getContactSet' : IDL.Func([RoadieId], [IDL.Vec(ContactSet)], ['query']),
   'getDashboard' : IDL.Func([], [DashboardView], ['query']),
@@ -863,6 +928,7 @@ export const idlService = IDL.Service({
   'getSignupPhoto' : IDL.Func([SignupId], [IDL.Opt(PhotoRef)], ['query']),
   'getStoreInfo' : IDL.Func([], [StoreInfo], ['query']),
   'getStoreLogo' : IDL.Func([], [StoreLogos], ['query']),
+  'getToday' : IDL.Func([], [TodayView], ['query']),
   'getUniformCheckoff' : IDL.Func(
       [RoadieId],
       [IDL.Opt(UniformCheckoffView)],
@@ -877,6 +943,7 @@ export const idlService = IDL.Service({
   'hasKioskPin' : IDL.Func([], [IDL.Bool], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isMinor' : IDL.Func([RoadieId], [IDL.Bool], ['query']),
+  'listAbsentAlerts' : IDL.Func([], [IDL.Vec(AbsentAlertView)], ['query']),
   'listAccessGrants' : IDL.Func([], [IDL.Vec(AccessGrant)], ['query']),
   'listAlerts' : IDL.Func([], [IDL.Vec(Alert)], ['query']),
   'listAttendanceForEvent' : IDL.Func(
@@ -917,9 +984,22 @@ export const idlService = IDL.Service({
   'loadDemoData' : IDL.Func([], [DemoDataSummary], []),
   'loadStoreTemplate' : IDL.Func([StoreTemplateFile], [TemplateLoadResult], []),
   'markPresent' : IDL.Func([RoadieId, EventId, IDL.Opt(IDL.Text)], [], []),
+  'moveAbsentRoadieToOtherShift' : IDL.Func([AlertId], [], []),
   'moveAllRoadiesToSession' : IDL.Func([EventId, EventId], [IDL.Nat], []),
   'moveRoadieToSession' : IDL.Func([RoadieId, EventId], [], []),
   'recordAttendance' : IDL.Func([AttendanceRecord], [], []),
+  'recordCheckIn' : IDL.Func(
+      [
+        EventId,
+        Shift,
+        RoadieId,
+        CheckInState,
+        IDL.Opt(Timestamp),
+        IDL.Opt(IDL.Text),
+      ],
+      [],
+      [],
+    ),
   'recordFinalSignOff' : IDL.Func([FinalSignOff], [], []),
   'rehireRoadie' : IDL.Func([RoadieId, IDL.Opt(IDL.Text)], [], []),
   'rejectSignup' : IDL.Func([SignupId], [], []),
@@ -1266,6 +1346,28 @@ export const idlFactory = ({ IDL }) => {
     'mainPositionName' : IDL.Text,
     'archived' : IDL.Bool,
   });
+  const CheckInState = IDL.Variant({
+    'present' : IDL.Null,
+    'late' : IDL.Null,
+    'absent' : IDL.Null,
+  });
+  const CheckInRow = IDL.Record({
+    'roadieId' : RoadieId,
+    'name' : IDL.Text,
+    'lateAt' : IDL.Opt(Timestamp),
+    'state' : IDL.Opt(CheckInState),
+    'excused' : IDL.Opt(IDL.Text),
+    'photo' : IDL.Opt(PhotoRef),
+  });
+  const CheckInBoardView = IDL.Record({
+    'roadies' : IDL.Vec(CheckInRow),
+    'eventId' : EventId,
+    'checkedInCount' : IDL.Nat,
+    'totalCount' : IDL.Nat,
+    'locked' : IDL.Bool,
+    'shift' : Shift,
+    'shiftLabel' : IDL.Text,
+  });
   const AvailabilitySlot = IDL.Record({ 'day' : Weekday, 'shift' : Shift });
   const ContactSet = IDL.Record({
     'managerSignedAt' : IDL.Opt(Timestamp),
@@ -1544,6 +1646,42 @@ export const idlFactory = ({ IDL }) => {
     'logo' : IDL.Opt(PhotoRef),
     'secondaryLogo' : IDL.Opt(PhotoRef),
   });
+  const NextEventView = IDL.Record({
+    'eventId' : EventId,
+    'name' : IDL.Text,
+    'start' : Timestamp,
+    'startsInMs' : IDL.Int,
+  });
+  const ShiftCheckInSummary = IDL.Record({
+    'eventId' : EventId,
+    'total' : IDL.Nat,
+    'present' : IDL.Nat,
+    'late' : IDL.Nat,
+    'shift' : Shift,
+    'shiftLabel' : IDL.Text,
+    'absent' : IDL.Nat,
+  });
+  const AbsentAlertView = IDL.Record({
+    'id' : AlertId,
+    'eventId' : EventId,
+    'roadieId' : RoadieId,
+    'name' : IDL.Text,
+    'createdAt' : Timestamp,
+    'shift' : Shift,
+    'shiftLabel' : IDL.Text,
+    'excused' : IDL.Opt(IDL.Text),
+    'phone' : IDL.Opt(Phone),
+    'photo' : IDL.Opt(PhotoRef),
+    'archived' : IDL.Bool,
+  });
+  const TodayView = IDL.Record({
+    'checkIn' : IDL.Opt(CheckInBoardView),
+    'nextEvent' : IDL.Opt(NextEventView),
+    'shiftSummaries' : IDL.Vec(ShiftCheckInSummary),
+    'myGroup' : IDL.Opt(MyGroupView),
+    'role' : Role,
+    'absentAlerts' : IDL.Vec(AbsentAlertView),
+  });
   const UniformCheckoffItem = IDL.Record({
     'itemId' : IDL.Nat,
     'checked' : IDL.Bool,
@@ -1759,6 +1897,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'approveUser' : IDL.Func([ApprovalRequest], [], []),
+    'archiveAbsentAlert' : IDL.Func([AlertId], [], []),
     'archiveNoShows' : IDL.Func([EventId], [IDL.Vec(RoadieId)], []),
     'archiveRoadie' : IDL.Func([RoadieId, ArchiveReason], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
@@ -1785,6 +1924,7 @@ export const idlFactory = ({ IDL }) => {
     'dismissGroupChangeNotice' : IDL.Func([IDL.Nat], [], []),
     'downloadStoreTemplate' : IDL.Func([], [StoreTemplateFile], ['query']),
     'ensureSeeded' : IDL.Func([], [IDL.Bool], []),
+    'excuseAbsentAlert' : IDL.Func([AlertId, IDL.Text], [], []),
     'execute' : IDL.Func([IDL.Text], [Result], ['query']),
     'findDuplicates' : IDL.Func(
         [SignupId],
@@ -1793,6 +1933,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getApiDoc' : IDL.Func([], [IDL.Text], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getCheckInBoard' : IDL.Func(
+        [EventId, Shift],
+        [IDL.Opt(CheckInBoardView)],
+        ['query'],
+      ),
     'getChecklists' : IDL.Func([], [Checklists], ['query']),
     'getContactSet' : IDL.Func([RoadieId], [IDL.Vec(ContactSet)], ['query']),
     'getDashboard' : IDL.Func([], [DashboardView], ['query']),
@@ -1829,6 +1974,7 @@ export const idlFactory = ({ IDL }) => {
     'getSignupPhoto' : IDL.Func([SignupId], [IDL.Opt(PhotoRef)], ['query']),
     'getStoreInfo' : IDL.Func([], [StoreInfo], ['query']),
     'getStoreLogo' : IDL.Func([], [StoreLogos], ['query']),
+    'getToday' : IDL.Func([], [TodayView], ['query']),
     'getUniformCheckoff' : IDL.Func(
         [RoadieId],
         [IDL.Opt(UniformCheckoffView)],
@@ -1843,6 +1989,7 @@ export const idlFactory = ({ IDL }) => {
     'hasKioskPin' : IDL.Func([], [IDL.Bool], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isMinor' : IDL.Func([RoadieId], [IDL.Bool], ['query']),
+    'listAbsentAlerts' : IDL.Func([], [IDL.Vec(AbsentAlertView)], ['query']),
     'listAccessGrants' : IDL.Func([], [IDL.Vec(AccessGrant)], ['query']),
     'listAlerts' : IDL.Func([], [IDL.Vec(Alert)], ['query']),
     'listAttendanceForEvent' : IDL.Func(
@@ -1891,9 +2038,22 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'markPresent' : IDL.Func([RoadieId, EventId, IDL.Opt(IDL.Text)], [], []),
+    'moveAbsentRoadieToOtherShift' : IDL.Func([AlertId], [], []),
     'moveAllRoadiesToSession' : IDL.Func([EventId, EventId], [IDL.Nat], []),
     'moveRoadieToSession' : IDL.Func([RoadieId, EventId], [], []),
     'recordAttendance' : IDL.Func([AttendanceRecord], [], []),
+    'recordCheckIn' : IDL.Func(
+        [
+          EventId,
+          Shift,
+          RoadieId,
+          CheckInState,
+          IDL.Opt(Timestamp),
+          IDL.Opt(IDL.Text),
+        ],
+        [],
+        [],
+      ),
     'recordFinalSignOff' : IDL.Func([FinalSignOff], [], []),
     'rehireRoadie' : IDL.Func([RoadieId, IDL.Opt(IDL.Text)], [], []),
     'rejectSignup' : IDL.Func([SignupId], [], []),

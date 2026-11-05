@@ -1,6 +1,10 @@
 import {
+  type AbsentAlertView,
+  type AlertId,
   type ApprovalDecision,
   type ApprovalRequest,
+  type CheckInBoardView,
+  type CheckInState,
   type Checklists,
   type CrewId,
   type DemoActionResult,
@@ -33,6 +37,7 @@ import {
   type StoreLogos,
   type StoreTemplateFile,
   type Timestamp,
+  type TodayView,
   type UnassignedRoadieRow,
   type UniformCheckoffView,
   type UniformHouseFilter,
@@ -1643,5 +1648,181 @@ export function useMyGroup() {
       return actor.getMyGroup();
     },
     enabled: !!actor && !isFetching,
+  });
+}
+
+/* ---------------------------------------------------------------------------
+   Today & trainer check-in
+--------------------------------------------------------------------------- */
+
+/**
+ * The whole Today view for the caller: the role, the current shift's check-in
+ * board, the next event, the per-shift check-in summaries, the caller's own
+ * group and the absent alerts. Readable by every signed-in role, so no
+ * `enabled` gate is needed. Polls so a check-in recorded on another device
+ * appears without a manual reload.
+ */
+export function useToday() {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["today"],
+    queryFn: async (): Promise<TodayView | null> => {
+      if (!actor) return null;
+      return actor.getToday();
+    },
+    enabled: !!actor && !isFetching,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+  });
+}
+
+/**
+ * One shift's check-in board: the assigned roadies with their check-in state,
+ * the present-of-total count and whether the board is locked. Readable by
+ * check-in roles, so callers pass `enabled` (typically `canCheckIn(role)`) to
+ * avoid a trapping read for other roles.
+ */
+export function useCheckInBoard(
+  eventId: EventId | undefined,
+  shift: Shift | undefined,
+  enabled = true,
+) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["checkInBoard", eventId?.toString(), shift],
+    queryFn: async (): Promise<CheckInBoardView | null> => {
+      if (!actor || eventId === undefined || shift === undefined) return null;
+      return actor.getCheckInBoard(eventId, shift);
+    },
+    enabled:
+      enabled &&
+      !!actor &&
+      !isFetching &&
+      eventId !== undefined &&
+      shift !== undefined,
+  });
+}
+
+/**
+ * Record a roadie's check-in state on a shift (check-in roles only). The
+ * backend is idempotent per roadie and shift, so a repeat converges. Invalidates
+ * the Today view, the check-in board and the dashboard so every surface
+ * reflects the change.
+ */
+export function useRecordCheckIn() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      eventId: EventId;
+      shift: Shift;
+      roadieId: RoadieId;
+      state: CheckInState;
+      lateAt?: Timestamp | null;
+      excused?: string | null;
+    }) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.recordCheckIn(
+        args.eventId,
+        args.shift,
+        args.roadieId,
+        args.state,
+        args.lateAt ?? null,
+        args.excused ?? null,
+      );
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["today"] });
+      void queryClient.invalidateQueries({ queryKey: ["checkInBoard"] });
+      void queryClient.invalidateQueries({ queryKey: ["absentAlerts"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * The absent alerts list: roadies who did not show for a shift, with their
+ * name, photo, phone and excused reason. Readable by alert roles, so callers
+ * pass `enabled` (typically `canSeeAbsentAlerts(role)`) to avoid a trapping
+ * read for other roles.
+ */
+export function useAbsentAlerts(enabled = true) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["absentAlerts"],
+    queryFn: async (): Promise<AbsentAlertView[]> => {
+      if (!actor) return [];
+      return actor.listAbsentAlerts();
+    },
+    enabled: enabled && !!actor && !isFetching,
+  });
+}
+
+/**
+ * Excuse an absent alert with a reason (alert roles only). Invalidates the
+ * alerts list and the Today view so the excused state appears.
+ */
+export function useExcuseAbsentAlert() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { id: AlertId; reason: string }) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.excuseAbsentAlert(args.id, args.reason);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["absentAlerts"] });
+      void queryClient.invalidateQueries({ queryKey: ["today"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Archive an absent alert (alert roles only). Invalidates the alerts list, the
+ * Today view, the roster and the dashboard so the archived roadie drops out of
+ * the counts.
+ */
+export function useArchiveAbsentAlert() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: AlertId) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.archiveAbsentAlert(id);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["absentAlerts"] });
+      void queryClient.invalidateQueries({ queryKey: ["today"] });
+      void queryClient.invalidateQueries({ queryKey: ["roadies"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["rosterSummary"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
+  });
+}
+
+/**
+ * Move an absent roadie to the other shift of the same day (alert roles only).
+ * Invalidates the alerts list, the Today view and the affected check-in boards
+ * so the move appears everywhere.
+ */
+export function useMoveAbsentRoadieToOtherShift() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: AlertId) => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.moveAbsentRoadieToOtherShift(id);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["absentAlerts"] });
+      void queryClient.invalidateQueries({ queryKey: ["today"] });
+      void queryClient.invalidateQueries({ queryKey: ["checkInBoard"] });
+      void queryClient.invalidateQueries({ queryKey: ["shiftBoard"] });
+      void queryClient.invalidateQueries({ queryKey: ["shiftBoards"] });
+      void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
+    },
   });
 }

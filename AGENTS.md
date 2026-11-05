@@ -23,6 +23,9 @@
 - Position uniforms use one field set: shirtType, shirtQty, hatType, hatQty
 - Never change app behavior to satisfy outdated tests
 - Keep demo-mode partitioning and the requireReal* guards on every new write
+- Do not touch tests and change nothing outside the current batch
+- Every new record carries isDemo and every write is logged
+- Use effectiveNow (the pretend date) everywhere for schedule windows and check-in availability
 
 ## Accepted Requirements
 
@@ -139,15 +142,11 @@
 ## Verified Commands
 
 - **typecheck**: `pnpm typecheck`
-- **fix**: `mops check --fix`
+- **fix**: `pnpm fix`
 - **build**: `mops build`
 
 ## Learnings
 
-- Position uniform defaults (shirtType/shirtQty/hatType/hatQty) round-trip through TemplatePosition in both download and load.
-- Roadie shirt/hat sizes live in profile, not the contact set, so redact() leaves them visible to read-capable roles.
-- FlipCard's bottle-cap badge aria-label is the static t('roadie.card.badge') copy, not the async store number; the front badge order is secondary logo, then main logo, then the drawn StoreSeal.
-- FlipCard's front badge is always the drawn StoreSeal with the store number; StoreBadge, StatBar, the ROADIE STATS section and the birthday tag were removed, and roadieCard.css dropped .tag.birthday/.stats/.h/.stat/.bar while keeping .cap/.cap .seal.
 - The card back table order is Hometown, Crew, Day off, Favorite team, Favorite snack, Favorite drink, Favorite color, Fun fact, Shirt size, Hat size, Hired, then MY GOAL.
 - Position and TemplatePosition carry only shirtType, shirtQty, hatType, hatQty; migration 00000015 folds defaultShirts/defaultHats into shirtQty/hatQty only where the surviving qty is 0, then drops the legacy pair.
 - getUniformOrder builds rows from the cartesian product of in-scope item labels and curve/real sizes, so a house filter with zero hired roadies still returns every item/size row with hired 0.
@@ -169,3 +168,7 @@
 - Archiving a roadie now removes them from current and future shift boards in the same partition and records a 'Your group changed' notice for their trainer; the helper is Phase23Lib.removeArchivedRoadieFromBoards in src/backend/lib/phase23.mo, called from archiveRoadie and archiveNoShows.
 - saveShiftBoard, copyShiftBoard and autoFillShiftBoard silently drop archived roadies from the incoming board instead of trapping; they still trap for roadies that do not exist or are in the other partition.
 - RoadieLib.archiveRoadie now takes shiftBoards, groupChangeNotices, schedule and counters; the RoadieApi mixin and main.mo include pass shiftBoards and groupChangeNotices, and Phase23Lib.archiveNoShows takes the same two extra arguments.
+- TrainerToday mounts NextEventCard when the trainer has no group and today.nextEvent exists; the today.placeholder testid remains the no-event fallback.
+- Today routes by exact role: trainer -> TrainerToday, alert roles -> ManagerToday, read-only roles -> ReadOnlyToday.
+- The app's existing regression suite has known pre-existing failures (19 frontend) unrelated to the check-in and Today work; the user asked for them to be handled separately.
+- The PocketIC backend lane did not run on the draft-start tree (no_backend_wasm), so its 8 backend failures are judged as new; they were not repaired within the in-draft recovery budget.

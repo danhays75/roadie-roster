@@ -22,6 +22,7 @@ module {
     var nextAttendanceId : Nat;
     var nextTrainerNoteId : Nat;
     var nextChangeLogId : Nat;
+    var nextAbsentAlertId : Nat;
   };
 
   /// The narrow slice of the counters a group-change notice needs. A full
@@ -1635,6 +1636,557 @@ module {
     let alert = alerts.get(id) ?? Runtime.trap("Alert not found");
     alerts.add(id, { alert with acknowledged = true });
     logWrite(changeLog, counters, demoState, caller, "acknowledgeAlert", null, false, "Acknowledged alert");
+  };
+
+  // --- Trainer check-in ---
+
+  /// The map key for one check-in record: the partition, the event id, the
+  /// shift and the roadie, so a demo check-in and a real check-in for the same
+  /// shift and roadie never collide. Mirrors `boardKey`.
+  func checkInKey(
+    eventId : Common.EventId,
+    shift : Common.Shift,
+    roadieId : Common.RoadieId,
+    isDemo : Bool,
+  ) : Text {
+    (if (isDemo) { "demo:" } else { "real:" })
+      # eventId.toText()
+      # ":"
+      # (switch shift { case (#am) "am"; case (#pm) "pm" })
+      # ":"
+      # roadieId.toText();
+  };
+
+  /// Internal: the start and end of a shift as UTC nanosecond timestamps. The
+  /// shift's date is the event's UTC date; the start and end times are the
+  /// store's AM or PM shift times (store-local minutes since midnight). A
+  /// Friends & Family night uses the PM times.
+  func shiftWindow(
+    event : Store.ScheduleEvent,
+    shift : Common.Shift,
+    storeInfo : Store.StoreInfo,
+  ) : (Common.Timestamp, Common.Timestamp) {
+    let dayStart = (event.start / 86_400_000_000_000) * 86_400_000_000_000;
+    let usePm = shift == #pm or event.kind == #friendsAndFamily;
+    let startMin = if (usePm) { storeInfo.pmShiftStart } else { storeInfo.amShiftStart };
+    let endMin = if (usePm) { storeInfo.pmShiftEnd } else { storeInfo.amShiftEnd };
+    let start = dayStart + startMin.toInt() * 60_000_000_000;
+    let end = dayStart + endMin.toInt() * 60_000_000_000;
+    (start, end);
+  };
+
+  /// Internal: whether the trainer lock window is open for a shift: from 30
+  /// minutes before the shift start until 2 hours after the shift end, on the
+  /// effective clock.
+  func withinTrainerWindow(
+    event : Store.ScheduleEvent,
+    shift : Common.Shift,
+    storeInfo : Store.StoreInfo,
+    now : Common.Timestamp,
+  ) : Bool {
+    let (start, end) = shiftWindow(event, shift, storeInfo);
+    let openAt = start - 30 * 60_000_000_000;
+    let closeAt = end + 2 * 60 * 60_000_000_000;
+    now >= openAt and now <= closeAt;
+  };
+
+  /// Internal: whether a caller may check in a roadie on a shift. Admin, Store
+  /// Manager and Training Manager may check in anyone; a trainer may check in
+  /// only roadies in their own group on that shift's board; every other role is
+  /// read only.
+  func canCheckIn(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    caller : Principal,
+    eventId : Common.EventId,
+    shift : Common.Shift,
+    roadieId : Common.RoadieId,
+  ) : Bool {
+    switch (Auth.effectiveRole(accessGrants, demoState, caller)) {
+      case (?role) {
+        if (role == #admin or role == #storeManager or role == #trainingManager) {
+          true;
+        } else if (role == #trainer) {
+          let demo = Auth.demoActive(demoState);
+          switch (shiftBoards.get(boardKey(eventId, shift, demo))) {
+            case (?board) {
+              switch (board.groups.find(func(g) = g.trainerPrincipal == caller)) {
+                case (?g) { g.roadieIds.contains(roadieId) };
+                case null { false };
+              };
+            };
+            case null { false };
+          };
+        } else {
+          false;
+        };
+      };
+      case null { false };
+    };
+  };
+
+  /// Internal: whether a caller may change check-in records outside the trainer
+  /// lock window (Admin, Store Manager or Training Manager).
+  func isCheckInManager(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    caller : Principal,
+  ) : Bool {
+    switch (Auth.effectiveRole(accessGrants, demoState, caller)) {
+      case (?role) { role == #admin or role == #storeManager or role == #trainingManager };
+      case null { false };
+    };
+  };
+
+  /// Internal: the stored check-in record for a shift and roadie in the active
+  /// partition, or null.
+  func visibleCheckIn(
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    demo : Bool,
+    eventId : Common.EventId,
+    shift : Common.Shift,
+    roadieId : Common.RoadieId,
+  ) : ?Phase23.CheckInRecord {
+    switch (checkIns.get(checkInKey(eventId, shift, roadieId, demo))) {
+      case (?c) { if (c.isDemo == demo) { ?c } else { null } };
+      case null { null };
+    };
+  };
+
+  /// Internal: the unarchived absent alert for a shift and roadie in the active
+  /// partition, with its map key, or null.
+  func findAbsentAlert(
+    absentAlerts : Map.Map<Common.AlertId, Phase23.AbsentAlert>,
+    demo : Bool,
+    eventId : Common.EventId,
+    shift : Common.Shift,
+    roadieId : Common.RoadieId,
+  ) : ?(Common.AlertId, Phase23.AbsentAlert) {
+    absentAlerts.entries().find(func((_, a)) =
+      a.isDemo == demo and a.eventId == eventId and a.shift == shift and a.roadieId == roadieId and not a.archived
+    );
+  };
+
+  /// Internal: raise an absent alert for a roadie marked absent, unless an
+  /// unarchived alert already exists for that shift and roadie.
+  func raiseAbsentAlert(
+    absentAlerts : Map.Map<Common.AlertId, Phase23.AbsentAlert>,
+    counters : Counters,
+    demo : Bool,
+    eventId : Common.EventId,
+    shift : Common.Shift,
+    roadieId : Common.RoadieId,
+    excused : ?Text,
+    now : Common.Timestamp,
+  ) : () {
+    switch (findAbsentAlert(absentAlerts, demo, eventId, shift, roadieId)) {
+      case (?_) {};
+      case null {
+        let id = counters.nextAbsentAlertId;
+        counters.nextAbsentAlertId := id + 1;
+        absentAlerts.add(id, {
+          id;
+          eventId;
+          shift;
+          roadieId;
+          kind = #absent;
+          excused;
+          archived = false;
+          createdAt = now;
+          isDemo = demo;
+        });
+      };
+    };
+  };
+
+  /// Internal: archive any unarchived absent alert for a shift and roadie, so a
+  /// roadie no longer marked absent drops off the alert list.
+  func clearAbsentAlert(
+    absentAlerts : Map.Map<Common.AlertId, Phase23.AbsentAlert>,
+    demo : Bool,
+    eventId : Common.EventId,
+    shift : Common.Shift,
+    roadieId : Common.RoadieId,
+  ) : () {
+    switch (findAbsentAlert(absentAlerts, demo, eventId, shift, roadieId)) {
+      case (?(id, alert)) { absentAlerts.add(id, { alert with archived = true }) };
+      case null {};
+    };
+  };
+
+  /// Create or change one roadie's check-in record for a shift (upsert). Admin,
+  /// Store Manager and Training Manager may check in anyone on the shift; a
+  /// trainer may check in only roadies in their own group on that shift's
+  /// board. A trainer may write only from 30 minutes before the shift start
+  /// until 2 hours after the shift end, on the effective clock; after that only
+  /// Admin, Store Manager or Training Manager may change records. Marking a
+  /// roadie absent raises an absent alert; changing them off absent archives it.
+  /// Every write is logged.
+  public func recordCheckIn(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    storeInfo : Store.StoreInfo,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    absentAlerts : Map.Map<Common.AlertId, Phase23.AbsentAlert>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    eventId : Common.EventId,
+    shift : Common.Shift,
+    roadieId : Common.RoadieId,
+    state : Phase23.CheckInState,
+    lateAt : ?Common.Timestamp,
+    excused : ?Text,
+  ) : () {
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
+    if (not canCheckIn(accessGrants, demoState, shiftBoards, caller, eventId, shift, roadieId)) {
+      Runtime.trap("Access denied: you may check in only roadies in your own group");
+    };
+    let roadie = requireVisibleRoadie(roadies, demoState, roadieId);
+    if (roadie.status == #archived) {
+      Runtime.trap("Roadie is archived; rehire first");
+    };
+    let event = schedule.get(eventId) ?? Runtime.trap("Shift not found");
+    let demo = Auth.demoActive(demoState);
+    let now = effectiveNow(demoState);
+    // Outside the trainer window only a manager may change records.
+    if (not withinTrainerWindow(event, shift, storeInfo, now) and not isCheckInManager(accessGrants, demoState, caller)) {
+      Runtime.trap("Check-in is locked; ask a manager to change");
+    };
+    let key = checkInKey(eventId, shift, roadieId, demo);
+    let stored : Phase23.CheckInRecord = {
+      eventId;
+      shift;
+      roadieId;
+      state;
+      lateAt;
+      excused;
+      recordedBy = caller;
+      recordedAt = now;
+      isDemo = demo;
+    };
+    checkIns.add(key, stored);
+    if (state == #absent) {
+      raiseAbsentAlert(absentAlerts, counters, demo, eventId, shift, roadieId, excused, now);
+    } else {
+      clearAbsentAlert(absentAlerts, demo, eventId, shift, roadieId);
+    };
+    logWrite(changeLog, counters, demoState, caller, "recordCheckIn", ?roadieId, false, "Recorded check-in " # key);
+  };
+
+  /// The trainer check-in screen for the caller's own group on one shift: a row
+  /// per roadie with photo, name and current state, plus the checked-in x / y
+  /// counts. `locked` is true when the caller may no longer edit (a trainer
+  /// outside the lock window). Returns null when the caller has no group on
+  /// that shift's board.
+  public func getCheckInBoard(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    storeInfo : Store.StoreInfo,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    caller : Principal,
+    eventId : Common.EventId,
+    shift : Common.Shift,
+  ) : ?Phase23.CheckInBoardView {
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    let board = switch (shiftBoards.get(boardKey(eventId, shift, demo))) {
+      case (?b) { b };
+      case null { return null };
+    };
+    if (board.isDemo != demo) { return null };
+    let group = switch (board.groups.find(func(g) = g.trainerPrincipal == caller)) {
+      case (?g) { g };
+      case null { return null };
+    };
+    let event = schedule.get(eventId);
+    let now = effectiveNow(demoState);
+    let locked = switch (event) {
+      case (?e) { not withinTrainerWindow(e, shift, storeInfo, now) and not isCheckInManager(accessGrants, demoState, caller) };
+      case null { true };
+    };
+    let rows = group.roadieIds.filterMap(func(rid) {
+      switch (roadies.get(rid)) {
+        case (?r) {
+          if (r.isDemo != demo) { return null };
+          let stored = visibleCheckIn(checkIns, demo, eventId, shift, rid);
+          ?{
+            roadieId = rid;
+            name = displayName(r);
+            photo = r.photo;
+            state = switch (stored) { case (?c) { ?c.state }; case null { null } };
+            lateAt = switch (stored) { case (?c) { c.lateAt }; case null { null } };
+            excused = switch (stored) { case (?c) { c.excused }; case null { null } };
+          };
+        };
+        case null { null };
+      };
+    });
+    let checkedInCount = rows.filter(func(row) = row.state != null).size();
+    ?{
+      eventId;
+      shift;
+      shiftLabel = shiftLabel(event, shift);
+      locked;
+      checkedInCount;
+      totalCount = rows.size();
+      roadies = rows;
+    };
+  };
+
+  /// List the unarchived absent alerts for Admin, Store Manager and Training
+  /// Manager, newest first. `phone` is present only when the caller may see the
+  /// roadie's contact set (Admin and Store Manager), so Call/Text is never
+  /// rendered for others. Demo alerts are visible only while demo mode is on.
+  public func listAbsentAlerts(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    absentAlerts : Map.Map<Common.AlertId, Phase23.AbsentAlert>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    caller : Principal,
+  ) : [Phase23.AbsentAlertView] {
+    Auth.requireGroupEditor(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    let canSeePhone = Auth.canSeeContactSet(accessGrants, demoState, caller);
+    let views = absentAlerts.values()
+      .filter(func(a) = a.isDemo == demo and not a.archived)
+      .map(func(a) {
+        let roadie = roadies.get(a.roadieId);
+        let name = switch (roadie) { case (?r) { displayName(r) }; case null { "Roadie " # a.roadieId.toText() } };
+        let photo = switch (roadie) { case (?r) { r.photo }; case null { null } };
+        let phone = if (canSeePhone) {
+          switch (roadie) {
+            case (?r) {
+              switch (r.contactSet) { case (?cs) { ?cs.phone }; case null { null } };
+            };
+            case null { null };
+          };
+        } else { null };
+        {
+          id = a.id;
+          eventId = a.eventId;
+          shift = a.shift;
+          shiftLabel = shiftLabel(schedule.get(a.eventId), a.shift);
+          roadieId = a.roadieId;
+          name;
+          photo;
+          excused = a.excused;
+          archived = a.archived;
+          phone;
+          createdAt = a.createdAt;
+        };
+      })
+      .toArray();
+    views.sort(func(a, b) = Int.compare(b.createdAt, a.createdAt));
+  };
+
+  /// Excuse an absent roadie with a short reason (Admin, Store Manager or
+  /// Training Manager). The reason is required and is stored on both the alert
+  /// and the check-in record; the record stays but is not counted as unexcused.
+  public func excuseAbsentAlert(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    absentAlerts : Map.Map<Common.AlertId, Phase23.AbsentAlert>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    id : Common.AlertId,
+    reason : Text,
+  ) : () {
+    Auth.requireGroupEditor(accessGrants, demoState, caller);
+    if (reason.size() == 0) {
+      Runtime.trap("An excuse reason is required");
+    };
+    let alert = absentAlerts.get(id) ?? Runtime.trap("Absent alert not found");
+    if (alert.isDemo != Auth.demoActive(demoState)) {
+      Runtime.trap("Absent alert not found");
+    };
+    absentAlerts.add(id, { alert with excused = ?reason });
+    let key = checkInKey(alert.eventId, alert.shift, alert.roadieId, alert.isDemo);
+    switch (checkIns.get(key)) {
+      case (?c) { checkIns.add(key, { c with excused = ?reason }) };
+      case null {};
+    };
+    logWrite(changeLog, counters, demoState, caller, "excuseAbsentAlert", ?alert.roadieId, false, "Excused absence: " # reason);
+  };
+
+  /// Archive an absent alert (Admin, Store Manager or Training Manager).
+  public func archiveAbsentAlert(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    absentAlerts : Map.Map<Common.AlertId, Phase23.AbsentAlert>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    id : Common.AlertId,
+  ) : () {
+    Auth.requireGroupEditor(accessGrants, demoState, caller);
+    let alert = absentAlerts.get(id) ?? Runtime.trap("Absent alert not found");
+    if (alert.isDemo != Auth.demoActive(demoState)) {
+      Runtime.trap("Absent alert not found");
+    };
+    absentAlerts.add(id, { alert with archived = true });
+    logWrite(changeLog, counters, demoState, caller, "archiveAbsentAlert", ?alert.roadieId, false, "Archived absent alert");
+  };
+
+  /// Move an absent roadie to the same day's other shift, into that shift's
+  /// Unassigned tray (Admin, Store Manager or Training Manager). The other
+  /// shift's board is created when missing; the roadie is removed from any
+  /// group or Off list there so they appear as unassigned.
+  public func moveAbsentRoadieToOtherShift(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    absentAlerts : Map.Map<Common.AlertId, Phase23.AbsentAlert>,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    caller : Principal,
+    id : Common.AlertId,
+  ) : () {
+    Auth.requireGroupEditor(accessGrants, demoState, caller);
+    let alert = absentAlerts.get(id) ?? Runtime.trap("Absent alert not found");
+    if (alert.isDemo != Auth.demoActive(demoState)) {
+      Runtime.trap("Absent alert not found");
+    };
+    let roadie = requireVisibleRoadie(roadies, demoState, alert.roadieId);
+    if (roadie.status == #archived) {
+      Runtime.trap("Roadie is archived; rehire first");
+    };
+    let demo = Auth.demoActive(demoState);
+    let otherShift : Common.Shift = switch (alert.shift) { case (#am) #pm; case (#pm) #am };
+    let key = boardKey(alert.eventId, otherShift, demo);
+    let board = switch (shiftBoards.get(key)) {
+      case (?b) { b };
+      case null {
+        {
+          eventId = alert.eventId;
+          shift = otherShift;
+          groups = [];
+          offRoadieIds = [];
+          editedAt = effectiveNow(demoState);
+          isDemo = demo;
+        };
+      };
+    };
+    // Remove the roadie from any group or Off list so they land in Unassigned.
+    let newGroups = board.groups.map(func(g) {
+      { g with roadieIds = g.roadieIds.filter(func(rid) = rid != alert.roadieId) };
+    });
+    let newOff = board.offRoadieIds.filter(func(rid) = rid != alert.roadieId);
+    let stored : Phase23.ShiftBoard = {
+      board with
+      groups = newGroups;
+      offRoadieIds = newOff;
+      editedAt = effectiveNow(demoState);
+    };
+    shiftBoards.add(key, stored);
+    logWrite(changeLog, counters, demoState, caller, "moveAbsentRoadieToOtherShift", ?alert.roadieId, false, "Moved absent roadie to the other shift");
+  };
+
+  /// Internal: the per-shift present/late/absent counts for one shift, from the
+  /// check-in records in the active partition.
+  func shiftCheckInSummary(
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    demo : Bool,
+    event : Store.ScheduleEvent,
+    shift : Common.Shift,
+  ) : Phase23.ShiftCheckInSummary {
+    let records = checkIns.values()
+      .filter(func(c) = c.isDemo == demo and c.eventId == event.id and c.shift == shift)
+      .toArray();
+    let present = records.filter(func(c) = c.state == #present).size();
+    let late = records.filter(func(c) = c.state == #late).size();
+    let absent = records.filter(func(c) = c.state == #absent).size();
+    {
+      eventId = event.id;
+      shift;
+      shiftLabel = shiftLabel(?event, shift);
+      present;
+      late;
+      absent;
+      total = records.size();
+    };
+  };
+
+  /// Internal: whether a schedule event's UTC date is the effective clock's UTC
+  /// date.
+  func isToday(event : Store.ScheduleEvent, now : Common.Timestamp) : Bool {
+    event.start / 86_400_000_000_000 == now / 86_400_000_000_000;
+  };
+
+  /// The Today page payload, shaped by the caller's role. A trainer gets their
+  /// group and its check-in board; Admin, Store Manager and Training Manager
+  /// get the absent alerts and today's per-shift summaries; Leadership and
+  /// Visiting Manager get the per-shift summaries. When no shift is today the
+  /// next upcoming event and its countdown are returned.
+  public func getToday(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    storeInfo : Store.StoreInfo,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    absentAlerts : Map.Map<Common.AlertId, Phase23.AbsentAlert>,
+    caller : Principal,
+  ) : Phase23.TodayView {
+    let role = Auth.requireReadable(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    let now = effectiveNow(demoState);
+    // Today's shifts: every schedule event whose UTC date is today, AM then PM.
+    let todayEvents = schedule.values()
+      .filter(func(e) = isToday(e, now))
+      .toArray();
+    let summaries = List.empty<Phase23.ShiftCheckInSummary>();
+    for (e in todayEvents.values()) {
+      summaries.add(shiftCheckInSummary(checkIns, demo, e, #am));
+      summaries.add(shiftCheckInSummary(checkIns, demo, e, #pm));
+    };
+    let shiftSummaries = summaries.toArray();
+    // The caller's own group and its check-in board (trainer view).
+    let myGroup = getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, schedule, caller);
+    let checkIn : ?Phase23.CheckInBoardView = switch (myGroup) {
+      case (?g) { getCheckInBoard(accessGrants, demoState, shiftBoards, roadies, schedule, storeInfo, checkIns, caller, g.eventId, g.shift) };
+      case null { null };
+    };
+    // Absent alerts for Admin, Store Manager and Training Manager.
+    let alerts : [Phase23.AbsentAlertView] = if (isCheckInManager(accessGrants, demoState, caller)) {
+      listAbsentAlerts(accessGrants, demoState, absentAlerts, roadies, schedule, caller);
+    } else { [] };
+    // The next upcoming event, when no shift is today.
+    let nextEvent : ?Phase23.NextEventView = if (todayEvents.size() > 0) {
+      null;
+    } else {
+      let upcoming = schedule.values()
+        .filter(func(e) = e.start >= now)
+        .toArray();
+      if (upcoming.size() == 0) {
+        null;
+      } else {
+        let sorted = upcoming.sort(func(a, b) = Int.compare(a.start, b.start));
+        let e = sorted[0];
+        ?{ eventId = e.id; name = e.name; start = e.start; startsInMs = e.start - now };
+      };
+    };
+    {
+      role;
+      myGroup;
+      checkIn;
+      absentAlerts = alerts;
+      shiftSummaries;
+      nextEvent;
+    };
   };
 
   // --- Paperwork helpers (shared with the dashboard and roster) ---

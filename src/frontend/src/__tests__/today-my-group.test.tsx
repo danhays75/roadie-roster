@@ -1,15 +1,79 @@
 import { renderPageWithActor } from "@/__tests__/router-test-utils";
 import type {
+  CheckInBoardView,
   GroupChangeNotice,
   MyGroupView,
+  Position,
   Roadie,
   ShiftBoardRoadie,
+  StoreInfo,
+  backendInterface,
 } from "@/backend";
-import { RoadieStatus, Role, RosterState, Shift } from "@/backend";
+import {
+  CheckInState,
+  House,
+  RoadieStatus,
+  Role,
+  RosterState,
+  Shift,
+} from "@/backend";
 import TodayPage from "@/pages/Today";
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+
+const STORE: StoreInfo = {
+  storeNumber: "975",
+  appName: "Roadie Roster",
+  locationName: "Lake Charles",
+  address: "1400 W Prien Lake Rd",
+  storePhone: "",
+  timeZone: "America/Chicago",
+  openingDate: 1_802_066_400_000_000_000n,
+  amShiftStart: 600n,
+  amShiftEnd: 900n,
+  pmShiftStart: 960n,
+  pmShiftEnd: 1320n,
+  trainingGroupSize: 5n,
+  leaderTalkName: "10 Minutes with Dan",
+  leaderTalkSize: 10n,
+};
+
+/** A check-in board for the trainer's own group on the current shift. */
+function checkInBoard(
+  overrides: Partial<CheckInBoardView> = {},
+): CheckInBoardView {
+  return {
+    eventId: 1n,
+    shift: Shift.am,
+    shiftLabel: "Training Day 1 · AM",
+    locked: false,
+    checkedInCount: 0n,
+    totalCount: 2n,
+    roadies: [
+      { roadieId: 1n, name: "Ada Roadie" },
+      { roadieId: 2n, name: "Bea Roadie" },
+    ],
+    ...overrides,
+  };
+}
+
+const POSITION: Position = {
+  id: 0n,
+  name: "Server",
+  code: "SRV",
+  house: House.foh,
+  openingBuildTo: 2n,
+  afterOpeningBuildTo: 1n,
+  minimumAge: 16n,
+  needsAlcoholCert: false,
+  shirtType: "Polo",
+  shirtQty: 2n,
+  hatType: "Cap",
+  hatQty: 1n,
+  defaultShirts: 2n,
+  defaultHats: 1n,
+};
 
 function chip(
   roadieId: bigint,
@@ -68,7 +132,11 @@ function notice(id: bigint): GroupChangeNotice {
 
 function actor(
   role: Role,
-  options: { group?: MyGroupView | null; notices?: GroupChangeNotice[] } = {},
+  options: {
+    group?: MyGroupView | null;
+    notices?: GroupChangeNotice[];
+    board?: CheckInBoardView | null;
+  } = {},
 ) {
   return {
     getMyAccess: vi.fn(async () => ({
@@ -91,6 +159,14 @@ function actor(
       enabled: false,
       demoTrainerStations: [],
     })),
+    listPositions: vi.fn(async () => [POSITION]),
+    listCrews: vi.fn(async () => []),
+    getPhoto: vi.fn(async () => new Uint8Array([1, 2, 3, 4])),
+    getStoreInfo: vi.fn(async () => STORE),
+    getCheckInBoard: vi.fn(async () => options.board ?? checkInBoard()),
+    recordCheckIn: vi.fn<backendInterface["recordCheckIn"]>(
+      async () => undefined,
+    ),
   };
 }
 
@@ -141,5 +217,175 @@ describe("Today page trainer My group", () => {
 
     await user.click(within(card).getByTestId("today.notice.dismiss_button"));
     expect(a.dismissGroupChangeNotice).toHaveBeenCalledWith(9n);
+  });
+
+  it("opens the shared card pop-up when a group roadie is tapped", async () => {
+    const a = actor(Role.trainer, { group: myGroup() });
+    const user = userEvent.setup();
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    const item = await screen.findByTestId("today.myGroup.item.0.link");
+    await user.click(item);
+
+    const modal = await screen.findByTestId("roadie.card_modal");
+    expect(within(modal).getByTestId("roadie.flip_card")).toBeInTheDocument();
+  });
+
+  it("shows a loading state while the trainer's group is being read", async () => {
+    const a = actor(Role.trainer, { group: myGroup() });
+    // Hold the group read open so the loading branch is observable.
+    a.getMyGroup.mockImplementation(() => new Promise(() => {}));
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    expect(
+      await screen.findByTestId("today.myGroup.loading_state"),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("today.placeholder")).not.toBeInTheDocument();
+  });
+
+  it("redirects a Kiosk login away from Today to the kiosk surface", async () => {
+    const a = actor(Role.kiosk, { group: myGroup() });
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    // The kiosk role never renders the Today content; the group read is skipped.
+    await waitFor(() => expect(a.getMyGroup).not.toHaveBeenCalled());
+    expect(
+      screen.queryByTestId("today.myGroup.section"),
+    ).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * The trainer check-in board on Today: one row per roadie in the trainer's own
+ * group with Present / Late / Absent, the checked-in count, and the locked
+ * read-only state. The actor is mocked, so this proves the component contract,
+ * not the real canister's group and lock enforcement.
+ */
+describe("Today trainer check-in board", () => {
+  it("records Present for a roadie in the trainer's own group", async () => {
+    const a = actor(Role.trainer, { group: myGroup() });
+    const user = userEvent.setup();
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    const row = await screen.findByTestId("today.checkIn.row.0");
+    await user.click(
+      within(row).getByTestId("today.checkIn.row.0.present_button"),
+    );
+
+    expect(a.recordCheckIn).toHaveBeenCalledWith(
+      1n,
+      Shift.am,
+      1n,
+      CheckInState.present,
+      null,
+      null,
+    );
+  });
+
+  it("records Absent for a roadie in the trainer's own group", async () => {
+    const a = actor(Role.trainer, { group: myGroup() });
+    const user = userEvent.setup();
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    const row = await screen.findByTestId("today.checkIn.row.1");
+    await user.click(
+      within(row).getByTestId("today.checkIn.row.1.absent_button"),
+    );
+
+    expect(a.recordCheckIn).toHaveBeenCalledWith(
+      1n,
+      Shift.am,
+      2n,
+      CheckInState.absent,
+      null,
+      null,
+    );
+  });
+
+  it("records Late with the tap time for a roadie in the trainer's own group", async () => {
+    const a = actor(Role.trainer, { group: myGroup() });
+    const user = userEvent.setup();
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    const row = await screen.findByTestId("today.checkIn.row.0");
+    await user.click(
+      within(row).getByTestId("today.checkIn.row.0.late_button"),
+    );
+
+    // The tap time is recorded automatically as a nanosecond timestamp.
+    expect(a.recordCheckIn).toHaveBeenCalledTimes(1);
+    const call = a.recordCheckIn.mock.calls[0];
+    expect(call[3]).toBe(CheckInState.late);
+    expect(typeof call[4]).toBe("bigint");
+  });
+
+  it("shows the editable late time for a roadie already marked late", async () => {
+    const a = actor(Role.trainer, {
+      group: myGroup(),
+      board: checkInBoard({
+        checkedInCount: 1n,
+        roadies: [
+          {
+            roadieId: 1n,
+            name: "Ada Roadie",
+            state: CheckInState.late,
+            lateAt: 1_900_000_000_000_000_000n,
+          },
+          { roadieId: 2n, name: "Bea Roadie" },
+        ],
+      }),
+    });
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    expect(
+      await screen.findByTestId("today.checkIn.row.0.late_time_input"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId("today.checkIn.row.0.late_time_save_button"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the checked-in count from the board", async () => {
+    const a = actor(Role.trainer, {
+      group: myGroup(),
+      board: checkInBoard({ checkedInCount: 1n, totalCount: 2n }),
+    });
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    expect(
+      await screen.findByTestId("today.checkIn.progress"),
+    ).toHaveTextContent("1 of 2 checked in");
+  });
+
+  it("renders the board read-only and disables the buttons when locked", async () => {
+    const a = actor(Role.trainer, {
+      group: myGroup(),
+      board: checkInBoard({ locked: true }),
+    });
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    expect(await screen.findByTestId("today.checkIn.locked")).toHaveTextContent(
+      "Locked: ask a manager to change.",
+    );
+    expect(
+      screen.getByTestId("today.checkIn.row.0.present_button"),
+    ).toBeDisabled();
+    expect(
+      screen.getByTestId("today.checkIn.row.0.late_button"),
+    ).toBeDisabled();
+    expect(
+      screen.getByTestId("today.checkIn.row.0.absent_button"),
+    ).toBeDisabled();
+  });
+
+  it("does not render the check-in board for a role that may not check in", async () => {
+    // A Visiting Manager reaches Today read-only; the board is not mounted.
+    const a = actor(Role.visitingManager, { group: myGroup() });
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    await screen.findByTestId("today.shifts.section");
+    expect(
+      screen.queryByTestId("today.checkIn.section"),
+    ).not.toBeInTheDocument();
   });
 });

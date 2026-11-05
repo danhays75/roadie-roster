@@ -120,6 +120,15 @@ type TrainerNote =
    shift: Shift;
    workOn: text;
  };
+type TodayView = 
+ record {
+   absentAlerts: vec AbsentAlertView;
+   checkIn: opt CheckInBoardView;
+   myGroup: opt MyGroupView;
+   nextEvent: opt NextEventView;
+   role: Role;
+   shiftSummaries: vec ShiftCheckInSummary;
+ };
 type Timestamp = int;
 type TimeZone = text;
 type TimeOfDay = nat;
@@ -253,6 +262,16 @@ type SignOffOutcome =
    needsMoreTime: text;
  };
 type ShirtSize = text;
+type ShiftCheckInSummary = 
+ record {
+   absent: nat;
+   eventId: EventId;
+   late: nat;
+   present: nat;
+   shift: Shift;
+   shiftLabel: text;
+   total: nat;
+ };
 type ShiftBoardView = 
  record {
    editedAt: Timestamp;
@@ -497,6 +516,13 @@ type OrientationCheckoff =
                       };
    uniformItems: vec text;
    updatedAt: Timestamp;
+ };
+type NextEventView = 
+ record {
+   eventId: EventId;
+   name: text;
+   start: Timestamp;
+   startsInMs: int;
  };
 type MyGroupView = 
  record {
@@ -778,6 +804,31 @@ type ChecklistItem =
    requiresAlcoholCert: bool;
    "text": text;
  };
+type CheckInState = 
+ variant {
+   absent;
+   late;
+   present;
+ };
+type CheckInRow = 
+ record {
+   excused: opt text;
+   lateAt: opt Timestamp;
+   name: text;
+   photo: opt PhotoRef;
+   roadieId: RoadieId;
+   state: opt CheckInState;
+ };
+type CheckInBoardView = 
+ record {
+   checkedInCount: nat;
+   eventId: EventId;
+   locked: bool;
+   roadies: vec CheckInRow;
+   shift: Shift;
+   shiftLabel: text;
+   totalCount: nat;
+ };
 type ChangeLogId = nat;
 type ChangeLogEntry = 
  record {
@@ -862,6 +913,20 @@ type AccessGrant =
    staffProfile: opt StaffProfile;
    trainerPositionIds: vec PositionId;
  };
+type AbsentAlertView = 
+ record {
+   archived: bool;
+   createdAt: Timestamp;
+   eventId: EventId;
+   excused: opt text;
+   id: AlertId;
+   name: text;
+   phone: opt Phone;
+   photo: opt PhotoRef;
+   roadieId: RoadieId;
+   shift: Shift;
+   shiftLabel: text;
+ };
 service : {
   _immutableObjectStorageBlobsAreLive: (hashes: vec blob) -> (vec bool) query;
   _immutableObjectStorageBlobsToDelete: () -> (vec blob) query;
@@ -894,6 +959,8 @@ service : {
    SignatureRef) -> (RoadieId);
   /// Approve a pending user (Admin only).
   approveUser: (request: ApprovalRequest) -> ();
+  /// Archive an absent alert (Admin, Store Manager or Training Manager).
+  archiveAbsentAlert: (id: AlertId) -> ();
   /// Archive every no-show at a session as NCNS Orientation (Admin/Store
   /// Manager only). Returns the archived roadie ids.
   archiveNoShows: (eventId: EventId) -> (vec RoadieId);
@@ -950,6 +1017,9 @@ service : {
   /// Re-seed the store when it has no positions yet. Idempotent; returns true
   /// when a seed was applied, false when the store already had positions.
   ensureSeeded: () -> (bool);
+  /// Excuse an absent roadie with a short reason (Admin, Store Manager or
+  /// Training Manager).
+  excuseAbsentAlert: (id: AlertId, reason: text) -> ();
   execute: (qJson: text) -> (Result) query;
   /// Find duplicate cards matching a submission (Admin/Store Manager only).
   /// Each match names the matched roadie and their main position.
@@ -957,6 +1027,9 @@ service : {
   /// Return the backend API documentation as Markdown.
   getApiDoc: () -> (text) query;
   getCallerUserRole: () -> (UserRole) query;
+  /// The trainer check-in screen for the caller's own group on one shift.
+  getCheckInBoard: (eventId: EventId, shift: Shift) ->
+   (opt CheckInBoardView) query;
   /// Read the editable checklists.
   getChecklists: () -> (Checklists) query;
   /// Read a roadie's contact set. Admin and Store Manager receive the contact
@@ -1019,6 +1092,8 @@ service : {
   /// Read both store logos (main and secondary). Any caller, including Kiosk
   /// and unregistered users.
   getStoreLogo: () -> (StoreLogos) query;
+  /// The Today page payload, shaped by the caller's role.
+  getToday: () -> (TodayView) query;
   /// The uniform check-off for a roadie (Admin, Store Manager, Training Manager
   /// or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
   getUniformCheckoff: (roadieId: RoadieId) -> (opt UniformCheckoffView) query;
@@ -1033,6 +1108,9 @@ service : {
   isCallerAdmin: () -> (bool) query;
   /// Compute whether a roadie is a minor as of now.
   isMinor: (id: RoadieId) -> (bool) query;
+  /// List the unarchived absent alerts (Admin, Store Manager or Training
+  /// Manager). `phone` is present only for Admin and Store Manager.
+  listAbsentAlerts: () -> (vec AbsentAlertView) query;
   /// List all access grants (Admin only).
   listAccessGrants: () -> (vec AccessGrant) query;
   /// List alerts (Admin/Store Manager only).
@@ -1086,6 +1164,9 @@ service : {
   /// non-empty string and the caller is Admin or Store Manager.
   markPresent: (roadieId: RoadieId, eventId: EventId, overrideReason:
    opt text) -> ();
+  /// Move an absent roadie to the same day's other shift, into that shift's
+  /// Unassigned tray (Admin, Store Manager or Training Manager).
+  moveAbsentRoadieToOtherShift: (id: AlertId) -> ();
   /// Move every non-archived roadie from one orientation session to another
   /// (Admin/Store Manager only, logged). Returns the number moved.
   moveAllRoadiesToSession: (fromEventId: EventId, toEventId: EventId) ->
@@ -1094,6 +1175,14 @@ service : {
   moveRoadieToSession: (roadieId: RoadieId, eventId: EventId) -> ();
   /// Record attendance for a roadie (Admin/Store Manager only).
   recordAttendance: ("record": AttendanceRecord) -> ();
+  /// Create or change one roadie's check-in record for a shift (upsert). Admin,
+  /// Store Manager and Training Manager may check in anyone; a trainer may
+  /// check in only roadies in their own group on that shift's board. A trainer
+  /// may write only from 30 minutes before the shift start until 2 hours after
+  /// the shift end; after that only Admin, Store Manager or Training Manager
+  /// may change records. Marking a roadie absent raises an absent alert.
+  recordCheckIn: (eventId: EventId, shift: Shift, roadieId: RoadieId, state:
+   CheckInState, lateAt: opt Timestamp, excused: opt text) -> ();
   /// Record a final sign-off for a roadie (Admin/Store Manager only).
   recordFinalSignOff: (signOff: FinalSignOff) -> ();
   /// Rehire an archived roadie (Admin/Store Manager only). Returns the roadie

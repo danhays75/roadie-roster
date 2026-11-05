@@ -22,6 +22,9 @@ mixin (
   leaderTalks : Map.Map<Common.LeaderTalkId, Phase23.LeaderTalk>,
   finalSignOffs : Map.Map<Common.RoadieId, Phase23.FinalSignOff>,
   alerts : Map.Map<Common.AlertId, Phase23.Alert>,
+  checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+  absentAlerts : Map.Map<Common.AlertId, Phase23.AbsentAlert>,
+  storeInfo : { var value : Store.StoreInfo },
   changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
   counters : Phase23Lib.Counters,
   demoState : Common.DemoState,
@@ -209,5 +212,57 @@ mixin (
   /// Acknowledge an alert (Admin/Store Manager only).
   public shared ({ caller }) func acknowledgeAlert(id : Common.AlertId) : async () {
     Phase23Lib.acknowledgeAlert(accessGrants, demoState, alerts, changeLog, counters, caller, id);
+  };
+
+  // --- Trainer check-in ---
+
+  /// Create or change one roadie's check-in record for a shift (upsert). Admin,
+  /// Store Manager and Training Manager may check in anyone; a trainer may
+  /// check in only roadies in their own group on that shift's board. A trainer
+  /// may write only from 30 minutes before the shift start until 2 hours after
+  /// the shift end; after that only Admin, Store Manager or Training Manager
+  /// may change records. Marking a roadie absent raises an absent alert.
+  public shared ({ caller }) func recordCheckIn(
+    eventId : Common.EventId,
+    shift : Common.Shift,
+    roadieId : Common.RoadieId,
+    state : Phase23.CheckInState,
+    lateAt : ?Common.Timestamp,
+    excused : ?Text,
+  ) : async () {
+    Phase23Lib.recordCheckIn(accessGrants, demoState, shiftBoards, roadies, schedule, storeInfo.value, checkIns, absentAlerts, changeLog, counters, caller, eventId, shift, roadieId, state, lateAt, excused);
+  };
+
+  /// The trainer check-in screen for the caller's own group on one shift.
+  public query ({ caller }) func getCheckInBoard(eventId : Common.EventId, shift : Common.Shift) : async ?Phase23.CheckInBoardView {
+    Phase23Lib.getCheckInBoard(accessGrants, demoState, shiftBoards, roadies, schedule, storeInfo.value, checkIns, caller, eventId, shift);
+  };
+
+  /// List the unarchived absent alerts (Admin, Store Manager or Training
+  /// Manager). `phone` is present only for Admin and Store Manager.
+  public query ({ caller }) func listAbsentAlerts() : async [Phase23.AbsentAlertView] {
+    Phase23Lib.listAbsentAlerts(accessGrants, demoState, absentAlerts, roadies, schedule, caller);
+  };
+
+  /// Excuse an absent roadie with a short reason (Admin, Store Manager or
+  /// Training Manager).
+  public shared ({ caller }) func excuseAbsentAlert(id : Common.AlertId, reason : Text) : async () {
+    Phase23Lib.excuseAbsentAlert(accessGrants, demoState, absentAlerts, checkIns, changeLog, counters, caller, id, reason);
+  };
+
+  /// Archive an absent alert (Admin, Store Manager or Training Manager).
+  public shared ({ caller }) func archiveAbsentAlert(id : Common.AlertId) : async () {
+    Phase23Lib.archiveAbsentAlert(accessGrants, demoState, absentAlerts, changeLog, counters, caller, id);
+  };
+
+  /// Move an absent roadie to the same day's other shift, into that shift's
+  /// Unassigned tray (Admin, Store Manager or Training Manager).
+  public shared ({ caller }) func moveAbsentRoadieToOtherShift(id : Common.AlertId) : async () {
+    Phase23Lib.moveAbsentRoadieToOtherShift(accessGrants, demoState, absentAlerts, shiftBoards, roadies, changeLog, counters, caller, id);
+  };
+
+  /// The Today page payload, shaped by the caller's role.
+  public query ({ caller }) func getToday() : async Phase23.TodayView {
+    Phase23Lib.getToday(accessGrants, demoState, shiftBoards, roadies, positions, schedule, storeInfo.value, checkIns, absentAlerts, caller);
   };
 };

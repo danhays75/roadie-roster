@@ -10,6 +10,19 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface AbsentAlertView {
+  'id' : AlertId,
+  'eventId' : EventId,
+  'roadieId' : RoadieId,
+  'name' : string,
+  'createdAt' : Timestamp,
+  'shift' : Shift,
+  'shiftLabel' : string,
+  'excused' : [] | [string],
+  'phone' : [] | [Phone],
+  'photo' : [] | [PhotoRef],
+  'archived' : boolean,
+}
 export interface AccessGrant {
   'principal' : Principal,
   'linkedRoadieId' : [] | [RoadieId],
@@ -74,6 +87,26 @@ export interface ChangeLogEntry {
   'subjectRoadieId' : [] | [RoadieId],
 }
 export type ChangeLogId = bigint;
+export interface CheckInBoardView {
+  'roadies' : Array<CheckInRow>,
+  'eventId' : EventId,
+  'checkedInCount' : bigint,
+  'totalCount' : bigint,
+  'locked' : boolean,
+  'shift' : Shift,
+  'shiftLabel' : string,
+}
+export interface CheckInRow {
+  'roadieId' : RoadieId,
+  'name' : string,
+  'lateAt' : [] | [Timestamp],
+  'state' : [] | [CheckInState],
+  'excused' : [] | [string],
+  'photo' : [] | [PhotoRef],
+}
+export type CheckInState = { 'present' : null } |
+  { 'late' : null } |
+  { 'absent' : null };
 export interface ChecklistItem {
   'id' : bigint,
   'requiresAlcoholCert' : boolean,
@@ -297,6 +330,12 @@ export interface MyGroupView {
   'shiftLabel' : string,
   'capacity' : bigint,
 }
+export interface NextEventView {
+  'eventId' : EventId,
+  'name' : string,
+  'start' : Timestamp,
+  'startsInMs' : bigint,
+}
 export interface OrientationCheckoff {
   'hatsCount' : bigint,
   'roadieId' : RoadieId,
@@ -495,6 +534,15 @@ export interface ShiftBoardView {
   'unassigned' : Array<ShiftBoardRoadie>,
   'editedAt' : Timestamp,
 }
+export interface ShiftCheckInSummary {
+  'eventId' : EventId,
+  'total' : bigint,
+  'present' : bigint,
+  'late' : bigint,
+  'shift' : Shift,
+  'shiftLabel' : string,
+  'absent' : bigint,
+}
 export type ShirtSize = string;
 export type SignOffOutcome = { 'certified' : null } |
   { 'needsMoreTime' : string };
@@ -606,6 +654,14 @@ export interface TemplateScheduleEvent {
 export type TimeOfDay = bigint;
 export type TimeZone = string;
 export type Timestamp = bigint;
+export interface TodayView {
+  'checkIn' : [] | [CheckInBoardView],
+  'nextEvent' : [] | [NextEventView],
+  'shiftSummaries' : Array<ShiftCheckInSummary>,
+  'myGroup' : [] | [MyGroupView],
+  'role' : Role,
+  'absentAlerts' : Array<AbsentAlertView>,
+}
 export interface TrainerNote {
   'id' : bigint,
   'day' : DateOnly,
@@ -759,6 +815,10 @@ export interface _SERVICE {
    */
   'approveUser' : ActorMethod<[ApprovalRequest], undefined>,
   /**
+   * / Archive an absent alert (Admin, Store Manager or Training Manager).
+   */
+  'archiveAbsentAlert' : ActorMethod<[AlertId], undefined>,
+  /**
    * / Archive every no-show at a session as NCNS Orientation (Admin/Store
    * / Manager only). Returns the archived roadie ids.
    */
@@ -857,6 +917,11 @@ export interface _SERVICE {
    * / when a seed was applied, false when the store already had positions.
    */
   'ensureSeeded' : ActorMethod<[], boolean>,
+  /**
+   * / Excuse an absent roadie with a short reason (Admin, Store Manager or
+   * / Training Manager).
+   */
+  'excuseAbsentAlert' : ActorMethod<[AlertId, string], undefined>,
   'execute' : ActorMethod<[string], Result>,
   /**
    * / Find duplicate cards matching a submission (Admin/Store Manager only).
@@ -868,6 +933,10 @@ export interface _SERVICE {
    */
   'getApiDoc' : ActorMethod<[], string>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  /**
+   * / The trainer check-in screen for the caller's own group on one shift.
+   */
+  'getCheckInBoard' : ActorMethod<[EventId, Shift], [] | [CheckInBoardView]>,
   /**
    * / Read the editable checklists.
    */
@@ -974,6 +1043,10 @@ export interface _SERVICE {
    */
   'getStoreLogo' : ActorMethod<[], StoreLogos>,
   /**
+   * / The Today page payload, shaped by the caller's role.
+   */
+  'getToday' : ActorMethod<[], TodayView>,
+  /**
    * / The uniform check-off for a roadie (Admin, Store Manager, Training Manager
    * / or Visiting Manager). Locked until the roadie's paperwork is 100% complete.
    */
@@ -997,6 +1070,11 @@ export interface _SERVICE {
    * / Compute whether a roadie is a minor as of now.
    */
   'isMinor' : ActorMethod<[RoadieId], boolean>,
+  /**
+   * / List the unarchived absent alerts (Admin, Store Manager or Training
+   * / Manager). `phone` is present only for Admin and Store Manager.
+   */
+  'listAbsentAlerts' : ActorMethod<[], Array<AbsentAlertView>>,
   /**
    * / List all access grants (Admin only).
    */
@@ -1090,6 +1168,11 @@ export interface _SERVICE {
    */
   'markPresent' : ActorMethod<[RoadieId, EventId, [] | [string]], undefined>,
   /**
+   * / Move an absent roadie to the same day's other shift, into that shift's
+   * / Unassigned tray (Admin, Store Manager or Training Manager).
+   */
+  'moveAbsentRoadieToOtherShift' : ActorMethod<[AlertId], undefined>,
+  /**
    * / Move every non-archived roadie from one orientation session to another
    * / (Admin/Store Manager only, logged). Returns the number moved.
    */
@@ -1102,6 +1185,18 @@ export interface _SERVICE {
    * / Record attendance for a roadie (Admin/Store Manager only).
    */
   'recordAttendance' : ActorMethod<[AttendanceRecord], undefined>,
+  /**
+   * / Create or change one roadie's check-in record for a shift (upsert). Admin,
+   * / Store Manager and Training Manager may check in anyone; a trainer may
+   * / check in only roadies in their own group on that shift's board. A trainer
+   * / may write only from 30 minutes before the shift start until 2 hours after
+   * / the shift end; after that only Admin, Store Manager or Training Manager
+   * / may change records. Marking a roadie absent raises an absent alert.
+   */
+  'recordCheckIn' : ActorMethod<
+    [EventId, Shift, RoadieId, CheckInState, [] | [Timestamp], [] | [string]],
+    undefined
+  >,
   /**
    * / Record a final sign-off for a roadie (Admin/Store Manager only).
    */

@@ -94,6 +94,53 @@ export const GROUP_EDITOR_ROLES: Role[] = [
   Role.trainingManager,
 ];
 
+/**
+ * Roles allowed to record a check-in on the trainer check-in board: the roles
+ * that may write a check-in on the backend (Admin, Store Manager, Training
+ * Manager, NSO Trainer).
+ */
+export const CHECK_IN_ROLES: Role[] = [
+  Role.admin,
+  Role.storeManager,
+  Role.trainingManager,
+  Role.trainer,
+];
+
+/**
+ * Roles allowed to see the absent alerts list: the roles that may read the
+ * alerts on the backend (Admin, Store Manager, Training Manager, Visiting
+ * Manager).
+ */
+export const ABSENT_ALERT_ROLES: Role[] = [
+  Role.admin,
+  Role.storeManager,
+  Role.trainingManager,
+  Role.visitingManager,
+];
+
+/**
+ * Roles that see the Today screen read-only: they may read the day's summary
+ * but cannot record a check-in. Every role that can reach Today but is not a
+ * check-in role is read-only.
+ */
+export const TODAY_READ_ONLY_ROLES: Role[] = [
+  Role.visitingManager,
+  Role.leadership,
+];
+
+/**
+ * Roles routed to the manager Today view (absent alerts plus per-shift
+ * check-in counts): the group editors that may read the absent alerts on the
+ * backend. Visiting Manager is deliberately excluded — the backend
+ * listAbsentAlerts requires a group editor and traps for a Visiting Manager,
+ * so that role sees the read-only attendance summary instead.
+ */
+export const MANAGER_TODAY_ROLES: Role[] = [
+  Role.admin,
+  Role.storeManager,
+  Role.trainingManager,
+];
+
 /** The full navigation model; each item declares which roles may see it. */
 export const NAV_ITEMS: NavItem[] = [
   { labelKey: "nav.today", to: "/today", allowedRoles: [] },
@@ -302,4 +349,24 @@ export function canUniforms(role: Role | undefined): boolean {
 /** Whether the given role may edit the uniform settings. */
 export function canEditUniforms(role: Role | undefined): boolean {
   return !!role && UNIFORM_EDITOR_ROLES.includes(role);
+}
+
+/** Whether the given role may record a check-in on the Today board. */
+export function canCheckIn(role: Role | undefined): boolean {
+  return !!role && CHECK_IN_ROLES.includes(role);
+}
+
+/** Whether the given role may see the absent alerts list. */
+export function canSeeAbsentAlerts(role: Role | undefined): boolean {
+  return !!role && ABSENT_ALERT_ROLES.includes(role);
+}
+
+/** Whether the given role sees the Today screen read-only. */
+export function isTodayReadOnly(role: Role | undefined): boolean {
+  return !!role && TODAY_READ_ONLY_ROLES.includes(role);
+}
+
+/** Whether the given role is routed to the manager Today view. */
+export function canSeeManagerToday(role: Role | undefined): boolean {
+  return !!role && MANAGER_TODAY_ROLES.includes(role);
 }

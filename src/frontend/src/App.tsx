@@ -350,7 +350,7 @@ function GuardedUniforms() {
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: DashboardPage,
+  component: TodayPage,
 });
 
 const todayRoute = createRoute({

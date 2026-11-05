@@ -264,4 +264,121 @@ module {
     foh : [Store.Position];
     boh : [Store.Position];
   };
+
+  // --- Trainer check-in ---
+
+  /// Check-in state for one roadie on one shift.
+  public type CheckInState = {
+    #present;
+    #late;
+    #absent;
+  };
+
+  /// One check-in record per roadie per shift (eventId + am/pm), upserted.
+  /// `lateAt` is set when the state is `#late`; `excused` carries a short
+  /// reason when an absent roadie is excused. `isDemo` marks a demo check-in.
+  public type CheckInRecord = {
+    eventId : Common.EventId;
+    shift : Common.Shift;
+    roadieId : Common.RoadieId;
+    state : CheckInState;
+    lateAt : ?Common.Timestamp;
+    excused : ?Text;
+    recordedBy : Principal;
+    recordedAt : Common.Timestamp;
+    isDemo : Bool;
+  };
+
+  /// The kind of an absent alert. Only `#absent` exists today; the variant
+  /// leaves room for the deferred alert types.
+  public type AbsentAlertKind = {
+    #absent;
+  };
+
+  /// An absent alert raised when a roadie is marked absent on a shift.
+  /// `archived` is set once the alert is archived; `isDemo` partitions demo
+  /// alerts from real ones.
+  public type AbsentAlert = {
+    id : Common.AlertId;
+    eventId : Common.EventId;
+    shift : Common.Shift;
+    roadieId : Common.RoadieId;
+    kind : AbsentAlertKind;
+    excused : ?Text;
+    archived : Bool;
+    createdAt : Common.Timestamp;
+    isDemo : Bool;
+  };
+
+  /// One roadie row on the trainer check-in screen.
+  public type CheckInRow = {
+    roadieId : Common.RoadieId;
+    name : Text;
+    photo : ?Common.PhotoRef;
+    state : ?CheckInState;
+    lateAt : ?Common.Timestamp;
+    excused : ?Text;
+  };
+
+  /// The trainer check-in screen for one shift: "My group · Day N AM/PM".
+  /// `locked` is true once the trainer lock window has passed, so the screen
+  /// renders read-only.
+  public type CheckInBoardView = {
+    eventId : Common.EventId;
+    shift : Common.Shift;
+    shiftLabel : Text;
+    locked : Bool;
+    checkedInCount : Nat;
+    totalCount : Nat;
+    roadies : [CheckInRow];
+  };
+
+  /// One absent alert row shown to Admin, Store Manager and Training Manager.
+  /// `phone` is present only when the caller may see the roadie's contact set
+  /// (Admin and Store Manager), so Call/Text is never rendered for others.
+  public type AbsentAlertView = {
+    id : Common.AlertId;
+    eventId : Common.EventId;
+    shift : Common.Shift;
+    shiftLabel : Text;
+    roadieId : Common.RoadieId;
+    name : Text;
+    photo : ?Common.PhotoRef;
+    excused : ?Text;
+    archived : Bool;
+    phone : ?Common.Phone;
+    createdAt : Common.Timestamp;
+  };
+
+  /// Per-shift check-in counts for the Today page.
+  public type ShiftCheckInSummary = {
+    eventId : Common.EventId;
+    shift : Common.Shift;
+    shiftLabel : Text;
+    present : Nat;
+    late : Nat;
+    absent : Nat;
+    total : Nat;
+  };
+
+  /// The next upcoming event and its countdown, shown when no shift is today.
+  public type NextEventView = {
+    eventId : Common.EventId;
+    name : Text;
+    start : Common.Timestamp;
+    startsInMs : Int;
+  };
+
+  /// The Today page payload, shaped by the caller's role. `myGroup` and
+  /// `checkIn` are set for a trainer; `absentAlerts` for Admin/SM/TM;
+  /// `shiftSummaries` for Leadership/Visiting Manager; `nextEvent` when no
+  /// shift is today.
+  public type TodayView = {
+    role : Common.Role;
+    myGroup : ?MyGroupView;
+    checkIn : ?CheckInBoardView;
+    absentAlerts : [AbsentAlertView];
+    shiftSummaries : [ShiftCheckInSummary];
+    nextEvent : ?NextEventView;
+  };
 };

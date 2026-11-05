@@ -1856,6 +1856,9 @@ video {
 .max-w-6xl {
   max-width: 72rem;
 }
+.max-w-\[10rem\] {
+  max-width: 10rem;
+}
 .max-w-\[12rem\] {
   max-width: 12rem;
 }
@@ -2304,12 +2307,18 @@ video {
 .border-dashed {
   border-style: dashed;
 }
+.border-\[\#B22234\]\/40 {
+  border-color: rgb(178 34 52 / 0.4);
+}
 .border-\[oklch\(0\.75_0\.14_85\)\] {
   border-color: oklch(0.75 0.14 85);
 }
 .border-accent {
   --tw-border-opacity: 1;
   border-color: oklch(var(--accent) / var(--tw-border-opacity, 1));
+}
+.border-accent\/40 {
+  border-color: oklch(var(--accent) / 0.4);
 }
 .border-black\/20 {
   border-color: rgb(0 0 0 / 0.2);
@@ -2333,6 +2342,10 @@ video {
 .border-primary\/40 {
   border-color: oklch(var(--primary) / 0.4);
 }
+.border-secondary {
+  --tw-border-opacity: 1;
+  border-color: oklch(var(--secondary) / var(--tw-border-opacity, 1));
+}
 .border-sidebar-border {
   border-color: oklch(var(--sidebar-border));
 }
@@ -2350,6 +2363,9 @@ video {
 }
 .border-t-transparent {
   border-top-color: transparent;
+}
+.bg-\[\#B22234\]\/10 {
+  background-color: rgb(178 34 52 / 0.1);
 }
 .bg-\[\#F5F3EE\] {
   --tw-bg-opacity: 1;
@@ -2376,6 +2392,9 @@ video {
 }
 .bg-accent\/10 {
   background-color: oklch(var(--accent) / 0.1);
+}
+.bg-accent\/5 {
+  background-color: oklch(var(--accent) / 0.05);
 }
 .bg-background {
   background-color: oklch(var(--background));
@@ -2739,6 +2758,10 @@ video {
 .text-\[\#14284B\] {
   --tw-text-opacity: 1;
   color: rgb(20 40 75 / var(--tw-text-opacity, 1));
+}
+.text-\[\#B22234\] {
+  --tw-text-opacity: 1;
+  color: rgb(178 34 52 / var(--tw-text-opacity, 1));
 }
 .text-\[\#f4efe3\] {
   --tw-text-opacity: 1;
@@ -3471,8 +3494,14 @@ video {
   --tw-translate-y: -0.125rem;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
+.hover\:border-primary\/40:hover {
+  border-color: oklch(var(--primary) / 0.4);
+}
 .hover\:border-primary\/50:hover {
   border-color: oklch(var(--primary) / 0.5);
+}
+.hover\:border-primary\/60:hover {
+  border-color: oklch(var(--primary) / 0.6);
 }
 .hover\:bg-\[oklch\(0\.28_0\.05_55\)\]:hover {
   background-color: oklch(0.28 0.05 55);
@@ -4602,6 +4631,10 @@ video {
 
   .sm\:gap-6 {
     gap: 1.5rem;
+  }
+
+  .sm\:p-4 {
+    padding: 1rem;
   }
 
   .sm\:px-8 {

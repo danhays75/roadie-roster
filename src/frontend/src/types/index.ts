@@ -1,6 +1,9 @@
 import type {
+  AbsentAlertView,
   AccessGrant,
   ApprovalRequest,
+  CheckInBoardView,
+  CheckInRow,
   DemoDataSummary,
   DemoRole,
   DemoStateView,
@@ -8,6 +11,7 @@ import type {
   LeaderSummary,
   MyAccessView,
   MyGroupView,
+  NextEventView,
   OrientationCheckoff,
   OrientationRoadieRow,
   OrientationSessionView,
@@ -26,15 +30,24 @@ import type {
   ShiftBoardGroupView,
   ShiftBoardRoadie,
   ShiftBoardView,
+  ShiftCheckInSummary,
   StoreInfo,
   Timestamp,
+  TodayView,
   UniformCheckoffItem,
   UniformCheckoffView,
 } from "@/backend";
 
+// `CheckInState` is a generated enum (a runtime value), so it is re-exported as
+// a value rather than a type-only export.
+export { CheckInState } from "@/backend";
+
 export type {
+  AbsentAlertView,
   AccessGrant,
   ApprovalRequest,
+  CheckInBoardView,
+  CheckInRow,
   DemoDataSummary,
   DemoRole,
   DemoStateView,
@@ -42,6 +55,7 @@ export type {
   LeaderSummary,
   MyAccessView,
   MyGroupView,
+  NextEventView,
   OrientationCheckoff,
   OrientationRoadieRow,
   OrientationSessionView,
@@ -60,7 +74,9 @@ export type {
   ShiftBoardGroupView,
   ShiftBoardRoadie,
   ShiftBoardView,
+  ShiftCheckInSummary,
   StoreInfo,
+  TodayView,
   UniformCheckoffItem,
   UniformCheckoffView,
 };
