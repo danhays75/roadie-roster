@@ -13,10 +13,12 @@ import { RoadiePhoto } from "@/components/roadie/RoadiePhoto";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useDemo } from "@/hooks/useDemo";
 import { useRecordCheckIn } from "@/hooks/useQueries";
+import { pretendDateToInstant } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Check, Clock, Loader2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 /** The three check-in choices, in display order. */
 const CHOICES: Array<{
@@ -72,9 +74,21 @@ export function CheckInRowItem({
 }) {
   const { t } = useCheckInCopy();
   const record = useRecordCheckIn();
+  const demo = useDemo();
   const [error, setError] = useState<string | null>(null);
   const [lateTime, setLateTime] = useState<string>("");
   const [savedTime, setSavedTime] = useState<string | null>(null);
+
+  // The instant a Late tap stands for: while demo mode is on with a pretend
+  // date, that instant replaces the real clock so the recorded tap time follows
+  // the pretend date.
+  const now = useMemo(() => {
+    if (demo.enabled && demo.pretendDate) {
+      const instant = pretendDateToInstant(demo.pretendDate);
+      if (instant) return instant.getTime();
+    }
+    return Date.now();
+  }, [demo.enabled, demo.pretendDate]);
 
   // Seed the editable late time from the stored value once per roadie, so a
   // refetch does not overwrite a time the trainer is mid-edit.
@@ -105,9 +119,9 @@ export function CheckInRowItem({
     if (locked || record.isPending) return;
     if (state === CheckInState.late) {
       // Record the tap time automatically, then let the trainer adjust it.
-      const now = BigInt(Date.now()) * 1_000_000n;
-      setLateTime(timestampToStoreTime(now, timeZone) ?? "");
-      save(state, now);
+      const tapTime = BigInt(now) * 1_000_000n;
+      setLateTime(timestampToStoreTime(tapTime, timeZone) ?? "");
+      save(state, tapTime);
     } else {
       save(state);
     }
@@ -115,7 +129,7 @@ export function CheckInRowItem({
 
   const onSaveTime = () => {
     if (locked || record.isPending) return;
-    const base = row.lateAt ?? BigInt(Date.now()) * 1_000_000n;
+    const base = row.lateAt ?? BigInt(now) * 1_000_000n;
     const adjusted = storeTimeToTimestamp(base, lateTime, timeZone);
     if (adjusted === null) {
       setError(t("checkIn.lateTimeInvalid"));

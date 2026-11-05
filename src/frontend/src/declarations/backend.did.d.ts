@@ -176,6 +176,7 @@ export interface DemoStateView {
   'turnedOnAt' : [] | [Timestamp],
   'pretendDate' : [] | [PretendDate],
   'demoRole' : [] | [DemoRole],
+  'demoTrainerAs' : [] | [Principal],
   'enabled' : boolean,
   'demoTrainerStations' : Array<PositionId>,
 }
@@ -1255,6 +1256,12 @@ export interface _SERVICE {
    * / mode is on.
    */
   'setDemoRole' : ActorMethod<[DemoRole, Array<PositionId>], DemoActionResult>,
+  /**
+   * / Choose which demo leader a demo NSO Trainer views as, so "View as NSO
+   * / Trainer" can see that leader's group. Stored per caller while demo mode is
+   * / on; ignored outside demo mode.
+   */
+  'setDemoTrainerAs' : ActorMethod<[Principal], DemoActionResult>,
   /**
    * / Set the kiosk staff PIN (Admin only). Stored hashed; never returned.
    */

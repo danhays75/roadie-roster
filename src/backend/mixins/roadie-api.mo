@@ -18,15 +18,16 @@ mixin (
   demoState : Common.DemoState,
   shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
   groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
+  storeInfo : { var value : Store.StoreInfo },
 ) {
   /// List roadie cards visible to the caller.
   public query ({ caller }) func listRoadies() : async [Roadie.Roadie] {
-    RoadieLib.listRoadies(accessGrants, demoState, roadies, caller);
+    RoadieLib.listRoadies(accessGrants, demoState, roadies, storeInfo.value, caller);
   };
 
   /// Read one roadie card.
   public query ({ caller }) func getRoadie(id : Common.RoadieId) : async ?Roadie.Roadie {
-    RoadieLib.getRoadie(accessGrants, demoState, roadies, caller, id);
+    RoadieLib.getRoadie(accessGrants, demoState, roadies, storeInfo.value, caller, id);
   };
 
   /// Read a roadie's photo bytes by id, for a caller allowed to see the roadie.
@@ -37,7 +38,7 @@ mixin (
 
   /// List the roster for one position.
   public query ({ caller }) func listRosterForPosition(positionId : Common.PositionId) : async [Roadie.Roadie] {
-    RoadieLib.listRosterForPosition(accessGrants, demoState, roadies, caller, positionId);
+    RoadieLib.listRosterForPosition(accessGrants, demoState, roadies, storeInfo.value, caller, positionId);
   };
 
   /// Edit a roadie's non-contact details (Admin/Store Manager only).
@@ -52,18 +53,18 @@ mixin (
     secondPositionId : ?Common.PositionId,
     crewId : ?Common.CrewId,
   ) : async () {
-    RoadieLib.changePosition(accessGrants, demoState, roadies, positions, changeLog, counters, caller, id, mainPositionId, secondPositionId, crewId);
+    RoadieLib.changePosition(accessGrants, demoState, roadies, positions, storeInfo.value, changeLog, counters, caller, id, mainPositionId, secondPositionId, crewId);
   };
 
   /// Archive a roadie (Admin/Store Manager only).
   public shared ({ caller }) func archiveRoadie(id : Common.RoadieId, reason : Roadie.ArchiveReason) : async () {
-    RoadieLib.archiveRoadie(accessGrants, demoState, roadies, shiftBoards, groupChangeNotices, schedule, changeLog, counters, caller, id, reason);
+    RoadieLib.archiveRoadie(accessGrants, demoState, roadies, shiftBoards, groupChangeNotices, schedule, storeInfo.value, changeLog, counters, caller, id, reason);
   };
 
   /// Rehire an archived roadie (Admin/Store Manager only). Returns the roadie
   /// to pending and assigns the next upcoming orientation session.
   public shared ({ caller }) func rehireRoadie(id : Common.RoadieId, reason : ?Text) : async () {
-    RoadieLib.rehireRoadie(accessGrants, demoState, roadies, schedule, changeLog, counters, caller, id, reason);
+    RoadieLib.rehireRoadie(accessGrants, demoState, roadies, schedule, storeInfo.value, changeLog, counters, caller, id, reason);
   };
 
   /// Update a roadie's status (Admin/Store Manager only).
@@ -89,7 +90,7 @@ mixin (
 
   /// Re-sign a roadie's availability (Admin/Store Manager only).
   public shared ({ caller }) func resignAvailability(id : Common.RoadieId, signature : Common.SignatureRef) : async () {
-    RoadieLib.resignAvailability(accessGrants, demoState, roadies, changeLog, counters, caller, id, signature);
+    RoadieLib.resignAvailability(accessGrants, demoState, roadies, storeInfo.value, changeLog, counters, caller, id, signature);
   };
 
   /// List crews.
@@ -120,6 +121,6 @@ mixin (
 
   /// Compute whether a roadie is a minor as of now.
   public query ({ caller }) func isMinor(id : Common.RoadieId) : async Bool {
-    RoadieLib.isMinor(accessGrants, demoState, roadies, caller, id);
+    RoadieLib.isMinor(accessGrants, demoState, roadies, storeInfo.value, caller, id);
   };
 };

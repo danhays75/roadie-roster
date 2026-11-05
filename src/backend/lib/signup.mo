@@ -36,6 +36,7 @@ module {
     demoState : Common.DemoState,
     signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     profile : Roadie.RoadieProfile,
     photo : ?Common.PhotoRef,
@@ -50,7 +51,7 @@ module {
     counters.nextSignupId := id + 1;
     signups.add(id, {
       id;
-      submittedAt = effectiveNow(demoState);
+      submittedAt = effectiveNow(demoState, storeInfo);
       profile = capProfile(profile);
       photo;
       signature;
@@ -207,7 +208,7 @@ module {
       case null { null };
     };
     let timeZone = storeInfo.value.timeZone;
-    let now = effectiveNow(demoState);
+    let now = effectiveNow(demoState, storeInfo.value);
     let dob = submission.contactSet.dateOfBirth;
     if (not Age.meetsMinimumAge(dob, main.minimumAge, now, timeZone)) {
       Runtime.trap("Roadie is below the minimum age for this position");
@@ -289,18 +290,22 @@ module {
   };
 
   /// Internal: the effective clock. While demo mode is on with a pretend date
-  /// set, the pretend timestamp is returned; otherwise the real clock.
-  func effectiveNow(demoState : Common.DemoState) : Common.Timestamp {
+  /// set, the pretend timestamp is returned; otherwise the real clock. The
+  /// pretend date's `day` is a local calendar date in the store time zone, and
+  /// the pretend time is 30 minutes after the store's AM or PM shift start
+  /// (local), so "Pretend it's Feb 2 AM" lands just inside the AM shift.
+  func effectiveNow(demoState : Common.DemoState, storeInfo : Store.StoreInfo) : Common.Timestamp {
     if (not Auth.demoActive(demoState)) {
       return Time.now();
     };
     switch (demoState.pretendDate) {
       case (?pd) {
-        let hourOffset : Int = switch (pd.shift) {
-          case (#am) { 9 };
-          case (#pm) { 15 };
+        let dayStart = Age.localDayStart(pd.day, storeInfo.timeZone);
+        let shiftStartMin = switch (pd.shift) {
+          case (#am) { storeInfo.amShiftStart };
+          case (#pm) { storeInfo.pmShiftStart };
         };
-        pd.day + hourOffset * 3_600_000_000_000;
+        dayStart + (shiftStartMin.toInt() + 30) * 60_000_000_000;
       };
       case null { Time.now() };
     };

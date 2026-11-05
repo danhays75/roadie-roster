@@ -83,6 +83,25 @@ module {
     };
   };
 
+  /// The principal a caller should be treated as when matching board groups and
+  /// group-change notices. While demo mode is on and the caller's demo role is
+  /// NSO Trainer with a chosen demo leader, returns that demo leader principal;
+  /// otherwise returns the caller unchanged. Never consulted outside demo mode.
+  public func actingPrincipal(
+    demoState : Common.DemoState,
+    caller : Principal,
+  ) : Principal {
+    switch (demoRoleFor(demoState, caller)) {
+      case (?#trainer) {
+        switch (demoState.demoTrainerAs.get(caller)) {
+          case (?leader) { leader };
+          case null { caller };
+        };
+      };
+      case _ { caller };
+    };
+  };
+
   /// The effective role of a caller, or null when unregistered/expired. While
   /// demo mode is on, a **signed-in** caller (even one not yet approved) acts
   /// as their own chosen demo role; an anonymous caller always gets null, even

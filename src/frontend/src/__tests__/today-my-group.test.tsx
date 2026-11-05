@@ -11,12 +11,14 @@ import type {
 } from "@/backend";
 import {
   CheckInState,
+  DemoShift,
   House,
   RoadieStatus,
   Role,
   RosterState,
   Shift,
 } from "@/backend";
+import { pretendDateToInstant } from "@/lib/format";
 import TodayPage from "@/pages/Today";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -136,6 +138,10 @@ function actor(
     group?: MyGroupView | null;
     notices?: GroupChangeNotice[];
     board?: CheckInBoardView | null;
+    demo?: {
+      enabled: boolean;
+      pretendDate?: { day: bigint; shift: DemoShift };
+    };
   } = {},
 ) {
   return {
@@ -156,8 +162,9 @@ function actor(
     ]),
     dismissGroupChangeNotice: vi.fn(async () => undefined),
     getDemoState: vi.fn(async () => ({
-      enabled: false,
+      enabled: options.demo?.enabled ?? false,
       demoTrainerStations: [],
+      pretendDate: options.demo?.pretendDate,
     })),
     listPositions: vi.fn(async () => [POSITION]),
     listCrews: vi.fn(async () => []),
@@ -317,6 +324,32 @@ describe("Today trainer check-in board", () => {
     const call = a.recordCheckIn.mock.calls[0];
     expect(call[3]).toBe(CheckInState.late);
     expect(typeof call[4]).toBe("bigint");
+  });
+
+  it("records Late with the pretend time, not the real clock, in demo mode", async () => {
+    // The pretend date is 2026-07-15 AM. The recorded tap time must be the
+    // pretend instant the banner resolves, not the real clock.
+    const pretendDay = BigInt(Date.UTC(2026, 6, 15)) * 1_000_000n;
+    const pretendDate = { day: pretendDay, shift: DemoShift.am };
+    const a = actor(Role.trainer, {
+      group: myGroup(),
+      demo: { enabled: true, pretendDate },
+    });
+    const user = userEvent.setup();
+    renderPageWithActor(TodayPage, a, { path: "/today" });
+
+    const row = await screen.findByTestId("today.checkIn.row.0");
+    await user.click(
+      within(row).getByTestId("today.checkIn.row.0.late_button"),
+    );
+
+    expect(a.recordCheckIn).toHaveBeenCalledTimes(1);
+    const call = a.recordCheckIn.mock.calls[0];
+    expect(call[3]).toBe(CheckInState.late);
+    // The recorded tap time is the pretend instant, not the real clock.
+    const expected = pretendDateToInstant(pretendDate);
+    expect(expected).not.toBeNull();
+    expect(call[4]).toBe(BigInt(expected!.getTime()) * 1_000_000n);
   });
 
   it("shows the editable late time for a roadie already marked late", async () => {

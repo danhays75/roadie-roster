@@ -443,6 +443,28 @@ export function useSetDemoRole() {
 }
 
 /**
+ * Choose which demo leader a demo NSO Trainer views as, so "View as NSO
+ * Trainer" can see that leader's group. Any signed-in caller may choose while
+ * demo mode is on. The chosen trainer changes what every screen shows, so every
+ * query is refetched.
+ */
+export function useSetDemoTrainerAs() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      trainerPrincipal: Principal,
+    ): Promise<DemoActionResult> => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.setDemoTrainerAs(trainerPrincipal);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries();
+    },
+  });
+}
+
+/**
  * Set or clear the pretend "now" used while demo mode is on. Null restores the
  * real clock.
  */

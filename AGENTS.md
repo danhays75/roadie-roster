@@ -147,13 +147,6 @@
 
 ## Learnings
 
-- The card back table order is Hometown, Crew, Day off, Favorite team, Favorite snack, Favorite drink, Favorite color, Fun fact, Shirt size, Hat size, Hired, then MY GOAL.
-- Position and TemplatePosition carry only shirtType, shirtQty, hatType, hatQty; migration 00000015 folds defaultShirts/defaultHats into shirtQty/hatQty only where the surviving qty is 0, then drops the legacy pair.
-- getUniformOrder builds rows from the cartesian product of in-scope item labels and curve/real sizes, so a house filter with zero hired roadies still returns every item/size row with hired 0.
-- getUniformOrder projectedCount sums (unfilled + missingSize) * qty across in-scope positions, then applies the curve once with (units * percent + 50) / 100; withBuffer rounds up per row; UniformOrderView.totals is one row per item (item/hired/projected/orderTotal).
-- defaultCount in phase23.mo matches a count item's text containing 'shirt' or 'hat' to pre-fill from the position's shirtQty/hatQty.
-- The Dashboard summary derives its orientation window from StoreInfo.paperworkDueDate through the latest EventKind.signOff schedule event, with the earliest EventKind.orientation event marking the no-show point; the demo pretend instant is substituted for now.
-- KpiTiles pushes HIRED and STILL NEEDED unconditionally and SHOWED UP and CERTIFIED conditionally on window.isOpen and afterSignOff; the old funnel legend, Pending tile, Build-to total tile and Showed-at-orientation tile were removed.
 - Dashboard-local components/dashboard/copy.ts supplies the new KPI keys; shared lib/copy.ts still holds the base hired/stillNeeded/certified labels.
 - PositionPanel rows read 'N hired · need M' with the NEEDED badge, and the pending/active split renders only when showSplit (orientation window open).
 - The demo pretend-date and demo-mode mutations in src/frontend/src/hooks/useQueries.ts call queryClient.invalidateQueries() with no arguments on success, so every screen refetches when the pretend date changes or demo mode toggles.
@@ -172,3 +165,10 @@
 - Today routes by exact role: trainer -> TrainerToday, alert roles -> ManagerToday, read-only roles -> ReadOnlyToday.
 - The app's existing regression suite has known pre-existing failures (19 frontend) unrelated to the check-in and Today work; the user asked for them to be handled separately.
 - The PocketIC backend lane did not run on the draft-start tree (no_backend_wasm), so its 8 backend failures are judged as new; they were not repaired within the in-draft recovery budget.
+- Age.localDayStart(ts, timeZone) in src/backend/lib/age.mo is the single store-local day anchor; shiftWindow, isToday, archiveNoShows, recordGroupChanges and every effectiveNow copy build on it.
+- effectiveNow is duplicated in phase23.mo, roadie.mo and signup.mo; all three use localDayStart(pd.day, storeInfo.timeZone) + (amShiftStart|pmShiftStart + 30) minutes.
+- Auth.actingPrincipal(demoState, caller) is the single demo-trainer indirection; getMyGroup, getCheckInBoard, canCheckIn, listGroupChangeNotices, dismissGroupChangeNotice and getToday route through it, while auth and the change log keep the real caller.
+- DemoState.demoTrainerAs and DemoStateView.demoTrainerAs were added with migration 00000019; setDemoTrainerAs is exposed through the demo lib, mixin and useSetDemoTrainerAs hook.
+- DemoBanner.tsx shows a Trainer picker for the NSO Trainer demo role, listing demo leaders who lead groups by name.
+- CheckInRow.tsx uses the pretend time for the Late tap in demo mode.
+- PocketIC's default canister time is the fixed constant 1620328630s (2021-05-06); prefer store-local day comparisons over raw Time.now() arithmetic in backend tests.

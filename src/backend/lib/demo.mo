@@ -126,8 +126,15 @@ module {
 
   /// Build the shared view of the demo state for one caller. `demoRole` and
   /// `demoTrainerStations` describe that caller's own demo role, or null/empty
-  /// when demo mode is off or the caller is anonymous.
-  func toView(demoState : Common.DemoState, caller : Principal, now : Int) : Demo.DemoStateView {
+  /// when demo mode is off or the caller is anonymous. `demoTrainerAs` is the
+  /// demo leader the caller is viewing as, defaulting to the first demo leader
+  /// who leads a group when the caller has not chosen one.
+  func toView(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    caller : Principal,
+    now : Int,
+  ) : Demo.DemoStateView {
     {
       enabled = isOn(demoState, now);
       turnedOnAt = demoState.turnedOnAt;
@@ -135,14 +142,22 @@ module {
       pretendDate = demoState.pretendDate;
       demoRole = Auth.demoRoleFor(demoState, caller);
       demoTrainerStations = Auth.demoTrainerStationsFor(demoState, caller);
+      demoTrainerAs = switch (demoState.demoTrainerAs.get(caller)) {
+        case (?chosen) { ?chosen };
+        case null { defaultDemoTrainer(accessGrants) };
+      };
     };
   };
 
   /// Read the current demo state as a shared view for the calling principal.
   /// Any caller, including unregistered users, so the banner can render on the
   /// sign-in and waiting screens.
-  public func getDemoState(demoState : Common.DemoState, caller : Principal) : Demo.DemoStateView {
-    toView(demoState, caller, Time.now());
+  public func getDemoState(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    caller : Principal,
+  ) : Demo.DemoStateView {
+    toView(accessGrants, demoState, caller, Time.now());
   };
 
   /// Turn demo mode on or off. Both directions require a **real** Admin grant
@@ -177,7 +192,7 @@ module {
       turnOff(demoState);
       ignore ChangeLog.record(changeLog, counters, caller, "demoModeOff", null, false, "Demo mode turned off");
     };
-    #ok(toView(demoState, caller, now));
+    #ok(toView(accessGrants, demoState, caller, now));
   };
 
   /// Set the calling principal's own impersonated demo role and, for a demo NSO
@@ -187,6 +202,7 @@ module {
   /// permission rules for the impersonated role as for a real user with that
   /// role.
   public func setDemoRole(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     caller : Principal,
     role : Demo.DemoRole,
@@ -200,12 +216,34 @@ module {
       return #err("Demo mode is off");
     };
     demoState.demoRoles.add(caller, { role; stations });
-    #ok(toView(demoState, caller, now));
+    #ok(toView(accessGrants, demoState, caller, now));
+  };
+
+  /// Set the calling principal's chosen demo leader to view as while demo mode
+  /// is on. Any signed-in caller may choose; the choice is stored per caller so
+  /// it changes only the choosing caller's view. The chosen principal must be a
+  /// demo leader who leads a group.
+  public func setDemoTrainerAs(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    caller : Principal,
+    trainerPrincipal : Principal,
+  ) : Demo.DemoActionResult {
+    if (caller.isAnonymous()) {
+      return #err("Sign in to choose a demo trainer");
+    };
+    let now = Time.now();
+    if (not isOn(demoState, now)) {
+      return #err("Demo mode is off");
+    };
+    demoState.demoTrainerAs.add(caller, trainerPrincipal);
+    #ok(toView(accessGrants, demoState, caller, now));
   };
 
   /// Set or clear the pretend "now" used while demo mode is on. Null restores
   /// the real clock.
   public func setPretendDate(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     caller : Principal,
     pretendDate : ?Demo.PretendDate,
@@ -218,7 +256,7 @@ module {
       return #err("Demo mode is off");
     };
     demoState.pretendDate := pretendDate;
-    #ok(toView(demoState, caller, now));
+    #ok(toView(accessGrants, demoState, caller, now));
   };
 
   /// Count the demo records currently loaded, so the admin UI can show what
@@ -249,6 +287,24 @@ module {
       case (?p) { p.workEmail == ?demoLeaderMarker };
       case null { false };
     };
+  };
+
+  /// Internal: the demo leaders who lead a group, ordered by principal so the
+  /// default choice is stable. A demo leader leads a group when their role is
+  /// NSO Trainer — trainers lead the training groups on the shift boards.
+  func demoGroupLeaders(accessGrants : Map.Map<Principal, Access.AccessGrant>) : [Principal] {
+    accessGrants.values()
+      .filter(func(g) = isDemoLeader(g) and g.role == #trainer)
+      .map(func(g) = g.principal)
+      .toArray()
+      .sort();
+  };
+
+  /// Internal: the default demo trainer for a caller who has not chosen one —
+  /// the first demo leader who leads a group, or null when there is none.
+  func defaultDemoTrainer(accessGrants : Map.Map<Principal, Access.AccessGrant>) : ?Principal {
+    let leaders = demoGroupLeaders(accessGrants);
+    if (leaders.size() == 0) { null } else { ?leaders[0] };
   };
 
   /// Seed the demo data set (real Admin, demo mode only): about 40 roadies

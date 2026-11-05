@@ -4,12 +4,13 @@ import type {
   AccessGrant,
   DashboardView,
   DemoStateView,
+  LeaderSummary,
   StoreInfo,
   backendInterface,
 } from "@/backend";
 import { DemoRole, DemoShift, House, Role } from "@/backend";
 import { DemoBanner } from "@/components/DemoBanner";
-import { useDashboard, useRosterSummary } from "@/hooks/useQueries";
+import { useDashboard, useMyGroup, useRosterSummary } from "@/hooks/useQueries";
 import AdminPage from "@/pages/Admin";
 import type { Principal } from "@icp-sdk/core/principal";
 import { screen, waitFor } from "@testing-library/react";
@@ -25,6 +26,16 @@ function ScreenProbe() {
   useDashboard();
   useRosterSummary();
   return <div data-ocid="probe.screen" />;
+}
+
+/**
+ * A probe for the trainer's own group read, which the banner does not itself
+ * subscribe to. It lets a test observe that choosing a demo trainer refetches
+ * the group query, so "View as NSO Trainer" shows the chosen leader's group.
+ */
+function GroupProbe() {
+  useMyGroup();
+  return <div data-ocid="probe.group" />;
 }
 
 /**
@@ -186,6 +197,207 @@ describe("demo banner View as picker drives the backend", () => {
     await waitFor(() =>
       expect(setDemoRole).toHaveBeenCalledWith(DemoRole.trainer, [3n]),
     );
+  });
+});
+
+/** A demo NSO Trainer leader who leads a group (has at least one station). */
+function demoLeader(
+  principalText: string,
+  name: string,
+  stations: bigint[] = [0n],
+): LeaderSummary {
+  return {
+    principal: {
+      toText: () => principalText,
+      toString: () => principalText,
+    } as never,
+    title: "NSO Trainer",
+    role: Role.trainer,
+    trainerPositionIds: stations,
+    staffProfile: {
+      fullName: name,
+      title: "NSO Trainer",
+      homeStoreNumber: "512",
+      homeStoreCity: "Demo City",
+      requestedRole: Role.trainer,
+      trainerPositionIds: stations,
+    },
+  };
+}
+
+describe("demo banner Trainer picker for a demo NSO Trainer", () => {
+  it("lists the demo trainers who lead a group and calls setDemoTrainerAs with the chosen one", async () => {
+    const user = userEvent.setup();
+    const setDemoTrainerAs = vi.fn<backendInterface["setDemoTrainerAs"]>(
+      async () => okResult(demoState({ enabled: true })),
+    );
+    const trainerA = demoLeader("aaaaa-aa", "Gold Trainer One");
+    const trainerB = demoLeader("bbbbb-bb", "Gold Trainer Two");
+    renderWithActor(<DemoBanner />, {
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
+      getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
+        demoState({
+          enabled: true,
+          demoRole: DemoRole.trainer,
+          demoTrainerAs: trainerA.principal,
+        }),
+      ),
+      listPositions: vi.fn<backendInterface["listPositions"]>(async () => []),
+      listLeaders: vi.fn<backendInterface["listLeaders"]>(async () => [
+        trainerA,
+        trainerB,
+      ]),
+      setDemoTrainerAs,
+    } satisfies Pick<
+      backendInterface,
+      | "getMyAccess"
+      | "getDemoState"
+      | "listPositions"
+      | "listLeaders"
+      | "setDemoTrainerAs"
+    >);
+
+    await user.click(await screen.findByTestId("demo.view_as.open_button"));
+    // The Trainer picker is revealed for the NSO Trainer demo role.
+    await user.click(await screen.findByTestId("demo.view_as.trainer_select"));
+    await user.click(
+      await screen.findByRole("option", {
+        name: "Gold Trainer Two · NSO Trainer",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(setDemoTrainerAs).toHaveBeenCalledWith(trainerB.principal),
+    );
+  });
+
+  it("defaults the picker to the first demo trainer when the caller has not chosen one", async () => {
+    const setDemoTrainerAs = vi.fn<backendInterface["setDemoTrainerAs"]>(
+      async () => okResult(demoState({ enabled: true })),
+    );
+    const trainerA = demoLeader("aaaaa-aa", "Gold Trainer One");
+    const trainerB = demoLeader("bbbbb-bb", "Gold Trainer Two");
+    renderWithActor(<DemoBanner />, {
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
+      getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
+        demoState({
+          enabled: true,
+          demoRole: DemoRole.trainer,
+          demoTrainerAs: undefined,
+        }),
+      ),
+      listPositions: vi.fn<backendInterface["listPositions"]>(async () => []),
+      listLeaders: vi.fn<backendInterface["listLeaders"]>(async () => [
+        trainerA,
+        trainerB,
+      ]),
+      setDemoTrainerAs,
+    } satisfies Pick<
+      backendInterface,
+      | "getMyAccess"
+      | "getDemoState"
+      | "listPositions"
+      | "listLeaders"
+      | "setDemoTrainerAs"
+    >);
+
+    await userEvent
+      .setup()
+      .click(await screen.findByTestId("demo.view_as.open_button"));
+
+    // The unchosen caller is defaulted to the first demo trainer.
+    await waitFor(() =>
+      expect(setDemoTrainerAs).toHaveBeenCalledWith(trainerA.principal),
+    );
+  });
+
+  it("refetches the trainer's group query after choosing a demo trainer", async () => {
+    const user = userEvent.setup();
+    const getMyGroup = vi.fn<backendInterface["getMyGroup"]>(async () => null);
+    const setDemoTrainerAs = vi.fn<backendInterface["setDemoTrainerAs"]>(
+      async () => okResult(demoState({ enabled: true })),
+    );
+    const trainerA = demoLeader("aaaaa-aa", "Gold Trainer One");
+    const trainerB = demoLeader("bbbbb-bb", "Gold Trainer Two");
+    renderWithActor(
+      <>
+        <DemoBanner />
+        <GroupProbe />
+      </>,
+      {
+        getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+          grant: grant(Role.admin),
+        })),
+        getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
+          demoState({
+            enabled: true,
+            demoRole: DemoRole.trainer,
+            demoTrainerAs: trainerA.principal,
+          }),
+        ),
+        listPositions: vi.fn<backendInterface["listPositions"]>(async () => []),
+        listLeaders: vi.fn<backendInterface["listLeaders"]>(async () => [
+          trainerA,
+          trainerB,
+        ]),
+        getMyGroup,
+        setDemoTrainerAs,
+      } satisfies Pick<
+        backendInterface,
+        | "getMyAccess"
+        | "getDemoState"
+        | "listPositions"
+        | "listLeaders"
+        | "getMyGroup"
+        | "setDemoTrainerAs"
+      >,
+    );
+
+    // The group read runs once on mount.
+    await waitFor(() => expect(getMyGroup).toHaveBeenCalledTimes(1));
+
+    await user.click(await screen.findByTestId("demo.view_as.open_button"));
+    await user.click(await screen.findByTestId("demo.view_as.trainer_select"));
+    await user.click(
+      await screen.findByRole("option", {
+        name: "Gold Trainer Two · NSO Trainer",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(setDemoTrainerAs).toHaveBeenCalledWith(trainerB.principal),
+    );
+    // The chosen trainer changes what the group read returns, so it refetches.
+    await waitFor(() => expect(getMyGroup).toHaveBeenCalledTimes(2));
+  });
+
+  it("renders no Trainer picker when no demo leader leads a group", async () => {
+    const user = userEvent.setup();
+    renderWithActor(<DemoBanner />, {
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(Role.admin),
+      })),
+      getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
+        demoState({ enabled: true, demoRole: DemoRole.trainer }),
+      ),
+      listPositions: vi.fn<backendInterface["listPositions"]>(async () => []),
+      listLeaders: vi.fn<backendInterface["listLeaders"]>(async () => [
+        demoLeader("ccccc-cc", "Stationless Trainer", []),
+      ]),
+    } satisfies Pick<
+      backendInterface,
+      "getMyAccess" | "getDemoState" | "listPositions" | "listLeaders"
+    >);
+
+    await user.click(await screen.findByTestId("demo.view_as.open_button"));
+    // The station list still renders, but the Trainer picker does not.
+    expect(
+      screen.queryByTestId("demo.view_as.trainer_select"),
+    ).not.toBeInTheDocument();
   });
 });
 

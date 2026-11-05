@@ -18,11 +18,17 @@ import {
 import { useRealAccessGrant } from "@/hooks/useAccess";
 import { DEMO_ROLE_OPTIONS, useDemo } from "@/hooks/useDemo";
 import { useI18n } from "@/hooks/useI18n";
-import { usePositions } from "@/hooks/useQueries";
+import {
+  useDemoState,
+  useLeaders,
+  usePositions,
+  useSetDemoTrainerAs,
+} from "@/hooks/useQueries";
 import {
   dateOnlyToInputValue,
   formatDateOnlyLong,
   inputValueToDateOnly,
+  staffDisplayName,
 } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CalendarClock, Eye, Power, TriangleAlert } from "lucide-react";
@@ -31,6 +37,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -52,6 +59,94 @@ const CHOOSE_ROLE_LABEL: Record<"en" | "es", string> = {
   en: "Choose a role",
   es: "Elige un rol",
 };
+
+/** Label for the demo NSO Trainer's "Trainer:" picker. */
+const TRAINER_LABEL: Record<"en" | "es", string> = {
+  en: "Trainer:",
+  es: "Entrenador:",
+};
+
+/**
+ * The "Trainer:" picker: for a demo NSO Trainer, choose which demo leader who
+ * leads groups the caller views as, so "View as NSO Trainer" can see that
+ * leader's group. The choice is stored per caller and defaults to the first
+ * demo trainer. Renders nothing when no demo leader leads a group.
+ */
+function TrainerPicker() {
+  const { locale } = useI18n();
+  const { data: demoState } = useDemoState();
+  const { data: leaders } = useLeaders();
+  const setTrainerAs = useSetDemoTrainerAs();
+  const label = TRAINER_LABEL[locale === "es" ? "es" : "en"];
+
+  // The demo leaders who lead groups: demo trainers with at least one station.
+  // While demo mode is on, `listLeaders` returns only demo leaders.
+  const trainers = useMemo(
+    () =>
+      (leaders ?? [])
+        .filter(
+          (leader) =>
+            leader.role === Role.trainer &&
+            leader.trainerPositionIds.length > 0,
+        )
+        .sort((a, b) =>
+          staffDisplayName(a.staffProfile).localeCompare(
+            staffDisplayName(b.staffProfile),
+          ),
+        ),
+    [leaders],
+  );
+
+  const firstTrainer = trainers[0];
+  const stored = demoState?.demoTrainerAs ?? null;
+  const selected = stored ?? firstTrainer?.principal ?? null;
+  const defaulted = useRef(false);
+
+  // Default to the first demo trainer when the caller has not chosen one, so
+  // the stored choice matches what the picker shows. Fires at most once per
+  // mount, so a re-render never re-sends the default.
+  useEffect(() => {
+    if (defaulted.current || stored || !firstTrainer) return;
+    defaulted.current = true;
+    setTrainerAs.mutate(firstTrainer.principal);
+  }, [stored, firstTrainer, setTrainerAs]);
+
+  if (trainers.length === 0) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="demo-trainer-select">{label}</Label>
+      <Select
+        value={selected?.toString()}
+        onValueChange={(value) => {
+          const trainer = trainers.find(
+            (candidate) => candidate.principal.toString() === value,
+          );
+          if (trainer) setTrainerAs.mutate(trainer.principal);
+        }}
+      >
+        <SelectTrigger
+          id="demo-trainer-select"
+          data-ocid="demo.view_as.trainer_select"
+          className="touch-target w-full"
+        >
+          <SelectValue placeholder={label} />
+        </SelectTrigger>
+        <SelectContent>
+          {trainers.map((trainer) => (
+            <SelectItem
+              key={trainer.principal.toString()}
+              value={trainer.principal.toString()}
+              data-ocid={`demo.view_as.trainer_option.${trainer.principal.toString()}`}
+            >
+              {staffDisplayName(trainer.staffProfile)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 /**
  * The "View as" picker: choose the caller's own impersonated demo role, and for
@@ -135,6 +230,7 @@ function ViewAsPicker() {
 
         {isTrainer && (
           <div className="space-y-2">
+            <TrainerPicker />
             <div>
               <p className="text-sm font-medium">{t("demo.banner.stations")}</p>
               <p className="text-xs text-muted-foreground">

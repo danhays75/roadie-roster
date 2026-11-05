@@ -33441,6 +33441,7 @@ var DemoStateView = Record({
 	"turnedOnAt": Opt(Timestamp),
 	"pretendDate": Opt(PretendDate),
 	"demoRole": Opt(DemoRole$1),
+	"demoTrainerAs": Opt(Principal),
 	"enabled": Bool,
 	"demoTrainerStations": Vec(PositionId)
 });
@@ -34027,6 +34028,7 @@ Service({
 	"schema": Func([], [Text], ["query"]),
 	"setDemoMode": Func([Bool, Text], [DemoActionResult], []),
 	"setDemoRole": Func([DemoRole$1, Vec(PositionId)], [DemoActionResult], []),
+	"setDemoTrainerAs": Func([Principal], [DemoActionResult], []),
 	"setKioskPin": Func([Text], [], []),
 	"setLeaderTalkAttendance": Func([LeaderTalkId, Vec(RoadieId)], [], []),
 	"setPaperworkItems": Func([RoadieId, Vec(Text)], [], []),
@@ -34430,6 +34432,7 @@ var idlFactory = ({ IDL }) => {
 		"turnedOnAt": IDL.Opt(Timestamp),
 		"pretendDate": IDL.Opt(PretendDate),
 		"demoRole": IDL.Opt(DemoRole),
+		"demoTrainerAs": IDL.Opt(IDL.Principal),
 		"enabled": IDL.Bool,
 		"demoTrainerStations": IDL.Vec(PositionId)
 	});
@@ -35022,6 +35025,7 @@ var idlFactory = ({ IDL }) => {
 		"schema": IDL.Func([], [IDL.Text], ["query"]),
 		"setDemoMode": IDL.Func([IDL.Bool, IDL.Text], [DemoActionResult], []),
 		"setDemoRole": IDL.Func([DemoRole, IDL.Vec(PositionId)], [DemoActionResult], []),
+		"setDemoTrainerAs": IDL.Func([IDL.Principal], [DemoActionResult], []),
 		"setKioskPin": IDL.Func([IDL.Text], [], []),
 		"setLeaderTalkAttendance": IDL.Func([LeaderTalkId, IDL.Vec(RoadieId)], [], []),
 		"setPaperworkItems": IDL.Func([RoadieId, IDL.Vec(IDL.Text)], [], []),
@@ -36362,6 +36366,19 @@ var Backend = class {
 			return from_candid_DemoActionResult_n257(this._uploadFile, this._downloadFile, result);
 		}
 	}
+	async setDemoTrainerAs(arg0) {
+		if (this.processError) try {
+			const result = await this.actor.setDemoTrainerAs(arg0);
+			return from_candid_DemoActionResult_n257(this._uploadFile, this._downloadFile, result);
+		} catch (e) {
+			this.processError(e);
+			throw new Error("unreachable");
+		}
+		else {
+			const result = await this.actor.setDemoTrainerAs(arg0);
+			return from_candid_DemoActionResult_n257(this._uploadFile, this._downloadFile, result);
+		}
+	}
 	async setKioskPin(arg0) {
 		if (this.processError) try {
 			return await this.actor.setKioskPin(arg0);
@@ -37473,6 +37490,7 @@ function from_candid_record_n99(_uploadFile, _downloadFile, value) {
 		turnedOnAt: record_opt_to_undefined(from_candid_opt_n81(_uploadFile, _downloadFile, value.turnedOnAt)),
 		pretendDate: record_opt_to_undefined(from_candid_opt_n100(_uploadFile, _downloadFile, value.pretendDate)),
 		demoRole: record_opt_to_undefined(from_candid_opt_n104(_uploadFile, _downloadFile, value.demoRole)),
+		demoTrainerAs: record_opt_to_undefined(from_candid_opt_n88(_uploadFile, _downloadFile, value.demoTrainerAs)),
 		enabled: value.enabled,
 		demoTrainerStations: value.demoTrainerStations
 	};
@@ -47709,6 +47727,25 @@ function useSetDemoRole() {
 	});
 }
 /**
+* Choose which demo leader a demo NSO Trainer views as, so "View as NSO
+* Trainer" can see that leader's group. Any signed-in caller may choose while
+* demo mode is on. The chosen trainer changes what every screen shows, so every
+* query is refetched.
+*/
+function useSetDemoTrainerAs() {
+	const { actor } = useActor(createActor);
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (trainerPrincipal) => {
+			if (!actor) throw new Error("Backend is not ready");
+			return actor.setDemoTrainerAs(trainerPrincipal);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries();
+		}
+	});
+}
+/**
 * Set or clear the pretend "now" used while demo mode is on. Null restores the
 * real clock.
 */
@@ -50991,6 +51028,62 @@ var CHOOSE_ROLE_LABEL = {
 	en: "Choose a role",
 	es: "Elige un rol"
 };
+/** Label for the demo NSO Trainer's "Trainer:" picker. */
+var TRAINER_LABEL = {
+	en: "Trainer:",
+	es: "Entrenador:"
+};
+/**
+* The "Trainer:" picker: for a demo NSO Trainer, choose which demo leader who
+* leads groups the caller views as, so "View as NSO Trainer" can see that
+* leader's group. The choice is stored per caller and defaults to the first
+* demo trainer. Renders nothing when no demo leader leads a group.
+*/
+function TrainerPicker() {
+	const { locale } = useI18n();
+	const { data: demoState } = useDemoState();
+	const { data: leaders } = useLeaders();
+	const setTrainerAs = useSetDemoTrainerAs();
+	const label = TRAINER_LABEL[locale === "es" ? "es" : "en"];
+	const trainers = (0, import_react.useMemo)(() => (leaders ?? []).filter((leader) => leader.role === Role.trainer && leader.trainerPositionIds.length > 0).sort((a, b) => staffDisplayName(a.staffProfile).localeCompare(staffDisplayName(b.staffProfile))), [leaders]);
+	const firstTrainer = trainers[0];
+	const stored = demoState?.demoTrainerAs ?? null;
+	const selected = stored ?? firstTrainer?.principal ?? null;
+	const defaulted = (0, import_react.useRef)(false);
+	(0, import_react.useEffect)(() => {
+		if (defaulted.current || stored || !firstTrainer) return;
+		defaulted.current = true;
+		setTrainerAs.mutate(firstTrainer.principal);
+	}, [
+		stored,
+		firstTrainer,
+		setTrainerAs
+	]);
+	if (trainers.length === 0) return null;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-1.5",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+			htmlFor: "demo-trainer-select",
+			children: label
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+			value: selected?.toString(),
+			onValueChange: (value) => {
+				const trainer = trainers.find((candidate) => candidate.principal.toString() === value);
+				if (trainer) setTrainerAs.mutate(trainer.principal);
+			},
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+				id: "demo-trainer-select",
+				"data-ocid": "demo.view_as.trainer_select",
+				className: "touch-target w-full",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: label })
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: trainers.map((trainer) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+				value: trainer.principal.toString(),
+				"data-ocid": `demo.view_as.trainer_option.${trainer.principal.toString()}`,
+				children: staffDisplayName(trainer.staffProfile)
+			}, trainer.principal.toString())) })]
+		})]
+	});
+}
 /**
 * The "View as" picker: choose the caller's own impersonated demo role, and for
 * a demo NSO Trainer the stations that role may see. Any signed-in caller may
@@ -51062,6 +51155,7 @@ function ViewAsPicker() {
 			}), isTrainer && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "space-y-2",
 				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrainerPicker, {}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "text-sm font-medium",
 						children: t("demo.banner.stations")
@@ -108410,9 +108504,17 @@ var CHOICES = [
 function CheckInRowItem({ row, index, eventId, shift, locked, timeZone }) {
 	const { t } = useCheckInCopy();
 	const record = useRecordCheckIn();
+	const demo = useDemo();
 	const [error, setError] = (0, import_react.useState)(null);
 	const [lateTime, setLateTime] = (0, import_react.useState)("");
 	const [savedTime, setSavedTime] = (0, import_react.useState)(null);
+	const now = (0, import_react.useMemo)(() => {
+		if (demo.enabled && demo.pretendDate) {
+			const instant = pretendDateToInstant(demo.pretendDate);
+			if (instant) return instant.getTime();
+		}
+		return Date.now();
+	}, [demo.enabled, demo.pretendDate]);
 	(0, import_react.useEffect)(() => {
 		if (row.state === CheckInState.late && row.lateAt !== void 0) setLateTime(timestampToStoreTime(row.lateAt, timeZone) ?? "");
 	}, [
@@ -108434,14 +108536,14 @@ function CheckInRowItem({ row, index, eventId, shift, locked, timeZone }) {
 	const onChoose = (state) => {
 		if (locked || record.isPending) return;
 		if (state === CheckInState.late) {
-			const now = BigInt(Date.now()) * 1000000n;
-			setLateTime(timestampToStoreTime(now, timeZone) ?? "");
-			save(state, now);
+			const tapTime = BigInt(now) * 1000000n;
+			setLateTime(timestampToStoreTime(tapTime, timeZone) ?? "");
+			save(state, tapTime);
 		} else save(state);
 	};
 	const onSaveTime = () => {
 		if (locked || record.isPending) return;
-		const adjusted = storeTimeToTimestamp(row.lateAt ?? BigInt(Date.now()) * 1000000n, lateTime, timeZone);
+		const adjusted = storeTimeToTimestamp(row.lateAt ?? BigInt(now) * 1000000n, lateTime, timeZone);
 		if (adjusted === null) {
 			setError(t("checkIn.lateTimeInvalid"));
 			return;

@@ -11,6 +11,7 @@ import Roadie "../types/roadie";
 import Phase23 "../types/phase23";
 import Access "../types/access";
 import Auth "auth";
+import Age "age";
 import ChangeLog "changelog";
 
 module {
@@ -94,13 +95,14 @@ module {
     attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     record : Phase23.AttendanceRecord,
   ) : () {
     Auth.requireManager(accessGrants, demoState, caller);
     let id = counters.nextAttendanceId;
     counters.nextAttendanceId := id + 1;
-    attendance.add(id, { record with recordedAt = effectiveNow(demoState); recordedBy = caller; isDemo = Auth.demoActive(demoState) });
+    attendance.add(id, { record with recordedAt = effectiveNow(demoState, storeInfo); recordedBy = caller; isDemo = Auth.demoActive(demoState) });
     logWrite(changeLog, counters, demoState, caller, "recordAttendance", ?record.roadieId, false, "Recorded attendance");
   };
 
@@ -135,6 +137,7 @@ module {
     checklists : { var value : Store.Checklists },
     checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
     attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     eventId : Common.EventId,
   ) : ?Phase23.OrientationSessionView {
@@ -144,7 +147,7 @@ module {
       Runtime.trap("Schedule event is not an orientation session");
     };
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState);
+    let now = effectiveNow(demoState, storeInfo);
     let assigned = roadies.values()
       .filter(func r = r.isDemo == demo and r.status != #archived and r.orientationEventId == ?eventId)
       .toArray();
@@ -207,6 +210,7 @@ module {
     attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     roadieId : Common.RoadieId,
     eventId : Common.EventId,
@@ -240,7 +244,7 @@ module {
         eventId = ?eventId;
         shift = null;
         state = #present;
-        recordedAt = effectiveNow(demoState);
+        recordedAt = effectiveNow(demoState, storeInfo);
         recordedBy = caller;
         isDemo = demo;
       });
@@ -419,6 +423,7 @@ module {
     groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     eventId : Common.EventId,
   ) : [Common.RoadieId] {
@@ -428,8 +433,10 @@ module {
       Runtime.trap("Schedule event is not an orientation session");
     };
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState);
-    if (event.start >= now) {
+    let now = effectiveNow(demoState, storeInfo);
+    // A session has passed once its local calendar date is before the effective
+    // clock's local calendar date in the store time zone.
+    if (Age.localDayStart(event.start, storeInfo.timeZone) >= Age.localDayStart(now, storeInfo.timeZone)) {
       Runtime.trap("Session has not passed yet");
     };
     let noShows = roadies.values()
@@ -437,7 +444,7 @@ module {
       .toArray();
     for (r in noShows.values()) {
       roadies.add(r.id, { r with status = #archived; archivedReason = ?#ncnsOrientation; archivedAt = ?now });
-      removeArchivedRoadieFromBoards(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, counters, r.id, caller);
+      removeArchivedRoadieFromBoards(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, counters, storeInfo, r.id, caller);
     };
     logWrite(changeLog, counters, demoState, caller, "archiveNoShows", null, false, "Archived no-shows as NCNS Orientation");
     noShows.map(func r = r.id);
@@ -508,6 +515,7 @@ module {
     checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     roadieId : Common.RoadieId,
     uniformItems : [Text],
@@ -540,7 +548,7 @@ module {
       base with
       uniformItems;
       uniformCounts;
-      updatedAt = effectiveNow(demoState);
+      updatedAt = effectiveNow(demoState, storeInfo);
     });
     logWrite(changeLog, counters, demoState, caller, "saveUniformCheckoff", ?roadieId, false, "Saved uniform check-off");
   };
@@ -556,6 +564,7 @@ module {
     checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     roadieId : Common.RoadieId,
     paperworkItems : [Text],
@@ -583,7 +592,7 @@ module {
     checkoffs.add(roadieId, {
       base with
       paperworkItems;
-      updatedAt = effectiveNow(demoState);
+      updatedAt = effectiveNow(demoState, storeInfo);
     });
     logWrite(changeLog, counters, demoState, caller, "setPaperworkItems", ?roadieId, false, "Set paperwork items");
   };
@@ -923,15 +932,19 @@ module {
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     demoState : Common.DemoState,
+    storeInfo : Store.StoreInfo,
     previous : ?Phase23.ShiftBoard,
     next : Phase23.ShiftBoard,
     event : ?Store.ScheduleEvent,
     editor : Principal,
   ) : () {
-    // Only current or future shifts produce notices.
+    // Only current or future shifts produce notices. A shift is past once its
+    // local calendar date is before the effective clock's local calendar date
+    // in the store time zone, so a shift earlier today still counts as current.
+    let now = effectiveNow(demoState, storeInfo);
     switch (event) {
       case (?e) {
-        if (e.start < effectiveNow(demoState)) { return };
+        if (Age.localDayStart(e.start, storeInfo.timeZone) < Age.localDayStart(now, storeInfo.timeZone)) { return };
       };
       case null { return };
     };
@@ -969,7 +982,7 @@ module {
           addedNames = added.map(func(rid) = roadieName(roadies, rid));
           removedNames = removed.map(func(rid) = roadieName(roadies, rid));
           editorName;
-          createdAt = effectiveNow(demoState);
+          createdAt = effectiveNow(demoState, storeInfo);
           dismissed = false;
           isDemo = demo;
         });
@@ -1012,11 +1025,12 @@ module {
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     counters : NoticeCounters,
+    storeInfo : Store.StoreInfo,
     roadieId : Common.RoadieId,
     editor : Principal,
   ) : () {
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState);
+    let now = effectiveNow(demoState, storeInfo);
     // Snapshot the boards so the map can be updated while iterating.
     let boards = shiftBoards.entries().toArray();
     for ((key, board) in boards.values()) {
@@ -1046,7 +1060,7 @@ module {
           editedAt = now;
         };
         shiftBoards.add(key, stored);
-        recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, ?board, stored, schedule.get(board.eventId), editor);
+        recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, storeInfo, ?board, stored, schedule.get(board.eventId), editor);
       };
     };
   };
@@ -1064,17 +1078,17 @@ module {
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     board : Phase23.ShiftBoard,
   ) : () {
     Auth.requireGroupEditor(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
-    // Archived roadies are silently dropped from the incoming board; a roadie
-    // that does not exist or belongs to the other partition still traps below.
-    let sanitized = dropArchivedFromBoard(roadies, demo, board);
-    validateBoard(sanitized);
-    validateBoardMembers(accessGrants, demoState, roadies, sanitized);
-    let key = boardKey(sanitized.eventId, sanitized.shift, demo);
+    // A board naming an archived roadie is rejected outright; a roadie that does
+    // not exist or belongs to the other partition also traps below.
+    validateBoard(board);
+    validateBoardMembers(accessGrants, demoState, roadies, board);
+    let key = boardKey(board.eventId, board.shift, demo);
     let previous = shiftBoards.get(key);
     // A write targets the current partition only: a real board cannot be
     // changed while demo mode is on, and a demo board cannot be changed while
@@ -1088,12 +1102,12 @@ module {
       case null {};
     };
     let stored : Phase23.ShiftBoard = {
-      sanitized with
-      editedAt = effectiveNow(demoState);
+      board with
+      editedAt = effectiveNow(demoState, storeInfo);
       isDemo = demo;
     };
     shiftBoards.add(key, stored);
-    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, previous, stored, schedule.get(board.eventId), caller);
+    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, storeInfo, previous, stored, schedule.get(board.eventId), caller);
     logWrite(changeLog, counters, demoState, caller, "saveShiftBoard", null, false, "Saved shift board " # key);
   };
 
@@ -1108,6 +1122,7 @@ module {
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     eventId : Common.EventId,
     shift : Common.Shift,
@@ -1135,14 +1150,14 @@ module {
       shift;
       groups = source.groups;
       offRoadieIds = source.offRoadieIds;
-      editedAt = effectiveNow(demoState);
+      editedAt = effectiveNow(demoState, storeInfo);
       isDemo = demo;
     };
     // Archived roadies are silently dropped from the copied board.
     let stored = dropArchivedFromBoard(roadies, demo, copied);
     validateBoard(stored);
     shiftBoards.add(key, stored);
-    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, previous, stored, schedule.get(eventId), caller);
+    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, storeInfo, previous, stored, schedule.get(eventId), caller);
     logWrite(changeLog, counters, demoState, caller, "copyShiftBoard", null, false, "Copied shift board " # boardKey(fromEventId, fromShift, demo) # " to " # key);
   };
 
@@ -1159,6 +1174,7 @@ module {
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     eventId : Common.EventId,
     shift : Common.Shift,
@@ -1250,11 +1266,11 @@ module {
     let stored : Phase23.ShiftBoard = {
       board with
       groups = newGroups;
-      editedAt = effectiveNow(demoState);
+      editedAt = effectiveNow(demoState, storeInfo);
     };
     validateBoard(stored);
     shiftBoards.add(key, stored);
-    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, ?board, stored, schedule.get(eventId), caller);
+    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, storeInfo, ?board, stored, schedule.get(eventId), caller);
     logWrite(changeLog, counters, demoState, caller, "autoFillShiftBoard", null, false, "Auto-filled shift board " # key);
   };
 
@@ -1286,6 +1302,7 @@ module {
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     eventId : Common.EventId,
     shift : Common.Shift,
@@ -1307,11 +1324,11 @@ module {
       shift;
       groups = [];
       offRoadieIds = [];
-      editedAt = effectiveNow(demoState);
+      editedAt = effectiveNow(demoState, storeInfo);
       isDemo = demo;
     };
     shiftBoards.add(key, stored);
-    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, previous, stored, schedule.get(eventId), caller);
+    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, storeInfo, previous, stored, schedule.get(eventId), caller);
     logWrite(changeLog, counters, demoState, caller, "clearShiftBoard", null, false, "Cleared shift board " # key);
   };
 
@@ -1324,8 +1341,11 @@ module {
   ) : [Phase23.GroupChangeNotice] {
     ignore Auth.requireReadable(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
+    // While demo mode is on and the caller impersonates a demo NSO Trainer,
+    // match the notice to the chosen demo leader instead of the caller.
+    let acting = Auth.actingPrincipal(demoState, caller);
     let notices = groupChangeNotices.values()
-      .filter(func n = n.isDemo == demo and n.trainerPrincipal == caller and not n.dismissed)
+      .filter(func n = n.isDemo == demo and n.trainerPrincipal == acting and not n.dismissed)
       .toArray();
     notices.sort(func(a, b) = Int.compare(b.createdAt, a.createdAt));
   };
@@ -1342,7 +1362,10 @@ module {
   ) : () {
     ignore Auth.requireReadable(accessGrants, demoState, caller);
     let notice = groupChangeNotices.get(id) ?? Runtime.trap("Group change notice not found");
-    if (notice.isDemo != Auth.demoActive(demoState) or notice.trainerPrincipal != caller) {
+    // While demo mode is on and the caller impersonates a demo NSO Trainer,
+    // match the notice to the chosen demo leader instead of the caller.
+    let acting = Auth.actingPrincipal(demoState, caller);
+    if (notice.isDemo != Auth.demoActive(demoState) or notice.trainerPrincipal != acting) {
       Runtime.trap("Group change notice not found");
     };
     groupChangeNotices.add(id, { notice with dismissed = true });
@@ -1358,11 +1381,15 @@ module {
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
   ) : ?Phase23.MyGroupView {
     ignore Auth.requireReadable(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState);
+    let now = effectiveNow(demoState, storeInfo);
+    // While demo mode is on and the caller impersonates a demo NSO Trainer,
+    // match the board group to the chosen demo leader instead of the caller.
+    let acting = Auth.actingPrincipal(demoState, caller);
     // Find the caller's group on the current or next shift by time. Event ids
     // are creation order, not time order, so compare each candidate event's
     // start against the effective clock: the earliest shift at or after now,
@@ -1370,7 +1397,7 @@ module {
     var best : ?(Common.EventId, Common.Shift, Phase23.ShiftBoardGroup, Common.Timestamp) = null;
     for (board in shiftBoards.values()) {
       if (board.isDemo == demo) {
-        switch (board.groups.find(func(g) = g.trainerPrincipal == caller)) {
+        switch (board.groups.find(func(g) = g.trainerPrincipal == acting)) {
           case (?g) {
             switch (schedule.get(board.eventId)) {
               case (?event) {
@@ -1441,6 +1468,7 @@ module {
     trainerNotes : Map.Map<Nat, Phase23.TrainerNote>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     note : Phase23.TrainerNote,
   ) : Nat {
@@ -1450,7 +1478,7 @@ module {
     };
     let id = counters.nextTrainerNoteId;
     counters.nextTrainerNoteId := id + 1;
-    trainerNotes.add(id, { note with id; author = caller; createdAt = effectiveNow(demoState); isDemo = Auth.demoActive(demoState) });
+    trainerNotes.add(id, { note with id; author = caller; createdAt = effectiveNow(demoState, storeInfo); isDemo = Auth.demoActive(demoState) });
     logWrite(changeLog, counters, demoState, caller, "addTrainerNote", ?note.roadieId, false, "Added trainer note");
     id;
   };
@@ -1462,6 +1490,7 @@ module {
     trainerNotes : Map.Map<Nat, Phase23.TrainerNote>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     note : Phase23.TrainerNote,
   ) : () {
@@ -1474,7 +1503,7 @@ module {
       Runtime.trap("Access denied: only the author may edit a trainer note");
     };
     let twentyFourHoursNs : Int = 24 * 60 * 60 * 1_000_000_000;
-    if (effectiveNow(demoState) > existing.createdAt + twentyFourHoursNs) {
+    if (effectiveNow(demoState, storeInfo) > existing.createdAt + twentyFourHoursNs) {
       Runtime.trap("Trainer note is locked after 24 hours");
     };
     trainerNotes.add(note.id, { existing with didWell = note.didWell; workOn = note.workOn });
@@ -1594,6 +1623,7 @@ module {
     finalSignOffs : Map.Map<Common.RoadieId, Phase23.FinalSignOff>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     signOff : Phase23.FinalSignOff,
   ) : () {
@@ -1607,7 +1637,7 @@ module {
       };
       case null {};
     };
-    finalSignOffs.add(signOff.roadieId, { signOff with signedBy = caller; signedAt = effectiveNow(demoState); isDemo = demo });
+    finalSignOffs.add(signOff.roadieId, { signOff with signedBy = caller; signedAt = effectiveNow(demoState, storeInfo); isDemo = demo });
     logWrite(changeLog, counters, demoState, caller, "recordFinalSignOff", ?signOff.roadieId, false, "Recorded final sign-off");
   };
 
@@ -1658,15 +1688,15 @@ module {
   };
 
   /// Internal: the start and end of a shift as UTC nanosecond timestamps. The
-  /// shift's date is the event's UTC date; the start and end times are the
-  /// store's AM or PM shift times (store-local minutes since midnight). A
-  /// Friends & Family night uses the PM times.
+  /// shift's date is the event's local calendar date in the store time zone;
+  /// the start and end times are the store's AM or PM shift times (store-local
+  /// minutes since midnight). A Friends & Family night uses the PM times.
   func shiftWindow(
     event : Store.ScheduleEvent,
     shift : Common.Shift,
     storeInfo : Store.StoreInfo,
   ) : (Common.Timestamp, Common.Timestamp) {
-    let dayStart = (event.start / 86_400_000_000_000) * 86_400_000_000_000;
+    let dayStart = Age.localDayStart(event.start, storeInfo.timeZone);
     let usePm = shift == #pm or event.kind == #friendsAndFamily;
     let startMin = if (usePm) { storeInfo.pmShiftStart } else { storeInfo.amShiftStart };
     let endMin = if (usePm) { storeInfo.pmShiftEnd } else { storeInfo.amShiftEnd };
@@ -1709,9 +1739,12 @@ module {
           true;
         } else if (role == #trainer) {
           let demo = Auth.demoActive(demoState);
+          // While demo mode is on and the caller impersonates a demo NSO
+          // Trainer, match the board group to the chosen demo leader.
+          let acting = Auth.actingPrincipal(demoState, caller);
           switch (shiftBoards.get(boardKey(eventId, shift, demo))) {
             case (?board) {
-              switch (board.groups.find(func(g) = g.trainerPrincipal == caller)) {
+              switch (board.groups.find(func(g) = g.trainerPrincipal == acting)) {
                 case (?g) { g.roadieIds.contains(roadieId) };
                 case null { false };
               };
@@ -1852,7 +1885,7 @@ module {
     };
     let event = schedule.get(eventId) ?? Runtime.trap("Shift not found");
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState);
+    let now = effectiveNow(demoState, storeInfo);
     // Outside the trainer window only a manager may change records.
     if (not withinTrainerWindow(event, shift, storeInfo, now) and not isCheckInManager(accessGrants, demoState, caller)) {
       Runtime.trap("Check-in is locked; ask a manager to change");
@@ -1902,12 +1935,15 @@ module {
       case null { return null };
     };
     if (board.isDemo != demo) { return null };
-    let group = switch (board.groups.find(func(g) = g.trainerPrincipal == caller)) {
+    // While demo mode is on and the caller impersonates a demo NSO Trainer,
+    // match the board group to the chosen demo leader instead of the caller.
+    let acting = Auth.actingPrincipal(demoState, caller);
+    let group = switch (board.groups.find(func(g) = g.trainerPrincipal == acting)) {
       case (?g) { g };
       case null { return null };
     };
     let event = schedule.get(eventId);
-    let now = effectiveNow(demoState);
+    let now = effectiveNow(demoState, storeInfo);
     let locked = switch (event) {
       case (?e) { not withinTrainerWindow(e, shift, storeInfo, now) and not isCheckInManager(accessGrants, demoState, caller) };
       case null { true };
@@ -1998,6 +2034,7 @@ module {
     checkIns : Map.Map<Text, Phase23.CheckInRecord>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     id : Common.AlertId,
     reason : Text,
@@ -2050,6 +2087,7 @@ module {
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
+    storeInfo : Store.StoreInfo,
     caller : Principal,
     id : Common.AlertId,
   ) : () {
@@ -2073,7 +2111,7 @@ module {
           shift = otherShift;
           groups = [];
           offRoadieIds = [];
-          editedAt = effectiveNow(demoState);
+          editedAt = effectiveNow(demoState, storeInfo);
           isDemo = demo;
         };
       };
@@ -2087,7 +2125,7 @@ module {
       board with
       groups = newGroups;
       offRoadieIds = newOff;
-      editedAt = effectiveNow(demoState);
+      editedAt = effectiveNow(demoState, storeInfo);
     };
     shiftBoards.add(key, stored);
     logWrite(changeLog, counters, demoState, caller, "moveAbsentRoadieToOtherShift", ?alert.roadieId, false, "Moved absent roadie to the other shift");
@@ -2118,10 +2156,10 @@ module {
     };
   };
 
-  /// Internal: whether a schedule event's UTC date is the effective clock's UTC
-  /// date.
-  func isToday(event : Store.ScheduleEvent, now : Common.Timestamp) : Bool {
-    event.start / 86_400_000_000_000 == now / 86_400_000_000_000;
+  /// Internal: whether a schedule event's local calendar date in the store time
+  /// zone is the effective clock's local calendar date.
+  func isToday(event : Store.ScheduleEvent, now : Common.Timestamp, timeZone : Common.TimeZone) : Bool {
+    Age.localDayStart(event.start, timeZone) == Age.localDayStart(now, timeZone);
   };
 
   /// The Today page payload, shaped by the caller's role. A trainer gets their
@@ -2143,10 +2181,10 @@ module {
   ) : Phase23.TodayView {
     let role = Auth.requireReadable(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState);
-    // Today's shifts: every schedule event whose UTC date is today, AM then PM.
+    let now = effectiveNow(demoState, storeInfo);
+    // Today's shifts: every schedule event whose local date is today, AM then PM.
     let todayEvents = schedule.values()
-      .filter(func(e) = isToday(e, now))
+      .filter(func(e) = isToday(e, now, storeInfo.timeZone))
       .toArray();
     let summaries = List.empty<Phase23.ShiftCheckInSummary>();
     for (e in todayEvents.values()) {
@@ -2155,7 +2193,7 @@ module {
     };
     let shiftSummaries = summaries.toArray();
     // The caller's own group and its check-in board (trainer view).
-    let myGroup = getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, schedule, caller);
+    let myGroup = getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, schedule, storeInfo, caller);
     let checkIn : ?Phase23.CheckInBoardView = switch (myGroup) {
       case (?g) { getCheckInBoard(accessGrants, demoState, shiftBoards, roadies, schedule, storeInfo, checkIns, caller, g.eventId, g.shift) };
       case null { null };
@@ -2328,18 +2366,22 @@ module {
   };
 
   /// Internal: the effective clock. While demo mode is on with a pretend date
-  /// set, the pretend timestamp is returned; otherwise the real clock.
-  func effectiveNow(demoState : Common.DemoState) : Common.Timestamp {
+  /// set, the pretend timestamp is returned; otherwise the real clock. The
+  /// pretend date's `day` is a local calendar date in the store time zone, and
+  /// the pretend time is 30 minutes after the store's AM or PM shift start
+  /// (local), so "Pretend it's Feb 2 AM" lands just inside the AM shift.
+  func effectiveNow(demoState : Common.DemoState, storeInfo : Store.StoreInfo) : Common.Timestamp {
     if (not Auth.demoActive(demoState)) {
       return Time.now();
     };
     switch (demoState.pretendDate) {
       case (?pd) {
-        let hourOffset : Int = switch (pd.shift) {
-          case (#am) { 9 };
-          case (#pm) { 15 };
+        let dayStart = Age.localDayStart(pd.day, storeInfo.timeZone);
+        let shiftStartMin = switch (pd.shift) {
+          case (#am) { storeInfo.amShiftStart };
+          case (#pm) { storeInfo.pmShiftStart };
         };
-        pd.day + hourOffset * 3_600_000_000_000;
+        dayStart + (shiftStartMin.toInt() + 30) * 60_000_000_000;
       };
       case null { Time.now() };
     };

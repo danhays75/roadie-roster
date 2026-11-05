@@ -99,7 +99,7 @@
     "extension-http-outcalls": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "91fb925620769a7be16c24aff283f13a03e491f2d67aeac8db3c588e4c569155"
+      "computedHash": "397a5690d32baec19f8a16d22c2fd0b60503ed39f653970774d7046319babf06"
     },
     "extension-inference": {
       "source": "caffeinelabs/skills",

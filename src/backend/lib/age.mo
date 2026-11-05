@@ -78,9 +78,19 @@ module {
     floorDiv(now + utcOffsetSeconds(now, timeZone) * 1_000_000_000, dayNs);
   };
 
-  /// Internal: the UTC offset in seconds for `timeZone` at `now`. Only
+  /// The UTC timestamp of local midnight of `ts`'s local calendar date in
+  /// `timeZone`, using the offset in effect on that date. The local date is
+  /// derived from `ts` with the offset at `ts`, then the offset at that local
+  /// midnight is applied so a DST transition on the date is respected.
+  public func localDayStart(ts : Common.Timestamp, timeZone : Common.TimeZone) : Int {
+    let localDaysSinceEpoch = localDays(ts, timeZone);
+    let utcMidnight = localDaysSinceEpoch * dayNs;
+    utcMidnight - utcOffsetSeconds(utcMidnight, timeZone) * 1_000_000_000;
+  };
+
+  /// The UTC offset in seconds for `timeZone` at `now`. Only
   /// America/Chicago is modeled; every other zone falls back to the default.
-  func utcOffsetSeconds(now : Common.Timestamp, timeZone : Common.TimeZone) : Int {
+  public func utcOffsetSeconds(now : Common.Timestamp, timeZone : Common.TimeZone) : Int {
     let zone = if (timeZone == "") { defaultTimeZone } else { timeZone };
     if (zone != "America/Chicago") {
       return -6 * 3600;

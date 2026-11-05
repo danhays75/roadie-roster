@@ -365,6 +365,7 @@ export const DemoStateView = IDL.Record({
   'turnedOnAt' : IDL.Opt(Timestamp),
   'pretendDate' : IDL.Opt(PretendDate),
   'demoRole' : IDL.Opt(DemoRole),
+  'demoTrainerAs' : IDL.Opt(IDL.Principal),
   'enabled' : IDL.Bool,
   'demoTrainerStations' : IDL.Vec(PositionId),
 });
@@ -1020,6 +1021,7 @@ export const idlService = IDL.Service({
       [DemoActionResult],
       [],
     ),
+  'setDemoTrainerAs' : IDL.Func([IDL.Principal], [DemoActionResult], []),
   'setKioskPin' : IDL.Func([IDL.Text], [], []),
   'setLeaderTalkAttendance' : IDL.Func(
       [LeaderTalkId, IDL.Vec(RoadieId)],
@@ -1410,6 +1412,7 @@ export const idlFactory = ({ IDL }) => {
     'turnedOnAt' : IDL.Opt(Timestamp),
     'pretendDate' : IDL.Opt(PretendDate),
     'demoRole' : IDL.Opt(DemoRole),
+    'demoTrainerAs' : IDL.Opt(IDL.Principal),
     'enabled' : IDL.Bool,
     'demoTrainerStations' : IDL.Vec(PositionId),
   });
@@ -2074,6 +2077,7 @@ export const idlFactory = ({ IDL }) => {
         [DemoActionResult],
         [],
       ),
+    'setDemoTrainerAs' : IDL.Func([IDL.Principal], [DemoActionResult], []),
     'setKioskPin' : IDL.Func([IDL.Text], [], []),
     'setLeaderTalkAttendance' : IDL.Func(
         [LeaderTalkId, IDL.Vec(RoadieId)],

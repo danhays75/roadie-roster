@@ -184,6 +184,7 @@ export interface DemoStateView {
     turnedOnAt?: Timestamp;
     pretendDate?: PretendDate;
     demoRole?: DemoRole;
+    demoTrainerAs?: Principal;
     enabled: boolean;
     demoTrainerStations: Array<PositionId>;
 }
@@ -1349,6 +1350,12 @@ export interface backendInterface {
      * / mode is on.
      */
     setDemoRole(role: DemoRole, stations: Array<PositionId>): Promise<DemoActionResult>;
+    /**
+     * / Choose which demo leader a demo NSO Trainer views as, so "View as NSO
+     * / Trainer" can see that leader's group. Stored per caller while demo mode is
+     * / on; ignored outside demo mode.
+     */
+    setDemoTrainerAs(trainerPrincipal: Principal): Promise<DemoActionResult>;
     /**
      * / Set the kiosk staff PIN (Admin only). Stored hashed; never returned.
      */

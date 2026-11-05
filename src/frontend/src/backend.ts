@@ -230,6 +230,7 @@ export interface DemoStateView {
     turnedOnAt?: Timestamp;
     pretendDate?: PretendDate;
     demoRole?: DemoRole;
+    demoTrainerAs?: Principal;
     enabled: boolean;
     demoTrainerStations: Array<PositionId>;
 }
@@ -1415,6 +1416,12 @@ export interface backendInterface {
      * / mode is on.
      */
     setDemoRole(role: DemoRole, stations: Array<PositionId>): Promise<DemoActionResult>;
+    /**
+     * / Choose which demo leader a demo NSO Trainer views as, so "View as NSO
+     * / Trainer" can see that leader's group. Stored per caller while demo mode is
+     * / on; ignored outside demo mode.
+     */
+    setDemoTrainerAs(trainerPrincipal: Principal): Promise<DemoActionResult>;
     /**
      * / Set the kiosk staff PIN (Admin only). Stored hashed; never returned.
      */
@@ -3048,6 +3055,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.setDemoRole(to_candid_DemoRole_n259(this._uploadFile, this._downloadFile, arg0), arg1);
+            return from_candid_DemoActionResult_n257(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async setDemoTrainerAs(arg0: Principal): Promise<DemoActionResult> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setDemoTrainerAs(arg0);
+                return from_candid_DemoActionResult_n257(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setDemoTrainerAs(arg0);
             return from_candid_DemoActionResult_n257(this._uploadFile, this._downloadFile, result);
         }
     }
@@ -5111,6 +5132,7 @@ function from_candid_record_n99(_uploadFile: (file: ExternalBlob) => Promise<Uin
     turnedOnAt: [] | [_Timestamp];
     pretendDate: [] | [_PretendDate];
     demoRole: [] | [_DemoRole];
+    demoTrainerAs: [] | [Principal];
     enabled: boolean;
     demoTrainerStations: Array<_PositionId>;
 }): {
@@ -5118,6 +5140,7 @@ function from_candid_record_n99(_uploadFile: (file: ExternalBlob) => Promise<Uin
     turnedOnAt?: Timestamp;
     pretendDate?: PretendDate;
     demoRole?: DemoRole;
+    demoTrainerAs?: Principal;
     enabled: boolean;
     demoTrainerStations: Array<PositionId>;
 } {
@@ -5126,6 +5149,7 @@ function from_candid_record_n99(_uploadFile: (file: ExternalBlob) => Promise<Uin
         turnedOnAt: record_opt_to_undefined(from_candid_opt_n81(_uploadFile, _downloadFile, value.turnedOnAt)),
         pretendDate: record_opt_to_undefined(from_candid_opt_n100(_uploadFile, _downloadFile, value.pretendDate)),
         demoRole: record_opt_to_undefined(from_candid_opt_n104(_uploadFile, _downloadFile, value.demoRole)),
+        demoTrainerAs: record_opt_to_undefined(from_candid_opt_n88(_uploadFile, _downloadFile, value.demoTrainerAs)),
         enabled: value.enabled,
         demoTrainerStations: value.demoTrainerStations
     };

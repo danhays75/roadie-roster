@@ -50,7 +50,7 @@ mixin (
   /// waiting screens. `demoRole` and `demoTrainerStations` describe the
   /// caller's own demo role.
   public query ({ caller }) func getDemoState() : async Common.DemoStateView {
-    DemoLib.getDemoState(demoState, caller);
+    DemoLib.getDemoState(accessGrants, demoState, caller);
   };
 
   /// Turn demo mode on or off (Admin only). Turning it on requires the literal
@@ -69,13 +69,20 @@ mixin (
   /// that role may see. Any signed-in caller may choose a demo role while demo
   /// mode is on.
   public shared ({ caller }) func setDemoRole(role : Common.DemoRole, stations : [Common.PositionId]) : async Common.DemoActionResult {
-    DemoLib.setDemoRole(demoState, caller, role, stations);
+    DemoLib.setDemoRole(accessGrants, demoState, caller, role, stations);
+  };
+
+  /// Choose which demo leader a demo NSO Trainer views as, so "View as NSO
+  /// Trainer" can see that leader's group. Stored per caller while demo mode is
+  /// on; ignored outside demo mode.
+  public shared ({ caller }) func setDemoTrainerAs(trainerPrincipal : Principal) : async Common.DemoActionResult {
+    DemoLib.setDemoTrainerAs(accessGrants, demoState, caller, trainerPrincipal);
   };
 
   /// Set or clear the pretend "now" used while demo mode is on. Null restores
   /// the real clock.
   public shared ({ caller }) func setPretendDate(pretendDate : ?Common.PretendDate) : async Common.DemoActionResult {
-    DemoLib.setPretendDate(demoState, caller, pretendDate);
+    DemoLib.setPretendDate(accessGrants, demoState, caller, pretendDate);
   };
 
   /// Count the demo records currently loaded.

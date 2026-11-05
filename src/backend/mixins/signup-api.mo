@@ -25,7 +25,7 @@ mixin (
     signature : ?Common.SignatureRef,
     contactSet : Roadie.ContactSet,
   ) : async Common.SignupId {
-    SignupLib.submitSignup(accessGrants, demoState, signups, counters, caller, profile, photo, signature, contactSet);
+    SignupLib.submitSignup(accessGrants, demoState, signups, counters, storeInfo.value, caller, profile, photo, signature, contactSet);
   };
 
   /// List pending sign-up submissions (Admin/Store Manager only).

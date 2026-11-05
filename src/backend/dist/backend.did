@@ -720,6 +720,7 @@ type DemoStateView =
  record {
    autoOffAt: opt Timestamp;
    demoRole: opt DemoRole;
+   demoTrainerAs: opt principal;
    demoTrainerStations: vec PositionId;
    enabled: bool;
    pretendDate: opt PretendDate;
@@ -1221,6 +1222,10 @@ service : {
   /// mode is on.
   setDemoRole: (role: DemoRole, stations: vec PositionId) ->
    (DemoActionResult);
+  /// Choose which demo leader a demo NSO Trainer views as, so "View as NSO
+  /// Trainer" can see that leader's group. Stored per caller while demo mode is
+  /// on; ignored outside demo mode.
+  setDemoTrainerAs: (trainerPrincipal: principal) -> (DemoActionResult);
   /// Set the kiosk staff PIN (Admin only). Stored hashed; never returned.
   setKioskPin: (pin: text) -> ();
   /// Record per-roadie attendance for a leader talk (Admin/Store Manager only).

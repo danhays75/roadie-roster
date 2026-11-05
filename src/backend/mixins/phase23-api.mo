@@ -42,7 +42,7 @@ mixin (
 
   /// Record attendance for a roadie (Admin/Store Manager only).
   public shared ({ caller }) func recordAttendance(record : Phase23.AttendanceRecord) : async () {
-    Phase23Lib.recordAttendance(accessGrants, demoState, attendance, changeLog, counters, caller, record);
+    Phase23Lib.recordAttendance(accessGrants, demoState, attendance, changeLog, counters, storeInfo.value, caller, record);
   };
 
   /// List attendance records for an event (Admin/Store Manager only).
@@ -54,7 +54,7 @@ mixin (
   /// photo, name, position, crew and paperwork status, plus Present x / y
   /// counts. Admin, Store Manager, Training Manager and Visiting Manager.
   public query ({ caller }) func getOrientationSessionView(eventId : Common.EventId) : async ?Phase23.OrientationSessionView {
-    Phase23Lib.getOrientationSessionView(accessGrants, demoState, roadies, positions, crews, schedule, checklists, orientationCheckoffs, attendance, caller, eventId);
+    Phase23Lib.getOrientationSessionView(accessGrants, demoState, roadies, positions, crews, schedule, checklists, orientationCheckoffs, attendance, storeInfo.value, caller, eventId);
   };
 
   /// Mark a roadie Present at an orientation session (Admin, Store Manager,
@@ -63,7 +63,7 @@ mixin (
   /// incomplete it traps "Paperwork incomplete" unless `overrideReason` is a
   /// non-empty string and the caller is Admin or Store Manager.
   public shared ({ caller }) func markPresent(roadieId : Common.RoadieId, eventId : Common.EventId, overrideReason : ?Text) : async () {
-    Phase23Lib.markPresent(accessGrants, demoState, roadies, positions, checklists, orientationCheckoffs, attendance, changeLog, counters, caller, roadieId, eventId, overrideReason);
+    Phase23Lib.markPresent(accessGrants, demoState, roadies, positions, checklists, orientationCheckoffs, attendance, changeLog, counters, storeInfo.value, caller, roadieId, eventId, overrideReason);
   };
 
   /// Undo a roadie's Present mark at an orientation session (Admin/Store
@@ -80,7 +80,7 @@ mixin (
   /// Archive every no-show at a session as NCNS Orientation (Admin/Store
   /// Manager only). Returns the archived roadie ids.
   public shared ({ caller }) func archiveNoShows(eventId : Common.EventId) : async [Common.RoadieId] {
-    Phase23Lib.archiveNoShows(accessGrants, demoState, roadies, schedule, shiftBoards, groupChangeNotices, changeLog, counters, caller, eventId);
+    Phase23Lib.archiveNoShows(accessGrants, demoState, roadies, schedule, shiftBoards, groupChangeNotices, changeLog, counters, storeInfo.value, caller, eventId);
   };
 
   /// List the orientation sessions available for assignment, ordered by start
@@ -111,13 +111,13 @@ mixin (
   /// Manager or Visiting Manager). Updates only the uniform fields and keeps
   /// the roadie's paperwork items.
   public shared ({ caller }) func saveUniformCheckoff(roadieId : Common.RoadieId, uniformItems : [Text], uniformCounts : [(Nat, Nat)]) : async () {
-    Phase23Lib.saveUniformCheckoff(accessGrants, demoState, roadies, positions, checklists, orientationCheckoffs, changeLog, counters, caller, roadieId, uniformItems, uniformCounts);
+    Phase23Lib.saveUniformCheckoff(accessGrants, demoState, roadies, positions, checklists, orientationCheckoffs, changeLog, counters, storeInfo.value, caller, roadieId, uniformItems, uniformCounts);
   };
 
   /// Set the paperwork items for a roadie (Admin or Store Manager only, logged).
   /// Updates only `paperworkItems` and keeps the uniform fields.
   public shared ({ caller }) func setPaperworkItems(roadieId : Common.RoadieId, paperworkItems : [Text]) : async () {
-    Phase23Lib.setPaperworkItems(accessGrants, demoState, roadies, orientationCheckoffs, changeLog, counters, caller, roadieId, paperworkItems);
+    Phase23Lib.setPaperworkItems(accessGrants, demoState, roadies, orientationCheckoffs, changeLog, counters, storeInfo.value, caller, roadieId, paperworkItems);
   };
 
   /// Read one shift board with its trainer columns, Unassigned tray and Off
@@ -135,25 +135,25 @@ mixin (
   /// Replace one shift board's groups, capacities and Off list (Admin, Store
   /// Manager or Training Manager).
   public shared ({ caller }) func saveShiftBoard(board : Phase23.ShiftBoard) : async () {
-    Phase23Lib.saveShiftBoard(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, changeLog, counters, caller, board);
+    Phase23Lib.saveShiftBoard(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, changeLog, counters, storeInfo.value, caller, board);
   };
 
   /// Copy another shift's groups, capacities and Off list onto this shift,
   /// replacing the current board (Admin, Store Manager or Training Manager).
   public shared ({ caller }) func copyShiftBoard(eventId : Common.EventId, shift : Common.Shift, fromEventId : Common.EventId, fromShift : Common.Shift) : async () {
-    Phase23Lib.copyShiftBoard(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, changeLog, counters, caller, eventId, shift, fromEventId, fromShift);
+    Phase23Lib.copyShiftBoard(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, changeLog, counters, storeInfo.value, caller, eventId, shift, fromEventId, fromShift);
   };
 
   /// Fill empty capacity from the Unassigned tray (Admin, Store Manager or
   /// Training Manager).
   public shared ({ caller }) func autoFillShiftBoard(eventId : Common.EventId, shift : Common.Shift) : async () {
-    Phase23Lib.autoFillShiftBoard(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, positions, schedule, changeLog, counters, caller, eventId, shift);
+    Phase23Lib.autoFillShiftBoard(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, positions, schedule, changeLog, counters, storeInfo.value, caller, eventId, shift);
   };
 
   /// Clear one shift board's groups and Off list (Admin, Store Manager or
   /// Training Manager).
   public shared ({ caller }) func clearShiftBoard(eventId : Common.EventId, shift : Common.Shift) : async () {
-    Phase23Lib.clearShiftBoard(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, changeLog, counters, caller, eventId, shift);
+    Phase23Lib.clearShiftBoard(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, changeLog, counters, storeInfo.value, caller, eventId, shift);
   };
 
   /// List the caller's undismissed group-change notices, newest first.
@@ -169,17 +169,17 @@ mixin (
   /// The caller's own group for the current or next shift, for the Today
   /// screen. Null when the caller trains no group on that shift.
   public query ({ caller }) func getMyGroup() : async ?Phase23.MyGroupView {
-    Phase23Lib.getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, schedule, caller);
+    Phase23Lib.getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, schedule, storeInfo.value, caller);
   };
 
   /// Add a trainer note (Trainer/Admin/Store Manager only).
   public shared ({ caller }) func addTrainerNote(note : Phase23.TrainerNote) : async Nat {
-    Phase23Lib.addTrainerNote(accessGrants, demoState, trainerNotes, changeLog, counters, caller, note);
+    Phase23Lib.addTrainerNote(accessGrants, demoState, trainerNotes, changeLog, counters, storeInfo.value, caller, note);
   };
 
   /// Edit a trainer note within its 24-hour lock window (author only).
   public shared ({ caller }) func updateTrainerNote(note : Phase23.TrainerNote) : async () {
-    Phase23Lib.updateTrainerNote(accessGrants, demoState, trainerNotes, changeLog, counters, caller, note);
+    Phase23Lib.updateTrainerNote(accessGrants, demoState, trainerNotes, changeLog, counters, storeInfo.value, caller, note);
   };
 
   /// List trainer notes for a roadie. Restricted the same way roadies are:
@@ -201,7 +201,7 @@ mixin (
 
   /// Record a final sign-off for a roadie (Admin/Store Manager only).
   public shared ({ caller }) func recordFinalSignOff(signOff : Phase23.FinalSignOff) : async () {
-    Phase23Lib.recordFinalSignOff(accessGrants, demoState, finalSignOffs, changeLog, counters, caller, signOff);
+    Phase23Lib.recordFinalSignOff(accessGrants, demoState, finalSignOffs, changeLog, counters, storeInfo.value, caller, signOff);
   };
 
   /// List alerts (Admin/Store Manager only).
@@ -247,7 +247,7 @@ mixin (
   /// Excuse an absent roadie with a short reason (Admin, Store Manager or
   /// Training Manager).
   public shared ({ caller }) func excuseAbsentAlert(id : Common.AlertId, reason : Text) : async () {
-    Phase23Lib.excuseAbsentAlert(accessGrants, demoState, absentAlerts, checkIns, changeLog, counters, caller, id, reason);
+    Phase23Lib.excuseAbsentAlert(accessGrants, demoState, absentAlerts, checkIns, changeLog, counters, storeInfo.value, caller, id, reason);
   };
 
   /// Archive an absent alert (Admin, Store Manager or Training Manager).
@@ -258,7 +258,7 @@ mixin (
   /// Move an absent roadie to the same day's other shift, into that shift's
   /// Unassigned tray (Admin, Store Manager or Training Manager).
   public shared ({ caller }) func moveAbsentRoadieToOtherShift(id : Common.AlertId) : async () {
-    Phase23Lib.moveAbsentRoadieToOtherShift(accessGrants, demoState, absentAlerts, shiftBoards, roadies, changeLog, counters, caller, id);
+    Phase23Lib.moveAbsentRoadieToOtherShift(accessGrants, demoState, absentAlerts, shiftBoards, roadies, changeLog, counters, storeInfo.value, caller, id);
   };
 
   /// The Today page payload, shaped by the caller's role.
