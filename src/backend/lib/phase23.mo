@@ -919,7 +919,7 @@ module {
       };
     } else {
       switch (accessGrants.get(trainer)) {
-        case (?grant) { isTrainerRole(grant.role) };
+        case (?grant) { isTrainerRole(grant.role) and not Auth.isDemoLeader(grant) };
         case null { false };
       };
     };
@@ -941,7 +941,7 @@ module {
         .sort();
     } else {
       accessGrants.values()
-        .filter(func(g) = isTrainerRole(g.role))
+        .filter(func(g) = g.role == #trainer and not Auth.isDemoLeader(g))
         .map(func(g) = g.principal)
         .toArray()
         .sort();

@@ -149,9 +149,6 @@
 
 ## Learnings
 
-- Today routes by exact role: trainer -> TrainerToday, alert roles -> ManagerToday, read-only roles -> ReadOnlyToday.
-- The app's existing regression suite has known pre-existing failures (19 frontend) unrelated to the check-in and Today work; the user asked for them to be handled separately.
-- The PocketIC backend lane did not run on the draft-start tree (no_backend_wasm), so its 8 backend failures are judged as new; they were not repaired within the in-draft recovery budget.
 - Age.localDayStart(ts, timeZone) in src/backend/lib/age.mo is the single store-local day anchor; shiftWindow, isToday, archiveNoShows, recordGroupChanges and every effectiveNow copy build on it.
 - effectiveNow is duplicated in phase23.mo, roadie.mo and signup.mo; all three use localDayStart(pd.day, storeInfo.timeZone) + (amShiftStart|pmShiftStart + 30) minutes.
 - Auth.actingPrincipal(demoState, caller) is the single demo-trainer indirection; getMyGroup, getCheckInBoard, canCheckIn, listGroupChangeNotices, dismissGroupChangeNotice and getToday route through it, while auth and the change log keep the real caller.
@@ -174,3 +171,6 @@
 - Demo seed position matching is case-insensitive via positionIdFor in src/backend/lib/demo.mo with an i % positions fallback when no name matches.
 - Demo date of birth is derived from age plus a varied MM-DD using Hinnant civil-date helpers so the two minors stay isMinor true.
 - The app's existing regression suite has known pre-existing failures (19 frontend, 9 backend) unrelated to the demo photo work; the user asked for them to be handled separately.
+- eligibleTrainers real mode in src/backend/lib/phase23.mo filters role == #trainer and not Auth.isDemoLeader(g); an admin (#admin) no longer gets an auto-fill column by design.
+- trainerAllowed real mode in src/backend/lib/phase23.mo rejects a grant where Auth.isDemoLeader(grant) is true while still accepting manager roles via isTrainerRole.
+- The app's inherited backend PocketIC lane has pre-existing failures unrelated to the shift-board trainer-eligibility change; the user asked for tests to be handled separately.
