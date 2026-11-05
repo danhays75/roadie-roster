@@ -131,20 +131,98 @@ export function dateOnlyToDate(dateOnly: DateOnly): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/** The store fields `pretendDateToInstant` needs to match the backend clock. */
+export interface PretendStoreTimes {
+  /** IANA zone name; defaults to `America/Chicago` when absent. */
+  timeZone?: string;
+  /** AM shift start as minutes since local midnight; defaults to 10:00. */
+  amShiftStart?: bigint;
+  /** PM shift start as minutes since local midnight; defaults to 16:00. */
+  pmShiftStart?: bigint;
+}
+
+/** The default store zone, matching the backend's `defaultTimeZone`. */
+const DEFAULT_STORE_TIME_ZONE = "America/Chicago";
+/** Seeded AM shift start (10:00) in minutes since local midnight. */
+const DEFAULT_AM_SHIFT_START = 600n;
+/** Seeded PM shift start (16:00) in minutes since local midnight. */
+const DEFAULT_PM_SHIFT_START = 960n;
+
 /**
- * Resolve a demo "Pretend it's" value to the instant it stands for. The day is
- * a UTC calendar day; the AM/PM shift picks a representative mid-shift time
- * (09:00 UTC for AM, 15:00 UTC for PM) so schedule windows, countdowns and
- * check-in availability move with the pretend date. Returns null when the day
- * is invalid.
+ * The store zone's UTC offset in milliseconds at `instant`, resolved through
+ * `Intl` so a DST transition is honored. Mirrors the backend's
+ * `Age.utcOffsetSeconds` for America/Chicago (CDT -5h in summer, CST -6h in
+ * winter).
  */
-export function pretendDateToInstant(pretendDate: PretendDate): Date | null {
+function storeOffsetMs(instant: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(instant);
+  const get = (type: string) =>
+    Number(parts.find((part) => part.type === type)?.value ?? "0");
+  const asUtc = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    get("hour") % 24,
+    get("minute"),
+    get("second"),
+  );
+  return asUtc - instant.getTime();
+}
+
+/**
+ * Resolve a demo "Pretend it's" value to the instant it stands for, matching
+ * the backend's `effectiveNow`. The day is a UTC calendar day; the pretend time
+ * is local midnight of that same calendar date in the store time zone (honoring
+ * DST) plus the AM or PM shift start plus 30 minutes, so "Pretend it's Feb 2
+ * AM" lands just inside the AM shift. The store fields may be passed either as
+ * a `PretendStoreTimes` object or as positional `timeZone`, `amShiftStart` and
+ * `pmShiftStart` arguments; the zone defaults to `America/Chicago` and the
+ * shift starts default to the seeded 10:00 AM / 4:00 PM. Returns null when the
+ * day is invalid.
+ */
+export function pretendDateToInstant(
+  pretendDate: PretendDate,
+  store?: PretendStoreTimes | string,
+  amShiftStart?: bigint,
+  pmShiftStart?: bigint,
+): Date | null {
   const day = dateOnlyToDate(pretendDate.day);
   if (!day) return null;
-  const hour = pretendDate.shift === DemoShift.pm ? 15 : 9;
-  return new Date(
-    Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), hour),
+  const timeZone =
+    typeof store === "string" ? store : (store?.timeZone ?? undefined);
+  const amStart =
+    typeof store === "string" ? amShiftStart : store?.amShiftStart;
+  const pmStart =
+    typeof store === "string" ? pmShiftStart : store?.pmShiftStart;
+  const zone = timeZone || DEFAULT_STORE_TIME_ZONE;
+  const shiftStartMin =
+    pretendDate.shift === DemoShift.pm
+      ? (pmStart ?? DEFAULT_PM_SHIFT_START)
+      : (amStart ?? DEFAULT_AM_SHIFT_START);
+
+  // Local midnight of the pretend calendar date: UTC midnight of that date
+  // minus the zone's offset for that date. The offset is resolved at the UTC
+  // midnight instant, whose UTC calendar date is the pretend date itself, so
+  // the DST rule for the correct day is applied.
+  const utcMidnight = Date.UTC(
+    day.getUTCFullYear(),
+    day.getUTCMonth(),
+    day.getUTCDate(),
   );
+  const offsetMs = storeOffsetMs(new Date(utcMidnight), zone);
+  const localMidnight = utcMidnight - offsetMs;
+  const shiftMs = Number(shiftStartMin + 30n) * 60_000;
+  const instant = new Date(localMidnight + shiftMs);
+  return Number.isNaN(instant.getTime()) ? null : instant;
 }
 
 /**

@@ -88,6 +88,14 @@ module {
     utcMidnight - utcOffsetSeconds(utcMidnight, timeZone) * 1_000_000_000;
   };
 
+  /// The UTC timestamp of local midnight of the same calendar date a
+  /// `DateOnly` represents. A `DateOnly` is nanoseconds at UTC midnight of the
+  /// calendar date, so subtracting the zone's UTC offset in seconds (converted
+  /// to nanoseconds) yields local midnight of that same calendar date.
+  public func localMidnightOfDate(dateOnly : Common.Timestamp, timeZone : Common.TimeZone) : Int {
+    dateOnly - utcOffsetSeconds(dateOnly, timeZone) * 1_000_000_000;
+  };
+
   /// The UTC offset in seconds for `timeZone` at `now`. Only
   /// America/Chicago is modeled; every other zone falls back to the default.
   public func utcOffsetSeconds(now : Common.Timestamp, timeZone : Common.TimeZone) : Int {

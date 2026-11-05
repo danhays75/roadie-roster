@@ -147,11 +147,6 @@
 
 ## Learnings
 
-- Dashboard-local components/dashboard/copy.ts supplies the new KPI keys; shared lib/copy.ts still holds the base hired/stillNeeded/certified labels.
-- PositionPanel rows read 'N hired · need M' with the NEEDED badge, and the pending/active split renders only when showSplit (orientation window open).
-- The demo pretend-date and demo-mode mutations in src/frontend/src/hooks/useQueries.ts call queryClient.invalidateQueries() with no arguments on success, so every screen refetches when the pretend date changes or demo mode toggles.
-- getMyGroup ranks candidate shifts by event.start vs effectiveNow: earliest upcoming wins, latest past is the fallback.
-- Migration 00000016 restores Position.defaultShirts/defaultHats with an OldPosition/NewPosition split; every Position and TemplatePosition record (including seeded ones) must carry both fields.
 - The Position type requires defaultShirts/defaultHats, so any test fixture constructing a Position must supply them or the frontend type-check fails.
 - The tester owns test files under src/frontend/src/__tests__ and test/pocketic; production workers must not edit them.
 - boardKey(eventId,shift,isDemo) in src/backend/lib/phase23.mo is the single partition-key builder for shift boards; all board reads/writes and migration 00000017 use it.
@@ -172,3 +167,8 @@
 - DemoBanner.tsx shows a Trainer picker for the NSO Trainer demo role, listing demo leaders who lead groups by name.
 - CheckInRow.tsx uses the pretend time for the Late tap in demo mode.
 - PocketIC's default canister time is the fixed constant 1620328630s (2021-05-06); prefer store-local day comparisons over raw Time.now() arithmetic in backend tests.
+- Age.localMidnightOfDate(dateOnly, timeZone) in src/backend/lib/age.mo returns dateOnly - utcOffsetSeconds(dateOnly, timeZone) * 1_000_000_000, the UTC timestamp of local midnight of the DateOnly's calendar date; the three effectiveNow copies (phase23.mo, roadie.mo, signup.mo) use it for the pretend date, while archiveNoShows and recordGroupChanges keep Age.localDayStart on the real clock.
+- saveShiftBoard in src/backend/lib/phase23.mo sanitizes via dropArchivedFromBoard before validateBoard/validateBoardMembers and keys/stores the sanitized board, so archived roadies are silently dropped from a saved board.
+- setDemoTrainerAs in src/backend/lib/demo.mo rejects a trainerPrincipal not in demoGroupLeaders(accessGrants) with #err("Pick a demo trainer").
+- pretendDateToInstant in src/frontend/src/lib/format.ts takes the store time zone and shift start times and returns local midnight of the pretend calendar date in the store zone plus (amShiftStart|pmShiftStart) plus 30 minutes, matching the backend effectiveNow; call sites are Dashboard.tsx, OpeningTimeline.tsx, CheckInRow.tsx, Kiosk.tsx and shiftOptions.ts.
+- The PocketIC backend lane's archive/board failures are caused by its default canister clock (2021-05-06) versus tests that build events from real Date.now(); the backend comparison is correct with a real clock.

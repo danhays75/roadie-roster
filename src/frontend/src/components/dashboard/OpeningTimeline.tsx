@@ -107,9 +107,16 @@ export function OpeningTimeline({
   // While demo mode is on with a pretend date, the countdown and schedule
   // windows follow that instant instead of the real clock.
   const pretendInstant = useMemo(() => {
-    if (!demo.enabled || !demo.pretendDate) return null;
-    return pretendDateToInstant(demo.pretendDate)?.getTime() ?? null;
-  }, [demo.enabled, demo.pretendDate]);
+    if (!demo.enabled || !demo.pretendDate || !storeInfo) return null;
+    return (
+      pretendDateToInstant(
+        demo.pretendDate,
+        storeInfo.timeZone,
+        storeInfo.amShiftStart,
+        storeInfo.pmShiftStart,
+      )?.getTime() ?? null
+    );
+  }, [demo.enabled, demo.pretendDate, storeInfo]);
   const now = useNow(pretendInstant);
 
   const [expanded, setExpanded] = useState(readStoredExpanded);

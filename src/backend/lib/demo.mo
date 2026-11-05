@@ -236,6 +236,9 @@ module {
     if (not isOn(demoState, now)) {
       return #err("Demo mode is off");
     };
+    if (not demoGroupLeaders(accessGrants).contains(trainerPrincipal)) {
+      return #err("Pick a demo trainer");
+    };
     demoState.demoTrainerAs.add(caller, trainerPrincipal);
     #ok(toView(accessGrants, demoState, caller, now));
   };

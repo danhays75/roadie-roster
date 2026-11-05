@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDemo } from "@/hooks/useDemo";
-import { useRecordCheckIn } from "@/hooks/useQueries";
+import { useRecordCheckIn, useStoreInfo } from "@/hooks/useQueries";
 import { pretendDateToInstant } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Check, Clock, Loader2, X } from "lucide-react";
@@ -75,6 +75,7 @@ export function CheckInRowItem({
   const { t } = useCheckInCopy();
   const record = useRecordCheckIn();
   const demo = useDemo();
+  const { data: storeInfo } = useStoreInfo();
   const [error, setError] = useState<string | null>(null);
   const [lateTime, setLateTime] = useState<string>("");
   const [savedTime, setSavedTime] = useState<string | null>(null);
@@ -83,12 +84,17 @@ export function CheckInRowItem({
   // date, that instant replaces the real clock so the recorded tap time follows
   // the pretend date.
   const now = useMemo(() => {
-    if (demo.enabled && demo.pretendDate) {
-      const instant = pretendDateToInstant(demo.pretendDate);
+    if (demo.enabled && demo.pretendDate && storeInfo) {
+      const instant = pretendDateToInstant(
+        demo.pretendDate,
+        storeInfo.timeZone,
+        storeInfo.amShiftStart,
+        storeInfo.pmShiftStart,
+      );
       if (instant) return instant.getTime();
     }
     return Date.now();
-  }, [demo.enabled, demo.pretendDate]);
+  }, [demo.enabled, demo.pretendDate, storeInfo]);
 
   // Seed the editable late time from the stored value once per roadie, so a
   // refetch does not overwrite a time the trainer is mid-edit.

@@ -234,9 +234,16 @@ export default function DashboardPage() {
   // supplies one, so the summary phases move with the pretend date.
   const demo = useDemo();
   const pretendInstant = useMemo(() => {
-    if (!demo.enabled || !demo.pretendDate) return null;
-    return pretendDateToInstant(demo.pretendDate)?.getTime() ?? null;
-  }, [demo.enabled, demo.pretendDate]);
+    if (!demo.enabled || !demo.pretendDate || !storeInfo) return null;
+    return (
+      pretendDateToInstant(
+        demo.pretendDate,
+        storeInfo.timeZone,
+        storeInfo.amShiftStart,
+        storeInfo.pmShiftStart,
+      )?.getTime() ?? null
+    );
+  }, [demo.enabled, demo.pretendDate, storeInfo]);
   const now = useNow(pretendInstant);
   const orientationWindow = useOrientationWindow(schedule ?? [], now);
 

@@ -1084,11 +1084,13 @@ module {
   ) : () {
     Auth.requireGroupEditor(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
-    // A board naming an archived roadie is rejected outright; a roadie that does
-    // not exist or belongs to the other partition also traps below.
-    validateBoard(board);
-    validateBoardMembers(accessGrants, demoState, roadies, board);
-    let key = boardKey(board.eventId, board.shift, demo);
+    // Archived roadies in the active partition are silently dropped from the
+    // incoming board; a roadie that does not exist or belongs to the other
+    // partition still traps below.
+    let sanitized = dropArchivedFromBoard(roadies, demo, board);
+    validateBoard(sanitized);
+    validateBoardMembers(accessGrants, demoState, roadies, sanitized);
+    let key = boardKey(sanitized.eventId, sanitized.shift, demo);
     let previous = shiftBoards.get(key);
     // A write targets the current partition only: a real board cannot be
     // changed while demo mode is on, and a demo board cannot be changed while
@@ -1102,12 +1104,12 @@ module {
       case null {};
     };
     let stored : Phase23.ShiftBoard = {
-      board with
+      sanitized with
       editedAt = effectiveNow(demoState, storeInfo);
       isDemo = demo;
     };
     shiftBoards.add(key, stored);
-    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, storeInfo, previous, stored, schedule.get(board.eventId), caller);
+    recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, storeInfo, previous, stored, schedule.get(sanitized.eventId), caller);
     logWrite(changeLog, counters, demoState, caller, "saveShiftBoard", null, false, "Saved shift board " # key);
   };
 
@@ -2376,7 +2378,7 @@ module {
     };
     switch (demoState.pretendDate) {
       case (?pd) {
-        let dayStart = Age.localDayStart(pd.day, storeInfo.timeZone);
+        let dayStart = Age.localMidnightOfDate(pd.day, storeInfo.timeZone);
         let shiftStartMin = switch (pd.shift) {
           case (#am) { storeInfo.amShiftStart };
           case (#pm) { storeInfo.pmShiftStart };

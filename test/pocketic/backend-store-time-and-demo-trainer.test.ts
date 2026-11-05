@@ -146,8 +146,9 @@ describe("backend store-local shift window and Today date", () => {
 
   it("computes a 10:00 AM store-local shift at 10:00 AM store-local time", async () => {
     // The event's start is 2026-01-14 10:00 store-local (CST, UTC-6) ==
-    // 2026-01-14T16:00:00Z. The pretend day 2026-01-15T00:00:00Z is the local
-    // calendar day 2026-01-14, and the AM pretend time is 10:30 store-local.
+    // 2026-01-14T16:00:00Z. The pretend day 2026-01-14T00:00:00Z resolves to
+    // the same local calendar day 2026-01-14, and the AM pretend time is 10:30
+    // store-local.
     const eventStart = storeLocalInstant(2026, 1, 14, 10, 0, 6);
     const eventId = await admin.createScheduleEvent({
       id: 0n,
@@ -195,7 +196,7 @@ describe("backend store-local shift window and Today date", () => {
 
     // Pin "now" to 10:30 store-local on the event's local day.
     await admin.setPretendDate([
-      { day: pretendDay(2026, 1, 15), shift: { am: null } },
+      { day: pretendDay(2026, 1, 14), shift: { am: null } },
     ]);
 
     // The AM window is 10:00-15:00 store-local, so 10:30 is inside it and the
@@ -214,8 +215,8 @@ describe("backend store-local shift window and Today date", () => {
 
     // The event's start is 2026-01-14 20:00 store-local (CST) ==
     // 2026-01-15T02:00:00Z, whose UTC date is the next day. The pretend day
-    // 2026-01-15T00:00:00Z is the local calendar day 2026-01-14, so Today must
-    // still include the event.
+    // 2026-01-14T00:00:00Z resolves to the same local calendar day 2026-01-14,
+    // so Today must still include the event.
     const eventStart = storeLocalInstant(2026, 1, 14, 20, 0, 6);
     const eventId = await admin.createScheduleEvent({
       id: 0n,
@@ -227,7 +228,7 @@ describe("backend store-local shift window and Today date", () => {
 
     await admin.setDemoMode(true, "DEMO");
     await admin.setPretendDate([
-      { day: pretendDay(2026, 1, 15), shift: { pm: null } },
+      { day: pretendDay(2026, 1, 14), shift: { pm: null } },
     ]);
 
     const view = await admin.getToday();
@@ -340,5 +341,165 @@ describe("backend demo NSO Trainer views the chosen demo leader's group", () => 
 
     await admin.clearDemoData();
     await admin.setDemoMode(false, "");
+  });
+
+  it("rejects an anonymous caller choosing a demo trainer", async () => {
+    // A fresh actor calls as the anonymous principal until an identity is set.
+    const guest = pic!.createActor<_SERVICE>(idlFactory, canisterId);
+    const result = await guest.setDemoTrainerAs(
+      adminIdentity.getPrincipal(),
+    );
+    expect("err" in result).toBe(true);
+  });
+
+  it("rejects choosing a demo trainer while demo mode is off", async () => {
+    await admin.setDemoMode(false, "");
+    const result = await admin.setDemoTrainerAs(
+      adminIdentity.getPrincipal(),
+    );
+    expect("err" in result).toBe(true);
+  });
+
+  it("rejects a principal that is not a demo leader with the NSO Trainer role", async () => {
+    // Demo mode on with the demo set loaded, so demo leaders exist. A real
+    // caller's principal is not a demo leader, so choosing it must be rejected
+    // with the accepted message rather than silently accepted.
+    await admin.setDemoMode(true, "DEMO");
+    await admin.loadDemoData();
+
+    const result = await admin.setDemoTrainerAs(adminIdentity.getPrincipal());
+    expect("err" in result).toBe(true);
+    if ("err" in result) {
+      expect(result.err).toBe("Pick a demo trainer");
+    }
+
+    await admin.clearDemoData();
+    await admin.setDemoMode(false, "");
+  });
+});
+
+describe("backend saveShiftBoard drops archived roadies from the incoming board", () => {
+  let pic: PocketIc | undefined;
+  let canisterId: CanisterFixture<_SERVICE>["canisterId"];
+  let admin: Actor<_SERVICE>;
+  let trainer: Actor<_SERVICE>;
+
+  const adminIdentity = createIdentity("drop-archived-admin-seed");
+  const trainerIdentity = createIdentity("drop-archived-trainer-seed");
+
+  beforeAll(async () => {
+    pic = await PocketIc.create(PIC_URL);
+    if (BASELINE_WASM === undefined) {
+      const installed = await pic.setupCanister<_SERVICE>({
+        idlFactory,
+        wasm: BACKEND_WASM,
+      });
+      canisterId = installed.canisterId;
+    } else {
+      const installed = await pic.setupCanister<_SERVICE>({
+        idlFactory,
+        wasm: BASELINE_WASM,
+      });
+      await pic.upgradeCanister({
+        canisterId: installed.canisterId,
+        wasm: BACKEND_WASM,
+        arg: new Uint8Array(),
+      });
+      canisterId = installed.canisterId;
+    }
+
+    admin = await registerCaller(
+      pic.createActor<_SERVICE>(idlFactory, canisterId),
+      adminIdentity,
+    );
+    trainer = await registerCaller(
+      pic.createActor<_SERVICE>(idlFactory, canisterId),
+      trainerIdentity,
+    );
+    await trainer.requestAccess();
+    await admin.approveUser({
+      principal: trainerIdentity.getPrincipal(),
+      role: { trainer: null },
+      trainerPositionIds: [0n],
+      accessEndsAt: [],
+      linkedRoadieId: [],
+      staffProfile: [],
+    });
+  });
+
+  afterAll(async () => {
+    await pic?.tearDown();
+  });
+
+  /** Approve a sign-up into position 0 and return the created roadie id. */
+  async function approveRoadie(
+    name: string,
+    phone: string,
+    email: string,
+  ): Promise<bigint> {
+    const signupId = await admin.submitSignup(
+      profile(name),
+      [],
+      [],
+      contactSet(phone, email),
+    );
+    return admin.approveSignup(
+      signupId,
+      {
+        mainPositionId: 0n,
+        secondPositionId: [],
+        crewId: [],
+        orientationEventId: [],
+        startDate: [],
+      },
+      sig("sig"),
+    );
+  }
+
+  it("succeeds and stores the board without the archived roadie", async () => {
+    await admin.setDemoMode(false, "");
+
+    const activeRoadie = await approveRoadie(
+      "Active Board Roadie",
+      "+1-555-0900",
+      "active-board@example.com",
+    );
+    const archivedRoadie = await approveRoadie(
+      "Archived Board Roadie",
+      "+1-555-0901",
+      "archived-board@example.com",
+    );
+    await admin.archiveRoadie(archivedRoadie, { other: "test archive" });
+
+    const trainerPrincipal = trainerIdentity.getPrincipal();
+    // The incoming board names both the active and the archived roadie. The
+    // accepted behavior is to drop the archived one silently, not to trap.
+    await expect(
+      admin.saveShiftBoard({
+        eventId: 1n,
+        shift: { am: null } as const,
+        groups: [
+          {
+            trainerPrincipal,
+            capacity: 4n,
+            roadieIds: [activeRoadie, archivedRoadie],
+          },
+        ],
+        offRoadieIds: [archivedRoadie],
+        isDemo: false,
+        editedAt: 0n,
+      }),
+    ).resolves.toBeNull();
+
+    const view = await admin.getShiftBoard(1n, { am: null });
+    expect(view).toHaveLength(1);
+    const storedIds = view[0].groups.flatMap((g) =>
+      g.roadies.map((r) => r.roadieId),
+    );
+    expect(storedIds).toEqual([activeRoadie]);
+    expect(storedIds).not.toContain(archivedRoadie);
+    expect(view[0].offThisShift.map((r) => r.roadieId)).not.toContain(
+      archivedRoadie,
+    );
   });
 });

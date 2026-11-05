@@ -30,6 +30,7 @@ import { useKioskCopy } from "@/components/kiosk/copy";
 import { Button } from "@/components/ui/button";
 import { useDemo } from "@/hooks/useDemo";
 import { useI18n } from "@/hooks/useI18n";
+import { useStoreInfo } from "@/hooks/useQueries";
 import {
   dateToDateOnly,
   fileToRef,
@@ -235,17 +236,24 @@ export default function KioskPage() {
   const { setLocale } = useI18n();
   const { actor } = useActor(createActor);
   const demo = useDemo();
+  const { data: storeInfo } = useStoreInfo();
 
   // While demo mode is on with a pretend date, the kiosk's date-dependent
   // checks (age math and the date-of-birth-in-the-past rule) use that instant
-  // instead of the real clock.
+  // instead of the real clock. The store's zone and shift starts make the
+  // pretend instant match the backend's `effectiveNow`.
   const effectiveNow = useMemo(() => {
-    if (demo.enabled && demo.pretendDate) {
-      const instant = pretendDateToInstant(demo.pretendDate);
+    if (demo.enabled && demo.pretendDate && storeInfo) {
+      const instant = pretendDateToInstant(
+        demo.pretendDate,
+        storeInfo.timeZone,
+        storeInfo.amShiftStart,
+        storeInfo.pmShiftStart,
+      );
       if (instant) return instant;
     }
     return new Date();
-  }, [demo.enabled, demo.pretendDate]);
+  }, [demo.enabled, demo.pretendDate, storeInfo]);
 
   const [phase, setPhase] = useState<Phase>("welcome");
   const [step, setStep] = useState(0);

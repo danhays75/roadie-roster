@@ -300,7 +300,7 @@ module {
     };
     switch (demoState.pretendDate) {
       case (?pd) {
-        let dayStart = Age.localDayStart(pd.day, storeInfo.timeZone);
+        let dayStart = Age.localMidnightOfDate(pd.day, storeInfo.timeZone);
         let shiftStartMin = switch (pd.shift) {
           case (#am) { storeInfo.amShiftStart };
           case (#pm) { storeInfo.pmShiftStart };

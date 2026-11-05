@@ -50848,18 +50848,56 @@ function dateOnlyToDate(dateOnly) {
 	const date = new Date(Number(dateOnly / 1000000n));
 	return Number.isNaN(date.getTime()) ? null : date;
 }
+/** The default store zone, matching the backend's `defaultTimeZone`. */
+var DEFAULT_STORE_TIME_ZONE = "America/Chicago";
+/** Seeded AM shift start (10:00) in minutes since local midnight. */
+var DEFAULT_AM_SHIFT_START = 600n;
+/** Seeded PM shift start (16:00) in minutes since local midnight. */
+var DEFAULT_PM_SHIFT_START = 960n;
 /**
-* Resolve a demo "Pretend it's" value to the instant it stands for. The day is
-* a UTC calendar day; the AM/PM shift picks a representative mid-shift time
-* (09:00 UTC for AM, 15:00 UTC for PM) so schedule windows, countdowns and
-* check-in availability move with the pretend date. Returns null when the day
-* is invalid.
+* The store zone's UTC offset in milliseconds at `instant`, resolved through
+* `Intl` so a DST transition is honored. Mirrors the backend's
+* `Age.utcOffsetSeconds` for America/Chicago (CDT -5h in summer, CST -6h in
+* winter).
 */
-function pretendDateToInstant(pretendDate) {
+function storeOffsetMs$1(instant, timeZone) {
+	const parts = new Intl.DateTimeFormat("en-US", {
+		timeZone,
+		hour12: false,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit"
+	}).formatToParts(instant);
+	const get = (type) => Number(parts.find((part) => part.type === type)?.value ?? "0");
+	return Date.UTC(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"), get("second")) - instant.getTime();
+}
+/**
+* Resolve a demo "Pretend it's" value to the instant it stands for, matching
+* the backend's `effectiveNow`. The day is a UTC calendar day; the pretend time
+* is local midnight of that same calendar date in the store time zone (honoring
+* DST) plus the AM or PM shift start plus 30 minutes, so "Pretend it's Feb 2
+* AM" lands just inside the AM shift. The store fields may be passed either as
+* a `PretendStoreTimes` object or as positional `timeZone`, `amShiftStart` and
+* `pmShiftStart` arguments; the zone defaults to `America/Chicago` and the
+* shift starts default to the seeded 10:00 AM / 4:00 PM. Returns null when the
+* day is invalid.
+*/
+function pretendDateToInstant(pretendDate, store, amShiftStart, pmShiftStart) {
 	const day = dateOnlyToDate(pretendDate.day);
 	if (!day) return null;
-	const hour = pretendDate.shift === DemoShift.pm ? 15 : 9;
-	return new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), hour));
+	const timeZone = typeof store === "string" ? store : store?.timeZone ?? void 0;
+	const amStart = typeof store === "string" ? amShiftStart : store?.amShiftStart;
+	const pmStart = typeof store === "string" ? pmShiftStart : store?.pmShiftStart;
+	const zone = timeZone || DEFAULT_STORE_TIME_ZONE;
+	const shiftStartMin = pretendDate.shift === DemoShift.pm ? pmStart ?? DEFAULT_PM_SHIFT_START : amStart ?? DEFAULT_AM_SHIFT_START;
+	const utcMidnight = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate());
+	const localMidnight = utcMidnight - storeOffsetMs$1(new Date(utcMidnight), zone);
+	const shiftMs = Number(shiftStartMin + 30n) * 6e4;
+	const instant = new Date(localMidnight + shiftMs);
+	return Number.isNaN(instant.getTime()) ? null : instant;
 }
 /**
 * Format a backend timestamp for display in the store's time zone; falls back
@@ -98350,9 +98388,13 @@ function OpeningTimeline({ events, openingDate }) {
 	const demo = useDemo();
 	const timeZone = storeInfo?.timeZone;
 	const now = useNow$1((0, import_react.useMemo)(() => {
-		if (!demo.enabled || !demo.pretendDate) return null;
-		return pretendDateToInstant(demo.pretendDate)?.getTime() ?? null;
-	}, [demo.enabled, demo.pretendDate]));
+		if (!demo.enabled || !demo.pretendDate || !storeInfo) return null;
+		return pretendDateToInstant(demo.pretendDate, storeInfo.timeZone, storeInfo.amShiftStart, storeInfo.pmShiftStart)?.getTime() ?? null;
+	}, [
+		demo.enabled,
+		demo.pretendDate,
+		storeInfo
+	]));
 	const [expanded, setExpanded] = (0, import_react.useState)(readStoredExpanded);
 	const toggle = (0, import_react.useCallback)(() => {
 		setExpanded((current) => {
@@ -99079,9 +99121,13 @@ function DashboardPage() {
 	const { data: alerts } = useAlerts(canAdjust);
 	const demo = useDemo();
 	const now = useNow((0, import_react.useMemo)(() => {
-		if (!demo.enabled || !demo.pretendDate) return null;
-		return pretendDateToInstant(demo.pretendDate)?.getTime() ?? null;
-	}, [demo.enabled, demo.pretendDate]));
+		if (!demo.enabled || !demo.pretendDate || !storeInfo) return null;
+		return pretendDateToInstant(demo.pretendDate, storeInfo.timeZone, storeInfo.amShiftStart, storeInfo.pmShiftStart)?.getTime() ?? null;
+	}, [
+		demo.enabled,
+		demo.pretendDate,
+		storeInfo
+	]));
 	const orientationWindow = useOrientationWindow(schedule ?? [], now);
 	const hasNoPositions = !!data && data.foh.length === 0 && data.boh.length === 0;
 	useSeedWhenEmpty(!!data, hasNoPositions);
@@ -100708,10 +100754,13 @@ function buildShiftOptions(schedule) {
 	});
 	return options;
 }
-/** The instant "now" stands for, honoring the demo pretend date. */
-function effectiveNow(pretendDate) {
+/**
+* The instant "now" stands for, honoring the demo pretend date. Pass the store
+* shift times and time zone so the pretend instant matches the backend clock.
+*/
+function effectiveNow(pretendDate, store) {
 	if (pretendDate) {
-		const instant = pretendDateToInstant(pretendDate);
+		const instant = pretendDateToInstant(pretendDate, store);
 		if (instant) return instant.getTime();
 	}
 	return Date.now();
@@ -103855,13 +103904,18 @@ function KioskPage() {
 	const { setLocale } = useI18n();
 	const { actor } = useActor(createActor);
 	const demo = useDemo();
+	const { data: storeInfo } = useStoreInfo();
 	const effectiveNow = (0, import_react.useMemo)(() => {
-		if (demo.enabled && demo.pretendDate) {
-			const instant = pretendDateToInstant(demo.pretendDate);
+		if (demo.enabled && demo.pretendDate && storeInfo) {
+			const instant = pretendDateToInstant(demo.pretendDate, storeInfo.timeZone, storeInfo.amShiftStart, storeInfo.pmShiftStart);
 			if (instant) return instant;
 		}
 		return /* @__PURE__ */ new Date();
-	}, [demo.enabled, demo.pretendDate]);
+	}, [
+		demo.enabled,
+		demo.pretendDate,
+		storeInfo
+	]);
 	const [phase, setPhase] = (0, import_react.useState)("welcome");
 	const [step, setStep] = (0, import_react.useState)(0);
 	const [photo, setPhoto] = (0, import_react.useState)(null);
@@ -108505,16 +108559,21 @@ function CheckInRowItem({ row, index, eventId, shift, locked, timeZone }) {
 	const { t } = useCheckInCopy();
 	const record = useRecordCheckIn();
 	const demo = useDemo();
+	const { data: storeInfo } = useStoreInfo();
 	const [error, setError] = (0, import_react.useState)(null);
 	const [lateTime, setLateTime] = (0, import_react.useState)("");
 	const [savedTime, setSavedTime] = (0, import_react.useState)(null);
 	const now = (0, import_react.useMemo)(() => {
-		if (demo.enabled && demo.pretendDate) {
-			const instant = pretendDateToInstant(demo.pretendDate);
+		if (demo.enabled && demo.pretendDate && storeInfo) {
+			const instant = pretendDateToInstant(demo.pretendDate, storeInfo.timeZone, storeInfo.amShiftStart, storeInfo.pmShiftStart);
 			if (instant) return instant.getTime();
 		}
 		return Date.now();
-	}, [demo.enabled, demo.pretendDate]);
+	}, [
+		demo.enabled,
+		demo.pretendDate,
+		storeInfo
+	]);
 	(0, import_react.useEffect)(() => {
 		if (row.state === CheckInState.late && row.lateAt !== void 0) setLateTime(timestampToStoreTime(row.lateAt, timeZone) ?? "");
 	}, [

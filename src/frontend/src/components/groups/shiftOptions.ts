@@ -1,6 +1,6 @@
 import { type EventId, EventKind, type ScheduleEvent, Shift } from "@/backend";
 import type { PretendDate } from "@/backend";
-import { pretendDateToInstant } from "@/lib/format";
+import { type PretendStoreTimes, pretendDateToInstant } from "@/lib/format";
 
 /** One selectable shift: an event plus AM or PM. */
 export interface ShiftOption {
@@ -75,10 +75,16 @@ export function buildShiftOptions(schedule: ScheduleEvent[]): ShiftOption[] {
   return options;
 }
 
-/** The instant "now" stands for, honoring the demo pretend date. */
-export function effectiveNow(pretendDate: PretendDate | null): number {
+/**
+ * The instant "now" stands for, honoring the demo pretend date. Pass the store
+ * shift times and time zone so the pretend instant matches the backend clock.
+ */
+export function effectiveNow(
+  pretendDate: PretendDate | null,
+  store?: PretendStoreTimes,
+): number {
   if (pretendDate) {
-    const instant = pretendDateToInstant(pretendDate);
+    const instant = pretendDateToInstant(pretendDate, store);
     if (instant) return instant.getTime();
   }
   return Date.now();
