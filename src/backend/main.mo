@@ -108,7 +108,7 @@ actor {
     counters,
     demoState,
   );
-  include RoadieApi(accessGrants, roadies, crews, positions, schedule, changeLog, counters, demoState);
+  include RoadieApi(accessGrants, roadies, crews, positions, schedule, changeLog, counters, demoState, shiftBoards, groupChangeNotices);
   include SignupApi(accessGrants, signups, roadies, positions, schedule, storeInfo, changeLog, counters, demoState);
   include AccessApi(accessGrants, pendingUsers, accessControlState, demoState);
   include Phase23Api(

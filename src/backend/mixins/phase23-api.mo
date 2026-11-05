@@ -77,7 +77,7 @@ mixin (
   /// Archive every no-show at a session as NCNS Orientation (Admin/Store
   /// Manager only). Returns the archived roadie ids.
   public shared ({ caller }) func archiveNoShows(eventId : Common.EventId) : async [Common.RoadieId] {
-    Phase23Lib.archiveNoShows(accessGrants, demoState, roadies, schedule, changeLog, counters, caller, eventId);
+    Phase23Lib.archiveNoShows(accessGrants, demoState, roadies, schedule, shiftBoards, groupChangeNotices, changeLog, counters, caller, eventId);
   };
 
   /// List the orientation sessions available for assignment, ordered by start

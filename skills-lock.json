@@ -49,7 +49,7 @@
     "connector-x": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "6277f22bed8b4954cf1640b7b67d22a2084b1627840a6609b12a140626bb7b40"
+      "computedHash": "3bd9ec876ddf689c0263a90c5d7c882df322e7daafe915b9437e5a8822453f29"
     },
     "extension-authorization": {
       "source": "caffeinelabs/skills",

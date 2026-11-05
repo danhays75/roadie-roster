@@ -144,9 +144,6 @@
 
 ## Learnings
 
-- pnpm fix (biome --write) reformats test files under src/__tests__; revert them with git checkout after running it so the tester-owned tests stay untouched.
-- Uniform order rows are grouped by the backend item label (Polo/Cap) via groupOrderRows; the Uniforms page renders one table per group.
-- getUniformOrder filters r.isDemo == Auth.demoActive(demoState), so demo and real uniform counts never mix.
 - Position uniform defaults (shirtType/shirtQty/hatType/hatQty) round-trip through TemplatePosition in both download and load.
 - Roadie shirt/hat sizes live in profile, not the contact set, so redact() leaves them visible to read-capable roles.
 - FlipCard's bottle-cap badge aria-label is the static t('roadie.card.badge') copy, not the async store number; the front badge order is secondary logo, then main logo, then the drawn StoreSeal.
@@ -169,3 +166,6 @@
 - Retired fields (StoreInfo.paperworkDueDate, Position.crewManager, Position.shirtsRequired/hatsRequired) survive only in old migrations and tester-owned tests, never in app source.
 - components/admin/copy.ts keeps unused positionsShirtsRequired/positionsHatsRequired/positionsCrewManager keys; no .tsx references them.
 - The app's existing regression suite has known pre-existing failures (19 frontend, 4 backend) unrelated to the requested fixes; the user asked for them to be handled separately.
+- Archiving a roadie now removes them from current and future shift boards in the same partition and records a 'Your group changed' notice for their trainer; the helper is Phase23Lib.removeArchivedRoadieFromBoards in src/backend/lib/phase23.mo, called from archiveRoadie and archiveNoShows.
+- saveShiftBoard, copyShiftBoard and autoFillShiftBoard silently drop archived roadies from the incoming board instead of trapping; they still trap for roadies that do not exist or are in the other partition.
+- RoadieLib.archiveRoadie now takes shiftBoards, groupChangeNotices, schedule and counters; the RoadieApi mixin and main.mo include pass shiftBoards and groupChangeNotices, and Phase23Lib.archiveNoShows takes the same two extra arguments.

@@ -4,6 +4,7 @@ import Common "../types/common";
 import Roadie "../types/roadie";
 import Store "../types/store";
 import Access "../types/access";
+import Phase23 "../types/phase23";
 import RoadieLib "../lib/roadie";
 
 mixin (
@@ -15,6 +16,8 @@ mixin (
   changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
   counters : RoadieLib.Counters,
   demoState : Common.DemoState,
+  shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+  groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
 ) {
   /// List roadie cards visible to the caller.
   public query ({ caller }) func listRoadies() : async [Roadie.Roadie] {
@@ -54,7 +57,7 @@ mixin (
 
   /// Archive a roadie (Admin/Store Manager only).
   public shared ({ caller }) func archiveRoadie(id : Common.RoadieId, reason : Roadie.ArchiveReason) : async () {
-    RoadieLib.archiveRoadie(accessGrants, demoState, roadies, changeLog, counters, caller, id, reason);
+    RoadieLib.archiveRoadie(accessGrants, demoState, roadies, shiftBoards, groupChangeNotices, schedule, changeLog, counters, caller, id, reason);
   };
 
   /// Rehire an archived roadie (Admin/Store Manager only). Returns the roadie

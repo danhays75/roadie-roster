@@ -7,15 +7,18 @@ import Common "../types/common";
 import Roadie "../types/roadie";
 import Store "../types/store";
 import Access "../types/access";
+import Phase23 "../types/phase23";
 import Auth "auth";
 import ChangeLog "changelog";
 import Age "age";
 import StoreLib "store";
+import Phase23Lib "phase23";
 
 module {
   public type Counters = {
     var nextCrewId : Nat;
     var nextChangeLogId : Nat;
+    var nextGroupChangeNoticeId : Nat;
   };
 
   /// The store's default time zone when none is configured.
@@ -194,11 +197,17 @@ module {
     logWrite(changeLog, counters, demoState, caller, "changePosition", ?id, false, "Changed position");
   };
 
-  /// Archive a roadie with a required reason (Admin/Store Manager only).
+  /// Archive a roadie with a required reason (Admin/Store Manager only). The
+  /// archived roadie is removed from every current or future shift board in
+  /// their own partition, and a "Your group changed" notice is recorded for the
+  /// trainer of each group they left.
   public func archiveRoadie(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
     caller : Principal,
@@ -208,6 +217,7 @@ module {
     Auth.requireManager(accessGrants, demoState, caller);
     let roadie = requireVisibleRoadie(roadies, demoState, id);
     roadies.add(id, { roadie with status = #archived; archivedReason = ?reason; archivedAt = ?effectiveNow(demoState) });
+    Phase23Lib.removeArchivedRoadieFromBoards(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, counters, id, caller);
     logWrite(changeLog, counters, demoState, caller, "archiveRoadie", ?id, false, "Archived roadie");
   };
 

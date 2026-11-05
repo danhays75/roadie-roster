@@ -24,6 +24,14 @@ module {
     var nextChangeLogId : Nat;
   };
 
+  /// The narrow slice of the counters a group-change notice needs. A full
+  /// `Counters` record satisfies it by width subtyping, so callers that only
+  /// record notices (such as the roadie archive path) can pass their own
+  /// counters record without depending on the whole phase23 counter set.
+  public type NoticeCounters = {
+    var nextGroupChangeNoticeId : Nat;
+  };
+
   /// Dashboard summary tiles and per-position progress. `hired` counts pending
   /// + active (archived excluded); `active` and `pending` break that down for
   /// the Hired → Active funnel. Demo records count only while demo mode is on.
@@ -406,6 +414,8 @@ module {
     demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
     caller : Principal,
@@ -426,6 +436,7 @@ module {
       .toArray();
     for (r in noShows.values()) {
       roadies.add(r.id, { r with status = #archived; archivedReason = ?#ncnsOrientation; archivedAt = ?now });
+      removeArchivedRoadieFromBoards(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, counters, r.id, caller);
     };
     logWrite(changeLog, counters, demoState, caller, "archiveNoShows", null, false, "Archived no-shows as NCNS Orientation");
     noShows.map(func r = r.id);
@@ -770,6 +781,27 @@ module {
     });
   };
 
+  /// Internal: silently drop archived roadies in the active partition from a
+  /// board's groups and Off list. A roadie that does not exist or belongs to the
+  /// other partition is left in place, so board validation still traps for it.
+  func dropArchivedFromBoard(
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    demo : Bool,
+    board : Phase23.ShiftBoard,
+  ) : Phase23.ShiftBoard {
+    let keep = func(rid : Common.RoadieId) : Bool {
+      switch (roadies.get(rid)) {
+        case (?r) { not (r.isDemo == demo and r.status == #archived) };
+        case null { true };
+      };
+    };
+    {
+      board with
+      groups = board.groups.map(func(g) { { g with roadieIds = g.roadieIds.filter(keep) } });
+      offRoadieIds = board.offRoadieIds.filter(keep);
+    };
+  };
+
   /// Internal: reject a board whose roadies appear in more than one group or in
   /// both a group and Off.
   func validateBoard(board : Phase23.ShiftBoard) : () {
@@ -886,7 +918,7 @@ module {
   /// effective clock.
   func recordGroupChanges(
     groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
-    counters : Counters,
+    counters : NoticeCounters,
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     demoState : Common.DemoState,
@@ -966,6 +998,58 @@ module {
     };
   };
 
+  /// Remove an archived roadie from every shift board in their own partition
+  /// whose shift is current or in the future, and record a "Your group changed"
+  /// notice for the trainer of each group they were removed from. Boards in the
+  /// other partition and past shifts are left untouched. Reused by every path
+  /// that archives a roadie, so an archived roadie never blocks a board save.
+  public func removeArchivedRoadieFromBoards(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
+    groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    counters : NoticeCounters,
+    roadieId : Common.RoadieId,
+    editor : Principal,
+  ) : () {
+    let demo = Auth.demoActive(demoState);
+    let now = effectiveNow(demoState);
+    // Snapshot the boards so the map can be updated while iterating.
+    let boards = shiftBoards.entries().toArray();
+    for ((key, board) in boards.values()) {
+      // Only boards in the archived roadie's partition.
+      if (board.isDemo != demo) { continue };
+      // Only current or future shifts produce a removal and a notice.
+      switch (schedule.get(board.eventId)) {
+        case (?event) {
+          if (event.start < now) { continue };
+        };
+        case null { continue };
+      };
+      var changed = false;
+      let newGroups = board.groups.map(func(g) {
+        if (g.roadieIds.contains(roadieId)) {
+          changed := true;
+          { g with roadieIds = g.roadieIds.filter(func(rid) = rid != roadieId) };
+        } else { g };
+      });
+      let newOff = board.offRoadieIds.filter(func(rid) = rid != roadieId);
+      if (newOff.size() != board.offRoadieIds.size()) { changed := true };
+      if (changed) {
+        let stored : Phase23.ShiftBoard = {
+          board with
+          groups = newGroups;
+          offRoadieIds = newOff;
+          editedAt = now;
+        };
+        shiftBoards.add(key, stored);
+        recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, ?board, stored, schedule.get(board.eventId), editor);
+      };
+    };
+  };
+
   /// Replace one shift board's groups, capacities and Off list (Admin, Store
   /// Manager or Training Manager). Rejects a roadie placed in more than one
   /// group or in both a group and Off. Real boards are blocked by the demo
@@ -984,9 +1068,12 @@ module {
   ) : () {
     Auth.requireGroupEditor(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
-    validateBoard(board);
-    validateBoardMembers(accessGrants, demoState, roadies, board);
-    let key = boardKey(board.eventId, board.shift, demo);
+    // Archived roadies are silently dropped from the incoming board; a roadie
+    // that does not exist or belongs to the other partition still traps below.
+    let sanitized = dropArchivedFromBoard(roadies, demo, board);
+    validateBoard(sanitized);
+    validateBoardMembers(accessGrants, demoState, roadies, sanitized);
+    let key = boardKey(sanitized.eventId, sanitized.shift, demo);
     let previous = shiftBoards.get(key);
     // A write targets the current partition only: a real board cannot be
     // changed while demo mode is on, and a demo board cannot be changed while
@@ -1000,7 +1087,7 @@ module {
       case null {};
     };
     let stored : Phase23.ShiftBoard = {
-      board with
+      sanitized with
       editedAt = effectiveNow(demoState);
       isDemo = demo;
     };
@@ -1042,7 +1129,7 @@ module {
       };
       case null {};
     };
-    let stored : Phase23.ShiftBoard = {
+    let copied : Phase23.ShiftBoard = {
       eventId;
       shift;
       groups = source.groups;
@@ -1050,6 +1137,8 @@ module {
       editedAt = effectiveNow(demoState);
       isDemo = demo;
     };
+    // Archived roadies are silently dropped from the copied board.
+    let stored = dropArchivedFromBoard(roadies, demo, copied);
     validateBoard(stored);
     shiftBoards.add(key, stored);
     recordGroupChanges(groupChangeNotices, counters, accessGrants, roadies, demoState, previous, stored, schedule.get(eventId), caller);
@@ -1076,10 +1165,13 @@ module {
     Auth.requireGroupEditor(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
     let key = boardKey(eventId, shift, demo);
-    let board = shiftBoards.get(key) ?? Runtime.trap("Shift board not found");
-    if (board.isDemo != demo) {
+    let storedBoard = shiftBoards.get(key) ?? Runtime.trap("Shift board not found");
+    if (storedBoard.isDemo != demo) {
       Runtime.trap("Shift board not found");
     };
+    // Archived roadies are silently dropped from the incoming board before it
+    // is filled.
+    let board = dropArchivedFromBoard(roadies, demo, storedBoard);
     // The roadies already placed on this board are never moved.
     let placed = List.empty<Common.RoadieId>();
     for (g in board.groups.values()) {
