@@ -8,9 +8,17 @@ import type {
   Roadie,
   backendInterface,
 } from "@/backend";
-import { House, RoadieStatus, Role, RosterState } from "@/backend";
+import {
+  House,
+  RoadieStatus,
+  Role,
+  RosterState,
+  Shift,
+  Weekday,
+} from "@/backend";
 import { ManagerTab } from "@/components/roadie/ManagerTab";
 import { RoadieTile } from "@/components/roadie/RoadieTile";
+import { formatTimestamp } from "@/lib/format";
 import RosterPage from "@/pages/Roster";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -378,5 +386,106 @@ describe("Manager tab keeps its contact, orientation, paperwork and corporate se
     expect(
       await screen.findByText(t("roadie.changeHistory.empty")),
     ).toBeInTheDocument();
+  });
+});
+
+/**
+ * Adjacent behavior the accepted Manager-tab change must not disturb: the
+ * availability panel's weekday/shift grid and its signature pad, and the
+ * change-history row's timestamp, detail line and contact-set marker. The
+ * request intentionally changes the availability badge count and the
+ * change-history labels/merging, so this file deliberately does NOT assert
+ * those; it protects the surrounding structure.
+ */
+describe("Manager tab availability panel keeps its grid and signature pad", () => {
+  it("renders the weekday/shift grid and the signature canvas", async () => {
+    renderWithActor(<ManagerTab roadie={roadie()} />, managerActor());
+
+    // The availability section renders the grid with one cell per weekday and
+    // shift, and the signature canvas the manager draws on. The contact-set
+    // query resolves asynchronously, so wait for the canvas to appear.
+    const canvas = await screen.findByTestId(
+      "roadie.availability.canvas_target",
+    );
+    expect(canvas).toBeInTheDocument();
+    const availability = screen.getByTestId("roadie.manager.availability");
+    // Seven weekday rows, each with an AM and a PM cell.
+    const cells = within(availability).getAllByLabelText(/ (AM|PM)$/);
+    expect(cells).toHaveLength(14);
+  });
+
+  it("marks the stored availability slots as selected in the grid", async () => {
+    const contactSet: ContactSet = {
+      phone: "+1-555-0100",
+      email: "ada@example.com",
+      emergencyContactName: "Grace",
+      emergencyContactPhone: "+1-555-0101",
+      dateOfBirth: 0n,
+      availability: [
+        { day: Weekday.mon, shift: Shift.am },
+        { day: Weekday.fri, shift: Shift.pm },
+      ],
+      availabilityResignPending: false,
+    };
+    renderWithActor(
+      <ManagerTab roadie={roadie()} />,
+      managerActor({ contactSet }),
+    );
+
+    await screen.findByTestId("roadie.availability.canvas_target");
+    const availability = screen.getByTestId("roadie.manager.availability");
+    // The two stored slots carry the accent (selected) class; the rest do not.
+    const selected = within(availability)
+      .getAllByLabelText(/ (AM|PM)$/)
+      .filter((cell) => cell.className.includes("bg-accent"));
+    expect(selected).toHaveLength(2);
+  });
+});
+
+describe("Manager tab change history keeps its row structure", () => {
+  it("renders the timestamp, detail line and contact-set marker for an entry", async () => {
+    const at = BigInt(Date.UTC(2027, 0, 15, 18, 30)) * 1_000_000n;
+    const entry: ChangeLogEntry = {
+      id: 5n,
+      at,
+      by: { toText: () => "aaaaa-aa" } as never,
+      action: "updateContactSet",
+      detail: "Updated the contact set",
+      isDemo: false,
+      touchesContactSet: true,
+      subjectRoadieId: 1n,
+    };
+    renderWithActor(
+      <ManagerTab roadie={roadie()} />,
+      managerActor({ changeLog: [entry] }),
+    );
+
+    const row = await screen.findByTestId("roadie.change_history.item");
+    // The row shows the entry's timestamp and its detail line.
+    expect(row).toHaveTextContent(formatTimestamp(at));
+    expect(row).toHaveTextContent("Updated the contact set");
+    // A contact-set-touching entry carries the contact-set marker.
+    expect(row).toHaveTextContent(t("roadie.changeHistory.touchesContact"));
+  });
+
+  it("omits the contact-set marker for an entry that does not touch it", async () => {
+    const entry: ChangeLogEntry = {
+      id: 6n,
+      at: 1_000_000_000n,
+      by: { toText: () => "aaaaa-aa" } as never,
+      action: "markPresent",
+      detail: "Marked present",
+      isDemo: false,
+      touchesContactSet: false,
+      subjectRoadieId: 1n,
+    };
+    renderWithActor(
+      <ManagerTab roadie={roadie()} />,
+      managerActor({ changeLog: [entry] }),
+    );
+
+    const row = await screen.findByTestId("roadie.change_history.item");
+    expect(row).toHaveTextContent("Marked present");
+    expect(row).not.toHaveTextContent(t("roadie.changeHistory.touchesContact"));
   });
 });

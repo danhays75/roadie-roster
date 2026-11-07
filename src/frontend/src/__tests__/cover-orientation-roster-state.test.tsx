@@ -1,6 +1,7 @@
 import { renderPageWithActor } from "@/__tests__/router-test-utils";
 import type {
   AccessGrant,
+  ChangeLogEntry,
   ChecklistItem,
   ContactSet,
   OrientationCheckoff,
@@ -24,6 +25,7 @@ import {
   RosterState,
   UniformItemType,
 } from "@/backend";
+import { formatTimestamp } from "@/lib/format";
 import DashboardPage from "@/pages/Dashboard";
 import OrientationPage from "@/pages/Orientation";
 import RoadieCardPage from "@/pages/RoadieCard";
@@ -835,6 +837,10 @@ function managerTabActor(
   role: Role,
   roadie: Roadie,
   stored: OrientationCheckoff | null,
+  overrides: {
+    contactSet?: ContactSet;
+    changeLog?: ChangeLogEntry[];
+  } = {},
 ) {
   return {
     getRoadie: vi.fn<backendInterface["getRoadie"]>(async () => roadie),
@@ -847,7 +853,7 @@ function managerTabActor(
       grant: { ...managerGrant(), role },
     })),
     getContactSet: vi.fn<backendInterface["getContactSet"]>(async () => [
-      MANAGER_CONTACT,
+      overrides.contactSet ?? MANAGER_CONTACT,
     ]),
     getChecklists: vi.fn<backendInterface["getChecklists"]>(async () => ({
       paperwork: PAPERWORK_ITEMS,
@@ -859,7 +865,9 @@ function managerTabActor(
     setPaperworkItems: vi.fn<backendInterface["setPaperworkItems"]>(
       async () => undefined,
     ),
-    listChangeLog: vi.fn<backendInterface["listChangeLog"]>(async () => []),
+    listChangeLog: vi.fn<backendInterface["listChangeLog"]>(
+      async () => overrides.changeLog ?? [],
+    ),
     listOrientationSessions: vi.fn<backendInterface["listOrientationSessions"]>(
       async () => sessionOptions(),
     ),
@@ -1057,5 +1065,182 @@ describe("Override dialog sends the reason with markPresent", () => {
         "Paperwork on file at the store",
       ),
     );
+  });
+});
+
+/* ---------------------------------------------------------------------------
+   Manager tab accepted copy, availability badge and change history
+--------------------------------------------------------------------------- */
+
+describe("Manager tab uniform sizes copy", () => {
+  it("shows the real Uniform sizes heading and body, not raw copy keys", async () => {
+    renderPageWithActor(
+      RoadieCardPage,
+      managerTabActor(Role.storeManager, managerRoadie(), checkoff([])),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await openManagerTab();
+
+    const section = await screen.findByTestId("roadie.manager.sizes");
+    expect(within(section).getByText("Uniform sizes")).toBeInTheDocument();
+    expect(
+      within(section).getByText("Used for the uniform order and gift bags."),
+    ).toBeInTheDocument();
+    // The raw copy keys must never leak into the rendered section.
+    expect(section).not.toHaveTextContent("manager.sizes.title");
+    expect(section).not.toHaveTextContent("manager.sizes.body");
+  });
+});
+
+describe("Manager tab availability badge", () => {
+  it("shows exactly one Not signed badge when there is no manager signature", async () => {
+    renderPageWithActor(
+      RoadieCardPage,
+      managerTabActor(Role.storeManager, managerRoadie(), checkoff([])),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await openManagerTab();
+
+    const section = await screen.findByTestId("roadie.manager.availability");
+    expect(
+      within(section).getByTestId("roadie.availability.unsigned"),
+    ).toHaveTextContent("Not signed");
+    // Exactly one badge: the signed badge is absent.
+    expect(
+      within(section).queryByTestId("roadie.availability.signed"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows exactly one Signed badge with the signed date when a manager signature exists", async () => {
+    const signedAt = BigInt(Date.UTC(2027, 0, 15, 18, 30)) * 1_000_000n;
+    const contactSet: ContactSet = {
+      ...MANAGER_CONTACT,
+      managerSignature: new Uint8Array([1, 2, 3]),
+      managerSignedAt: signedAt,
+    };
+    renderPageWithActor(
+      RoadieCardPage,
+      managerTabActor(Role.storeManager, managerRoadie(), checkoff([]), {
+        contactSet,
+      }),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await openManagerTab();
+
+    const section = await screen.findByTestId("roadie.manager.availability");
+    const badge = within(section).getByTestId("roadie.availability.signed");
+    expect(badge).toHaveTextContent("Signed");
+    expect(badge).toHaveTextContent(formatTimestamp(signedAt));
+    // Exactly one badge: the unsigned badge is absent.
+    expect(
+      within(section).queryByTestId("roadie.availability.unsigned"),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("Manager tab change history labels and merging", () => {
+  const BY = { toText: () => "aaaaa-aa" } as unknown as Principal;
+
+  function entry(overrides: Partial<ChangeLogEntry> = {}): ChangeLogEntry {
+    return {
+      id: 1n,
+      at: 1_000_000_000n,
+      by: BY,
+      action: "markPresent",
+      detail: "Marked present",
+      isDemo: false,
+      touchesContactSet: false,
+      subjectRoadieId: 1n,
+      ...overrides,
+    };
+  }
+
+  it("renders a plain-language label instead of the raw action name", async () => {
+    renderPageWithActor(
+      RoadieCardPage,
+      managerTabActor(Role.storeManager, managerRoadie(), checkoff([]), {
+        changeLog: [entry({ action: "markPresent" })],
+      }),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await openManagerTab();
+
+    const row = await screen.findByTestId("roadie.change_history.item");
+    expect(row).toHaveTextContent("Marked Present");
+    expect(row).not.toHaveTextContent("markPresent");
+  });
+
+  it("shows item-level paperwork detail for setPaperworkItems", async () => {
+    renderPageWithActor(
+      RoadieCardPage,
+      managerTabActor(Role.storeManager, managerRoadie(), checkoff([]), {
+        changeLog: [
+          entry({
+            action: "setPaperworkItems",
+            detail: "Paperwork updated",
+            paperworkDetail: "I-9 form ✓, Alcohol certificate ✗",
+          }),
+        ],
+      }),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await openManagerTab();
+
+    const row = await screen.findByTestId("roadie.change_history.item");
+    expect(row).toHaveTextContent("Paperwork updated");
+    expect(row).toHaveTextContent("I-9 form checked");
+    expect(row).toHaveTextContent("Alcohol certificate unchecked");
+  });
+
+  it("collapses consecutive same-action entries by the same person within two minutes", async () => {
+    const base = BigInt(Date.UTC(2027, 0, 15, 18, 30)) * 1_000_000n;
+    const minute = 60_000_000_000n;
+    renderPageWithActor(
+      RoadieCardPage,
+      managerTabActor(Role.storeManager, managerRoadie(), checkoff([]), {
+        changeLog: [
+          entry({ id: 3n, at: base, action: "markPresent" }),
+          entry({ id: 2n, at: base - minute, action: "markPresent" }),
+          entry({ id: 1n, at: base - 2n * minute, action: "markPresent" }),
+        ],
+      }),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await openManagerTab();
+
+    // Three consecutive same-action entries within two minutes collapse to one
+    // row carrying the repeat count.
+    const rows = await screen.findAllByTestId("roadie.change_history.item");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent("Marked Present");
+    expect(
+      within(rows[0]).getByTestId("roadie.change_history.repeated"),
+    ).toHaveTextContent("3×");
+  });
+
+  it("keeps entries by different people as separate rows", async () => {
+    const base = BigInt(Date.UTC(2027, 0, 15, 18, 30)) * 1_000_000n;
+    const other = { toText: () => "bbbbb-bb" } as unknown as Principal;
+    renderPageWithActor(
+      RoadieCardPage,
+      managerTabActor(Role.storeManager, managerRoadie(), checkoff([]), {
+        changeLog: [
+          entry({ id: 2n, at: base, action: "markPresent", by: other }),
+          entry({ id: 1n, at: base, action: "markPresent", by: BY }),
+        ],
+      }),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await openManagerTab();
+
+    const rows = await screen.findAllByTestId("roadie.change_history.item");
+    expect(rows).toHaveLength(2);
   });
 });

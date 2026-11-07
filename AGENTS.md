@@ -36,6 +36,10 @@
 - Do not change the card design (roadieCard.css), crews, check-in rules, shift boards (saveShiftBoard keeps dropArchivedFromBoard) or contact-info rules
 - Publish when it compiles
 - Leave rosterState in the backend and the Dashboard numbers as they are
+- Demo seed data must stay internally consistent: every non-archived demo roadie is booked into the demo Orientation event and spread across the Hired, Paperwork Done, Oriented and In Training stages
+- Manager tab copy uses real wording, never raw copy keys, in English and Spanish
+- Manager tab availability shows exactly one badge: Signed with the date, or Not signed
+- Manager tab change history uses plain-language labels, names the paperwork items checked or unchecked, and merges repeated same-action entries from the same person within two minutes
 
 ## Accepted Requirements
 
@@ -151,6 +155,12 @@
 - One derived stage tag per roadie on every view, replacing the separate Pending/Active tag
 - Roster tabs All, Hired, Paperwork Done, Oriented, In Training, Certified with counts, keeping Show former
 - Stage computed on read, never hand-set; existing statuses migrate to Hired
+- Every non-archived demo roadie is booked into the demo Orientation event
+- The 38 non-archived demo roadies are spread across Hired, Paperwork Done, Oriented and In Training with the specified paperwork, attendance, check-in, rosterState and uniform state
+- The two minors are Oriented; the 2 archived roadies stay archived; the 3 pending kiosk sign-ups, crews and managers are unchanged
+- The Manager tab uniform sizes section shows real copy instead of raw keys
+- The Manager tab availability area shows exactly one badge
+- The Manager tab change history shows plain-language labels with item-level paperwork detail and collapses consecutive same-action entries by the same person within 2 minutes
 
 ## Verified Commands
 
@@ -160,10 +170,6 @@
 
 ## Learnings
 
-- components/groups/shiftOptions.ts shiftOptionDayLabel appends the short date when duplicateDayLabel is set, so two same-label events render distinct ShiftPicker day chips.
-- The PocketIC backend lane's remaining failures are stale tests encoding the pre-fix contract and clock artifacts (the canister clock is fixed at 2021-05-06 while tests build events from Date.now()); they are not app defects.
-- demoPhotoUrl is a ?Text on Roadie, StaffProfile and LeaderSummary plus the phase23 view types (ShiftBoardRoadie, CheckInRow, AbsentAlertView, OrientationRoadieRow, UnassignedRoadieRow); every photo surface resolves storedSrc ?? demoPhotoUrl ?? null so a real upload always wins.
-- Demo seed position matching is case-insensitive via positionIdFor in src/backend/lib/demo.mo with an i % positions fallback when no name matches.
 - Demo date of birth is derived from age plus a varied MM-DD using Hinnant civil-date helpers so the two minors stay isMinor true.
 - The app's existing regression suite has known pre-existing failures (19 frontend, 9 backend) unrelated to the demo photo work; the user asked for them to be handled separately.
 - eligibleTrainers real mode in src/backend/lib/phase23.mo filters role == #trainer and not Auth.isDemoLeader(g); an admin (#admin) no longer gets an auto-fill column by design.
@@ -185,3 +191,7 @@
 - roadieStageLabel in src/frontend/src/lib/format.ts takes an optional translator and resolves the shared roster.stage.* keys in src/frontend/src/lib/copy.ts, so stage tags render in English and Spanish; without a translator it falls back to English.
 - The Roster page tabs are All, Hired, Paperwork Done, Oriented, In Training and Certified with counts from stageCounts in src/frontend/src/pages/Roster.tsx, plus the Show former toggle for archived roadies.
 - The app's inherited regression suite has 32 pre-existing failures (22 frontend, 10 backend) unrelated to recent work; the user asked for them to be handled separately and asked that no tests be updated, added, removed or run-to-fix.
+- The demo seed spread lives in demoStages in src/backend/lib/demo.mo, a 40-entry array indexed by loop position; archived indices 11 and 29 hold ignored #hired placeholders, so the 38 live entries count 8 Hired, 8 Paperwork Done, 14 Oriented and 8 In Training.
+- ManagerTab resolves manager.sizes.title and manager.sizes.body through the shared src/frontend/src/lib/copy.ts via useI18n; src/frontend/src/components/kiosk/copy.ts defines the same keys with different body text but is not used by the Manager tab.
+- collapseChangeLog in src/frontend/src/components/roadie/useRoadieActions.ts compares previous.at - entry.at <= 120_000_000_000n on newest-first entries, so the 2-minute window is a non-negative difference.
+- The local preflight tester cannot get past the 'Tell us who you are' owner profile onboarding form after Internet Identity sign-in, so demo-seed and Manager-tab flows are not reachable in local testing; the run ends inconclusive with a canister_reject on listPositions for an unregistered caller.
