@@ -204,16 +204,18 @@ describe("backend Demo mode contract", () => {
     await admin.setDemoMode(true, "DEMO");
     const first = await admin.loadDemoData();
     expect(first.roadies).toBe(40n);
-    expect(first.leaders).toBe(4n);
+    // The accepted change seeds 9 leaders (Renee Hollier, 6 store managers and
+    // 2 NSO Trainers) and 6 manager-owned crews.
+    expect(first.leaders).toBe(9n);
     expect(first.signups).toBe(3n);
-    expect(first.crews).toBe(3n);
+    expect(first.crews).toBe(6n);
 
     // Loading twice does not duplicate the seed.
     const second = await admin.loadDemoData();
     expect(second.roadies).toBe(40n);
-    expect(second.leaders).toBe(4n);
+    expect(second.leaders).toBe(9n);
     expect(second.signups).toBe(3n);
-    expect(second.crews).toBe(3n);
+    expect(second.crews).toBe(6n);
 
     // While demo mode is on, reads return only demo records.
     const demoRoadies = await admin.listRoadies();
@@ -226,18 +228,18 @@ describe("backend Demo mode contract", () => {
     expect(demoSignups.every((s) => s.isDemo)).toBe(true);
 
     const demoCrews = await admin.listCrews();
-    expect(demoCrews).toHaveLength(3);
+    expect(demoCrews).toHaveLength(6);
     expect(demoCrews.every((c) => c.isDemo)).toBe(true);
 
     const demoLeaders = await admin.listLeaders();
-    expect(demoLeaders).toHaveLength(4);
+    expect(demoLeaders).toHaveLength(9);
 
     // Clearing removes every demo record and leaves the real roadie intact.
     const cleared = await admin.clearDemoData();
     expect(cleared.roadies).toBe(40n);
-    expect(cleared.leaders).toBe(4n);
+    expect(cleared.leaders).toBe(9n);
     expect(cleared.signups).toBe(3n);
-    expect(cleared.crews).toBe(3n);
+    expect(cleared.crews).toBe(6n);
 
     // Turn demo mode off so the real roadie is visible again.
     await admin.setDemoMode(false, "");

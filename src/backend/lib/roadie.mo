@@ -406,11 +406,43 @@ module {
     caller : Principal,
   ) : [Roadie.Crew] {
     ignore Auth.requireReadable(accessGrants, demoState, caller);
-    crews.values().filter(func c = c.isDemo == Auth.demoActive(demoState)).toArray();
+    let demo = Auth.demoActive(demoState);
+    crews.values().filter(func(c) = c.isDemo == demo).toArray();
   };
 
-  /// Create a crew (Admin/Store Manager only). A crew created while demo mode
-  /// is on is a demo crew.
+  /// List crews with their member counts (pending + active, archived excluded),
+  /// for the kiosk approval Crew dropdown. Any role except Kiosk. Demo crews
+  /// are visible only while demo mode is on.
+  public func listCrewSummaries(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    crews : Map.Map<Common.CrewId, Roadie.Crew>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    caller : Principal,
+  ) : [Roadie.CrewSummary] {
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    crews.values()
+      .filter(func(c) = c.isDemo == demo)
+      .map(func(c) {
+        let count = roadies.values()
+          .filter(func(r) = r.isDemo == demo and r.crewId == ?c.id and r.status != #archived)
+          .size();
+        {
+          id = c.id;
+          name = c.name;
+          leaderPrincipal = c.leaderPrincipal;
+          roadieCount = count;
+          isDemo = c.isDemo;
+        };
+      })
+      .toArray();
+  };
+
+  /// Create a crew owned by `leaderPrincipal` (Admin/Store Manager only). The
+  /// owner is required and must be an approved Admin, Store Manager or Training
+  /// Manager leader; a manager may own only one crew. A crew created while demo
+  /// mode is on is a demo crew.
   public func createCrew(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -419,16 +451,21 @@ module {
     counters : Counters,
     caller : Principal,
     name : Text,
+    leaderPrincipal : Principal,
   ) : Common.CrewId {
     Auth.requireManager(accessGrants, demoState, caller);
+    requireCrewOwnerEligible(accessGrants, demoState, leaderPrincipal);
+    requireOwnerFree(accessGrants, demoState, crews, leaderPrincipal, null);
     let id = counters.nextCrewId;
     counters.nextCrewId := id + 1;
-    crews.add(id, { id; name; leaderPrincipal = null; isDemo = Auth.demoActive(demoState) });
+    crews.add(id, { id; name; leaderPrincipal = ?leaderPrincipal; isDemo = Auth.demoActive(demoState) });
     logWrite(changeLog, counters, demoState, caller, "createCrew", null, false, "Created crew " # name);
     id;
   };
 
-  /// Rename a crew and/or change its leader (Admin/Store Manager only).
+  /// Rename a crew and/or change its owner (Admin/Store Manager only). A new
+  /// owner must be an approved Admin, Store Manager or Training Manager leader
+  /// and may own only one crew.
   public func updateCrew(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -442,7 +479,15 @@ module {
   ) : () {
     Auth.requireManager(accessGrants, demoState, caller);
     let crew = requireVisibleCrew(crews, demoState, id);
-    crews.add(id, { crew with name; leaderPrincipal });
+    let owner = switch (leaderPrincipal) {
+      case (?p) {
+        requireCrewOwnerEligible(accessGrants, demoState, p);
+        requireOwnerFree(accessGrants, demoState, crews, p, ?id);
+        ?p;
+      };
+      case null { null };
+    };
+    crews.add(id, { crew with name; leaderPrincipal = owner });
     logWrite(changeLog, counters, demoState, caller, "updateCrew", null, false, "Updated crew " # name);
   };
 
@@ -460,8 +505,8 @@ module {
   ) : () {
     Auth.requireManager(accessGrants, demoState, caller);
     let crew = requireVisibleCrew(crews, demoState, id);
-    let hasMembers = roadies.values().any(func(r) = r.isDemo == Auth.demoActive(demoState) and r.crewId == ?id);
-    if (hasMembers) {
+    let demo = Auth.demoActive(demoState);
+    if (roadies.values().any(func(r) = r.isDemo == demo and r.crewId == ?id)) {
       Runtime.trap("Move its roadies first.");
     };
     crews.remove(id);
@@ -590,6 +635,75 @@ module {
       Runtime.trap("Crew not found");
     };
     crew;
+  };
+
+  /// Internal: require a principal to be an approved Admin, Store Manager or
+  /// Training Manager leader in the active partition, or trap. NSO Trainer,
+  /// Visiting Manager and Leadership are never eligible crew owners.
+  func requireCrewOwnerEligible(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    leaderPrincipal : Principal,
+  ) : () {
+    let demo = Auth.demoActive(demoState);
+    switch (accessGrants.get(leaderPrincipal)) {
+      case (?grant) {
+        if (Auth.isDemoLeader(grant) != demo) {
+          Runtime.trap("Pick a manager for this crew");
+        };
+        switch (grant.role) {
+          case (#admin) {};
+          case (#storeManager) {};
+          case (#trainingManager) {};
+          case (_) { Runtime.trap("Pick a manager for this crew") };
+        };
+      };
+      case null { Runtime.trap("Pick a manager for this crew") };
+    };
+  };
+
+  /// Internal: require a manager to own no crew yet in the active partition, or
+  /// trap with "<Name> already has a crew". `exceptCrewId` is the crew being
+  /// edited, so re-saving a crew with its own owner is allowed.
+  func requireOwnerFree(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    crews : Map.Map<Common.CrewId, Roadie.Crew>,
+    leaderPrincipal : Principal,
+    exceptCrewId : ?Common.CrewId,
+  ) : () {
+    let demo = Auth.demoActive(demoState);
+    let taken = crews.values().any(func(c) =
+      c.isDemo == demo and c.leaderPrincipal == ?leaderPrincipal and (
+        switch (exceptCrewId) {
+          case (?exceptId) { c.id != exceptId };
+          case null { true };
+        }
+      )
+    );
+    if (taken) {
+      Runtime.trap(ownerName(accessGrants, leaderPrincipal) # " already has a crew");
+    };
+  };
+
+  /// Internal: a manager's display name for the "already has a crew" message,
+  /// preferring the staff profile's preferred name and falling back to the full
+  /// name or a short principal form.
+  func ownerName(accessGrants : Map.Map<Principal, Access.AccessGrant>, p : Principal) : Text {
+    switch (accessGrants.get(p)) {
+      case (?grant) {
+        switch (grant.staffProfile) {
+          case (?sp) {
+            switch (sp.preferredName) {
+              case (?pn) { if (pn.size() > 0) { pn } else { sp.fullName } };
+              case null { sp.fullName };
+            };
+          };
+          case null { p.toText() };
+        };
+      };
+      case null { p.toText() };
+    };
   };
 
   /// Internal: write a change-log entry into the active partition.

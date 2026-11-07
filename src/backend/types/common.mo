@@ -172,8 +172,10 @@ module {
   /// `demoRoles` holds each signed-in caller's own chosen demo role and
   /// stations; a caller with no entry defaults to demo Admin. `demoTrainerAs`
   /// holds, per caller, the demo leader principal a demo NSO Trainer is
-  /// viewing as; it is only consulted while demo mode is on. Both maps are
-  /// cleared when demo mode turns off.
+  /// viewing as; `demoManagerAs` holds, per caller, the demo manager principal
+  /// a demo Store Manager or Training Manager is viewing as. Both are only
+  /// consulted while demo mode is on. All three maps are cleared when demo
+  /// mode turns off.
   public type DemoState = {
     var enabled : Bool;
     var turnedOnAt : ?Timestamp;
@@ -181,13 +183,16 @@ module {
     var pretendDate : ?PretendDate;
     var demoRoles : Map.Map<Principal, DemoRoleEntry>;
     var demoTrainerAs : Map.Map<Principal, Principal>;
+    var demoManagerAs : Map.Map<Principal, Principal>;
   };
 
   /// A read-only view of the demo state returned to the frontend. `demoRole`
   /// and `demoTrainerStations` describe the *requesting* caller's own demo
   /// role, or null/empty when demo mode is off or the caller has not chosen
   /// one. `demoTrainerAs` is the demo leader principal the requesting caller
-  /// is viewing as, or null when none is chosen.
+  /// is viewing as, or null when none is chosen. `demoManagerAs` is the demo
+  /// manager principal a demo Store Manager or Training Manager is viewing as,
+  /// or null when none is chosen.
   public type DemoStateView = {
     enabled : Bool;
     turnedOnAt : ?Timestamp;
@@ -196,6 +201,7 @@ module {
     demoRole : ?DemoRole;
     demoTrainerStations : [PositionId];
     demoTrainerAs : ?Principal;
+    demoManagerAs : ?Principal;
   };
 
   /// The counts of demo records currently loaded, so the admin UI can show

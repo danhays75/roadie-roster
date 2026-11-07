@@ -7,6 +7,7 @@ import {
   type CheckInState,
   type Checklists,
   type CrewId,
+  type CrewSummary,
   type DemoActionResult,
   type DemoDataSummary,
   type DemoRole,
@@ -15,6 +16,7 @@ import {
   type EventId,
   type GroupChangeNotice,
   type LeaderSummary,
+  type MyCrewView,
   type MyGroupView,
   type OrientationSessionOption,
   type OrientationSessionView,
@@ -457,6 +459,28 @@ export function useSetDemoTrainerAs() {
     ): Promise<DemoActionResult> => {
       if (!actor) throw new Error("Backend is not ready");
       return actor.setDemoTrainerAs(trainerPrincipal);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries();
+    },
+  });
+}
+
+/**
+ * Choose which demo manager a demo Store Manager or Training Manager views as,
+ * so crew ownership matching uses that manager. Any signed-in caller may choose
+ * while demo mode is on. The chosen manager changes what every screen shows, so
+ * every query is refetched.
+ */
+export function useSetDemoManagerAs() {
+  const { actor } = useActor(createActor);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      managerPrincipal: Principal,
+    ): Promise<DemoActionResult> => {
+      if (!actor) throw new Error("Backend is not ready");
+      return actor.setDemoManagerAs(managerPrincipal);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries();
@@ -988,19 +1012,54 @@ export function useCrews() {
 }
 
 /**
- * Create a crew (Admin/Store Manager only). The backend returns the new crew
- * id; the crews list is invalidated so the new row appears.
+ * The crews with their pending + active roadie count, for the crew screens.
+ * Readable by every read role, so no `enabled` gate is needed.
+ */
+export function useCrewSummaries() {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["crewSummaries"],
+    queryFn: async (): Promise<CrewSummary[]> => {
+      if (!actor) return [];
+      return actor.listCrewSummaries();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+/**
+ * The crew the caller owns, with its roadies (photo, name, position, roster
+ * state, paperwork done/total, absentToday, paperworkOverdue). Null when the
+ * caller owns no crew. Readable by every signed-in caller, so no `enabled`
+ * gate is needed.
+ */
+export function useMyCrew() {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["myCrew"],
+    queryFn: async (): Promise<MyCrewView | null> => {
+      if (!actor) return null;
+      return actor.getMyCrew();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+/**
+ * Create a crew with its owner (Admin/Store Manager only). The backend returns
+ * the new crew id; the crews list is invalidated so the new row appears.
  */
 export function useCreateCrew() {
   const { actor } = useActor(createActor);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async (args: { name: string; leaderPrincipal: Principal }) => {
       if (!actor) throw new Error("Backend is not ready");
-      return actor.createCrew(name);
+      return actor.createCrew(args.name, args.leaderPrincipal);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["crews"] });
+      void queryClient.invalidateQueries({ queryKey: ["crewSummaries"] });
       void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
     },
   });
@@ -1024,6 +1083,7 @@ export function useUpdateCrew() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["crews"] });
+      void queryClient.invalidateQueries({ queryKey: ["crewSummaries"] });
       void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
     },
   });
@@ -1043,6 +1103,7 @@ export function useDeleteCrew() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["crews"] });
+      void queryClient.invalidateQueries({ queryKey: ["crewSummaries"] });
       void queryClient.invalidateQueries({ queryKey: ["changeLog"] });
     },
   });

@@ -172,6 +172,12 @@ mixin (
     Phase23Lib.getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, schedule, storeInfo.value, caller);
   };
 
+  /// The caller's own crew for the Today screen: the crew they own and one row
+  /// per roadie assigned to it. Null when the caller owns no crew.
+  public query ({ caller }) func getMyCrew() : async ?Phase23.MyCrewView {
+    Phase23Lib.getMyCrew(accessGrants, demoState, crews, roadies, positions, checklists, orientationCheckoffs, schedule, checkIns, storeInfo.value, caller);
+  };
+
   /// Add a trainer note (Trainer/Admin/Store Manager only).
   public shared ({ caller }) func addTrainerNote(note : Phase23.TrainerNote) : async Nat {
     Phase23Lib.addTrainerNote(accessGrants, demoState, trainerNotes, changeLog, counters, storeInfo.value, caller, note);
@@ -263,6 +269,6 @@ mixin (
 
   /// The Today page payload, shaped by the caller's role.
   public query ({ caller }) func getToday() : async Phase23.TodayView {
-    Phase23Lib.getToday(accessGrants, demoState, shiftBoards, roadies, positions, schedule, storeInfo.value, checkIns, absentAlerts, caller);
+    Phase23Lib.getToday(accessGrants, demoState, shiftBoards, roadies, positions, crews, checklists, orientationCheckoffs, schedule, storeInfo.value, checkIns, absentAlerts, caller);
   };
 };

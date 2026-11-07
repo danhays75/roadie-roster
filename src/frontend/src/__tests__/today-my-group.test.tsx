@@ -1,5 +1,6 @@
 import { renderPageWithActor } from "@/__tests__/router-test-utils";
 import type {
+  AbsentAlertView,
   CheckInBoardView,
   GroupChangeNotice,
   MyGroupView,
@@ -7,6 +8,7 @@ import type {
   Roadie,
   ShiftBoardRoadie,
   StoreInfo,
+  TodayView,
   backendInterface,
 } from "@/backend";
 import {
@@ -461,5 +463,91 @@ describe("Today trainer check-in board", () => {
     const img = within(photo).getByRole("img", { name: "Ada Roadie" });
     expect(img).toHaveAttribute("src", expect.stringContaining("data:image/"));
     expect(img).not.toHaveAttribute("src", DEMO_PHOTO_URL);
+  });
+});
+
+/**
+ * Characterization baseline for the manager Today surface. The Crews request
+ * adds a "My crew" section above the alerts list for crew owners. This block
+ * deliberately does NOT assert that new section (it does not exist yet). It
+ * protects the adjacent manager behavior that must survive: the absent alerts
+ * list renders each absent roadie, and today's shifts render with their
+ * checked-in counts.
+ */
+function absentAlert(
+  overrides: Partial<AbsentAlertView> = {},
+): AbsentAlertView {
+  return {
+    id: 1n,
+    eventId: 1n,
+    roadieId: 1n,
+    name: "Ada Roadie",
+    createdAt: 0n,
+    shift: Shift.am,
+    shiftLabel: "Training Day 1 · AM",
+    archived: false,
+    ...overrides,
+  };
+}
+
+function todayView(overrides: Partial<TodayView> = {}): TodayView {
+  return {
+    role: Role.storeManager,
+    absentAlerts: [absentAlert()],
+    shiftSummaries: [
+      {
+        eventId: 1n,
+        shift: Shift.am,
+        shiftLabel: "Training Day 1 · AM",
+        present: 1n,
+        late: 0n,
+        absent: 1n,
+        total: 2n,
+      },
+    ],
+    ...overrides,
+  };
+}
+
+/** The actor the manager Today tree reads. */
+function managerActor(today: TodayView) {
+  return {
+    getMyAccess: vi.fn(async () => ({
+      grant: {
+        principal: { toText: () => "aaaaa-aa" } as never,
+        role: Role.storeManager,
+        approvedAt: 0n,
+        approvedBy: { toText: () => "aaaaa-aa" } as never,
+        trainerPositionIds: [],
+      },
+    })),
+    getToday: vi.fn<backendInterface["getToday"]>(async () => today),
+    listAbsentAlerts: vi.fn<backendInterface["listAbsentAlerts"]>(
+      async () => today.absentAlerts,
+    ),
+    getStoreInfo: vi.fn(async () => STORE),
+    listCrews: vi.fn(async () => []),
+  };
+}
+
+describe("Today page manager alerts and shifts survive the My crew addition", () => {
+  it("renders the absent alerts list with the absent roadie", async () => {
+    renderPageWithActor(TodayPage, managerActor(todayView()), {
+      path: "/today",
+    });
+
+    const item = await screen.findByTestId("alerts.item.0");
+    expect(within(item).getByText("Ada Roadie")).toBeInTheDocument();
+  });
+
+  it("renders today's shifts with their checked-in counts", async () => {
+    renderPageWithActor(TodayPage, managerActor(todayView()), {
+      path: "/today",
+    });
+
+    const count = await screen.findByTestId("today.shifts.item.0.count");
+    expect(count).toHaveTextContent("1 / 2 checked in");
+    const shifts = screen.getByTestId("today.shifts.section");
+    expect(within(shifts).getByText("Training Day 1 · AM")).toBeInTheDocument();
   });
 });

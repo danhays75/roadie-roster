@@ -101,12 +101,13 @@ describe("backend demo seed content is realistic", () => {
     await admin.setDemoMode(false, "");
   });
 
-  it("seeds 4 leaders with realistic names and About Me answers", async () => {
+  it("seeds 9 leaders with realistic names and About Me answers", async () => {
     await admin.setDemoMode(true, "DEMO");
     await admin.loadDemoData();
 
     const leaders = await admin.listLeaders();
-    expect(leaders).toHaveLength(4);
+    // Renee Hollier, the 6 store managers and the 2 NSO Trainers.
+    expect(leaders).toHaveLength(9);
 
     for (const leader of leaders) {
       const profile = leader.staffProfile?.[0];
@@ -116,6 +117,29 @@ describe("backend demo seed content is realistic", () => {
       expect(profile?.hometown?.[0]?.trim().length ?? 0).toBeGreaterThan(0);
       expect(profile?.goalHere?.[0]?.trim().length ?? 0).toBeGreaterThan(0);
     }
+
+    await admin.setDemoMode(false, "");
+  });
+
+  it("seeds 6 store managers with home store 975 and varied About Me answers", async () => {
+    await admin.setDemoMode(true, "DEMO");
+    await admin.loadDemoData();
+
+    const leaders = await admin.listLeaders();
+    const managers = leaders.filter((l) => "storeManager" in l.role);
+    expect(managers).toHaveLength(6);
+
+    // Every manager's home store is 975, the store the demo runs in.
+    for (const manager of managers) {
+      expect(manager.staffProfile?.[0]?.homeStoreNumber).toContain("975");
+    }
+
+    // The About Me answers vary across the six managers rather than repeating
+    // one placeholder answer.
+    const hometowns = new Set(
+      managers.map((m) => m.staffProfile?.[0]?.hometown?.[0] ?? ""),
+    );
+    expect(hometowns.size).toBeGreaterThan(1);
 
     await admin.setDemoMode(false, "");
   });

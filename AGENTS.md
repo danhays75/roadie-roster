@@ -28,6 +28,10 @@
 - Use effectiveNow (the pretend date) everywhere for schedule windows and check-in availability
 - Demo people use realistic names, ages, positions and About Me answers with photo URLs; no placeholder text
 - Demo photo URLs are demo-only and never touch real records
+- Crews are owned by a manager: new crews require an owner picked from approved Admin, Store Manager or Training Manager leaders, and a manager can own only one crew
+- The kiosk approval Crew dropdown shows each crew's pending + active roadie count and preselects the crew with the fewest roadies
+- Crew owners get a My crew section on Today and a My crew chip on the Roster
+- The demo banner shows a Manager picker for the Store Manager and Training Manager demo roles, used only for crew ownership matching
 
 ## Accepted Requirements
 
@@ -143,24 +147,12 @@
 
 ## Verified Commands
 
-- **typecheck**: `pnpm typecheck`
-- **fix**: `pnpm fix`
-- **build**: `mops build`
+- **typecheck**: `pnpm --dir src/frontend typecheck`
+- **fix**: `mops check --fix && pnpm --dir src/frontend fix`
+- **build**: `mops build && pnpm --dir src/frontend build`
 
 ## Learnings
 
-- Age.localDayStart(ts, timeZone) in src/backend/lib/age.mo is the single store-local day anchor; shiftWindow, isToday, archiveNoShows, recordGroupChanges and every effectiveNow copy build on it.
-- effectiveNow is duplicated in phase23.mo, roadie.mo and signup.mo; all three use localDayStart(pd.day, storeInfo.timeZone) + (amShiftStart|pmShiftStart + 30) minutes.
-- Auth.actingPrincipal(demoState, caller) is the single demo-trainer indirection; getMyGroup, getCheckInBoard, canCheckIn, listGroupChangeNotices, dismissGroupChangeNotice and getToday route through it, while auth and the change log keep the real caller.
-- DemoState.demoTrainerAs and DemoStateView.demoTrainerAs were added with migration 00000019; setDemoTrainerAs is exposed through the demo lib, mixin and useSetDemoTrainerAs hook.
-- DemoBanner.tsx shows a Trainer picker for the NSO Trainer demo role, listing demo leaders who lead groups by name.
-- CheckInRow.tsx uses the pretend time for the Late tap in demo mode.
-- PocketIC's default canister time is the fixed constant 1620328630s (2021-05-06); prefer store-local day comparisons over raw Time.now() arithmetic in backend tests.
-- Age.localMidnightOfDate(dateOnly, timeZone) in src/backend/lib/age.mo returns dateOnly - utcOffsetSeconds(dateOnly, timeZone) * 1_000_000_000, the UTC timestamp of local midnight of the DateOnly's calendar date; the three effectiveNow copies (phase23.mo, roadie.mo, signup.mo) use it for the pretend date, while archiveNoShows and recordGroupChanges keep Age.localDayStart on the real clock.
-- saveShiftBoard in src/backend/lib/phase23.mo sanitizes via dropArchivedFromBoard before validateBoard/validateBoardMembers and keys/stores the sanitized board, so archived roadies are silently dropped from a saved board.
-- setDemoTrainerAs in src/backend/lib/demo.mo rejects a trainerPrincipal not in demoGroupLeaders(accessGrants) with #err("Pick a demo trainer").
-- pretendDateToInstant in src/frontend/src/lib/format.ts takes the store time zone and shift start times and returns local midnight of the pretend calendar date in the store zone plus (amShiftStart|pmShiftStart) plus 30 minutes, matching the backend effectiveNow; call sites are Dashboard.tsx, OpeningTimeline.tsx, CheckInRow.tsx, Kiosk.tsx and shiftOptions.ts.
-- The PocketIC backend lane's archive/board failures are caused by its default canister clock (2021-05-06) versus tests that build events from real Date.now(); the backend comparison is correct with a real clock.
 - getShiftBoard in src/backend/lib/phase23.mo returns an unsaved empty ShiftBoardView (groups=[], offThisShift=[], editedAt=0, isDemo=active partition, all active non-archived roadies in unassigned) when the event exists but no board is stored; null only when the event is missing.
 - autoFillShiftBoard in src/backend/lib/phase23.mo starts a board from trainer-eligible leaders in the active partition when none is stored (demo: demo #trainer leaders; real: trainer-capable roles) and traps 'Add a trainer first' when none exist.
 - autoFillShiftBoard receives storeInfo already unwrapped to Store.StoreInfo, so defaultGroupCapacity must read storeInfo.trainingGroupSize, not .value.
@@ -174,3 +166,15 @@
 - eligibleTrainers real mode in src/backend/lib/phase23.mo filters role == #trainer and not Auth.isDemoLeader(g); an admin (#admin) no longer gets an auto-fill column by design.
 - trainerAllowed real mode in src/backend/lib/phase23.mo rejects a grant where Auth.isDemoLeader(grant) is true while still accepting manager roles via isTrainerRole.
 - The app's inherited backend PocketIC lane has pre-existing failures unrelated to the shift-board trainer-eligibility change; the user asked for tests to be handled separately.
+- Crew ownership lives in src/backend/lib/roadie.mo: requireOwnerFree is the one-crew-per-manager guard used by createCrew and updateCrew; compare c.id against the optional exceptCrewId only when it is present, since `exceptCrewId ?? c.id` is always false on create.
+- Crew ownership matching goes through Auth.actingPrincipal, so getMyCrew and the Roster My crew chip follow the demo Manager picker without a separate code path.
+- The kiosk approval screen is src/frontend/src/pages/Approvals.tsx; its Crew Select needs a sentinel value for the "No crew" item because Radix Select rejects empty-string SelectItem values.
+- The Admin Crews panel is src/frontend/src/components/admin/CrewsPanel.tsx and keeps its own local CREW_COPY (en/es) rather than the shared lib/copy.ts, so crew-panel strings live in two places.
+- Demo seed in src/backend/lib/demo.mo now has 9 leaders (Renee Hollier, 6 #storeManager home store 975, 2 NSO Trainers) and 6 manager-owned crews; non-archived roadies are round-robined by position house.
+- The backend PocketIC lane needs `node test/pocketic/run-backend-lane.mjs`; several backend test files encode the pre-change demo seed and crew contract and must be updated when the seed or crew shape changes.
+- The Approve New Hires page is src/frontend/src/pages/Approvals.tsx; its pending sign-up card is PendingSignupCard and the Possible duplicates box is DuplicateList in the same file.
+- SignupSubmission carries no demoPhotoUrl, so the pending sign-up card photo resolves through the actor's getSignupPhoto(id) with an initials fallback; Approvals.tsx keeps a local useSignupPhoto hook because hooks/useQueries.ts is outside its file ownership.
+- DuplicateMatch carries roadieId but no photo, so the duplicates-row photo resolves via RoadiePhoto with an initials fallback.
+- Start date on the approval form prefills from the selected orientation session's store-local calendar date using calendarInTimeZone from src/frontend/src/components/approvals/timeZone.ts, and a startDateTouched flag stops a session change from overwriting a hand-edited value.
+- All approvals copy strings live in the shared src/frontend/src/lib/copy.ts (en and es), not a local COPY object in the page.
+- The app's inherited regression suite has 29 pre-existing failures (19 frontend, 10 backend) unrelated to recent work; the user asked for them to be handled separately and asked that no tests be updated, added, removed or run-to-fix.

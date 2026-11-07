@@ -74,6 +74,28 @@ describe("backend Crews contract", () => {
   const adminIdentity = createIdentity("crews-admin-seed");
   const trainerIdentity = createIdentity("crews-trainer-seed");
 
+  /**
+   * Approve a fresh Store Manager and return its principal. A manager may own
+   * only one crew, so each crew in this lane gets its own owner.
+   */
+  async function newManager(seed: string) {
+    const identity = createIdentity(seed);
+    const actor = await registerCaller(
+      pic!.createActor<_SERVICE>(idlFactory, canisterId),
+      identity,
+    );
+    await actor.requestAccess();
+    await admin.approveUser({
+      principal: identity.getPrincipal(),
+      role: { storeManager: null },
+      trainerPositionIds: [],
+      accessEndsAt: [],
+      linkedRoadieId: [],
+      staffProfile: [],
+    });
+    return identity.getPrincipal();
+  }
+
   beforeAll(async () => {
     pic = await PocketIc.create(PIC_URL);
     if (BASELINE_WASM === undefined) {
@@ -123,24 +145,27 @@ describe("backend Crews contract", () => {
   });
 
   it("round-trips a crew through create, list and update", async () => {
-    const id = await admin.createCrew("Opening Crew");
+    const owner = await newManager("crews-manager-roundtrip");
+    const id = await admin.createCrew("Opening Crew", owner);
     const created = await admin.listCrews();
     expect(created).toContainEqual(
       expect.objectContaining({ id, name: "Opening Crew" }),
     );
-    // A new crew has no leader by default.
+    // A new crew carries the owner it was created with.
     const row = created.find((crew) => crew.id === id);
-    expect(row?.leaderPrincipal).toEqual([]);
+    expect(row?.leaderPrincipal[0]?.toText()).toBe(owner.toText());
 
-    const leader = trainerIdentity.getPrincipal();
-    await admin.updateCrew(id, "Renamed Crew", [leader]);
+    await admin.updateCrew(id, "Renamed Crew", [owner]);
     const updated = (await admin.listCrews()).find((crew) => crew.id === id);
     expect(updated?.name).toBe("Renamed Crew");
-    expect(updated?.leaderPrincipal[0]?.toText()).toBe(leader.toText());
+    expect(updated?.leaderPrincipal[0]?.toText()).toBe(owner.toText());
   });
 
   it("records every crew change in the change log", async () => {
-    const id = await admin.createCrew("Logged Crew");
+    const id = await admin.createCrew(
+      "Logged Crew",
+      await newManager("crews-manager-log"),
+    );
     await admin.updateCrew(id, "Logged Crew Renamed", []);
     await admin.deleteCrew(id);
 
@@ -150,7 +175,10 @@ describe("backend Crews contract", () => {
   });
 
   it("refuses to delete a crew that still has members", async () => {
-    const crewId = await admin.createCrew("Occupied Crew");
+    const crewId = await admin.createCrew(
+      "Occupied Crew",
+      await newManager("crews-manager-occupied"),
+    );
     const signupId = await admin.submitSignup(
       profile("Crew Member"),
       [],
@@ -176,7 +204,10 @@ describe("backend Crews contract", () => {
   });
 
   it("deletes an empty crew", async () => {
-    const id = await admin.createCrew("Empty Crew");
+    const id = await admin.createCrew(
+      "Empty Crew",
+      await newManager("crews-manager-empty"),
+    );
     await expect(admin.deleteCrew(id)).resolves.toBeNull();
     const crews = await admin.listCrews();
     expect(crews.some((crew) => crew.id === id)).toBe(false);
@@ -185,9 +216,14 @@ describe("backend Crews contract", () => {
   it("rejects crew writes from a non-manager but allows the read", async () => {
     // A Trainer may read the crews list but may not create, update or delete.
     await expect(trainer.listCrews()).resolves.toBeInstanceOf(Array);
-    await expect(trainer.createCrew("Trainer Crew")).rejects.toThrow();
+    await expect(
+      trainer.createCrew("Trainer Crew", await newManager("crews-manager-trainer")),
+    ).rejects.toThrow();
 
-    const id = await admin.createCrew("Manager Crew");
+    const id = await admin.createCrew(
+      "Manager Crew",
+      await newManager("crews-manager-writes"),
+    );
     await expect(trainer.updateCrew(id, "Hijacked", [])).rejects.toThrow();
     await expect(trainer.deleteCrew(id)).rejects.toThrow();
   });

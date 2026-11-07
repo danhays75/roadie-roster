@@ -1,12 +1,14 @@
 import {
   type ApprovalDecision,
-  type Crew,
+  type CrewSummary,
   type DateOnly,
   type DuplicateMatch,
   EventKind,
   type Position,
   type ScheduleEvent,
+  type SignupId,
   type SignupSubmission,
+  createActor,
 } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
@@ -18,6 +20,7 @@ import {
   DEFAULT_TIME_ZONE,
   calendarInTimeZone,
 } from "@/components/approvals/timeZone";
+import { RoadiePhoto } from "@/components/roadie/RoadiePhoto";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +35,7 @@ import { canAdmin, useAccessState } from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
 import {
   useApproveSignup,
-  useCrews,
+  useCrewSummaries,
   usePendingSignups,
   usePendingUsers,
   usePositions,
@@ -46,10 +49,87 @@ import {
   dateToDateOnly,
   formatDateOnly,
   formatTimestamp,
+  refToDataUrl,
 } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { useActor } from "@caffeineai/core-infrastructure";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Check, UserCheck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+
+/**
+ * A pending kiosk sign-up's photo bytes, read on demand by sign-up id. The
+ * sign-up record carries no demo photo URL, so the kiosk photo is fetched by id
+ * and the card falls back to the applicant's initials when it is absent. React
+ * Query caches the result under the sign-up id, and the bytes never change for
+ * a given id, so a re-render reuses the cached read.
+ */
+function useSignupPhoto(id: SignupId | undefined) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["signupPhoto", id?.toString()],
+    queryFn: async () => {
+      if (!actor || id === undefined) return null;
+      return actor.getSignupPhoto(id);
+    },
+    enabled: !!actor && !isFetching && id !== undefined,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+}
+
+/** The applicant's initials for the no-photo placeholder, at most two letters. */
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+/**
+ * A pending sign-up's kiosk photo, read by sign-up id and shown at the top of
+ * the card. Falls back to the applicant's initials in navy on cream when no
+ * photo was captured at the kiosk.
+ */
+function SignupPhoto({
+  id,
+  name,
+  className,
+  ocid,
+}: {
+  id: SignupId;
+  name: string;
+  className?: string;
+  ocid?: string;
+}) {
+  const { data: photo } = useSignupPhoto(id);
+  const src = useMemo(() => refToDataUrl(photo), [photo]);
+
+  return (
+    <span
+      data-ocid={ocid}
+      className={cn(
+        "flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-primary bg-[#F5F3EE]",
+        className,
+      )}
+    >
+      {src ? (
+        <img
+          src={src}
+          alt={name}
+          className="h-full w-full object-cover object-top"
+        />
+      ) : (
+        <span
+          className="font-display text-2xl font-bold uppercase tracking-wide text-[#14284B]"
+          aria-hidden="true"
+        >
+          {initialsOf(name)}
+        </span>
+      )}
+    </span>
+  );
+}
 
 /** The orientation sessions that have not yet passed, soonest first. */
 function upcomingOrientations(schedule: ScheduleEvent[]): ScheduleEvent[] {
@@ -91,6 +171,12 @@ function ageInTimeZone(dateOfBirth: DateOnly, timeZone: string): number | null {
   return age;
 }
 
+/**
+ * Radix Select forbids an empty-string item value, so "No crew" uses this
+ * sentinel and is mapped back to an empty selection on change and submit.
+ */
+const NO_CREW = "__none__";
+
 /** The copy key describing what a duplicate matched on. */
 function matchFieldKey(matchedOn: string): string {
   if (matchedOn === "both") return "approvals.signup.duplicates.match.both";
@@ -130,6 +216,21 @@ function DuplicateList({ matches }: { matches: DuplicateMatch[] }) {
               data-ocid="approvals.signup.duplicates.link"
               className="inline-flex min-h-[44px] flex-wrap items-center gap-x-1.5 rounded-sm text-foreground underline decoration-dotted underline-offset-4 transition-smooth hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
+              <RoadiePhoto
+                id={match.roadieId}
+                name={match.name}
+                ocid="approvals.signup.duplicates.photo"
+                className="h-9 w-9 border"
+                iconClassName="h-4 w-4"
+                fallback={
+                  <span
+                    className="font-display text-xs font-bold uppercase tracking-wide text-[#14284B]"
+                    aria-hidden="true"
+                  >
+                    {initialsOf(match.name)}
+                  </span>
+                }
+              />
               <span>
                 {t("approvals.signup.duplicates.row", {
                   name: match.name,
@@ -160,14 +261,12 @@ function PendingSignupCard({
   crews,
   sessions,
   timeZone,
-  approverPrincipal,
 }: {
   signup: SignupSubmission;
   positions: Position[];
-  crews: Crew[];
+  crews: CrewSummary[];
   sessions: ScheduleEvent[];
   timeZone: string;
-  approverPrincipal: string | null;
 }) {
   const { t } = useI18n();
   const { data: duplicates, isLoading: duplicatesLoading } =
@@ -175,14 +274,15 @@ function PendingSignupCard({
   const approve = useApproveSignup();
   const reject = useRejectSignup();
 
-  // The crew led by the approving user, if any, is the default selection.
-  const ledCrewId = useMemo(() => {
-    if (!approverPrincipal) return "";
-    const led = crews.find(
-      (crew) => crew.leaderPrincipal?.toString() === approverPrincipal,
+  // The crew with the fewest roadies (pending + active, archived excluded) is
+  // the default selection, so new hires spread across crews evenly.
+  const fewestCrewId = useMemo(() => {
+    if (crews.length === 0) return "";
+    const fewest = crews.reduce((best, crew) =>
+      crew.roadieCount < best.roadieCount ? crew : best,
     );
-    return led ? led.id.toString() : "";
-  }, [crews, approverPrincipal]);
+    return fewest.id.toString();
+  }, [crews]);
 
   const [mainPositionId, setMainPositionId] = useState("");
   const [secondPositionId, setSecondPositionId] = useState("");
@@ -190,15 +290,16 @@ function PendingSignupCard({
   const [crewTouched, setCrewTouched] = useState(false);
   const [orientationId, setOrientationId] = useState("");
   const [startDate, setStartDate] = useState("");
+  const [startDateTouched, setStartDateTouched] = useState(false);
   const [signature, setSignature] = useState<Uint8Array | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
 
-  // Pre-select the crew led by the approving user once the crews load, unless
-  // the manager has already chosen a crew themselves.
+  // Pre-select the crew with the fewest roadies once the crews load, unless the
+  // manager has already chosen a crew themselves.
   useEffect(() => {
-    if (!crewTouched && ledCrewId) setCrewId(ledCrewId);
-  }, [crewTouched, ledCrewId]);
+    if (!crewTouched && fewestCrewId) setCrewId(fewestCrewId);
+  }, [crewTouched, fewestCrewId]);
 
   const mainPosition = positions.find(
     (position) => position.id.toString() === mainPositionId,
@@ -207,6 +308,27 @@ function PendingSignupCard({
     (position) => position.id.toString() === secondPositionId,
   );
   const suggestedOrientation = defaultOrientationId(sessions);
+
+  // The session the manager is currently working with: their explicit choice,
+  // or the suggested next session when they have not picked one.
+  const selectedOrientationId = orientationId || suggestedOrientation;
+
+  // Prefill Start date with the selected session's store-local calendar date,
+  // and keep it in step when the manager switches sessions — unless they have
+  // edited Start date by hand, in which case their value is never overwritten.
+  useEffect(() => {
+    if (startDateTouched) return;
+    const session = sessions.find(
+      (event) => event.id.toString() === selectedOrientationId,
+    );
+    if (!session) return;
+    const { year, month, day } = calendarInTimeZone(
+      new Date(Number(session.start / 1_000_000n)),
+      timeZone,
+    );
+    const next = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    setStartDate(next);
+  }, [startDateTouched, selectedOrientationId, sessions, timeZone]);
 
   const age = useMemo(
     () => ageInTimeZone(signup.contactSet.dateOfBirth, timeZone),
@@ -264,6 +386,7 @@ function PendingSignupCard({
           setCrewTouched(false);
           setOrientationId("");
           setStartDate("");
+          setStartDateTouched(false);
           setSignature(null);
         },
         onError: () => setError(t("approvals.signup.approve.error")),
@@ -289,25 +412,28 @@ function PendingSignupCard({
       data-ocid="approvals.signup.item"
       className="rounded-lg border border-border bg-card p-4 shadow-subtle"
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-display text-sm font-semibold uppercase tracking-wide">
-            {name}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {t("approvals.signup.submittedAt")}:{" "}
-            {formatTimestamp(signup.submittedAt, timeZone)}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {isMinor && (
-            <StatusBadge tone="pending" ocid="approvals.signup.minor_badge">
-              {t("roadie.minor")}
+      <div className="flex flex-wrap items-start gap-3">
+        <SignupPhoto id={signup.id} name={name} ocid="approvals.signup.photo" />
+        <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-display text-sm font-semibold uppercase tracking-wide">
+              {name}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("approvals.signup.submittedAt")}:{" "}
+              {formatTimestamp(signup.submittedAt, timeZone)}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isMinor && (
+              <StatusBadge tone="pending" ocid="approvals.signup.minor_badge">
+                {t("roadie.minor")}
+              </StatusBadge>
+            )}
+            <StatusBadge tone="muted">
+              {t("approvals.signup.pending")}
             </StatusBadge>
-          )}
-          <StatusBadge tone="muted">
-            {t("approvals.signup.pending")}
-          </StatusBadge>
+          </div>
         </div>
       </div>
 
@@ -408,10 +534,10 @@ function PendingSignupCard({
             {t("approvals.signup.crew.label")}
           </Label>
           <Select
-            value={crewId}
+            value={crewId || NO_CREW}
             onValueChange={(value) => {
               setCrewTouched(true);
-              setCrewId(value);
+              setCrewId(value === NO_CREW ? "" : value);
             }}
           >
             <SelectTrigger
@@ -422,14 +548,22 @@ function PendingSignupCard({
               <SelectValue placeholder={t("approvals.signup.crew.none")} />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value={NO_CREW}>
+                {t("approvals.signup.crew.none")}
+              </SelectItem>
               {crews.map((crew) => (
                 <SelectItem key={crew.id.toString()} value={crew.id.toString()}>
-                  {crew.name}
+                  {crew.name} ·{" "}
+                  {crew.roadieCount === 1n
+                    ? t("approvals.signup.crew.roadies.one")
+                    : t("approvals.signup.crew.roadies", {
+                        count: crew.roadieCount.toString(),
+                      })}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {ledCrewId && (
+          {fewestCrewId && (
             <p className="text-xs text-muted-foreground">
               {t("approvals.signup.crew.default")}
             </p>
@@ -477,7 +611,10 @@ function PendingSignupCard({
             id={`start-${key}`}
             type="date"
             value={startDate}
-            onChange={(event) => setStartDate(event.target.value)}
+            onChange={(event) => {
+              setStartDateTouched(true);
+              setStartDate(event.target.value);
+            }}
             data-ocid="approvals.signup.start.input"
             className="touch-target"
           />
@@ -549,17 +686,15 @@ function PendingSignupList({
   crews,
   sessions,
   timeZone,
-  approverPrincipal,
   isLoading,
   isError,
   onRetry,
 }: {
   signups: SignupSubmission[] | undefined;
   positions: Position[];
-  crews: Crew[];
+  crews: CrewSummary[];
   sessions: ScheduleEvent[];
   timeZone: string;
-  approverPrincipal: string | null;
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
@@ -590,7 +725,6 @@ function PendingSignupList({
           crews={crews}
           sessions={sessions}
           timeZone={timeZone}
-          approverPrincipal={approverPrincipal}
         />
       ))}
     </ul>
@@ -609,8 +743,6 @@ export default function ApprovalsPage() {
   const access = useAccessState();
   const role = access.kind === "granted" ? access.grant.role : undefined;
   const isAdmin = canAdmin(role);
-  const approverPrincipal =
-    access.kind === "granted" ? access.grant.principal.toString() : null;
 
   const { data: storeInfo } = useStoreInfo();
   const timeZone = storeInfo?.timeZone || DEFAULT_TIME_ZONE;
@@ -628,7 +760,7 @@ export default function ApprovalsPage() {
     refetch: refetchSignups,
   } = usePendingSignups();
   const { data: positions } = usePositions();
-  const { data: crews } = useCrews();
+  const { data: crews } = useCrewSummaries();
   const { data: schedule } = useSchedule();
 
   const sessions = useMemo(
@@ -653,7 +785,6 @@ export default function ApprovalsPage() {
           crews={crews ?? []}
           sessions={sessions}
           timeZone={timeZone}
-          approverPrincipal={approverPrincipal}
           isLoading={signupsLoading}
           isError={signupsError}
           onRetry={() => void refetchSignups()}

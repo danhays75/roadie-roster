@@ -42,6 +42,7 @@ function staffProfile(
     departureDate: [] as [] | [bigint],
     trainerPositionIds: [] as bigint[],
     photo: [] as [] | [Uint8Array],
+    demoPhotoUrl: [] as [] | [string],
     hometown: (extras.hometown ? [extras.hometown] : []) as [] | [string],
     hobbies: [] as [] | [string],
     favoriteTeam: [] as [] | [string],

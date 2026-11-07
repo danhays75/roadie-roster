@@ -83,10 +83,31 @@ module {
     };
   };
 
-  /// The principal a caller should be treated as when matching board groups and
-  /// group-change notices. While demo mode is on and the caller's demo role is
-  /// NSO Trainer with a chosen demo leader, returns that demo leader principal;
-  /// otherwise returns the caller unchanged. Never consulted outside demo mode.
+  /// The demo manager principal a signed-in caller is viewing as while demo
+  /// mode is on and their demo role is Store Manager or Training Manager, or
+  /// null when demo mode is off, the caller is anonymous, the caller's demo
+  /// role is neither of those, or the caller has not chosen one.
+  public func demoManagerFor(
+    demoState : Common.DemoState,
+    caller : Principal,
+  ) : ?Principal {
+    switch (demoRoleFor(demoState, caller)) {
+      case (?#storeManager) {
+        demoState.demoManagerAs.get(caller);
+      };
+      case (?#trainingManager) {
+        demoState.demoManagerAs.get(caller);
+      };
+      case _ { null };
+    };
+  };
+
+  /// The principal a caller should be treated as when matching board groups,
+  /// group-change notices and crew ownership. While demo mode is on and the
+  /// caller's demo role is NSO Trainer with a chosen demo leader, returns that
+  /// demo leader principal; while it is Store Manager or Training Manager with
+  /// a chosen demo manager, returns that demo manager principal; otherwise
+  /// returns the caller unchanged. Never consulted outside demo mode.
   public func actingPrincipal(
     demoState : Common.DemoState,
     caller : Principal,
@@ -95,6 +116,18 @@ module {
       case (?#trainer) {
         switch (demoState.demoTrainerAs.get(caller)) {
           case (?leader) { leader };
+          case null { caller };
+        };
+      };
+      case (?#storeManager) {
+        switch (demoState.demoManagerAs.get(caller)) {
+          case (?manager) { manager };
+          case null { caller };
+        };
+      };
+      case (?#trainingManager) {
+        switch (demoState.demoManagerAs.get(caller)) {
+          case (?manager) { manager };
           case null { caller };
         };
       };

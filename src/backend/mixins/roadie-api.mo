@@ -98,12 +98,20 @@ mixin (
     RoadieLib.listCrews(accessGrants, demoState, crews, caller);
   };
 
-  /// Create a crew (Admin/Store Manager only).
-  public shared ({ caller }) func createCrew(name : Text) : async Common.CrewId {
-    RoadieLib.createCrew(accessGrants, demoState, crews, changeLog, counters, caller, name);
+  /// List crews with their member counts (pending + active, archived excluded),
+  /// for the kiosk approval Crew dropdown.
+  public query ({ caller }) func listCrewSummaries() : async [Roadie.CrewSummary] {
+    RoadieLib.listCrewSummaries(accessGrants, demoState, crews, roadies, caller);
   };
 
-  /// Rename a crew and/or change its leader (Admin/Store Manager only).
+  /// Create a crew owned by `leaderPrincipal` (Admin/Store Manager only). The
+  /// owner is required and must be an approved Admin, Store Manager or Training
+  /// Manager leader; a manager may own only one crew.
+  public shared ({ caller }) func createCrew(name : Text, leaderPrincipal : Principal) : async Common.CrewId {
+    RoadieLib.createCrew(accessGrants, demoState, crews, changeLog, counters, caller, name, leaderPrincipal);
+  };
+
+  /// Rename a crew and/or change its owner (Admin/Store Manager only).
   public shared ({ caller }) func updateCrew(id : Common.CrewId, name : Text, leaderPrincipal : ?Principal) : async () {
     RoadieLib.updateCrew(accessGrants, demoState, crews, changeLog, counters, caller, id, name, leaderPrincipal);
   };

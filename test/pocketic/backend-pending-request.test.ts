@@ -33,6 +33,7 @@ function staffProfile(fullName: string, title: string) {
     arrivalDate: [] as [] | [bigint],
     departureDate: [] as [] | [bigint],
     photo: [] as [] | [Uint8Array],
+    demoPhotoUrl: [] as [] | [string],
     hometown: [] as [] | [string],
     hobbies: [] as [] | [string],
     favoriteTeam: [] as [] | [string],

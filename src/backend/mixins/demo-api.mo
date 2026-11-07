@@ -79,6 +79,13 @@ mixin (
     DemoLib.setDemoTrainerAs(accessGrants, demoState, caller, trainerPrincipal);
   };
 
+  /// Choose which demo manager a demo Store Manager or Training Manager views
+  /// as, so "My crew" and the Roster "My crew" chip match the chosen manager's
+  /// crew. Stored per caller while demo mode is on; ignored outside demo mode.
+  public shared ({ caller }) func setDemoManagerAs(managerPrincipal : Principal) : async Common.DemoActionResult {
+    DemoLib.setDemoManagerAs(accessGrants, demoState, caller, managerPrincipal);
+  };
+
   /// Set or clear the pretend "now" used while demo mode is on. Null restores
   /// the real clock.
   public shared ({ caller }) func setPretendDate(pretendDate : ?Common.PretendDate) : async Common.DemoActionResult {

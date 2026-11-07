@@ -2,6 +2,7 @@ import { renderPageWithActor, t } from "@/__tests__/router-test-utils";
 import type {
   AccessGrant,
   Crew,
+  CrewSummary,
   DuplicateMatch,
   LeaderSummary,
   Position,
@@ -206,7 +207,7 @@ function adminActor(role: Role, crews: Crew[], roadies: Roadie[] = []) {
 /** The actor methods the approvals page tree reads. */
 function approvalsActor(
   signup: SignupSubmission,
-  crews: Crew[],
+  crews: CrewSummary[],
   approver: Principal,
   duplicates: DuplicateMatch[] = [],
 ) {
@@ -223,7 +224,7 @@ function approvalsActor(
     listPositions: vi.fn<backendInterface["listPositions"]>(async () => [
       SERVERS,
     ]),
-    listCrews: vi.fn<backendInterface["listCrews"]>(async () =>
+    listCrewSummaries: vi.fn<backendInterface["listCrewSummaries"]>(async () =>
       crews.map((crew) => ({ ...crew })),
     ),
     listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),
@@ -353,7 +354,10 @@ describe("Adding a crew", () => {
 
     await user.click(screen.getByTestId("admin.crews.save_button"));
     await waitFor(() => expect(actor.createCrew).toHaveBeenCalledTimes(1));
-    expect(actor.createCrew).toHaveBeenCalledWith("Front of House");
+    // A new crew is created with its chosen owner.
+    const [name, owner] = actor.createCrew.mock.calls[0] ?? [];
+    expect(name).toBe("Front of House");
+    expect(owner).toBe(JORDAN_PRINCIPAL);
   });
 });
 
@@ -453,18 +457,20 @@ describe("Deleting a crew", () => {
 });
 
 describe("Approvals crew pre-selection", () => {
-  it("pre-selects the crew led by the approving user", async () => {
-    const crews: Crew[] = [
+  it("pre-selects the crew with the fewest roadies", async () => {
+    const crews: CrewSummary[] = [
       {
         id: 0n,
         name: "Jordan's Crew",
         leaderPrincipal: JORDAN_PRINCIPAL,
+        roadieCount: 3n,
         isDemo: false,
       },
       {
         id: 1n,
         name: "Sam's Crew",
         leaderPrincipal: SAM_PRINCIPAL,
+        roadieCount: 1n,
         isDemo: false,
       },
     ];
@@ -477,21 +483,14 @@ describe("Approvals crew pre-selection", () => {
     const crewSelect = await screen.findByTestId(
       "approvals.signup.crew.select",
     );
-    await waitFor(() => expect(crewSelect).toHaveTextContent("Jordan's Crew"));
+    // The crew with the fewest roadies is preselected, not the approver's own.
+    await waitFor(() => expect(crewSelect).toHaveTextContent("Sam's Crew"));
   });
 
-  it("defaults to No crew when the approving user leads none", async () => {
-    const crews: Crew[] = [
-      {
-        id: 0n,
-        name: "Sam's Crew",
-        leaderPrincipal: SAM_PRINCIPAL,
-        isDemo: false,
-      },
-    ];
+  it("defaults to No crew when there are no crews", async () => {
     renderPageWithActor(
       ApprovalsPage,
-      approvalsActor(adultSignup(), crews, JORDAN_PRINCIPAL),
+      approvalsActor(adultSignup(), [], JORDAN_PRINCIPAL),
       { path: "/approvals" },
     );
 
@@ -503,17 +502,19 @@ describe("Approvals crew pre-selection", () => {
 
   it("keeps the pre-selected crew changeable", async () => {
     const user = userEvent.setup();
-    const crews: Crew[] = [
+    const crews: CrewSummary[] = [
       {
         id: 0n,
         name: "Jordan's Crew",
         leaderPrincipal: JORDAN_PRINCIPAL,
+        roadieCount: 3n,
         isDemo: false,
       },
       {
         id: 1n,
         name: "Sam's Crew",
         leaderPrincipal: SAM_PRINCIPAL,
+        roadieCount: 1n,
         isDemo: false,
       },
     ];
@@ -526,11 +527,13 @@ describe("Approvals crew pre-selection", () => {
     const crewSelect = await screen.findByTestId(
       "approvals.signup.crew.select",
     );
-    await waitFor(() => expect(crewSelect).toHaveTextContent("Jordan's Crew"));
+    await waitFor(() => expect(crewSelect).toHaveTextContent("Sam's Crew"));
 
     await user.click(crewSelect);
-    await user.click(await screen.findByRole("option", { name: "Sam's Crew" }));
-    await waitFor(() => expect(crewSelect).toHaveTextContent("Sam's Crew"));
+    await user.click(
+      await screen.findByRole("option", { name: "Jordan's Crew · 3 roadies" }),
+    );
+    await waitFor(() => expect(crewSelect).toHaveTextContent("Jordan's Crew"));
   });
 });
 

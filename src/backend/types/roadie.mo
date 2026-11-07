@@ -112,12 +112,23 @@ module {
     isDemo : Bool;
   };
 
-  /// A crew. `leaderPrincipal` is the approved leader who leads the crew, or
-  /// null when the crew has no leader yet. `isDemo` marks a demo crew.
+  /// A crew. `leaderPrincipal` is the approved manager who owns the crew, or
+  /// null when the crew has no owner yet. `isDemo` marks a demo crew.
   public type Crew = {
     id : Common.CrewId;
     name : Text;
     leaderPrincipal : ?Principal;
+    isDemo : Bool;
+  };
+
+  /// A crew with its member counts, for the kiosk approval Crew dropdown. The
+  /// count is pending + active roadies assigned to the crew; archived roadies
+  /// are excluded. `isDemo` marks a demo crew.
+  public type CrewSummary = {
+    id : Common.CrewId;
+    name : Text;
+    leaderPrincipal : ?Principal;
+    roadieCount : Nat;
     isDemo : Bool;
   };
 

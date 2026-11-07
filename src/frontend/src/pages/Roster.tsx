@@ -13,10 +13,23 @@ import {
   usePaperworkIncompleteMap,
 } from "@/components/roadie/RoadieTile";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { canArchive, useAccessState } from "@/hooks/useAccess";
-import { useCrews, usePositions, useRoadies } from "@/hooks/useQueries";
+import { useI18n } from "@/hooks/useI18n";
+import {
+  useCrews,
+  useMyCrew,
+  usePositions,
+  useRoadies,
+} from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 /** Which list the card pop-up is navigating within. */
@@ -25,10 +38,18 @@ type CardList = "all" | "pending" | "active" | "former";
 /** The All / Pending / Active tab selection on the roster. */
 type RosterTab = "all" | "pending" | "active";
 
+/**
+ * The crew filter selection. `"all"` shows every crew, `"none"` shows roadies
+ * with no crew, and any other value is a crew id as a string.
+ */
+type CrewFilter = "all" | "none" | string;
+
 export default function RosterPage() {
   const { t } = useDashboardCopy();
+  const { locale } = useI18n();
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<RosterTab>("all");
+  const [crewFilter, setCrewFilter] = useState<CrewFilter>("all");
   const [showFormer, setShowFormer] = useState(false);
   const [card, setCard] = useState<{ list: CardList; index: number } | null>(
     null,
@@ -36,6 +57,7 @@ export default function RosterPage() {
   const { data: roadies, isLoading, isError, refetch } = useRoadies();
   const { data: positions } = usePositions();
   const { data: crews } = useCrews();
+  const { data: myCrew } = useMyCrew();
   const access = useAccessState();
   const role = access.kind === "granted" ? access.grant.role : undefined;
   const mayOpenFullProfile = canArchive(role);
@@ -59,10 +81,31 @@ export default function RosterPage() {
     return map;
   }, [crews]);
 
+  // The crews offered in the filter, sorted by name for a stable menu.
+  const crewOptions = useMemo(
+    () => [...(crews ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
+    [crews],
+  );
+
+  // The caller's owned crew id as a string, or null when they own no crew.
+  const myCrewId = myCrew ? myCrew.crewId.toString() : null;
+
+  // A selected crew that no longer exists falls back to showing everyone.
+  const activeCrewFilter: CrewFilter =
+    crewFilter !== "all" && crewFilter !== "none" && !crewMap.has(crewFilter)
+      ? "all"
+      : crewFilter;
+
   const { pending, active, archived } = useMemo(() => {
     const list = roadies ?? [];
     const q = query.trim().toLowerCase();
+    const matchesCrew = (roadie: Roadie) => {
+      if (activeCrewFilter === "all") return true;
+      if (activeCrewFilter === "none") return roadie.crewId === undefined;
+      return roadie.crewId?.toString() === activeCrewFilter;
+    };
     const matches = (roadie: Roadie) => {
+      if (!matchesCrew(roadie)) return false;
       if (!q) return true;
       const name = (
         roadie.profile.preferredName || roadie.profile.name
@@ -86,7 +129,7 @@ export default function RosterPage() {
         (roadie) => roadie.status === RoadieStatus.archived && matches(roadie),
       ),
     };
-  }, [roadies, query, positionMap]);
+  }, [roadies, query, positionMap, activeCrewFilter]);
 
   // The paperwork-overdue flag is computed from the orientation check-off,
   // which only Admin and Store Manager may read.
@@ -135,23 +178,85 @@ export default function RosterPage() {
     { key: "active", label: t("roster.filter.active"), count: active.length },
   ];
 
+  const crewLabel = locale === "es" ? "Cuadrilla" : "Crew";
+  const allCrewsLabel = locale === "es" ? "Todas las cuadrillas" : "All crews";
+  const noCrewLabel = locale === "es" ? "Sin cuadrilla" : "No crew";
+  const myCrewLabel = locale === "es" ? "Mi cuadrilla" : "My crew";
+
   return (
     <div className="space-y-6" data-ocid="roster.page">
       <PageHeader title={t("roster.title")} subtitle={t("roster.subtitle")} />
 
-      <div className="w-full sm:max-w-sm">
-        <label htmlFor="roster-search" className="sr-only">
-          {t("roster.search")}
-        </label>
-        <Input
-          id="roster-search"
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={t("roster.searchPlaceholder")}
-          data-ocid="roster.search_input"
-          className="touch-target"
-        />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="w-full sm:max-w-sm">
+          <label htmlFor="roster-search" className="sr-only">
+            {t("roster.search")}
+          </label>
+          <Input
+            id="roster-search"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t("roster.searchPlaceholder")}
+            data-ocid="roster.search_input"
+            className="touch-target"
+          />
+        </div>
+
+        <div className="w-full sm:w-56">
+          <Select
+            value={activeCrewFilter}
+            onValueChange={(value) => setCrewFilter(value as CrewFilter)}
+          >
+            <SelectTrigger
+              id="roster-crew-filter"
+              aria-label={crewLabel}
+              data-ocid="roster.crew.select"
+              className="touch-target w-full"
+            >
+              <SelectValue placeholder={allCrewsLabel} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" data-ocid="roster.crew.all.option">
+                {allCrewsLabel}
+              </SelectItem>
+              {crewOptions.map((crew) => (
+                <SelectItem
+                  key={crew.id.toString()}
+                  value={crew.id.toString()}
+                  data-ocid="roster.crew.option"
+                >
+                  {crew.name}
+                </SelectItem>
+              ))}
+              <SelectItem value="none" data-ocid="roster.crew.none.option">
+                {noCrewLabel}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {myCrewId && (
+          <button
+            type="button"
+            aria-pressed={activeCrewFilter === myCrewId}
+            data-ocid="roster.crew.my_crew.toggle"
+            onClick={() =>
+              setCrewFilter((current) =>
+                current === myCrewId ? "all" : myCrewId,
+              )
+            }
+            className={cn(
+              "touch-target inline-flex items-center gap-2 self-start rounded-full border px-4 font-display text-sm font-semibold uppercase tracking-wider transition-smooth focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:self-end",
+              activeCrewFilter === myCrewId
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-muted-foreground hover:bg-muted",
+            )}
+          >
+            <Users className="h-4 w-4" aria-hidden="true" />
+            {myCrewLabel}
+          </button>
+        )}
       </div>
 
       <div

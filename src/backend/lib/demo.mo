@@ -114,18 +114,31 @@ module {
     { fullName = "Xavier Lewis"; preferredName = ?"X"; age = 21; positionName = "Silverware roller"; file = "021793885794884f99996bc9b27db5cda0ac6dd5ae68eda601df6_0_1793885805985_3c1fafd5.webp"; birthday = "11-29" },
   ];
 
-  /// The four demo leaders: full name, title and photo file.
+  /// A demo leader: full name, title, photo file, the role they hold, the
+  /// trainer stations they cover (empty for non-trainers) and their home store
+  /// number (null for the Market Partner and the store managers, who default to
+  /// the store's own number).
   type Leader = {
     fullName : Text;
     title : Text;
     file : Text;
+    role : Common.Role;
+    stations : [Common.PositionId];
+    homeStoreNumber : ?Text;
   };
 
+  /// The demo leaders: Renee Hollier (Market Partner), the 6 store managers who
+  /// each own a crew, and the 2 NSO Trainers. Terrence Wallace is gone.
   let leaders : [Leader] = [
-    { fullName = "Renee Hollier"; title = "Market Partner"; file = "02179388579587334cb6184a92ddd9ae87302c189a666e5ca5bb3_0_1793885811668_24a7bc22.webp" },
-    { fullName = "Terrence Wallace"; title = "Store Manager"; file = "0217938857989876362ddeee9049477b0b29b68d55a9ae9d8cc4e_0_1793885808999_a0f91566.webp" },
-    { fullName = "Kristen Marcotte"; title = "NSO Trainer"; file = "02179388580002411300f35b2a874e35aceb4d35afb57b8b7ff31_0_1793885812806_9a06e679.webp" },
-    { fullName = "Ramon Delgado"; title = "NSO Trainer"; file = "021793885801253d45041e92366fce25871fcc31e231b4dedc4a1_0_1793885811703_df19bec1.webp" },
+    { fullName = "Renee Hollier"; title = "Market Partner"; file = "02179388579587334cb6184a92ddd9ae87302c189a666e5ca5bb3_0_1793885811668_24a7bc22.webp"; role = #leadership; stations = []; homeStoreNumber = null },
+    { fullName = "Todd Samples"; title = "Kitchen Manager"; file = "02179405908045496d528c8df2143421f3e331d7739c2b1600af0_0_1794059092330_27ad7ec0.webp"; role = #storeManager; stations = []; homeStoreNumber = ?"Store 975" },
+    { fullName = "Michael Ditmore"; title = "Kitchen Manager"; file = "021794059081947a56759b1655b332d491b27841bc4d041538990_0_1794059092039_9f0912c0.webp"; role = #storeManager; stations = []; homeStoreNumber = ?"Store 975" },
+    { fullName = "Spencer Stawecki"; title = "Kitchen Manager"; file = "021794059082850e8a97f786c365ea5f8ca348976dbfcd2f8490d_0_1794059093942_00376dd7.webp"; role = #storeManager; stations = []; homeStoreNumber = ?"Store 975" },
+    { fullName = "Cassy Smith"; title = "Service Manager"; file = "0217940590834328b571bdff213a087fe7b071b496c8689c211eb_0_1794059094040_fd3a76a5.webp"; role = #storeManager; stations = []; homeStoreNumber = ?"Store 975" },
+    { fullName = "Alivia Abercrombie"; title = "Service Manager"; file = "0217940590859086438f8a7da3edc67692fae0fdfd3f961d8c338_0_1794059097177_d97c7fef.webp"; role = #storeManager; stations = []; homeStoreNumber = ?"Store 975" },
+    { fullName = "Tasha Matthews"; title = "Service Manager"; file = "0217940590859262b8720b6d986e81ce95e9b006de0a2cb7d8b55_0_1794059095817_cdba58b0.webp"; role = #storeManager; stations = []; homeStoreNumber = ?"Store 975" },
+    { fullName = "Kristen Marcotte"; title = "NSO Trainer"; file = "02179388580002411300f35b2a874e35aceb4d35afb57b8b7ff31_0_1793885812806_9a06e679.webp"; role = #trainer; stations = [0, 1]; homeStoreNumber = ?"Store 512" },
+    { fullName = "Ramon Delgado"; title = "NSO Trainer"; file = "021793885801253d45041e92366fce25871fcc31e231b4dedc4a1_0_1793885811703_df19bec1.webp"; role = #trainer; stations = [2, 3]; homeStoreNumber = ?"Store 733" },
   ];
 
   // --- About Me pools: varied, believable answers selected per person. ---
@@ -268,24 +281,39 @@ module {
   /// `demoTrainerStations` describe that caller's own demo role, or null/empty
   /// when demo mode is off or the caller is anonymous. `demoTrainerAs` is the
   /// demo leader the caller is viewing as, defaulting to the first demo leader
-  /// who leads a group when the caller has not chosen one.
+  /// who leads a group when the caller has not chosen one. `demoManagerAs` is
+  /// the demo manager the caller is viewing as, defaulting to the first demo
+  /// manager when the caller has not chosen one.
   func toView(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     caller : Principal,
     now : Int,
   ) : Demo.DemoStateView {
+    let on = isOn(demoState, now);
+    let role = if (on) { Auth.demoRoleFor(demoState, caller) } else { null };
+    let stations = if (on) { Auth.demoTrainerStationsFor(demoState, caller) } else { [] };
+    let trainerAs = if (on) {
+      switch (demoState.demoTrainerAs.get(caller)) {
+        case (?leader) { ?leader };
+        case null { defaultDemoTrainer(accessGrants) };
+      };
+    } else { null };
+    let managerAs = if (on) {
+      switch (demoState.demoManagerAs.get(caller)) {
+        case (?manager) { ?manager };
+        case null { defaultDemoManager(accessGrants) };
+      };
+    } else { null };
     {
-      enabled = isOn(demoState, now);
+      enabled = on;
       turnedOnAt = demoState.turnedOnAt;
       autoOffAt = demoState.autoOffAt;
       pretendDate = demoState.pretendDate;
-      demoRole = Auth.demoRoleFor(demoState, caller);
-      demoTrainerStations = Auth.demoTrainerStationsFor(demoState, caller);
-      demoTrainerAs = switch (demoState.demoTrainerAs.get(caller)) {
-        case (?chosen) { ?chosen };
-        case null { defaultDemoTrainer(accessGrants) };
-      };
+      demoRole = role;
+      demoTrainerStations = stations;
+      demoTrainerAs = trainerAs;
+      demoManagerAs = managerAs;
     };
   };
 
@@ -383,6 +411,31 @@ module {
     #ok(toView(accessGrants, demoState, caller, now));
   };
 
+  /// Set the calling principal's chosen demo manager to view as while demo mode
+  /// is on and their demo role is Store Manager or Training Manager. Any
+  /// signed-in caller may choose; the choice is stored per caller so it changes
+  /// only the choosing caller's view. The chosen principal must be a demo
+  /// manager (an approved Admin, Store Manager or Training Manager leader).
+  public func setDemoManagerAs(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    caller : Principal,
+    managerPrincipal : Principal,
+  ) : Demo.DemoActionResult {
+    if (caller.isAnonymous()) {
+      return #err("Sign in to choose a demo manager");
+    };
+    let now = Time.now();
+    if (not isOn(demoState, now)) {
+      return #err("Demo mode is off");
+    };
+    if (not demoManagers(accessGrants).contains(managerPrincipal)) {
+      return #err("Pick a demo manager");
+    };
+    demoState.demoManagerAs.add(caller, managerPrincipal);
+    #ok(toView(accessGrants, demoState, caller, now));
+  };
+
   /// Set or clear the pretend "now" used while demo mode is on. Null restores
   /// the real clock.
   public func setPretendDate(
@@ -450,11 +503,33 @@ module {
     if (leaders.size() == 0) { null } else { ?leaders[0] };
   };
 
+  /// Internal: the demo managers, ordered by principal so the default choice is
+  /// stable. A demo manager is a demo leader whose role is Admin, Store Manager
+  /// or Training Manager — the roles eligible to own a crew.
+  func demoManagers(accessGrants : Map.Map<Principal, Access.AccessGrant>) : [Principal] {
+    accessGrants.values()
+      .filter(func(g) = isDemoLeader(g) and (g.role == #admin or g.role == #storeManager or g.role == #trainingManager))
+      .map(func(g) = g.principal)
+      .toArray()
+      .sort();
+  };
+
+  /// Internal: the default demo manager for a caller who has not chosen one —
+  /// the first demo manager, or null when there is none.
+  func defaultDemoManager(accessGrants : Map.Map<Principal, Access.AccessGrant>) : ?Principal {
+    let managers = demoManagers(accessGrants);
+    if (managers.size() == 0) { null } else { ?managers[0] };
+  };
+
   /// Seed the demo data set (real Admin, demo mode only): 40 realistic roadies
   /// spread across positions with demo photo URLs and full About Me answers, a
-  /// mix of statuses, 2 minors and 2 archived; 3 crews; 4 leaders; and 3
-  /// pending kiosk sign-ups including one phone duplicate. Returns the new
-  /// counts. Idempotent: loading again does not duplicate the seed.
+  /// mix of statuses, 2 minors and 2 archived; 6 crews each owned by one of the
+  /// 6 demo managers; Renee Hollier and the two NSO Trainers; and 3 pending
+  /// kiosk sign-ups including one phone duplicate. Every non-archived roadie is
+  /// assigned to a crew: back-of-house positions round-robin across the three
+  /// kitchen-manager crews, front-of-house positions round-robin across the
+  /// three service-manager crews. Returns the new counts. Idempotent: loading
+  /// again does not duplicate the seed.
   public func loadDemoData(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -482,29 +557,39 @@ module {
 
     let openingDate = storeInfo.value.openingDate;
 
-    // --- Crews (3) ---
-    let crewNames = ["Opening Crew", "Training Crew", "Friends & Family Crew"];
-    var crewIds : [Common.CrewId] = [];
-    for (name in crewNames.values()) {
-      let id = counters.nextCrewId;
-      counters.nextCrewId := id + 1;
-      crews.add(id, { id; name; leaderPrincipal = null; isDemo = true });
-      crewIds := crewIds.concat([id]);
-    };
-
-    // --- Leaders (4): Legend, Platinum, 2 Gold trainers ---
+    // --- Leaders (9): Renee Hollier, the 6 store managers, the 2 NSO Trainers.
     // Stored as demo access grants so they appear on the Leaders page; marked
     // by a DEMO work email so they are counted and cleared as demo data.
-    seedLeader(accessGrants, leaders[0].fullName, #leadership, leaders[0].title, [], null, null, leaders[0].file, 40);
-    seedLeader(accessGrants, leaders[1].fullName, #storeManager, leaders[1].title, [], null, null, leaders[1].file, 41);
-    seedLeader(accessGrants, leaders[2].fullName, #trainer, leaders[2].title, [0, 1], ?"Store 512", ?"Store 512", leaders[2].file, 42);
-    seedLeader(accessGrants, leaders[3].fullName, #trainer, leaders[3].title, [2, 3], ?"Store 733", ?"Store 733", leaders[3].file, 43);
+    var leaderPrincipals : [Principal] = [];
+    var li = 0;
+    while (li < leaders.size()) {
+      leaderPrincipals := leaderPrincipals.concat([seedLeader(accessGrants, leaders[li], 40 + li)]);
+      li += 1;
+    };
+
+    // --- Crews (6), one per store manager, named "<First>'s Crew" ---
+    // leaders[1..6] are the six store managers, in order.
+    var managerCrewIds : [Common.CrewId] = [];
+    var mi = 1;
+    while (mi <= 6) {
+      let manager = leaders[mi];
+      let nameParts = manager.fullName.split(#char ' ').toArray();
+      let firstName = if (nameParts.size() > 0) { nameParts[0] } else { manager.fullName };
+      managerCrewIds := managerCrewIds.concat([seedCrew(crews, counters, firstName # "'s Crew", leaderPrincipals[mi])]);
+      mi += 1;
+    };
+    // Back-of-house crews: Todd, Michael, Spencer (indices 0,1,2).
+    // Front-of-house crews: Cassy, Alivia, Tasha (indices 3,4,5).
+    let bohCrews = [managerCrewIds[0], managerCrewIds[1], managerCrewIds[2]];
+    let fohCrews = [managerCrewIds[3], managerCrewIds[4], managerCrewIds[5]];
 
     // --- Roadies (40) ---
     let positionIds = positions.keys().toArray();
     let statuses : [Roadie.RoadieStatus] = [
       #hired, #paperworkDone, #oriented, #inTraining, #certified, #active, #active, #active,
     ];
+    var bohCount = 0;
+    var fohCount = 0;
     var i = 0;
     while (i < 40) {
       let person = people[i];
@@ -515,7 +600,24 @@ module {
       let status = statuses[i % statuses.size()];
       let isMinor = i == 7 or i == 19;
       let isArchived = i == 11 or i == 29;
-      let crewId = if (i % 3 == 0) { ?crewIds[0] } else if (i % 3 == 1) { ?crewIds[1] } else { ?crewIds[2] };
+      // Every non-archived roadie is assigned to a crew: back-of-house
+      // positions round-robin across the kitchen-manager crews, front-of-house
+      // positions round-robin across the service-manager crews.
+      let isBoh = switch (positions.get(positionId)) {
+        case (?p) { p.house == #boh };
+        case null { false };
+      };
+      let crewId : ?Common.CrewId = if (isArchived) {
+        null;
+      } else if (isBoh) {
+        let c = bohCrews[bohCount % 3];
+        bohCount += 1;
+        ?c;
+      } else {
+        let c = fohCrews[fohCount % 3];
+        fohCount += 1;
+        ?c;
+      };
       roadies.add(id, {
         id;
         profile = demoProfile(person.fullName, person.preferredName, i);
@@ -620,52 +722,60 @@ module {
   /// the leader's About Me answers from the shared pools.
   func seedLeader(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
-    name : Text,
-    role : Common.Role,
-    title : Text,
-    stations : [Common.PositionId],
-    homeStoreNumber : ?Text,
-    homeStoreCity : ?Text,
-    photoFile : Text,
+    leader : Leader,
     aboutIndex : Nat,
-  ) {
-    let owner = Principal.fromText("aaaaa-aa");
+  ) : Principal {
     // A distinct synthetic principal per leader keeps them separate records.
-    let p = Principal.fromBlob(name.encodeUtf8());
-    accessGrants.add(p, {
-      principal = p;
-      role;
+    let principal = Principal.fromBlob(leader.fullName.encodeUtf8());
+    let profile : Access.StaffProfile = {
+      fullName = leader.fullName;
+      requestedRole = leader.role;
+      title = leader.title;
+      homeStoreNumber = leader.homeStoreNumber ?? "Store 512";
+      homeStoreCity = "Lake Charles";
+      preferredName = null;
+      workPhone = null;
+      workEmail = ?demoLeaderMarker;
+      photo = null;
+      demoPhotoUrl = ?(demoPhotoBase # leader.file);
+      trainerPositionIds = leader.stations;
+      arrivalDate = null;
+      departureDate = null;
+      hometown = ?pick(hometowns, aboutIndex, 1);
+      hobbies = ?pick(hobbies, aboutIndex, 5);
+      favoriteTeam = ?pick(teams, aboutIndex, 7);
+      favoriteSnack = ?pick(snacks, aboutIndex, 11);
+      favoriteDrink = ?pick(drinks, aboutIndex, 13);
+      favoriteColor = ?pick(colors, aboutIndex, 17);
+      funFact = ?pick(funFacts, aboutIndex, 19);
+      goalHere = ?pick(goals, aboutIndex, 23);
+      shirtSize = ?"L";
+      hatSize = ?"M";
+    };
+    accessGrants.add(principal, {
+      principal;
+      role = leader.role;
       approvedAt = Time.now();
-      approvedBy = owner;
+      approvedBy = systemActor();
       accessEndsAt = null;
-      trainerPositionIds = stations;
+      trainerPositionIds = leader.stations;
       linkedRoadieId = null;
-      staffProfile = ?{
-        fullName = name;
-        requestedRole = role;
-        title;
-        homeStoreNumber = homeStoreNumber ?? "Store 512";
-        homeStoreCity = homeStoreCity ?? "Lake Charles";
-        preferredName = null;
-        workPhone = null;
-        workEmail = ?demoLeaderMarker;
-        photo = null;
-        demoPhotoUrl = ?(demoPhotoBase # photoFile);
-        trainerPositionIds = stations;
-        arrivalDate = null;
-        departureDate = null;
-        hometown = ?pick(hometowns, aboutIndex, 1);
-        hobbies = ?pick(hobbies, aboutIndex, 5);
-        favoriteTeam = ?pick(teams, aboutIndex, 7);
-        favoriteSnack = ?pick(snacks, aboutIndex, 11);
-        favoriteDrink = ?pick(drinks, aboutIndex, 13);
-        favoriteColor = ?pick(colors, aboutIndex, 17);
-        funFact = ?pick(funFacts, aboutIndex, 19);
-        goalHere = ?pick(goals, aboutIndex, 23);
-        shirtSize = ?"L";
-        hatSize = ?"M";
-      };
+      staffProfile = ?profile;
     });
+    principal;
+  };
+
+  /// Internal: seed one demo crew owned by `leaderPrincipal`, returning its id.
+  func seedCrew(
+    crews : Map.Map<Common.CrewId, Roadie.Crew>,
+    counters : Counters,
+    name : Text,
+    leaderPrincipal : Principal,
+  ) : Common.CrewId {
+    let id = counters.nextCrewId;
+    counters.nextCrewId := id + 1;
+    crews.add(id, { id; name; leaderPrincipal = ?leaderPrincipal; isDemo = true });
+    id;
   };
 
   /// Internal: a full About Me profile for demo person `i`.

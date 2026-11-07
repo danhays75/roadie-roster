@@ -153,6 +153,13 @@ export interface Crew {
     leaderPrincipal?: Principal;
 }
 export type CrewId = bigint;
+export interface CrewSummary {
+    id: CrewId;
+    name: string;
+    roadieCount: bigint;
+    isDemo: boolean;
+    leaderPrincipal?: Principal;
+}
 export interface DashboardView {
     boh: Array<Position>;
     foh: Array<Position>;
@@ -189,6 +196,7 @@ export interface DemoStateView {
     demoTrainerAs?: Principal;
     enabled: boolean;
     demoTrainerStations: Array<PositionId>;
+    demoManagerAs?: Principal;
 }
 export interface DuplicateMatch {
     matchedOn: string;
@@ -364,6 +372,24 @@ export type LeaderTalkId = bigint;
 export interface MyAccessView {
     demoRole?: DemoRole;
     grant?: AccessGrant;
+}
+export interface MyCrewRoadieRow {
+    demoPhotoUrl?: string;
+    roadieId: RoadieId;
+    paperworkOverdue: boolean;
+    name: string;
+    positionName: string;
+    positionId: PositionId;
+    rosterState: RosterState;
+    paperworkDone: bigint;
+    paperworkTotal: bigint;
+    absentToday: boolean;
+    photo?: PhotoRef;
+}
+export interface MyCrewView {
+    roadies: Array<MyCrewRoadieRow>;
+    crewId: CrewId;
+    crewName: string;
 }
 export interface MyGroupView {
     roadies: Array<ShiftBoardRoadie>;
@@ -715,6 +741,7 @@ export interface TodayView {
     shiftSummaries: Array<ShiftCheckInSummary>;
     myGroup?: MyGroupView;
     role: Role;
+    myCrew?: MyCrewView;
     absentAlerts: Array<AbsentAlertView>;
 }
 export interface TrainerNote {
@@ -991,9 +1018,11 @@ export interface backendInterface {
      */
     copyShiftBoard(eventId: EventId, shift: Shift, fromEventId: EventId, fromShift: Shift): Promise<void>;
     /**
-     * / Create a crew (Admin/Store Manager only).
+     * / Create a crew owned by `leaderPrincipal` (Admin/Store Manager only). The
+     * / owner is required and must be an approved Admin, Store Manager or Training
+     * / Manager leader; a manager may own only one crew.
      */
-    createCrew(name: string): Promise<CrewId>;
+    createCrew(name: string, leaderPrincipal: Principal): Promise<CrewId>;
     /**
      * / Create a leader talk (Admin/Store Manager only).
      */
@@ -1090,6 +1119,11 @@ export interface backendInterface {
      * / approved the caller, so the frontend keeps showing the waiting screen.
      */
     getMyAccess(): Promise<MyAccessView>;
+    /**
+     * / The caller's own crew for the Today screen: the crew they own and one row
+     * / per roadie assigned to it. Null when the caller owns no crew.
+     */
+    getMyCrew(): Promise<MyCrewView | null>;
     /**
      * / The caller's own group for the current or next shift, for the Today
      * / screen. Null when the caller trains no group on that shift.
@@ -1200,6 +1234,11 @@ export interface backendInterface {
      * / List change-log entries visible to the caller.
      */
     listChangeLog(): Promise<Array<ChangeLogEntry>>;
+    /**
+     * / List crews with their member counts (pending + active, archived excluded),
+     * / for the kiosk approval Crew dropdown.
+     */
+    listCrewSummaries(): Promise<Array<CrewSummary>>;
     /**
      * / List crews.
      */
@@ -1347,6 +1386,12 @@ export interface backendInterface {
     saveUniformCheckoff(roadieId: RoadieId, uniformItems: Array<string>, uniformCounts: Array<[bigint, bigint]>): Promise<void>;
     schema(): Promise<string>;
     /**
+     * / Choose which demo manager a demo Store Manager or Training Manager views
+     * / as, so "My crew" and the Roster "My crew" chip match the chosen manager's
+     * / crew. Stored per caller while demo mode is on; ignored outside demo mode.
+     */
+    setDemoManagerAs(managerPrincipal: Principal): Promise<DemoActionResult>;
+    /**
      * / Turn demo mode on or off (Admin only). Turning it on requires the literal
      * / confirmation "DEMO"; turning it on sets the eight-hour auto-off time.
      * / Every on/off is written to the change log.
@@ -1409,7 +1454,7 @@ export interface backendInterface {
      */
     updateContactSet(id: RoadieId, contactSet: ContactSet): Promise<void>;
     /**
-     * / Rename a crew and/or change its leader (Admin/Store Manager only).
+     * / Rename a crew and/or change its owner (Admin/Store Manager only).
      */
     updateCrew(id: CrewId, name: string, leaderPrincipal: Principal | null): Promise<void>;
     /**

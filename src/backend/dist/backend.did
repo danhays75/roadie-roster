@@ -125,6 +125,7 @@ type TodayView =
  record {
    absentAlerts: vec AbsentAlertView;
    checkIn: opt CheckInBoardView;
+   myCrew: opt MyCrewView;
    myGroup: opt MyGroupView;
    nextEvent: opt NextEventView;
    role: Role;
@@ -537,6 +538,26 @@ type MyGroupView =
    shift: Shift;
    shiftLabel: text;
  };
+type MyCrewView = 
+ record {
+   crewId: CrewId;
+   crewName: text;
+   roadies: vec MyCrewRoadieRow;
+ };
+type MyCrewRoadieRow = 
+ record {
+   absentToday: bool;
+   demoPhotoUrl: opt text;
+   name: text;
+   paperworkDone: nat;
+   paperworkOverdue: bool;
+   paperworkTotal: nat;
+   photo: opt PhotoRef;
+   positionId: PositionId;
+   positionName: text;
+   roadieId: RoadieId;
+   rosterState: RosterState;
+ };
 type MyAccessView = 
  record {
    demoRole: opt DemoRole;
@@ -725,6 +746,7 @@ type DuplicateMatch =
 type DemoStateView = 
  record {
    autoOffAt: opt Timestamp;
+   demoManagerAs: opt principal;
    demoRole: opt DemoRole;
    demoTrainerAs: opt principal;
    demoTrainerStations: vec PositionId;
@@ -774,6 +796,14 @@ type DashboardView =
    pending: nat;
    showedAtOrientation: opt nat;
    stillNeeded: nat;
+ };
+type CrewSummary = 
+ record {
+   id: CrewId;
+   isDemo: bool;
+   leaderPrincipal: opt principal;
+   name: text;
+   roadieCount: nat;
  };
 type CrewId = nat;
 type Crew = 
@@ -1004,8 +1034,10 @@ service : {
   /// replacing the current board (Admin, Store Manager or Training Manager).
   copyShiftBoard: (eventId: EventId, shift: Shift, fromEventId: EventId,
    fromShift: Shift) -> ();
-  /// Create a crew (Admin/Store Manager only).
-  createCrew: (name: text) -> (CrewId);
+  /// Create a crew owned by `leaderPrincipal` (Admin/Store Manager only). The
+  /// owner is required and must be an approved Admin, Store Manager or Training
+  /// Manager leader; a manager may own only one crew.
+  createCrew: (name: text, leaderPrincipal: principal) -> (CrewId);
   /// Create a leader talk (Admin/Store Manager only).
   createLeaderTalk: (talk: LeaderTalk) -> (LeaderTalkId);
   /// Create a position (Admin only).
@@ -1063,6 +1095,9 @@ service : {
   /// on, or null when demo mode is off. Returns null grant until an Admin has
   /// approved the caller, so the frontend keeps showing the waiting screen.
   getMyAccess: () -> (MyAccessView) query;
+  /// The caller's own crew for the Today screen: the crew they own and one row
+  /// per roadie assigned to it. Null when the caller owns no crew.
+  getMyCrew: () -> (opt MyCrewView) query;
   /// The caller's own group for the current or next shift, for the Today
   /// screen. Null when the caller trains no group on that shift.
   getMyGroup: () -> (opt MyGroupView) query;
@@ -1128,6 +1163,9 @@ service : {
   listAttendanceForEvent: (eventId: EventId) -> (vec AttendanceRecord) query;
   /// List change-log entries visible to the caller.
   listChangeLog: () -> (vec ChangeLogEntry) query;
+  /// List crews with their member counts (pending + active, archived excluded),
+  /// for the kiosk approval Crew dropdown.
+  listCrewSummaries: () -> (vec CrewSummary) query;
   /// List crews.
   listCrews: () -> (vec Crew) query;
   /// List the caller's undismissed group-change notices, newest first.
@@ -1221,6 +1259,10 @@ service : {
                         nat;
                       }) -> ();
   schema: () -> (text) query;
+  /// Choose which demo manager a demo Store Manager or Training Manager views
+  /// as, so "My crew" and the Roster "My crew" chip match the chosen manager's
+  /// crew. Stored per caller while demo mode is on; ignored outside demo mode.
+  setDemoManagerAs: (managerPrincipal: principal) -> (DemoActionResult);
   /// Turn demo mode on or off (Admin only). Turning it on requires the literal
   /// confirmation "DEMO"; turning it on sets the eight-hour auto-off time.
   /// Every on/off is written to the change log.
@@ -1260,7 +1302,7 @@ service : {
   updateChecklists: (value: Checklists) -> ();
   /// Update a roadie's contact set (Admin/Store Manager only).
   updateContactSet: (id: RoadieId, contactSet: ContactSet) -> ();
-  /// Rename a crew and/or change its leader (Admin/Store Manager only).
+  /// Rename a crew and/or change its owner (Admin/Store Manager only).
   updateCrew: (id: CrewId, name: text, leaderPrincipal: opt principal) -> ();
   /// Update the signed-in caller's own staff profile on their access grant.
   updateMyStaffProfile: (profile: StaffProfile) -> ();

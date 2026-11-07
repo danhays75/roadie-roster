@@ -22,6 +22,7 @@ import {
   useDemoState,
   useLeaders,
   usePositions,
+  useSetDemoManagerAs,
   useSetDemoTrainerAs,
 } from "@/hooks/useQueries";
 import {
@@ -64,6 +65,12 @@ const CHOOSE_ROLE_LABEL: Record<"en" | "es", string> = {
 const TRAINER_LABEL: Record<"en" | "es", string> = {
   en: "Trainer:",
   es: "Entrenador:",
+};
+
+/** Label for the demo Store/Training Manager's "Manager:" picker. */
+const MANAGER_LABEL: Record<"en" | "es", string> = {
+  en: "Manager:",
+  es: "Gerente:",
 };
 
 /**
@@ -149,6 +156,90 @@ function TrainerPicker() {
 }
 
 /**
+ * The "Manager:" picker: for a demo Store Manager or Training Manager, choose
+ * which demo manager the caller views as, so crew ownership matching uses that
+ * manager. The choice is stored per caller and defaults to the first demo
+ * manager. Renders nothing when no demo manager exists.
+ */
+function ManagerPicker() {
+  const { locale } = useI18n();
+  const { data: demoState } = useDemoState();
+  const { data: leaders } = useLeaders();
+  const setManagerAs = useSetDemoManagerAs();
+  const label = MANAGER_LABEL[locale === "es" ? "es" : "en"];
+
+  // The demo managers: the roles eligible to own a crew (Admin, Store Manager
+  // or Training Manager). While demo mode is on, `listLeaders` returns only
+  // demo leaders.
+  const managers = useMemo(
+    () =>
+      (leaders ?? [])
+        .filter(
+          (leader) =>
+            leader.role === Role.admin ||
+            leader.role === Role.storeManager ||
+            leader.role === Role.trainingManager,
+        )
+        .sort((a, b) =>
+          staffDisplayName(a.staffProfile).localeCompare(
+            staffDisplayName(b.staffProfile),
+          ),
+        ),
+    [leaders],
+  );
+
+  const firstManager = managers[0];
+  const stored = demoState?.demoManagerAs ?? null;
+  const selected = stored ?? firstManager?.principal ?? null;
+  const defaulted = useRef(false);
+
+  // Default to the first demo manager when the caller has not chosen one, so
+  // the stored choice matches what the picker shows. Fires at most once per
+  // mount, so a re-render never re-sends the default.
+  useEffect(() => {
+    if (defaulted.current || stored || !firstManager) return;
+    defaulted.current = true;
+    setManagerAs.mutate(firstManager.principal);
+  }, [stored, firstManager, setManagerAs]);
+
+  if (managers.length === 0) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="demo-manager-select">{label}</Label>
+      <Select
+        value={selected?.toString()}
+        onValueChange={(value) => {
+          const manager = managers.find(
+            (candidate) => candidate.principal.toString() === value,
+          );
+          if (manager) setManagerAs.mutate(manager.principal);
+        }}
+      >
+        <SelectTrigger
+          id="demo-manager-select"
+          data-ocid="demo.view_as.manager_select"
+          className="touch-target w-full"
+        >
+          <SelectValue placeholder={label} />
+        </SelectTrigger>
+        <SelectContent>
+          {managers.map((manager) => (
+            <SelectItem
+              key={manager.principal.toString()}
+              value={manager.principal.toString()}
+              data-ocid={`demo.view_as.manager_option.${manager.principal.toString()}`}
+            >
+              {staffDisplayName(manager.staffProfile)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+/**
  * The "View as" picker: choose the caller's own impersonated demo role, and for
  * a demo NSO Trainer the stations that role may see. Any signed-in caller may
  * choose a demo role while demo mode is on; the choice is per-caller.
@@ -168,6 +259,9 @@ function ViewAsPicker() {
   }, [open, demo.demoTrainerStations]);
 
   const isTrainer = demo.demoRole === DemoRole.trainer;
+  const isManager =
+    demo.demoRole === DemoRole.storeManager ||
+    demo.demoRole === DemoRole.trainingManager;
 
   const toggleStation = (id: bigint, checked: boolean) => {
     setStations((current) =>
@@ -227,6 +321,8 @@ function ViewAsPicker() {
             </SelectContent>
           </Select>
         </div>
+
+        {isManager && <ManagerPicker />}
 
         {isTrainer && (
           <div className="space-y-2">

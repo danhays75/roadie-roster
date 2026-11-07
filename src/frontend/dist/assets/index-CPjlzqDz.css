@@ -2633,6 +2633,9 @@ video {
 .pt-0 {
   padding-top: 0px;
 }
+.pt-0\.5 {
+  padding-top: 0.125rem;
+}
 .pt-1 {
   padding-top: 0.25rem;
 }
@@ -4635,6 +4638,10 @@ video {
 
   .sm\:gap-6 {
     gap: 1.5rem;
+  }
+
+  .sm\:self-end {
+    align-self: flex-end;
   }
 
   .sm\:p-4 {

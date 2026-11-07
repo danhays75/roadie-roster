@@ -78,24 +78,28 @@ describe("backend demo seed structure survives the content change", () => {
     await admin.setDemoMode(false, "");
   });
 
-  it("seeds 3 crews and 4 leaders across the Legend, Platinum and Gold tiers", async () => {
+  it("seeds 6 manager-owned crews and 9 leaders across the Legend, Platinum and Gold tiers", async () => {
     await admin.setDemoMode(true, "DEMO");
     await admin.loadDemoData();
 
     const crews = await admin.listCrews();
-    expect(crews).toHaveLength(3);
+    // The accepted change replaces the 3 old crews with 6 manager-owned crews.
+    expect(crews).toHaveLength(6);
     expect(crews.every((c) => c.isDemo)).toBe(true);
+    // Every seeded crew has an owner.
+    expect(crews.every((c) => c.leaderPrincipal.length === 1)).toBe(true);
 
     const leaders = await admin.listLeaders();
-    expect(leaders).toHaveLength(4);
-    // One Legend (leadership), one Platinum (store manager) and two Gold
+    // Renee Hollier, the 6 store managers and the 2 NSO Trainers.
+    expect(leaders).toHaveLength(9);
+    // One Legend (leadership), six Platinum (store managers) and two Gold
     // trainers — the tier mix the Leaders page groups by.
     expect(
       leaders.filter((l) => "leadership" in l.role),
     ).toHaveLength(1);
     expect(
       leaders.filter((l) => "storeManager" in l.role),
-    ).toHaveLength(1);
+    ).toHaveLength(6);
     expect(leaders.filter((l) => "trainer" in l.role)).toHaveLength(2);
 
     await admin.setDemoMode(false, "");

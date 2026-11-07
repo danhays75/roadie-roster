@@ -1,14 +1,16 @@
 import type {
   GroupChangeNotice,
+  MyCrewRoadieRow,
   MyGroupView,
   NextEventView,
   Roadie,
   ShiftBoardRoadie,
   ShiftCheckInSummary,
 } from "@/backend";
-import { Role } from "@/backend";
+import { Role, RosterState } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
+import { StatusBadge } from "@/components/StatusBadge";
 import { AbsentAlertsList } from "@/components/alerts/AbsentAlertsList";
 import { CheckInBoard } from "@/components/checkin/CheckInBoard";
 import { useDashboardCopy } from "@/components/dashboard/copy";
@@ -27,6 +29,7 @@ import {
 import {
   useDismissGroupChangeNotice,
   useGroupChangeNotices,
+  useMyCrew,
   useMyGroup,
   useRoadies,
   useToday,
@@ -179,6 +182,207 @@ function GroupRoadieCard({
         </span>
       </button>
     </li>
+  );
+}
+
+/**
+ * One roadie in the caller's crew: photo, name, position, Pending/Active
+ * status and paperwork "x of y", with a red "Absent today" tag when the roadie
+ * is absent today and a red "Paperwork overdue" tag when their paperwork is
+ * incomplete after the due date. Tapping the row opens the shared card pop-up.
+ * No contact information is shown here.
+ */
+function MyCrewRow({
+  row,
+  index,
+  onOpen,
+}: {
+  row: MyCrewRoadieRow;
+  index: number;
+  onOpen: () => void;
+}) {
+  const { t } = useDashboardCopy();
+  const isPending = row.rosterState === RosterState.pending;
+
+  return (
+    <li data-ocid={`today.myCrew.item.${index}`}>
+      <button
+        type="button"
+        data-ocid={`today.myCrew.item.${index}.link`}
+        onClick={onOpen}
+        aria-label={`Open ${row.name}'s card`}
+        className="group flex min-h-[44px] w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left shadow-subtle transition-smooth hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        <RoadiePhoto
+          id={row.roadieId}
+          name={row.name}
+          demoPhotoUrl={row.demoPhotoUrl}
+          className="h-12 w-12 shrink-0"
+          iconClassName="h-6 w-6"
+          ocid={`today.myCrew.item.${index}.photo`}
+          fallback={
+            <span
+              className="flex h-full w-full items-center justify-center font-display text-base font-bold uppercase tracking-wide text-[#14284B]"
+              aria-hidden="true"
+            >
+              {row.name.slice(0, 2).toUpperCase()}
+            </span>
+          }
+        />
+
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span
+            data-ocid={`today.myCrew.item.${index}.name`}
+            className="truncate font-display text-sm font-semibold uppercase tracking-wide text-foreground"
+          >
+            {row.name}
+          </span>
+          <span
+            data-ocid={`today.myCrew.item.${index}.position`}
+            className="truncate text-xs text-muted-foreground"
+          >
+            {row.positionName}
+          </span>
+          <span className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            <StatusBadge
+              tone={isPending ? "pending" : "hired"}
+              ocid={`today.myCrew.item.${index}.status`}
+            >
+              {isPending
+                ? t("roster.filter.pending")
+                : t("roster.filter.active")}
+            </StatusBadge>
+            <span
+              data-ocid={`today.myCrew.item.${index}.paperwork`}
+              className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground"
+            >
+              {`${Number(row.paperworkDone)} of ${Number(row.paperworkTotal)}`}
+            </span>
+            {row.absentToday && (
+              <StatusBadge
+                tone="danger"
+                ocid={`today.myCrew.item.${index}.absent`}
+              >
+                Absent today
+              </StatusBadge>
+            )}
+            {row.paperworkOverdue && (
+              <StatusBadge
+                tone="danger"
+                ocid={`today.myCrew.item.${index}.overdue`}
+              >
+                Paperwork overdue
+              </StatusBadge>
+            )}
+          </span>
+        </span>
+
+        <ChevronRight
+          className="h-4 w-4 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+      </button>
+    </li>
+  );
+}
+
+/**
+ * The caller's own crew: the "My crew · N roadies" heading and one row per
+ * roadie with their photo, name, position, Pending/Active status and paperwork
+ * "x of y", plus a red "Absent today" tag when absent and a red "Paperwork
+ * overdue" tag when overdue. Tapping a row opens the shared card pop-up. The
+ * section renders nothing when the caller owns no crew, so it is safe to mount
+ * for any role.
+ */
+function MyCrewSection() {
+  const { data: crew, isLoading, isError, refetch } = useMyCrew();
+  const { data: allRoadies } = useRoadies();
+  const [cardIndex, setCardIndex] = useState<number | null>(null);
+
+  const roadieById = useMemo(() => {
+    const map = new Map<string, Roadie>();
+    for (const roadie of allRoadies ?? []) {
+      map.set(roadie.id.toString(), roadie);
+    }
+    return map;
+  }, [allRoadies]);
+
+  const crewRoadies = crew?.roadies ?? [];
+
+  // The card pop-up needs full Roadie records; a crew row whose roadie is not
+  // in the roster read is skipped, so the modal never opens on a missing entry.
+  const entries: CardEntry[] = useMemo(() => {
+    const list: CardEntry[] = [];
+    for (const row of crewRoadies) {
+      const roadie = roadieById.get(row.roadieId.toString());
+      if (roadie) list.push({ key: roadie.id.toString(), roadie });
+    }
+    return list;
+  }, [crewRoadies, roadieById]);
+
+  const entryIndexById = useMemo(() => {
+    const map = new Map<string, number>();
+    entries.forEach((entry, index) => map.set(entry.key, index));
+    return map;
+  }, [entries]);
+
+  if (!isLoading && !isError && !crew) return null;
+
+  return (
+    <section className="space-y-4" data-ocid="today.myCrew.section">
+      <h2 className="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+        {`My crew · ${crewRoadies.length} roadies`}
+      </h2>
+
+      {isLoading && (
+        <LoadingState
+          label="Loading your crew…"
+          ocid="today.myCrew.loading_state"
+        />
+      )}
+
+      {isError && (
+        <ErrorState
+          message="We couldn't load your crew."
+          onRetry={() => void refetch()}
+          ocid="today.myCrew.error_state"
+        />
+      )}
+
+      {!isLoading && !isError && crewRoadies.length === 0 && (
+        <EmptyState
+          title="No roadies in your crew yet."
+          ocid="today.myCrew.empty_state"
+        />
+      )}
+
+      {!isLoading && !isError && crewRoadies.length > 0 && (
+        <ul className="space-y-3" data-ocid="today.myCrew.list">
+          {crewRoadies.map((row, index) => (
+            <MyCrewRow
+              key={row.roadieId.toString()}
+              row={row}
+              index={index}
+              onOpen={() =>
+                setCardIndex(
+                  entryIndexById.get(row.roadieId.toString()) ?? null,
+                )
+              }
+            />
+          ))}
+        </ul>
+      )}
+
+      <RoadieCardModal
+        entries={entries}
+        index={cardIndex ?? 0}
+        open={cardIndex !== null}
+        onOpenChange={(next) => {
+          if (!next) setCardIndex(null);
+        }}
+        onIndexChange={setCardIndex}
+      />
+    </section>
   );
 }
 
@@ -501,9 +705,10 @@ function ShiftAttendanceRow({
 }
 
 /**
- * The manager-facing Today content: the absent alerts list first, then today's
- * shifts with an "x / y checked in" count per shift, each tappable to open that
- * shift's check-in board on the Groups page.
+ * The manager-facing Today content: the caller's own crew (when they own one)
+ * first, then the absent alerts list, then today's shifts with an "x / y
+ * checked in" count per shift, each tappable to open that shift's check-in
+ * board on the Groups page.
  */
 function ManagerToday({ role }: { role: Role | undefined }) {
   const { t } = useDashboardCopy();
@@ -512,6 +717,8 @@ function ManagerToday({ role }: { role: Role | undefined }) {
 
   return (
     <>
+      <MyCrewSection />
+
       <AbsentAlertsList role={role} />
 
       <section className="space-y-4" data-ocid="today.shifts.section">

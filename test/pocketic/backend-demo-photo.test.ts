@@ -127,7 +127,8 @@ describe("backend demo photo URL contract", () => {
     await admin.loadDemoData();
 
     const leaders = await admin.listLeaders();
-    expect(leaders).toHaveLength(4);
+    // Renee Hollier, the 6 store managers and the 2 NSO Trainers.
+    expect(leaders).toHaveLength(9);
     for (const leader of leaders) {
       expect(leader.demoPhotoUrl).toHaveLength(1);
       expect(leader.demoPhotoUrl[0]).toMatch(/^https?:\/\//);

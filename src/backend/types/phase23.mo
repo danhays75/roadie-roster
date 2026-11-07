@@ -120,6 +120,36 @@ module {
     roadies : [ShiftBoardRoadie];
   };
 
+  /// One roadie row in a crew owner's "My crew" section on the Today screen:
+  /// photo, name, position, roster state, paperwork progress and the two red
+  /// tags. `paperworkDone` / `paperworkTotal` drive the "x of y" label;
+  /// `absentToday` is true when the roadie is marked absent on a shift today;
+  /// `paperworkOverdue` is true when the roadie's paperwork is incomplete after
+  /// the paperwork due date.
+  public type MyCrewRoadieRow = {
+    roadieId : Common.RoadieId;
+    name : Text;
+    photo : ?Common.PhotoRef;
+    /// Demo-only photo URL, used as the image when `photo` is absent.
+    demoPhotoUrl : ?Text;
+    positionId : Common.PositionId;
+    positionName : Text;
+    rosterState : Roadie.RosterState;
+    paperworkDone : Nat;
+    paperworkTotal : Nat;
+    absentToday : Bool;
+    paperworkOverdue : Bool;
+  };
+
+  /// A crew owner's "My crew" section on the Today screen: the crew name and
+  /// one row per roadie assigned to the crew (pending + active, archived
+  /// excluded).
+  public type MyCrewView = {
+    crewId : Common.CrewId;
+    crewName : Text;
+    roadies : [MyCrewRoadieRow];
+  };
+
   /// A trainer note about one roadie for one shift. `isDemo` marks a demo note.
   public type TrainerNote = {
     id : Nat;
@@ -380,12 +410,13 @@ module {
   };
 
   /// The Today page payload, shaped by the caller's role. `myGroup` and
-  /// `checkIn` are set for a trainer; `absentAlerts` for Admin/SM/TM;
-  /// `shiftSummaries` for Leadership/Visiting Manager; `nextEvent` when no
-  /// shift is today.
+  /// `checkIn` are set for a trainer; `myCrew` is set for a crew owner;
+  /// `absentAlerts` for Admin/SM/TM; `shiftSummaries` for
+  /// Leadership/Visiting Manager; `nextEvent` when no shift is today.
   public type TodayView = {
     role : Common.Role;
     myGroup : ?MyGroupView;
+    myCrew : ?MyCrewView;
     checkIn : ?CheckInBoardView;
     absentAlerts : [AbsentAlertView];
     shiftSummaries : [ShiftCheckInSummary];

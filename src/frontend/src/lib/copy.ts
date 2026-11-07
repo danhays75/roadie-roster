@@ -342,7 +342,7 @@ export const en: CopyDictionary = {
   "roadie.shift.pm": "PM",
 
   "approvals.title": "Approve new hires",
-  "approvals.subtitle": "Pending sign-ins waiting for a role",
+  "approvals.subtitle": "Approve new roadies and give leaders access",
   "approvals.empty": "No one is waiting for approval.",
   "approvals.loading": "Loading pending users…",
   "approvals.error": "We couldn't load pending users.",
@@ -370,7 +370,7 @@ export const en: CopyDictionary = {
   "approvals.success": "Access granted.",
   "approvals.error.generic": "We couldn't approve that user.",
 
-  "approvals.signup.section": "Pending sign-ups",
+  "approvals.signup.section": "New roadies from the kiosk",
   "approvals.signup.submittedAt": "Submitted",
   "approvals.signup.pending": "Pending",
   "approvals.signup.loading": "Loading pending sign-ups…",
@@ -391,11 +391,14 @@ export const en: CopyDictionary = {
   "approvals.signup.second.none": "No second position",
   "approvals.signup.crew.label": "Crew",
   "approvals.signup.crew.none": "No crew",
-  "approvals.signup.crew.default": "Defaults to the crew you lead.",
+  "approvals.signup.crew.default":
+    "Defaults to the crew with the fewest roadies.",
+  "approvals.signup.crew.roadies": "{count} roadies",
+  "approvals.signup.crew.roadies.one": "1 roadie",
   "approvals.signup.orientation.label": "Orientation session",
   "approvals.signup.orientation.placeholder": "Select a session",
   "approvals.signup.orientation.hint":
-    "Past sessions are hidden. Defaults to the session for the position's house.",
+    "Past sessions are hidden. Defaults to the next orientation.",
   "approvals.signup.start.label": "Start date",
   "approvals.signup.signature.label": "Manager signature",
   "approvals.signup.signature.placeholder": "Type your full name",
@@ -404,7 +407,7 @@ export const en: CopyDictionary = {
     "This applicant is a minor and the position requires a higher minimum age.",
   "approvals.signup.action.approve": "Sign and approve",
   "approvals.signup.approve.error": "We couldn't approve that sign-up.",
-  "approvals.users.section": "Pending sign-ins",
+  "approvals.users.section": "Managers & trainers waiting for access",
 
   "admin.title": "Admin",
   "admin.subtitle": "Manage access, roles and store settings",
@@ -1081,7 +1084,7 @@ export const es: CopyDictionary = {
   "roadie.shift.pm": "PM",
 
   "approvals.title": "Aprobar nuevos",
-  "approvals.subtitle": "Inicios de sesión pendientes de un rol",
+  "approvals.subtitle": "Aprueba nuevos roadies y da acceso a los líderes",
   "approvals.empty": "Nadie está esperando aprobación.",
   "approvals.loading": "Cargando usuarios pendientes…",
   "approvals.error": "No pudimos cargar los usuarios pendientes.",
@@ -1109,7 +1112,7 @@ export const es: CopyDictionary = {
   "approvals.success": "Acceso otorgado.",
   "approvals.error.generic": "No pudimos aprobar a ese usuario.",
 
-  "approvals.signup.section": "Registros pendientes",
+  "approvals.signup.section": "Nuevos roadies del quiosco",
   "approvals.signup.submittedAt": "Enviado",
   "approvals.signup.pending": "Pendiente",
   "approvals.signup.loading": "Cargando registros pendientes…",
@@ -1132,11 +1135,13 @@ export const es: CopyDictionary = {
   "approvals.signup.second.none": "Sin segundo puesto",
   "approvals.signup.crew.label": "Equipo",
   "approvals.signup.crew.none": "Sin equipo",
-  "approvals.signup.crew.default": "Por defecto, el equipo que lideras.",
+  "approvals.signup.crew.default": "Por defecto, el equipo con menos roadies.",
+  "approvals.signup.crew.roadies": "{count} roadies",
+  "approvals.signup.crew.roadies.one": "1 roadie",
   "approvals.signup.orientation.label": "Sesión de orientación",
   "approvals.signup.orientation.placeholder": "Selecciona una sesión",
   "approvals.signup.orientation.hint":
-    "Las sesiones pasadas se ocultan. Por defecto, la sesión del área del puesto.",
+    "Las sesiones pasadas se ocultan. Por defecto, la próxima orientación.",
   "approvals.signup.start.label": "Fecha de inicio",
   "approvals.signup.signature.label": "Firma del gerente",
   "approvals.signup.signature.placeholder": "Escribe tu nombre completo",
@@ -1145,7 +1150,7 @@ export const es: CopyDictionary = {
     "Este solicitante es menor y el puesto exige una edad mínima mayor.",
   "approvals.signup.action.approve": "Firmar y aprobar",
   "approvals.signup.approve.error": "No pudimos aprobar ese registro.",
-  "approvals.users.section": "Inicios de sesión pendientes",
+  "approvals.users.section": "Gerentes y entrenadores esperando acceso",
 
   "admin.title": "Administración",
   "admin.subtitle": "Gestiona accesos, roles y ajustes de la tienda",

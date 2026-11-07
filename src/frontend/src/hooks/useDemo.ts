@@ -4,11 +4,13 @@ import {
   useDemoDataSummary,
   useDemoState,
   useLoadDemoData,
+  useSetDemoManagerAs,
   useSetDemoMode,
   useSetDemoRole,
   useSetPretendDate,
 } from "@/hooks/useQueries";
 import type { DemoRoleOption, DemoState } from "@/types";
+import type { Principal } from "@icp-sdk/core/principal";
 import { useMemo } from "react";
 
 /** The demo roles offered by the banner's "View as" picker, in display order. */
@@ -56,6 +58,8 @@ export interface DemoController {
   demoRole: DemoRole | null;
   /** The stations a demo NSO Trainer may see. */
   demoTrainerStations: bigint[];
+  /** The demo manager a demo Store/Training Manager views as, or null. */
+  demoManagerAs: Principal | null;
   /** The pretend "now" (date + AM/PM), or null to use the real clock. */
   pretendDate: DemoState["pretendDate"];
   /** When demo mode was turned on, if it is on. */
@@ -66,6 +70,8 @@ export interface DemoController {
   setEnabled: (enabled: boolean, confirmation: string) => void;
   /** Choose the caller's own impersonated demo role. */
   setRole: (role: DemoRole, stations: bigint[]) => void;
+  /** Choose which demo manager a demo Store/Training Manager views as. */
+  setManagerAs: (managerPrincipal: Principal) => void;
   /** Set or clear the pretend "now". */
   setPretendDate: (pretendDate: DemoState["pretendDate"]) => void;
   /** Whether a demo action is in flight. */
@@ -85,6 +91,7 @@ export function useDemo(): DemoController {
   const { data } = useDemoState();
   const setMode = useSetDemoMode();
   const setRole = useSetDemoRole();
+  const setManager = useSetDemoManagerAs();
   const setPretend = useSetPretendDate();
 
   const state = useMemo<DemoState | null>(() => {
@@ -93,6 +100,7 @@ export function useDemo(): DemoController {
       enabled: data.enabled,
       demoRole: data.demoRole ?? null,
       demoTrainerStations: data.demoTrainerStations,
+      demoManagerAs: data.demoManagerAs ?? null,
       pretendDate: data.pretendDate ?? null,
       turnedOnAt: data.turnedOnAt ?? null,
       autoOffAt: data.autoOffAt ?? null,
@@ -103,23 +111,31 @@ export function useDemo(): DemoController {
     ? "Could not change demo mode."
     : setRole.isError
       ? "Could not change the demo role."
-      : setPretend.isError
-        ? "Could not change the pretend date."
-        : null;
+      : setManager.isError
+        ? "Could not change the demo manager."
+        : setPretend.isError
+          ? "Could not change the pretend date."
+          : null;
 
   return {
     state,
     enabled: state?.enabled ?? false,
     demoRole: state?.demoRole ?? null,
     demoTrainerStations: state?.demoTrainerStations ?? [],
+    demoManagerAs: state?.demoManagerAs ?? null,
     pretendDate: state?.pretendDate ?? null,
     turnedOnAt: state?.turnedOnAt ?? null,
     autoOffAt: state?.autoOffAt ?? null,
     setEnabled: (enabled, confirmation) =>
       setMode.mutate({ enabled, confirmation }),
     setRole: (role, stations) => setRole.mutate({ role, stations }),
+    setManagerAs: (managerPrincipal) => setManager.mutate(managerPrincipal),
     setPretendDate: (pretendDate) => setPretend.mutate(pretendDate),
-    isPending: setMode.isPending || setRole.isPending || setPretend.isPending,
+    isPending:
+      setMode.isPending ||
+      setRole.isPending ||
+      setManager.isPending ||
+      setPretend.isPending,
     error,
   };
 }

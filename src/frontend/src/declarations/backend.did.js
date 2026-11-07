@@ -370,6 +370,7 @@ export const DemoStateView = IDL.Record({
   'demoTrainerAs' : IDL.Opt(IDL.Principal),
   'enabled' : IDL.Bool,
   'demoTrainerStations' : IDL.Vec(PositionId),
+  'demoManagerAs' : IDL.Opt(IDL.Principal),
 });
 export const GiftBagFilter = IDL.Variant({
   'all' : IDL.Null,
@@ -426,6 +427,28 @@ export const MyAccessView = IDL.Record({
   'demoRole' : IDL.Opt(DemoRole),
   'grant' : IDL.Opt(AccessGrant),
 });
+export const RosterState = IDL.Variant({
+  'active' : IDL.Null,
+  'pending' : IDL.Null,
+});
+export const MyCrewRoadieRow = IDL.Record({
+  'demoPhotoUrl' : IDL.Opt(IDL.Text),
+  'roadieId' : RoadieId,
+  'paperworkOverdue' : IDL.Bool,
+  'name' : IDL.Text,
+  'positionName' : IDL.Text,
+  'positionId' : PositionId,
+  'rosterState' : RosterState,
+  'paperworkDone' : IDL.Nat,
+  'paperworkTotal' : IDL.Nat,
+  'absentToday' : IDL.Bool,
+  'photo' : IDL.Opt(PhotoRef),
+});
+export const MyCrewView = IDL.Record({
+  'roadies' : IDL.Vec(MyCrewRoadieRow),
+  'crewId' : CrewId,
+  'crewName' : IDL.Text,
+});
 export const ShiftBoardRoadie = IDL.Record({
   'markedUnavailable' : IDL.Bool,
   'demoPhotoUrl' : IDL.Opt(IDL.Text),
@@ -455,10 +478,6 @@ export const OrientationCheckoff = IDL.Record({
   'updatedAt' : Timestamp,
   'uniformItems' : IDL.Vec(IDL.Text),
   'shirtsCount' : IDL.Nat,
-});
-export const RosterState = IDL.Variant({
-  'active' : IDL.Null,
-  'pending' : IDL.Null,
 });
 export const PaperworkStatus = IDL.Variant({
   'incomplete' : IDL.Null,
@@ -642,6 +661,7 @@ export const TodayView = IDL.Record({
   'shiftSummaries' : IDL.Vec(ShiftCheckInSummary),
   'myGroup' : IDL.Opt(MyGroupView),
   'role' : Role,
+  'myCrew' : IDL.Opt(MyCrewView),
   'absentAlerts' : IDL.Vec(AbsentAlertView),
 });
 export const UniformCheckoffItem = IDL.Record({
@@ -731,6 +751,13 @@ export const ChangeLogEntry = IDL.Record({
   'detail' : IDL.Text,
   'touchesContactSet' : IDL.Bool,
   'subjectRoadieId' : IDL.Opt(RoadieId),
+});
+export const CrewSummary = IDL.Record({
+  'id' : CrewId,
+  'name' : IDL.Text,
+  'roadieCount' : IDL.Nat,
+  'isDemo' : IDL.Bool,
+  'leaderPrincipal' : IDL.Opt(IDL.Principal),
 });
 export const Crew = IDL.Record({
   'id' : CrewId,
@@ -881,7 +908,7 @@ export const idlService = IDL.Service({
   'clearDemoData' : IDL.Func([], [DemoDataSummary], []),
   'clearShiftBoard' : IDL.Func([EventId, Shift], [], []),
   'copyShiftBoard' : IDL.Func([EventId, Shift, EventId, Shift], [], []),
-  'createCrew' : IDL.Func([IDL.Text], [CrewId], []),
+  'createCrew' : IDL.Func([IDL.Text, IDL.Principal], [CrewId], []),
   'createLeaderTalk' : IDL.Func([LeaderTalk], [LeaderTalkId], []),
   'createPosition' : IDL.Func([Position], [PositionId], []),
   'createScheduleEvent' : IDL.Func([ScheduleEvent], [EventId], []),
@@ -908,6 +935,7 @@ export const idlService = IDL.Service({
   'getDemoState' : IDL.Func([], [DemoStateView], ['query']),
   'getGiftBags' : IDL.Func([GiftBagFilter], [GiftBagsData], ['query']),
   'getMyAccess' : IDL.Func([], [MyAccessView], ['query']),
+  'getMyCrew' : IDL.Func([], [IDL.Opt(MyCrewView)], ['query']),
   'getMyGroup' : IDL.Func([], [IDL.Opt(MyGroupView)], ['query']),
   'getMyPendingRequest' : IDL.Func(
       [],
@@ -961,6 +989,7 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'listChangeLog' : IDL.Func([], [IDL.Vec(ChangeLogEntry)], ['query']),
+  'listCrewSummaries' : IDL.Func([], [IDL.Vec(CrewSummary)], ['query']),
   'listCrews' : IDL.Func([], [IDL.Vec(Crew)], ['query']),
   'listGroupChangeNotices' : IDL.Func(
       [],
@@ -1023,6 +1052,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'schema' : IDL.Func([], [IDL.Text], ['query']),
+  'setDemoManagerAs' : IDL.Func([IDL.Principal], [DemoActionResult], []),
   'setDemoMode' : IDL.Func([IDL.Bool, IDL.Text], [DemoActionResult], []),
   'setDemoRole' : IDL.Func(
       [DemoRole, IDL.Vec(PositionId)],
@@ -1425,6 +1455,7 @@ export const idlFactory = ({ IDL }) => {
     'demoTrainerAs' : IDL.Opt(IDL.Principal),
     'enabled' : IDL.Bool,
     'demoTrainerStations' : IDL.Vec(PositionId),
+    'demoManagerAs' : IDL.Opt(IDL.Principal),
   });
   const GiftBagFilter = IDL.Variant({
     'all' : IDL.Null,
@@ -1481,6 +1512,28 @@ export const idlFactory = ({ IDL }) => {
     'demoRole' : IDL.Opt(DemoRole),
     'grant' : IDL.Opt(AccessGrant),
   });
+  const RosterState = IDL.Variant({
+    'active' : IDL.Null,
+    'pending' : IDL.Null,
+  });
+  const MyCrewRoadieRow = IDL.Record({
+    'demoPhotoUrl' : IDL.Opt(IDL.Text),
+    'roadieId' : RoadieId,
+    'paperworkOverdue' : IDL.Bool,
+    'name' : IDL.Text,
+    'positionName' : IDL.Text,
+    'positionId' : PositionId,
+    'rosterState' : RosterState,
+    'paperworkDone' : IDL.Nat,
+    'paperworkTotal' : IDL.Nat,
+    'absentToday' : IDL.Bool,
+    'photo' : IDL.Opt(PhotoRef),
+  });
+  const MyCrewView = IDL.Record({
+    'roadies' : IDL.Vec(MyCrewRoadieRow),
+    'crewId' : CrewId,
+    'crewName' : IDL.Text,
+  });
   const ShiftBoardRoadie = IDL.Record({
     'markedUnavailable' : IDL.Bool,
     'demoPhotoUrl' : IDL.Opt(IDL.Text),
@@ -1510,10 +1563,6 @@ export const idlFactory = ({ IDL }) => {
     'updatedAt' : Timestamp,
     'uniformItems' : IDL.Vec(IDL.Text),
     'shirtsCount' : IDL.Nat,
-  });
-  const RosterState = IDL.Variant({
-    'active' : IDL.Null,
-    'pending' : IDL.Null,
   });
   const PaperworkStatus = IDL.Variant({
     'incomplete' : IDL.Null,
@@ -1697,6 +1746,7 @@ export const idlFactory = ({ IDL }) => {
     'shiftSummaries' : IDL.Vec(ShiftCheckInSummary),
     'myGroup' : IDL.Opt(MyGroupView),
     'role' : Role,
+    'myCrew' : IDL.Opt(MyCrewView),
     'absentAlerts' : IDL.Vec(AbsentAlertView),
   });
   const UniformCheckoffItem = IDL.Record({
@@ -1783,6 +1833,13 @@ export const idlFactory = ({ IDL }) => {
     'detail' : IDL.Text,
     'touchesContactSet' : IDL.Bool,
     'subjectRoadieId' : IDL.Opt(RoadieId),
+  });
+  const CrewSummary = IDL.Record({
+    'id' : CrewId,
+    'name' : IDL.Text,
+    'roadieCount' : IDL.Nat,
+    'isDemo' : IDL.Bool,
+    'leaderPrincipal' : IDL.Opt(IDL.Principal),
   });
   const Crew = IDL.Record({
     'id' : CrewId,
@@ -1933,7 +1990,7 @@ export const idlFactory = ({ IDL }) => {
     'clearDemoData' : IDL.Func([], [DemoDataSummary], []),
     'clearShiftBoard' : IDL.Func([EventId, Shift], [], []),
     'copyShiftBoard' : IDL.Func([EventId, Shift, EventId, Shift], [], []),
-    'createCrew' : IDL.Func([IDL.Text], [CrewId], []),
+    'createCrew' : IDL.Func([IDL.Text, IDL.Principal], [CrewId], []),
     'createLeaderTalk' : IDL.Func([LeaderTalk], [LeaderTalkId], []),
     'createPosition' : IDL.Func([Position], [PositionId], []),
     'createScheduleEvent' : IDL.Func([ScheduleEvent], [EventId], []),
@@ -1964,6 +2021,7 @@ export const idlFactory = ({ IDL }) => {
     'getDemoState' : IDL.Func([], [DemoStateView], ['query']),
     'getGiftBags' : IDL.Func([GiftBagFilter], [GiftBagsData], ['query']),
     'getMyAccess' : IDL.Func([], [MyAccessView], ['query']),
+    'getMyCrew' : IDL.Func([], [IDL.Opt(MyCrewView)], ['query']),
     'getMyGroup' : IDL.Func([], [IDL.Opt(MyGroupView)], ['query']),
     'getMyPendingRequest' : IDL.Func(
         [],
@@ -2017,6 +2075,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'listChangeLog' : IDL.Func([], [IDL.Vec(ChangeLogEntry)], ['query']),
+    'listCrewSummaries' : IDL.Func([], [IDL.Vec(CrewSummary)], ['query']),
     'listCrews' : IDL.Func([], [IDL.Vec(Crew)], ['query']),
     'listGroupChangeNotices' : IDL.Func(
         [],
@@ -2087,6 +2146,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'schema' : IDL.Func([], [IDL.Text], ['query']),
+    'setDemoManagerAs' : IDL.Func([IDL.Principal], [DemoActionResult], []),
     'setDemoMode' : IDL.Func([IDL.Bool, IDL.Text], [DemoActionResult], []),
     'setDemoRole' : IDL.Func(
         [DemoRole, IDL.Vec(PositionId)],

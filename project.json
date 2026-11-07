@@ -1,17 +1,19 @@
 {
-  "overview": "Roadie Roster is a store hiring and training app for opening week, with roadie sign-ups, shift boards, check-ins and role-based dashboards.",
+  "overview": "A hiring and onboarding roster app for a restaurant store, with roadie sign-ups, approvals, crews, orientation, shift boards and printable roadie cards.",
   "features": [
-    "Trainer check-in for their own group with Present, Late and Absent",
-    "Absent alerts for managers with call, text, move, excused and archive actions",
-    "Role-based Today screen with attendance counts per shift",
-    "Today as the landing page after sign-in"
+    "Track roadie sign-ups, approvals and orientation progress",
+    "Organize roadies into manager-owned crews",
+    "See a manager's own crew on the Today screen",
+    "Filter the roster by crew",
+    "Preview the app as different roles with demo data"
   ],
-  "category": "staff-management",
+  "category": "productivity",
   "tags": [
+    "roster",
     "hiring",
-    "training",
-    "attendance",
-    "retail"
+    "onboarding",
+    "restaurant",
+    "team-management"
   ],
-  "last_updated": "2026-11-05T06:04:32.609Z"
+  "last_updated": "2026-11-07T13:50:10.681Z"
 }

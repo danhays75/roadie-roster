@@ -50,21 +50,62 @@ import {
   Pencil,
   Plus,
   Trash2,
+  UserPlus,
   Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 /**
- * Roles whose holders may lead a crew. The backend accepts any principal, but
- * the picker only offers approved leaders so a crew is never led by a roadie or
- * an unapproved account.
+ * Roles whose holders may own a crew. The backend accepts any principal, but
+ * the picker only offers approved Admin, Store Manager and Training Manager
+ * leaders, so a crew is never owned by an NSO Trainer, Visiting Manager,
+ * Leadership, a roadie or an unapproved account.
  */
 const LEADER_ROLES: Role[] = [
   Role.admin,
   Role.storeManager,
   Role.trainingManager,
-  Role.visitingManager,
 ];
+
+/**
+ * Crew-panel copy that is not yet in the shared dictionary. Kept local so the
+ * foundation-owned `lib/copy.ts` is not touched; the active locale is read from
+ * `useI18n()`.
+ */
+const CREW_COPY = {
+  en: {
+    noManager: "No manager yet",
+    pickManager: "Pick manager",
+    ownerTaken: "{name} already has a crew",
+    manager: "Manager",
+    managerNone: "No manager",
+    managerRequired: "Choose a manager before saving.",
+    managerPick: "Pick a manager",
+    photoAlt: "Manager photo",
+  },
+  es: {
+    noManager: "Aún sin gerente",
+    pickManager: "Elegir gerente",
+    ownerTaken: "{name} ya tiene un equipo",
+    manager: "Gerente",
+    managerNone: "Sin gerente",
+    managerRequired: "Elige un gerente antes de guardar.",
+    managerPick: "Elige un gerente",
+    photoAlt: "Foto del gerente",
+  },
+} as const;
+
+/** Interpolate `{name}` placeholders in a local crew copy string. */
+function fillLocal(
+  template: string,
+  vars: Record<string, string | number>,
+): string {
+  let value = template;
+  for (const [name, replacement] of Object.entries(vars)) {
+    value = value.replaceAll(`{${name}}`, String(replacement));
+  }
+  return value;
+}
 
 /** A leader's initials for the no-photo placeholder, at most two letters. */
 function initialsOf(name: string): string {
@@ -122,7 +163,7 @@ function LeaderAvatar({ leader }: { leader: LeaderSummary }) {
   );
 }
 
-/** One crew row: leader identity, member count, member tiles, and actions. */
+/** One crew row: manager identity, member count, member tiles, and actions. */
 function CrewRow({
   crew,
   leader,
@@ -132,6 +173,7 @@ function CrewRow({
   onToggle,
   onOpenMember,
   onEdit,
+  onPickManager,
   onDelete,
 }: {
   crew: Crew;
@@ -142,13 +184,15 @@ function CrewRow({
   onToggle: () => void;
   onOpenMember: (index: number) => void;
   onEdit: (crew: Crew) => void;
+  onPickManager: (crew: Crew) => void;
   onDelete: (crew: Crew) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const c = useAdminCopy();
+  const copy = CREW_COPY[locale] ?? CREW_COPY.en;
   const leaderName = leader
     ? staffDisplayName(leader.staffProfile, t("profile.unnamed"))
-    : t("admin.crews.noLeader");
+    : copy.noManager;
   const memberCount = members.length;
   const memberLabel =
     memberCount === 0
@@ -189,7 +233,19 @@ function CrewRow({
             </p>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {!leader && (
+            <Button
+              type="button"
+              variant="outline"
+              className="touch-target"
+              data-ocid="admin.crews.pick_manager_button"
+              onClick={() => onPickManager(crew)}
+            >
+              <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
+              {copy.pickManager}
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -267,8 +323,9 @@ interface CrewDraft {
 }
 
 export function CrewsPanel() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const c = useAdminCopy();
+  const copy = CREW_COPY[locale] ?? CREW_COPY.en;
   const crews = useCrews();
   const leaders = useLeaders(true);
   const roadies = useRoadies();
@@ -286,12 +343,12 @@ export function CrewsPanel() {
   );
 
   const isEditing = draft !== null && draft.id !== null;
-  // Creating a crew with a leader runs createCrew then updateCrew, so the
-  // dialog's pending and error state must cover both mutations.
+  // Creating a crew with a manager runs createCrew, so the dialog's pending and
+  // error state must cover the mutation.
   const isSaving = create.isPending || update.isPending;
   const saveFailed = create.isError || update.isError;
 
-  /** Approved leaders eligible to lead a crew, keyed by principal text. */
+  /** Approved leaders eligible to own a crew, keyed by principal text. */
   const leaderByPrincipal = useMemo(() => {
     const map = new Map<string, LeaderSummary>();
     for (const leader of leaders.data ?? []) {
@@ -302,10 +359,39 @@ export function CrewsPanel() {
     return map;
   }, [leaders.data]);
 
+  /**
+   * Principals that already own a crew, so they are not offered as an owner
+   * again. The crew currently being edited is excluded so its own manager stays
+   * selectable while renaming.
+   */
+  const ownedPrincipals = useMemo(() => {
+    const set = new Set<string>();
+    for (const crew of crews.data ?? []) {
+      if (!crew.leaderPrincipal) continue;
+      if (draft !== null && draft.id !== null && crew.id === draft.id) continue;
+      set.add(crew.leaderPrincipal.toString());
+    }
+    return set;
+  }, [crews.data, draft]);
+
   const eligibleLeaders = useMemo(
-    () => Array.from(leaderByPrincipal.values()),
-    [leaderByPrincipal],
+    () =>
+      Array.from(leaderByPrincipal.values()).filter(
+        (leader) => !ownedPrincipals.has(leader.principal.toString()),
+      ),
+    [leaderByPrincipal, ownedPrincipals],
   );
+
+  /**
+   * The manager chosen in the draft who already owns another crew, if any. The
+   * picker hides them, but a stale selection (or a race with another manager)
+   * still surfaces the "already has a crew" message and blocks the save.
+   */
+  const takenOwner = useMemo(() => {
+    if (!draft?.leaderPrincipal) return null;
+    if (!ownedPrincipals.has(draft.leaderPrincipal)) return null;
+    return leaderByPrincipal.get(draft.leaderPrincipal) ?? null;
+  }, [draft?.leaderPrincipal, ownedPrincipals, leaderByPrincipal]);
 
   /** Active roadies per crew id, in list order, for the member tiles. */
   const membersByCrew = useMemo(() => {
@@ -354,7 +440,7 @@ export function CrewsPanel() {
     });
   };
 
-  /** Selecting a leader suggests a crew name while the name is still empty. */
+  /** Selecting a manager suggests a crew name while the name is still empty. */
   const chooseLeader = (principalText: string) => {
     setDraft((current) => {
       if (!current) return current;
@@ -372,6 +458,8 @@ export function CrewsPanel() {
   const onSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!draft || !draft.name.trim()) return;
+    // A manager who already owns a crew cannot be assigned again.
+    if (takenOwner) return;
     const name = draft.name.trim();
     const leaderPrincipal: Principal | null = draft.leaderPrincipal
       ? (leaderByPrincipal.get(draft.leaderPrincipal)?.principal ?? null)
@@ -383,15 +471,10 @@ export function CrewsPanel() {
       );
       return;
     }
-    // createCrew only takes a name, so a chosen leader is persisted with a
-    // follow-up updateCrew on the id the create returns.
+    // A new crew requires an owner, so createCrew takes the manager directly.
+    if (!leaderPrincipal) return;
     void create
-      .mutateAsync(name)
-      .then((id) =>
-        leaderPrincipal
-          ? update.mutateAsync({ id, name, leaderPrincipal })
-          : undefined,
-      )
+      .mutateAsync({ name, leaderPrincipal })
       .then(() => setDraft(null))
       .catch(() => {
         // Errors surface through the mutation state below; keep the draft so
@@ -467,6 +550,7 @@ export function CrewsPanel() {
                 setCard({ crewId: crew.id.toString(), index })
               }
               onEdit={openEdit}
+              onPickManager={openEdit}
               onDelete={(target) => {
                 setDeleteError(null);
                 setDeleteTarget(target);
@@ -495,7 +579,20 @@ export function CrewsPanel() {
           </DialogHeader>
           {draft && (
             <form onSubmit={onSubmit} className="space-y-4">
-              <FormField label={t("admin.crews.leader")} htmlFor="crew-leader">
+              <FormField
+                label={copy.manager}
+                htmlFor="crew-leader"
+                error={
+                  takenOwner
+                    ? fillLocal(copy.ownerTaken, {
+                        name: staffDisplayName(
+                          takenOwner.staffProfile,
+                          t("profile.unnamed"),
+                        ),
+                      })
+                    : undefined
+                }
+              >
                 <Select
                   value={draft.leaderPrincipal || "none"}
                   onValueChange={(value) =>
@@ -507,14 +604,10 @@ export function CrewsPanel() {
                     data-ocid="admin.crews.leader.select"
                     className="touch-target"
                   >
-                    <SelectValue
-                      placeholder={t("admin.crews.leader.noneOption")}
-                    />
+                    <SelectValue placeholder={copy.managerPick} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">
-                      {t("admin.crews.leader.noneOption")}
-                    </SelectItem>
+                    <SelectItem value="none">{copy.managerNone}</SelectItem>
                     {eligibleLeaders.map((leader) => (
                       <SelectItem
                         key={leader.principal.toString()}
@@ -567,7 +660,12 @@ export function CrewsPanel() {
                   type="submit"
                   className="touch-target"
                   data-ocid="admin.crews.save_button"
-                  disabled={isSaving || !draft.name.trim()}
+                  disabled={
+                    isSaving ||
+                    !draft.name.trim() ||
+                    (!isEditing && !draft.leaderPrincipal) ||
+                    takenOwner !== null
+                  }
                 >
                   {isSaving && (
                     <Loader2

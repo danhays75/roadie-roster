@@ -37,6 +37,7 @@ import type {
   UniformCheckoffItem,
   UniformCheckoffView,
 } from "@/backend";
+import type { Principal } from "@icp-sdk/core/principal";
 
 // `CheckInState` is a generated enum (a runtime value), so it is re-exported as
 // a value rather than a type-only export.
@@ -93,6 +94,8 @@ export interface DemoState {
   demoRole: DemoRole | null;
   /** The stations a demo NSO Trainer may see. */
   demoTrainerStations: PositionId[];
+  /** The demo manager a demo Store/Training Manager views as, or null. */
+  demoManagerAs: Principal | null;
   /** The pretend "now" (date + AM/PM), or null to use the real clock. */
   pretendDate: PretendDate | null;
   /** When demo mode was turned on, if it is on. */

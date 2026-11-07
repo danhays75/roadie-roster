@@ -145,9 +145,15 @@ describe("backend Demo mode separation across counts, gift bags and exports", ()
     );
     expect(realExportNames).toContain("Real Separation");
 
-    // Seed the demo set, then turn demo mode off again.
+    // Seed the demo set, capture the demo names, then turn demo mode off again.
     await admin.setDemoMode(true, "DEMO");
     await admin.loadDemoData();
+    const demoNames = new Set(
+      (await admin.listRoadies())
+        .filter((r) => r.isDemo)
+        .map((r) => r.profile.name),
+    );
+    expect(demoNames.size).toBeGreaterThan(0);
     await admin.setDemoMode(false, "");
 
     // The demo records are invisible: on-hand still counts only the real roadie.
@@ -159,22 +165,20 @@ describe("backend Demo mode separation across counts, gift bags and exports", ()
     const offGiftBags = await admin.getGiftBags({ all: null });
     const offGiftNames = offGiftBags.labels.map((l) => l.name);
     expect(offGiftNames).toContain("Real Separation");
-    expect(offGiftNames.some((n) => n.startsWith("Demo Roadie"))).toBe(false);
+    expect(offGiftNames.some((n) => demoNames.has(n))).toBe(false);
 
     const offFull = await admin.buildFullExport();
     const offFullNames = offFull.groups.flatMap(([, rows]) =>
       rows.map((r) => r.name),
     );
     expect(offFullNames).toContain("Real Separation");
-    expect(offFullNames.some((n) => n.startsWith("Demo Roadie"))).toBe(false);
+    expect(offFullNames.some((n) => demoNames.has(n))).toBe(false);
 
     const offShareable = await admin.buildShareableExport();
     const offShareableNames = offShareable.groups.flatMap(([, rows]) =>
       rows.map((r) => r.name),
     );
-    expect(offShareableNames.some((n) => n.startsWith("Demo Roadie"))).toBe(
-      false,
-    );
+    expect(offShareableNames.some((n) => demoNames.has(n))).toBe(false);
   });
 
   it("returns only demo records from counts, gift bags and exports while on", async () => {
@@ -187,21 +191,29 @@ describe("backend Demo mode separation across counts, gift bags and exports", ()
     const onHand = summary.reduce((sum, row) => sum + row.onHand, 0n);
     expect(onHand).toBe(38n);
 
+    // The accepted change gives demo roadies realistic names, so identify them
+    // by the isDemo flag on the roadie read rather than a name prefix.
+    const demoRoadies = await admin.listRoadies();
+    const demoNames = new Set(
+      demoRoadies.filter((r) => r.isDemo).map((r) => r.profile.name),
+    );
+    expect(demoNames.size).toBeGreaterThan(0);
+
     const giftBags = await admin.getGiftBags({ all: null });
     const giftNames = giftBags.labels.map((l) => l.name);
-    expect(giftNames.some((n) => n.startsWith("Demo Roadie"))).toBe(true);
+    expect(giftNames.some((n) => demoNames.has(n))).toBe(true);
     expect(giftNames).not.toContain("Real Separation");
 
     const full = await admin.buildFullExport();
     const fullNames = full.groups.flatMap(([, rows]) => rows.map((r) => r.name));
-    expect(fullNames.some((n) => n.startsWith("Demo Roadie"))).toBe(true);
+    expect(fullNames.some((n) => demoNames.has(n))).toBe(true);
     expect(fullNames).not.toContain("Real Separation");
 
     const shareable = await admin.buildShareableExport();
     const shareableNames = shareable.groups.flatMap(([, rows]) =>
       rows.map((r) => r.name),
     );
-    expect(shareableNames.some((n) => n.startsWith("Demo Roadie"))).toBe(true);
+    expect(shareableNames.some((n) => demoNames.has(n))).toBe(true);
     expect(shareableNames).not.toContain("Real Separation");
 
     await admin.setDemoMode(false, "");

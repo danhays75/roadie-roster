@@ -1536,8 +1536,112 @@ module {
     };
   };
 
-  /// Add a trainer note (Trainer/Admin/Store Manager only). A note added while
-  /// demo mode is on is a demo note.
+  /// The caller's own crew for the Today screen: the crew they own (matched by
+  /// `Auth.actingPrincipal`, so a demo Store Manager or Training Manager sees
+  /// the chosen demo manager's crew) and one row per roadie assigned to it
+  /// (pending + active, archived excluded). Returns null when the caller owns
+  /// no crew. Each row carries the roadie's photo, name, position, roster
+  /// state, paperwork "x of y" progress and the two red tags: `absentToday`
+  /// (marked absent on a shift today) and `paperworkOverdue` (paperwork
+  /// incomplete after the paperwork due date).
+  public func getMyCrew(
+    accessGrants : Map.Map<Principal, Access.AccessGrant>,
+    demoState : Common.DemoState,
+    crews : Map.Map<Common.CrewId, Roadie.Crew>,
+    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    checklists : { var value : Store.Checklists },
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    storeInfo : Store.StoreInfo,
+    caller : Principal,
+  ) : ?Phase23.MyCrewView {
+    ignore Auth.requireReadable(accessGrants, demoState, caller);
+    let demo = Auth.demoActive(demoState);
+    // While demo mode is on and the caller impersonates a demo Store Manager or
+    // Training Manager, match the crew to the chosen demo manager instead of the
+    // caller.
+    let acting = Auth.actingPrincipal(demoState, caller);
+    let crew = crews.values().find(func(c) = c.isDemo == demo and c.leaderPrincipal == ?acting);
+    switch (crew) {
+      case null { null };
+      case (?c) {
+        let now = effectiveNow(demoState, storeInfo);
+        let dueAt = paperworkDueAt(schedule);
+        let rows = roadies.values()
+          .filter(func(r) = r.isDemo == demo and r.crewId == ?c.id and r.status != #archived)
+          .map(func(r) {
+            let applicable = applicablePaperwork(checklists.value, positions, r);
+            let checked = switch (visibleCheckoff(checkoffs, demo, r.id)) {
+              case (?co) { co.paperworkItems };
+              case null { [] };
+            };
+            let done = applicable.filter(func(item) = checked.any(func(t) = t == item.id.toText())).size();
+            let total = applicable.size();
+            let complete = done == total;
+            let positionName = switch (positions.get(r.mainPositionId)) {
+              case (?p) { p.name };
+              case null { "" };
+            };
+            {
+              roadieId = r.id;
+              name = displayName(r);
+              photo = r.photo;
+              demoPhotoUrl = r.demoPhotoUrl;
+              positionId = r.mainPositionId;
+              positionName;
+              rosterState = r.rosterState;
+              paperworkDone = done;
+              paperworkTotal = total;
+              absentToday = absentToday(checkIns, schedule, demo, r.id, now, storeInfo.timeZone);
+              paperworkOverdue = (not complete) and (switch (dueAt) {
+                case (?d) { now > d };
+                case null { false };
+              });
+            };
+          })
+          .toArray();
+        ?{ crewId = c.id; crewName = c.name; roadies = rows };
+      };
+    };
+  };
+
+  /// Internal: the paperwork due date — the earliest `#deadline` schedule event
+  /// named "Paperwork due", or null when none exists.
+  func paperworkDueAt(schedule : Map.Map<Common.EventId, Store.ScheduleEvent>) : ?Common.Timestamp {
+    var best : ?Common.Timestamp = null;
+    for (event in schedule.values()) {
+      if (event.kind == #deadline and event.name == "Paperwork due") {
+        best := switch (best) {
+          case (?b) { if (event.start < b) { ?event.start } else { ?b } };
+          case null { ?event.start };
+        };
+      };
+    };
+    best;
+  };
+
+  /// Internal: whether a roadie is marked absent on a shift whose local calendar
+  /// date is today on the effective clock.
+  func absentToday(
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    demo : Bool,
+    roadieId : Common.RoadieId,
+    now : Common.Timestamp,
+    timeZone : Common.TimeZone,
+  ) : Bool {
+    checkIns.values().any(func(c) {
+      if (c.isDemo != demo or c.roadieId != roadieId or c.state != #absent) {
+        return false;
+      };
+      switch (schedule.get(c.eventId)) {
+        case (?event) { isToday(event, now, timeZone) };
+        case null { false };
+      };
+    });
+  };
   public func addTrainerNote(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -2242,16 +2346,20 @@ module {
   };
 
   /// The Today page payload, shaped by the caller's role. A trainer gets their
-  /// group and its check-in board; Admin, Store Manager and Training Manager
-  /// get the absent alerts and today's per-shift summaries; Leadership and
-  /// Visiting Manager get the per-shift summaries. When no shift is today the
-  /// next upcoming event and its countdown are returned.
+  /// group and its check-in board; a crew owner gets their "My crew" section;
+  /// Admin, Store Manager and Training Manager get the absent alerts and
+  /// today's per-shift summaries; Leadership and Visiting Manager get the
+  /// per-shift summaries. When no shift is today the next upcoming event and
+  /// its countdown are returned.
   public func getToday(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
+    crews : Map.Map<Common.CrewId, Roadie.Crew>,
+    checklists : { var value : Store.Checklists },
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     storeInfo : Store.StoreInfo,
     checkIns : Map.Map<Text, Phase23.CheckInRecord>,
@@ -2261,48 +2369,99 @@ module {
     let role = Auth.requireReadable(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
     let now = effectiveNow(demoState, storeInfo);
-    // Today's shifts: every schedule event whose local date is today, AM then PM.
-    let todayEvents = schedule.values()
-      .filter(func(e) = isToday(e, now, storeInfo.timeZone))
-      .toArray();
-    let summaries = List.empty<Phase23.ShiftCheckInSummary>();
-    for (e in todayEvents.values()) {
-      summaries.add(shiftCheckInSummary(checkIns, demo, e, #am));
-      summaries.add(shiftCheckInSummary(checkIns, demo, e, #pm));
-    };
-    let shiftSummaries = summaries.toArray();
-    // The caller's own group and its check-in board (trainer view).
-    let myGroup = getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, schedule, storeInfo, caller);
-    let checkIn : ?Phase23.CheckInBoardView = switch (myGroup) {
+    let isTrainer = role == #trainer;
+    let isManager = role == #admin or role == #storeManager or role == #trainingManager;
+    let isReadOnly = role == #leadership or role == #visitingManager;
+
+    // A trainer gets their own group and its check-in board.
+    let myGroup = if (isTrainer) {
+      getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, schedule, storeInfo, caller);
+    } else { null };
+    let checkIn = switch (myGroup) {
       case (?g) { getCheckInBoard(accessGrants, demoState, shiftBoards, roadies, schedule, storeInfo, checkIns, caller, g.eventId, g.shift) };
       case null { null };
     };
-    // Absent alerts for Admin, Store Manager and Training Manager.
-    let alerts : [Phase23.AbsentAlertView] = if (isCheckInManager(accessGrants, demoState, caller)) {
+
+    // A crew owner gets their "My crew" section.
+    let myCrew = getMyCrew(accessGrants, demoState, crews, roadies, positions, checklists, checkoffs, schedule, checkIns, storeInfo, caller);
+
+    // Admin, Store Manager and Training Manager get the absent alerts.
+    let alerts = if (isManager) {
       listAbsentAlerts(accessGrants, demoState, absentAlerts, roadies, schedule, caller);
     } else { [] };
-    // The next upcoming event, when no shift is today.
-    let nextEvent : ?Phase23.NextEventView = if (todayEvents.size() > 0) {
-      null;
-    } else {
-      let upcoming = schedule.values()
-        .filter(func(e) = e.start >= now)
-        .toArray();
-      if (upcoming.size() == 0) {
-        null;
-      } else {
-        let sorted = upcoming.sort(func(a, b) = Int.compare(a.start, b.start));
-        let e = sorted[0];
-        ?{ eventId = e.id; name = e.name; start = e.start; startsInMs = e.start - now };
-      };
-    };
+
+    // Today's shift summaries for every role that reads them.
+    let summaries = if (isManager or isReadOnly) {
+      todayShiftSummaries(schedule, checkIns, demo, now, storeInfo.timeZone);
+    } else { [] };
+
+    // The next upcoming event when no shift is today.
+    let nextEvent = if (summaries.size() == 0) { nextEventView(schedule, now) } else { null };
+
     {
       role;
       myGroup;
+      myCrew;
       checkIn;
       absentAlerts = alerts;
-      shiftSummaries;
+      shiftSummaries = summaries;
       nextEvent;
+    };
+  };
+
+  /// Internal: the per-shift check-in summaries for every shift event whose
+  /// local calendar date is today on the effective clock. Training days
+  /// contribute AM and PM; Friends & Family nights contribute PM only.
+  func todayShiftSummaries(
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    demo : Bool,
+    now : Common.Timestamp,
+    timeZone : Common.TimeZone,
+  ) : [Phase23.ShiftCheckInSummary] {
+    let summaries = List.empty<Phase23.ShiftCheckInSummary>();
+    for (event in schedule.values()) {
+      if (isToday(event, now, timeZone)) {
+        switch (event.kind) {
+          case (#trainingDay) {
+            summaries.add(shiftCheckInSummary(checkIns, demo, event, #am));
+            summaries.add(shiftCheckInSummary(checkIns, demo, event, #pm));
+          };
+          case (#friendsAndFamily) {
+            summaries.add(shiftCheckInSummary(checkIns, demo, event, #pm));
+          };
+          case (_) {};
+        };
+      };
+    };
+    summaries.toArray();
+  };
+
+  /// Internal: the next upcoming schedule event and its countdown, or null when
+  /// no future event exists.
+  func nextEventView(
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    now : Common.Timestamp,
+  ) : ?Phase23.NextEventView {
+    var best : ?Store.ScheduleEvent = null;
+    for (event in schedule.values()) {
+      if (event.start >= now) {
+        best := switch (best) {
+          case (?b) { if (event.start < b.start) { ?event } else { ?b } };
+          case null { ?event };
+        };
+      };
+    };
+    switch (best) {
+      case (?e) {
+        ?{
+          eventId = e.id;
+          name = e.name;
+          start = e.start;
+          startsInMs = (e.start - now) / 1_000_000;
+        };
+      };
+      case null { null };
     };
   };
 
