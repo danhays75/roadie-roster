@@ -7,7 +7,7 @@ import type {
   ShiftBoardRoadie,
   ShiftCheckInSummary,
 } from "@/backend";
-import { Role, RosterState } from "@/backend";
+import { Role } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -34,7 +34,7 @@ import {
   useRoadies,
   useToday,
 } from "@/hooks/useQueries";
-import { formatTimestamp } from "@/lib/format";
+import { formatTimestamp, roadieStageLabel } from "@/lib/format";
 import { Link } from "@tanstack/react-router";
 import {
   BellRing,
@@ -202,8 +202,6 @@ function MyCrewRow({
   onOpen: () => void;
 }) {
   const { t } = useDashboardCopy();
-  const isPending = row.rosterState === RosterState.pending;
-
   return (
     <li data-ocid={`today.myCrew.item.${index}`}>
       <button
@@ -245,12 +243,10 @@ function MyCrewRow({
           </span>
           <span className="flex flex-wrap items-center gap-1.5 pt-0.5">
             <StatusBadge
-              tone={isPending ? "pending" : "hired"}
+              tone="hired"
               ocid={`today.myCrew.item.${index}.status`}
             >
-              {isPending
-                ? t("roster.filter.pending")
-                : t("roster.filter.active")}
+              {roadieStageLabel(row.stage, t)}
             </StatusBadge>
             <span
               data-ocid={`today.myCrew.item.${index}.paperwork`}

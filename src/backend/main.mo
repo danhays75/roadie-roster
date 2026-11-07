@@ -111,7 +111,7 @@ actor {
     counters,
     demoState,
   );
-  include RoadieApi(accessGrants, roadies, crews, positions, schedule, changeLog, counters, demoState, shiftBoards, groupChangeNotices, storeInfo);
+  include RoadieApi(accessGrants, roadies, crews, positions, schedule, checklists, orientationCheckoffs, checkIns, changeLog, counters, demoState, shiftBoards, groupChangeNotices, storeInfo);
   include SignupApi(accessGrants, signups, roadies, positions, schedule, storeInfo, changeLog, counters, demoState);
   include AccessApi(accessGrants, pendingUsers, accessControlState, demoState);
   include Phase23Api(
@@ -150,6 +150,9 @@ actor {
     attendance,
     trainerNotes,
     orientationCheckoffs,
+    checkIns,
+    schedule,
+    checklists,
     shiftBoards,
     groupChangeNotices,
     leaderTalks,
@@ -258,6 +261,7 @@ actor {
           signedBy = null;
           rosterState = #pending;
           isDemo = false;
+          stage = null;
         })
         .payload("id", func r = r.id)
         .payload("name", func r = r.profile.name)
@@ -321,6 +325,7 @@ actor {
           subjectRoadieId = null;
           touchesContactSet = false;
           detail = "";
+          paperworkDetail = null;
           isDemo = false;
         })
         .controllerOnly()

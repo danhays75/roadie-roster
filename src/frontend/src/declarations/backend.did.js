@@ -427,6 +427,13 @@ export const MyAccessView = IDL.Record({
   'demoRole' : IDL.Opt(DemoRole),
   'grant' : IDL.Opt(AccessGrant),
 });
+export const RoadieStage = IDL.Variant({
+  'hired' : IDL.Null,
+  'inTraining' : IDL.Null,
+  'paperworkDone' : IDL.Null,
+  'oriented' : IDL.Null,
+  'certified' : IDL.Null,
+});
 export const RosterState = IDL.Variant({
   'active' : IDL.Null,
   'pending' : IDL.Null,
@@ -438,6 +445,7 @@ export const MyCrewRoadieRow = IDL.Record({
   'name' : IDL.Text,
   'positionName' : IDL.Text,
   'positionId' : PositionId,
+  'stage' : IDL.Opt(RoadieStage),
   'rosterState' : RosterState,
   'paperworkDone' : IDL.Nat,
   'paperworkTotal' : IDL.Nat,
@@ -456,6 +464,7 @@ export const ShiftBoardRoadie = IDL.Record({
   'name' : IDL.Text,
   'positionCode' : IDL.Text,
   'positionId' : PositionId,
+  'stage' : IDL.Opt(RoadieStage),
   'photo' : IDL.Opt(PhotoRef),
 });
 export const MyGroupView = IDL.Record({
@@ -492,6 +501,7 @@ export const OrientationRoadieRow = IDL.Record({
   'positionName' : IDL.Text,
   'positionId' : PositionId,
   'crewId' : IDL.Opt(CrewId),
+  'stage' : IDL.Opt(RoadieStage),
   'rosterState' : RosterState,
   'paperworkStatus' : PaperworkStatus,
   'crewName' : IDL.Opt(IDL.Text),
@@ -552,6 +562,7 @@ export const Roadie = IDL.Record({
   'contactSet' : IDL.Opt(ContactSet),
   'isDemo' : IDL.Bool,
   'crewId' : IDL.Opt(CrewId),
+  'stage' : IDL.Opt(RoadieStage),
   'rosterState' : RosterState,
   'signedBy' : IDL.Opt(IDL.Principal),
   'birthdayMonthDay' : IDL.Opt(IDL.Text),
@@ -747,6 +758,7 @@ export const ChangeLogEntry = IDL.Record({
   'by' : IDL.Principal,
   'id' : ChangeLogId,
   'action' : IDL.Text,
+  'paperworkDetail' : IDL.Opt(IDL.Text),
   'isDemo' : IDL.Bool,
   'detail' : IDL.Text,
   'touchesContactSet' : IDL.Bool,
@@ -806,6 +818,7 @@ export const UnassignedRoadieRow = IDL.Record({
   'positionName' : IDL.Text,
   'positionId' : PositionId,
   'crewId' : IDL.Opt(CrewId),
+  'stage' : IDL.Opt(RoadieStage),
   'crewName' : IDL.Opt(IDL.Text),
   'photo' : IDL.Opt(PhotoRef),
 });
@@ -1512,6 +1525,13 @@ export const idlFactory = ({ IDL }) => {
     'demoRole' : IDL.Opt(DemoRole),
     'grant' : IDL.Opt(AccessGrant),
   });
+  const RoadieStage = IDL.Variant({
+    'hired' : IDL.Null,
+    'inTraining' : IDL.Null,
+    'paperworkDone' : IDL.Null,
+    'oriented' : IDL.Null,
+    'certified' : IDL.Null,
+  });
   const RosterState = IDL.Variant({
     'active' : IDL.Null,
     'pending' : IDL.Null,
@@ -1523,6 +1543,7 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'positionName' : IDL.Text,
     'positionId' : PositionId,
+    'stage' : IDL.Opt(RoadieStage),
     'rosterState' : RosterState,
     'paperworkDone' : IDL.Nat,
     'paperworkTotal' : IDL.Nat,
@@ -1541,6 +1562,7 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'positionCode' : IDL.Text,
     'positionId' : PositionId,
+    'stage' : IDL.Opt(RoadieStage),
     'photo' : IDL.Opt(PhotoRef),
   });
   const MyGroupView = IDL.Record({
@@ -1577,6 +1599,7 @@ export const idlFactory = ({ IDL }) => {
     'positionName' : IDL.Text,
     'positionId' : PositionId,
     'crewId' : IDL.Opt(CrewId),
+    'stage' : IDL.Opt(RoadieStage),
     'rosterState' : RosterState,
     'paperworkStatus' : PaperworkStatus,
     'crewName' : IDL.Opt(IDL.Text),
@@ -1637,6 +1660,7 @@ export const idlFactory = ({ IDL }) => {
     'contactSet' : IDL.Opt(ContactSet),
     'isDemo' : IDL.Bool,
     'crewId' : IDL.Opt(CrewId),
+    'stage' : IDL.Opt(RoadieStage),
     'rosterState' : RosterState,
     'signedBy' : IDL.Opt(IDL.Principal),
     'birthdayMonthDay' : IDL.Opt(IDL.Text),
@@ -1829,6 +1853,7 @@ export const idlFactory = ({ IDL }) => {
     'by' : IDL.Principal,
     'id' : ChangeLogId,
     'action' : IDL.Text,
+    'paperworkDetail' : IDL.Opt(IDL.Text),
     'isDemo' : IDL.Bool,
     'detail' : IDL.Text,
     'touchesContactSet' : IDL.Bool,
@@ -1888,6 +1913,7 @@ export const idlFactory = ({ IDL }) => {
     'positionName' : IDL.Text,
     'positionId' : PositionId,
     'crewId' : IDL.Opt(CrewId),
+    'stage' : IDL.Opt(RoadieStage),
     'crewName' : IDL.Opt(IDL.Text),
     'photo' : IDL.Opt(PhotoRef),
   });

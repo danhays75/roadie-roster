@@ -108,6 +108,7 @@ type UnassignedRoadieRow =
    positionId: PositionId;
    positionName: text;
    roadieId: RoadieId;
+   stage: opt RoadieStage;
  };
 type TrainerNote = 
  record {
@@ -294,6 +295,7 @@ type ShiftBoardRoadie =
    positionCode: text;
    positionId: PositionId;
    roadieId: RoadieId;
+   stage: opt RoadieStage;
  };
 type ShiftBoardGroupView = 
  record {
@@ -366,6 +368,14 @@ type RoadieStatus =
    oriented;
    paperworkDone;
  };
+type RoadieStage = 
+ variant {
+   certified;
+   hired;
+   inTraining;
+   oriented;
+   paperworkDone;
+ };
 type RoadieProfile = 
  record {
    favoriteColor: opt text;
@@ -408,6 +418,7 @@ type Roadie =
    rosterState: RosterState;
    secondPositionId: opt PositionId;
    signedBy: opt principal;
+   stage: opt RoadieStage;
    startDate: opt DateOnly;
    status: RoadieStatus;
  };
@@ -508,6 +519,7 @@ type OrientationRoadieRow =
    present: bool;
    roadieId: RoadieId;
    rosterState: RosterState;
+   stage: opt RoadieStage;
  };
 type OrientationCheckoff = 
  record {
@@ -557,6 +569,7 @@ type MyCrewRoadieRow =
    positionName: text;
    roadieId: RoadieId;
    rosterState: RosterState;
+   stage: opt RoadieStage;
  };
 type MyAccessView = 
  record {
@@ -876,6 +889,7 @@ type ChangeLogEntry =
    detail: text;
    id: ChangeLogId;
    isDemo: bool;
+   paperworkDetail: opt text;
    subjectRoadieId: opt RoadieId;
    touchesContactSet: bool;
  };

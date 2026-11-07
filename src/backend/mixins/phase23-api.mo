@@ -92,7 +92,7 @@ mixin (
   /// List the pending roadies with no usable orientation session (Admin, Store
   /// Manager, Training Manager or Visiting Manager).
   public query ({ caller }) func listUnassignedPendingRoadies() : async [Phase23.UnassignedRoadieRow] {
-    Phase23Lib.listUnassignedPendingRoadies(accessGrants, demoState, roadies, positions, crews, schedule, caller);
+    Phase23Lib.listUnassignedPendingRoadies(accessGrants, demoState, roadies, positions, crews, schedule, checklists, orientationCheckoffs, caller);
   };
 
   /// Move every non-archived roadie from one orientation session to another
@@ -117,19 +117,19 @@ mixin (
   /// Set the paperwork items for a roadie (Admin or Store Manager only, logged).
   /// Updates only `paperworkItems` and keeps the uniform fields.
   public shared ({ caller }) func setPaperworkItems(roadieId : Common.RoadieId, paperworkItems : [Text]) : async () {
-    Phase23Lib.setPaperworkItems(accessGrants, demoState, roadies, orientationCheckoffs, changeLog, counters, storeInfo.value, caller, roadieId, paperworkItems);
+    Phase23Lib.setPaperworkItems(accessGrants, demoState, roadies, checklists, orientationCheckoffs, changeLog, counters, storeInfo.value, caller, roadieId, paperworkItems);
   };
 
   /// Read one shift board with its trainer columns, Unassigned tray and Off
   /// this shift tray (every read role except kiosk and integration).
   public query ({ caller }) func getShiftBoard(eventId : Common.EventId, shift : Common.Shift) : async ?Phase23.ShiftBoardView {
-    Phase23Lib.getShiftBoard(accessGrants, demoState, shiftBoards, roadies, positions, schedule, caller, eventId, shift);
+    Phase23Lib.getShiftBoard(accessGrants, demoState, shiftBoards, roadies, positions, checklists, orientationCheckoffs, checkIns, schedule, caller, eventId, shift);
   };
 
   /// List every shift board for the current partition (every read role except
   /// kiosk and integration).
   public query ({ caller }) func listShiftBoards() : async [Phase23.ShiftBoardView] {
-    Phase23Lib.listShiftBoards(accessGrants, demoState, shiftBoards, roadies, positions, schedule, caller);
+    Phase23Lib.listShiftBoards(accessGrants, demoState, shiftBoards, roadies, positions, checklists, orientationCheckoffs, checkIns, schedule, caller);
   };
 
   /// Replace one shift board's groups, capacities and Off list (Admin, Store
@@ -169,7 +169,7 @@ mixin (
   /// The caller's own group for the current or next shift, for the Today
   /// screen. Null when the caller trains no group on that shift.
   public query ({ caller }) func getMyGroup() : async ?Phase23.MyGroupView {
-    Phase23Lib.getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, schedule, storeInfo.value, caller);
+    Phase23Lib.getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, checklists, orientationCheckoffs, checkIns, schedule, storeInfo.value, caller);
   };
 
   /// The caller's own crew for the Today screen: the crew they own and one row

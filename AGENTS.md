@@ -32,6 +32,10 @@
 - The kiosk approval Crew dropdown shows each crew's pending + active roadie count and preselects the crew with the fewest roadies
 - Crew owners get a My crew section on Today and a My crew chip on the Roster
 - The demo banner shows a Manager picker for the Store Manager and Training Manager demo roles, used only for crew ownership matching
+- Do not update, add, remove or run-to-fix any tests
+- Do not change the card design (roadieCard.css), crews, check-in rules, shift boards (saveShiftBoard keeps dropArchivedFromBoard) or contact-info rules
+- Publish when it compiles
+- Leave rosterState in the backend and the Dashboard numbers as they are
 
 ## Accepted Requirements
 
@@ -144,6 +148,9 @@
 - 'Your group changed' notices stored per trainer and shown as a dismissible card on Today and Groups
 - Trainer 'My group · <shift>' view on Today with roadie photos and names and a link to all groups
 - Every new record carries isDemo and follows the demo partition; every write is logged
+- One derived stage tag per roadie on every view, replacing the separate Pending/Active tag
+- Roster tabs All, Hired, Paperwork Done, Oriented, In Training, Certified with counts, keeping Show former
+- Stage computed on read, never hand-set; existing statuses migrate to Hired
 
 ## Verified Commands
 
@@ -153,10 +160,6 @@
 
 ## Learnings
 
-- getShiftBoard in src/backend/lib/phase23.mo returns an unsaved empty ShiftBoardView (groups=[], offThisShift=[], editedAt=0, isDemo=active partition, all active non-archived roadies in unassigned) when the event exists but no board is stored; null only when the event is missing.
-- autoFillShiftBoard in src/backend/lib/phase23.mo starts a board from trainer-eligible leaders in the active partition when none is stored (demo: demo #trainer leaders; real: trainer-capable roles) and traps 'Add a trainer first' when none exist.
-- autoFillShiftBoard receives storeInfo already unwrapped to Store.StoreInfo, so defaultGroupCapacity must read storeInfo.trainingGroupSize, not .value.
-- pages/Groups.tsx derives the editable board synchronously from the read view while useBoardEditor's effect has not initialized, so a brand-new unsaved board renders its columns and toolbar immediately.
 - components/groups/shiftOptions.ts shiftOptionDayLabel appends the short date when duplicateDayLabel is set, so two same-label events render distinct ShiftPicker day chips.
 - The PocketIC backend lane's remaining failures are stale tests encoding the pre-fix contract and clock artifacts (the canister clock is fixed at 2021-05-06 while tests build events from Date.now()); they are not app defects.
 - demoPhotoUrl is a ?Text on Roadie, StaffProfile and LeaderSummary plus the phase23 view types (ShiftBoardRoadie, CheckInRow, AbsentAlertView, OrientationRoadieRow, UnassignedRoadieRow); every photo surface resolves storedSrc ?? demoPhotoUrl ?? null so a real upload always wins.
@@ -178,3 +181,7 @@
 - Start date on the approval form prefills from the selected orientation session's store-local calendar date using calendarInTimeZone from src/frontend/src/components/approvals/timeZone.ts, and a startDateTouched flag stops a session change from overwriting a hand-edited value.
 - All approvals copy strings live in the shared src/frontend/src/lib/copy.ts (en and es), not a local COPY object in the page.
 - The app's inherited regression suite has 29 pre-existing failures (19 frontend, 10 backend) unrelated to recent work; the user asked for them to be handled separately and asked that no tests be updated, added, removed or run-to-fix.
+- The derived roadie stage is computed on every read by computeStage in src/backend/lib/phase23.mo (first match: archived gives no stage, certified, active with a Present or Late check-in on a training-day shift, active, paperwork complete, else hired); the stored stage field stays null and is never set by hand.
+- roadieStageLabel in src/frontend/src/lib/format.ts takes an optional translator and resolves the shared roster.stage.* keys in src/frontend/src/lib/copy.ts, so stage tags render in English and Spanish; without a translator it falls back to English.
+- The Roster page tabs are All, Hired, Paperwork Done, Oriented, In Training and Certified with counts from stageCounts in src/frontend/src/pages/Roster.tsx, plus the Show former toggle for archived roadies.
+- The app's inherited regression suite has 32 pre-existing failures (22 frontend, 10 backend) unrelated to recent work; the user asked for them to be handled separately and asked that no tests be updated, added, removed or run-to-fix.

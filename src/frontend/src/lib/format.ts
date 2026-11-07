@@ -6,7 +6,8 @@ import type {
   StaffProfile,
   Timestamp,
 } from "@/backend";
-import { DemoShift } from "@/backend";
+import { DemoShift, RoadieStage } from "@/backend";
+import { translate } from "@/hooks/useI18n";
 
 /**
  * A stored photo/signature reference is the raw uploaded bytes. Render it as a
@@ -399,19 +400,41 @@ export function formatTimestampMonthDayYear(
   });
 }
 
-/** Human label for a roadie status enum value. */
-export function roadieStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    hired: "Hired",
-    paperworkDone: "Paperwork done",
-    oriented: "Oriented",
-    inTraining: "In training",
-    certified: "Certified",
-    needsMoreTime: "Needs more time",
-    active: "Active",
-    archived: "Archived",
-  };
-  return labels[status] ?? status;
+/**
+ * The copy key for a roadie's derived hiring stage. The stage is computed by the
+ * backend and is null for an archived roadie, which reads "Former" instead of a
+ * stage tag. The key resolves through the shared dictionary so the label is
+ * shown in English and Spanish.
+ */
+export function roadieStageLabelKey(stage: RoadieStage | undefined): string {
+  switch (stage) {
+    case RoadieStage.hired:
+      return "roster.stage.hired";
+    case RoadieStage.paperworkDone:
+      return "roster.stage.paperworkDone";
+    case RoadieStage.oriented:
+      return "roster.stage.oriented";
+    case RoadieStage.inTraining:
+      return "roster.stage.inTraining";
+    case RoadieStage.certified:
+      return "roster.stage.certified";
+    default:
+      return "roster.stage.former";
+  }
+}
+
+/**
+ * Human label for a roadie's derived hiring stage. Pass the surface's
+ * translator to render the label in the active locale; without one the English
+ * label is returned.
+ */
+export function roadieStageLabel(
+  stage: RoadieStage | undefined,
+  t?: (key: string) => string,
+): string {
+  const key = roadieStageLabelKey(stage);
+  if (t) return t(key);
+  return translate("en", key);
 }
 
 /** Human label for a role enum value. */

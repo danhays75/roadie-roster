@@ -1,11 +1,4 @@
-import { RoadieStatus, Shift, Weekday } from "@/backend";
-
-/** Phase 1 only surfaces these statuses; later phases add the rest. */
-export const PHASE_ONE_STATUSES: RoadieStatus[] = [
-  RoadieStatus.hired,
-  RoadieStatus.paperworkDone,
-  RoadieStatus.archived,
-];
+import { Shift, Weekday } from "@/backend";
 
 /** Archive reasons offered when moving a roadie out of the roster. */
 export const ARCHIVE_REASONS = [

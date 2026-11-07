@@ -97,6 +97,7 @@ export interface ChangeLogEntry {
     by: Principal;
     id: ChangeLogId;
     action: string;
+    paperworkDetail?: string;
     isDemo: boolean;
     detail: string;
     touchesContactSet: boolean;
@@ -380,6 +381,7 @@ export interface MyCrewRoadieRow {
     name: string;
     positionName: string;
     positionId: PositionId;
+    stage?: RoadieStage;
     rosterState: RosterState;
     paperworkDone: bigint;
     paperworkTotal: bigint;
@@ -423,6 +425,7 @@ export interface OrientationRoadieRow {
     positionName: string;
     positionId: PositionId;
     crewId?: CrewId;
+    stage?: RoadieStage;
     rosterState: RosterState;
     paperworkStatus: PaperworkStatus;
     crewName?: string;
@@ -511,6 +514,7 @@ export interface Roadie {
     contactSet?: ContactSet;
     isDemo: boolean;
     crewId?: CrewId;
+    stage?: RoadieStage;
     rosterState: RosterState;
     signedBy?: Principal;
     birthdayMonthDay?: string;
@@ -583,6 +587,7 @@ export interface ShiftBoardRoadie {
     name: string;
     positionCode: string;
     positionId: PositionId;
+    stage?: RoadieStage;
     photo?: PhotoRef;
 }
 export interface ShiftBoardView {
@@ -762,6 +767,7 @@ export interface UnassignedRoadieRow {
     positionName: string;
     positionId: PositionId;
     crewId?: CrewId;
+    stage?: RoadieStage;
     crewName?: string;
     photo?: PhotoRef;
 }
@@ -875,6 +881,13 @@ export enum House {
 export enum PaperworkStatus {
     incomplete = "incomplete",
     complete = "complete"
+}
+export enum RoadieStage {
+    hired = "hired",
+    inTraining = "inTraining",
+    paperworkDone = "paperworkDone",
+    oriented = "oriented",
+    certified = "certified"
 }
 export enum RoadieStatus {
     active = "active",

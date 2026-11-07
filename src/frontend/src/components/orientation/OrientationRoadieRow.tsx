@@ -6,7 +6,8 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { useOrientationCopy } from "@/components/orientation/copy";
 import { Button } from "@/components/ui/button";
-import { refToDataUrl } from "@/lib/format";
+import { useI18n } from "@/hooks/useI18n";
+import { refToDataUrl, roadieStageLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Check, Loader2, MoveRight, Undo2 } from "lucide-react";
 import { useMemo } from "react";
@@ -55,6 +56,7 @@ export function OrientationRoadieRow({
   onOpenUniform: (roadieId: RoadieId) => void;
 }) {
   const c = useOrientationCopy();
+  const { t } = useI18n();
   const photoUrl = useMemo(() => refToDataUrl(row.photo), [row.photo]);
   const paperworkIncomplete =
     row.paperworkStatus === PaperworkStatus.incomplete;
@@ -110,6 +112,12 @@ export function OrientationRoadieRow({
               {row.crewName ? ` · ${row.crewName}` : ` · ${c.crewNone}`}
             </span>
             <span className="mt-1 flex flex-wrap items-center gap-1.5">
+              <StatusBadge
+                tone="hired"
+                ocid={`orientation.roadie.stage.${index + 1}`}
+              >
+                {roadieStageLabel(row.stage, t)}
+              </StatusBadge>
               {paperworkIncomplete ? (
                 <StatusBadge
                   tone="pending"

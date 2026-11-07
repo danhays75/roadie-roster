@@ -521,15 +521,91 @@ module {
     if (managers.size() == 0) { null } else { ?managers[0] };
   };
 
+  /// The derived stage each demo roadie should show, indexed by loop position
+  /// `i`. The two archived indices (11 and 29) are placeholders and ignored.
+  /// The spread is 8 Hired, 8 Paperwork Done, 14 Oriented and 8 In Training,
+  /// interleaved so positions and crews mix across stages; the two minors
+  /// (indices 7 and 19) are Oriented.
+  let demoStages : [Roadie.RoadieStage] = [
+    #hired, #paperworkDone, #oriented, #inTraining,
+    #hired, #paperworkDone, #oriented, #oriented,
+    #inTraining, #hired, #paperworkDone, #hired,
+    #oriented, #inTraining, #hired, #paperworkDone,
+    #oriented, #inTraining, #hired, #oriented,
+    #paperworkDone, #oriented, #inTraining, #hired,
+    #paperworkDone, #oriented, #inTraining, #hired,
+    #paperworkDone, #hired, #oriented, #inTraining,
+    #hired, #paperworkDone, #oriented, #inTraining,
+    #oriented, #oriented, #oriented, #oriented,
+  ];
+
+  /// Internal: the id of the first schedule event of `kind`, or null when the
+  /// schedule has none.
+  func firstEventOfKind(
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    kind : Store.EventKind,
+  ) : ?Common.EventId {
+    switch (schedule.values().find(func(e) = e.kind == kind)) {
+      case (?e) { ?e.id };
+      case null { null };
+    };
+  };
+
+  /// Internal: the ids (as text) of the paperwork items that apply to a roadie
+  /// with `position` and `isMinor`, mirroring the backend's applicable-paperwork
+  /// rule (respecting "Only alcohol positions" and "Only under 18").
+  func applicablePaperworkIds(
+    checklists : Store.Checklists,
+    position : ?Store.Position,
+    isMinor : Bool,
+  ) : [Text] {
+    let needsAlcohol = switch (position) {
+      case (?p) { p.needsAlcoholCert };
+      case null { false };
+    };
+    checklists.paperwork
+      .filter(func(item) = (not item.requiresAlcoholCert or needsAlcohol) and (not item.minorOnly or isMinor))
+      .map(func(item) = item.id.toText());
+  };
+
+  /// Internal: the first `n` entries of `items` (all of them when `n` is at
+  /// least the size).
+  func takeItems(items : [Text], n : Nat) : [Text] {
+    var out : [Text] = [];
+    var k = 0;
+    while (k < items.size() and k < n) {
+      out := out.concat([items[k]]);
+      k += 1;
+    };
+    out;
+  };
+
+  /// Internal: the ids (as text) of the orientation uniform items whose text is
+  /// "Name tag", so a seeded uniform check-off marks the name tag handed out.
+  func nameTagItems(checklists : Store.Checklists) : [Text] {
+    checklists.orientationUniform
+      .filter(func(item) = item.text.toLower() == "name tag")
+      .map(func(item) = item.id.toText());
+  };
+
+  /// Internal: the check-in map key for a demo Training Day 1 AM check-in.
+  func demoCheckInKey(eventId : Common.EventId, roadieId : Common.RoadieId) : Text {
+    "demo:" # eventId.toText() # ":am:" # roadieId.toText();
+  };
+
   /// Seed the demo data set (real Admin, demo mode only): 40 realistic roadies
-  /// spread across positions with demo photo URLs and full About Me answers, a
-  /// mix of statuses, 2 minors and 2 archived; 6 crews each owned by one of the
-  /// 6 demo managers; Renee Hollier and the two NSO Trainers; and 3 pending
-  /// kiosk sign-ups including one phone duplicate. Every non-archived roadie is
-  /// assigned to a crew: back-of-house positions round-robin across the three
-  /// kitchen-manager crews, front-of-house positions round-robin across the
-  /// three service-manager crews. Returns the new counts. Idempotent: loading
-  /// again does not duplicate the seed.
+  /// spread across positions with demo photo URLs and full About Me answers,
+  /// 2 minors and 2 archived; 6 crews each owned by one of the 6 demo managers;
+  /// Renee Hollier and the two NSO Trainers; and 3 pending kiosk sign-ups
+  /// including one phone duplicate. Every non-archived roadie is booked into the
+  /// demo Orientation event and assigned to a crew: back-of-house positions
+  /// round-robin across the three kitchen-manager crews, front-of-house
+  /// positions round-robin across the three service-manager crews. The seed sets
+  /// the underlying records (status, roster state, paperwork, orientation
+  /// attendance and Training Day 1 check-ins) so the derived stage shows every
+  /// stage: about 8 Hired, 8 Paperwork Done, 14 Oriented and 8 In Training.
+  /// Returns the new counts. Idempotent: loading again does not duplicate the
+  /// seed.
   public func loadDemoData(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -538,6 +614,10 @@ module {
     crews : Map.Map<Common.CrewId, Roadie.Crew>,
     attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
     trainerNotes : Map.Map<Nat, Phase23.TrainerNote>,
+    orientationCheckoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    checklists : { var value : Store.Checklists },
     positions : Map.Map<Common.PositionId, Store.Position>,
     storeInfo : { var value : Store.StoreInfo },
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
@@ -583,11 +663,12 @@ module {
     let bohCrews = [managerCrewIds[0], managerCrewIds[1], managerCrewIds[2]];
     let fohCrews = [managerCrewIds[3], managerCrewIds[4], managerCrewIds[5]];
 
+    // --- The demo Orientation and Training Day 1 events, from the schedule ---
+    let orientationEventId : ?Common.EventId = firstEventOfKind(schedule, #orientation);
+    let trainingDayEventId : ?Common.EventId = firstEventOfKind(schedule, #trainingDay);
+
     // --- Roadies (40) ---
     let positionIds = positions.keys().toArray();
-    let statuses : [Roadie.RoadieStatus] = [
-      #hired, #paperworkDone, #oriented, #inTraining, #certified, #active, #active, #active,
-    ];
     var bohCount = 0;
     var fohCount = 0;
     var i = 0;
@@ -597,9 +678,11 @@ module {
       counters.nextRoadieId := id + 1;
       let fallback = if (positionIds.size() == 0) { 0 } else { positionIds[i % positionIds.size()] };
       let positionId = positionIdFor(positions, person.positionName, fallback);
-      let status = statuses[i % statuses.size()];
       let isMinor = i == 7 or i == 19;
       let isArchived = i == 11 or i == 29;
+      // The derived stage this roadie should show. Archived roadies have no
+      // stage; the placeholder is ignored.
+      let stage : Roadie.RoadieStage = if (isArchived) { #hired } else { demoStages[i] };
       // Every non-archived roadie is assigned to a crew: back-of-house
       // positions round-robin across the kitchen-manager crews, front-of-house
       // positions round-robin across the service-manager crews.
@@ -618,6 +701,30 @@ module {
         fohCount += 1;
         ?c;
       };
+      let position = positions.get(positionId);
+      let applicable = applicablePaperworkIds(checklists.value, position, isMinor);
+      // Oriented and In Training roadies are active; the rest are pending.
+      let active = stage == #oriented or stage == #inTraining;
+      // Hired roadies have 0–3 paperwork items checked (never all of them, so
+      // they stay Hired); every other stage has all applicable items checked.
+      let paperworkItems = switch (stage) {
+        case (#hired) {
+          let want = i % 4;
+          let maxChecked = if (applicable.size() == 0) { 0 } else { applicable.size() - 1 };
+          let checkedCount = if (want > maxChecked) { maxChecked } else { want };
+          takeItems(applicable, checkedCount);
+        };
+        case _ { applicable };
+      };
+      // Oriented and In Training roadies have their uniform handed out: the
+      // name tag checked and shirts and hats counted per the position defaults.
+      let uniformItems = if (active) { nameTagItems(checklists.value) } else { [] };
+      let shirtsCount = if (active) {
+        switch (position) { case (?p) { p.shirtQty }; case null { 0 } };
+      } else { 0 };
+      let hatsCount = if (active) {
+        switch (position) { case (?p) { p.hatQty }; case null { 0 } };
+      } else { 0 };
       roadies.add(id, {
         id;
         profile = demoProfile(person.fullName, person.preferredName, i);
@@ -627,21 +734,73 @@ module {
         secondPositionId = null;
         crossTrainedPositionId = null;
         crewId;
-        orientationEventId = null;
+        orientationEventId = if (isArchived) { null } else { orientationEventId };
         startDate = ?openingDate;
-        status = if (isArchived) { #archived } else { status };
+        status = if (isArchived) { #archived } else { #hired };
         corporateEmployeeId = null;
         contactSet = ?demoContactSet(i, person.birthday, person.age, now);
         isMinor;
         birthdayMonthDay = ?person.birthday;
-        archivedReason = if (isArchived) { ?#other("Archived during demo") } else { null };
+        archivedReason = if (isArchived) { ?#noShow } else { null };
         archivedAt = if (isArchived) { ?now } else { null };
         hiredAt = now;
         hireDate = ?openingDate;
         signedBy = null;
-        rosterState = #pending;
+        rosterState = if (active) { #active } else { #pending };
         isDemo = true;
+        stage = null;
       });
+      // Paperwork and uniform check-off for every non-archived roadie.
+      if (not isArchived) {
+        orientationCheckoffs.add(id, {
+          roadieId = id;
+          uniformItems;
+          uniformCounts = [];
+          paperworkItems;
+          shirtsCount;
+          hatsCount;
+          updatedAt = now;
+          isDemo = true;
+        });
+      };
+      // A Present orientation attendance record for Oriented and In Training.
+      if (active) {
+        switch (orientationEventId) {
+          case (?eventId) {
+            let aid = counters.nextAttendanceId;
+            counters.nextAttendanceId := aid + 1;
+            attendance.add(aid, {
+              roadieId = id;
+              eventId = ?eventId;
+              shift = null;
+              state = #present;
+              recordedAt = now;
+              recordedBy = systemActor();
+              isDemo = true;
+            });
+          };
+          case null {};
+        };
+      };
+      // A Present Training Day 1 AM check-in for In Training roadies.
+      if (stage == #inTraining) {
+        switch (trainingDayEventId) {
+          case (?eventId) {
+            checkIns.add(demoCheckInKey(eventId, id), {
+              eventId;
+              shift = #am;
+              roadieId = id;
+              state = #present;
+              lateAt = null;
+              excused = null;
+              recordedBy = systemActor();
+              recordedAt = now;
+              isDemo = true;
+            });
+          };
+          case null {};
+        };
+      };
       i += 1;
     };
 
@@ -666,6 +825,7 @@ module {
     attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
     trainerNotes : Map.Map<Nat, Phase23.TrainerNote>,
     orientationCheckoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
     shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
     groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
     leaderTalks : Map.Map<Common.LeaderTalkId, Phase23.LeaderTalk>,
@@ -687,6 +847,7 @@ module {
     removeWhere(attendance, Nat.compare, func(a) = a.isDemo);
     removeWhere(trainerNotes, Nat.compare, func(n) = n.isDemo);
     removeWhere(orientationCheckoffs, Nat.compare, func(c) = c.isDemo);
+    removeWhere(checkIns, Text.compare, func(c) = c.isDemo);
     removeWhere(shiftBoards, Text.compare, func(b) = b.isDemo);
     removeWhere(groupChangeNotices, Nat.compare, func(n) = n.isDemo);
     removeWhere(leaderTalks, Nat.compare, func(t) = t.isDemo);

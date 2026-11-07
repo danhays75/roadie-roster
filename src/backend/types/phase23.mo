@@ -71,6 +71,8 @@ module {
     positionId : Common.PositionId;
     positionCode : Text;
     markedUnavailable : Bool;
+    /// The derived hiring stage. Null for an archived roadie (shown as Former).
+    stage : ?Roadie.RoadieStage;
   };
 
   /// One trainer column on a shift board, with its roadie chips.
@@ -139,6 +141,8 @@ module {
     paperworkTotal : Nat;
     absentToday : Bool;
     paperworkOverdue : Bool;
+    /// The derived hiring stage. Null for an archived roadie (shown as Former).
+    stage : ?Roadie.RoadieStage;
   };
 
   /// A crew owner's "My crew" section on the Today screen: the crew name and
@@ -223,6 +227,8 @@ module {
     rosterState : Roadie.RosterState;
     present : Bool;
     noShow : Bool;
+    /// The derived hiring stage. Null for an archived roadie (shown as Former).
+    stage : ?Roadie.RoadieStage;
   };
 
   /// The orientation check-in screen for one session: the session's assigned
@@ -259,6 +265,8 @@ module {
     positionName : Text;
     crewId : ?Common.CrewId;
     crewName : ?Text;
+    /// The derived hiring stage. Null for an archived roadie (shown as Former).
+    stage : ?Roadie.RoadieStage;
   };
 
   // --- Uniform check-off ---

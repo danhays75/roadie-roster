@@ -21,7 +21,7 @@ module {
     touchesContactSet : Bool,
     detail : Text,
   ) : Common.ChangeLogId {
-    append(changeLog, counters, by, action, subjectRoadieId, touchesContactSet, detail, false);
+    append(changeLog, counters, by, action, subjectRoadieId, touchesContactSet, detail, null, false);
   };
 
   /// Append a demo change-log entry and return its id. Demo entries are
@@ -35,7 +35,37 @@ module {
     touchesContactSet : Bool,
     detail : Text,
   ) : Common.ChangeLogId {
-    append(changeLog, counters, by, action, subjectRoadieId, touchesContactSet, detail, true);
+    append(changeLog, counters, by, action, subjectRoadieId, touchesContactSet, detail, null, true);
+  };
+
+  /// Append a real (non-demo) change-log entry carrying an item-by-item
+  /// paperwork detail, and return its id.
+  public func recordPaperwork(
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    by : Principal,
+    action : Text,
+    subjectRoadieId : ?Common.RoadieId,
+    touchesContactSet : Bool,
+    detail : Text,
+    paperworkDetail : ?Text,
+  ) : Common.ChangeLogId {
+    append(changeLog, counters, by, action, subjectRoadieId, touchesContactSet, detail, paperworkDetail, false);
+  };
+
+  /// Append a demo change-log entry carrying an item-by-item paperwork detail,
+  /// and return its id.
+  public func recordDemoPaperwork(
+    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
+    counters : Counters,
+    by : Principal,
+    action : Text,
+    subjectRoadieId : ?Common.RoadieId,
+    touchesContactSet : Bool,
+    detail : Text,
+    paperworkDetail : ?Text,
+  ) : Common.ChangeLogId {
+    append(changeLog, counters, by, action, subjectRoadieId, touchesContactSet, detail, paperworkDetail, true);
   };
 
   func append(
@@ -46,6 +76,7 @@ module {
     subjectRoadieId : ?Common.RoadieId,
     touchesContactSet : Bool,
     detail : Text,
+    paperworkDetail : ?Text,
     isDemo : Bool,
   ) : Common.ChangeLogId {
     let id = counters.nextChangeLogId;
@@ -58,6 +89,7 @@ module {
       subjectRoadieId;
       touchesContactSet;
       detail;
+      paperworkDetail;
       isDemo;
     });
     id;

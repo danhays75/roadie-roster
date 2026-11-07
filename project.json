@@ -1,19 +1,18 @@
 {
-  "overview": "A hiring and onboarding roster app for a restaurant store, with roadie sign-ups, approvals, crews, orientation, shift boards and printable roadie cards.",
+  "overview": "Roadie Roster is a hiring and orientation management app for a store's event roadies, tracking each roadie from hire through paperwork, orientation, training and certification.",
   "features": [
-    "Track roadie sign-ups, approvals and orientation progress",
-    "Organize roadies into manager-owned crews",
-    "See a manager's own crew on the Today screen",
-    "Filter the roster by crew",
-    "Preview the app as different roles with demo data"
+    "One automatic progress tag per roadie: Hired, Paperwork Done, Oriented, In Training or Certified",
+    "Roster tabs for each stage with live counts, plus a Show former toggle",
+    "Stage shown on roster tiles, roadie cards, orientation rows, crew rows and group chips",
+    "Stage labels in English and Spanish"
   ],
   "category": "productivity",
   "tags": [
-    "roster",
+    "staffing",
     "hiring",
-    "onboarding",
-    "restaurant",
-    "team-management"
+    "roster",
+    "orientation",
+    "retail"
   ],
-  "last_updated": "2026-11-07T13:50:10.681Z"
+  "last_updated": "2026-11-07T18:16:11.326Z"
 }

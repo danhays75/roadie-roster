@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { canArchive, canEditRoadie, useAccessState } from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
 import { useCrews, usePositions, useRoadie } from "@/hooks/useQueries";
-import { roadieStatusLabel } from "@/lib/format";
+import { roadieStageLabel } from "@/lib/format";
 import { Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { Component, type ReactNode } from "react";
@@ -124,7 +124,7 @@ function RoadieCardContent() {
             subtitle={positionById(roadie.mainPositionId)?.name}
             action={
               <StatusBadge tone="hired" ocid="roadie.status">
-                {roadieStatusLabel(roadie.status)}
+                {roadieStageLabel(roadie.stage, t)}
               </StatusBadge>
             }
           />

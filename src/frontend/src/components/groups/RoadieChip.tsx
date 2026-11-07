@@ -1,6 +1,6 @@
 import type { ShiftBoardRoadie } from "@/backend";
 import { useGroupsCopy } from "@/components/groups/copy";
-import { refToDataUrl } from "@/lib/format";
+import { refToDataUrl, roadieStageLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { GripVertical } from "lucide-react";
 import { useMemo } from "react";
@@ -119,6 +119,12 @@ export function RoadieChip({
           </span>
           <span className="block truncate text-xs text-muted-foreground">
             {position}
+          </span>
+          <span
+            data-ocid={`${ocid}.stage`}
+            className="mt-0.5 inline-flex items-center rounded-full bg-accent px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-wider text-accent-foreground"
+          >
+            {roadieStageLabel(roadie.stage, t)}
           </span>
         </span>
       </button>

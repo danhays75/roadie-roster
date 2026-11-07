@@ -167,6 +167,7 @@ module {
       };
       let present = isPresentAt(attendance, demo, r.id, eventId);
       let noShow = r.rosterState == #pending and event.start < now;
+      let paperworkComplete = paperworkStatusWith(checklists.value, positions, r, visibleCheckoff(checkoffs, demo, r.id)) == #complete;
       {
         roadieId = r.id;
         name = displayName(r);
@@ -180,6 +181,7 @@ module {
         rosterState = r.rosterState;
         present;
         noShow;
+        stage = computeStage(r, paperworkComplete, false);
       };
     });
     let presentCount = rows.filter(func(row) = row.present).size();
@@ -327,6 +329,8 @@ module {
     positions : Map.Map<Common.PositionId, Store.Position>,
     crews : Map.Map<Common.CrewId, Roadie.Crew>,
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    checklists : { var value : Store.Checklists },
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
     caller : Principal,
   ) : [Phase23.UnassignedRoadieRow] {
     Auth.requireOrientationStaff(accessGrants, demoState, caller);
@@ -347,6 +351,7 @@ module {
           };
           case null { null };
         };
+        let paperworkComplete = paperworkStatusWith(checklists.value, positions, r, visibleCheckoff(checkoffs, demo, r.id)) == #complete;
         {
           roadieId = r.id;
           name = displayName(r);
@@ -356,6 +361,7 @@ module {
           positionName;
           crewId = r.crewId;
           crewName;
+          stage = computeStage(r, paperworkComplete, false);
         };
       })
       .toArray();
@@ -563,6 +569,7 @@ module {
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    checklists : { var value : Store.Checklists },
     checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
     counters : Counters,
@@ -596,7 +603,27 @@ module {
       paperworkItems;
       updatedAt = effectiveNow(demoState, storeInfo);
     });
-    logWrite(changeLog, counters, demoState, caller, "setPaperworkItems", ?roadieId, false, "Set paperwork items");
+    // Record which items were checked or unchecked, by name, so the change log
+    // can show the item-by-item detail instead of a bare action name.
+    let previous = base.paperworkItems;
+    let parts = checklists.value.paperwork.map(func(item) {
+      let id = item.id.toText();
+      let wasChecked = previous.any(func(t) = t == id);
+      let isChecked = paperworkItems.any(func(t) = t == id);
+      if (wasChecked == isChecked) {
+        "";
+      } else if (isChecked) {
+        item.text # " ✓";
+      } else {
+        item.text # " ✗";
+      };
+    }).filter(func(s) = s != "");
+    let paperworkDetail = if (parts.size() == 0) { null } else { ?parts.values().join(", ") };
+    if (Auth.demoActive(demoState)) {
+      ignore ChangeLog.recordDemoPaperwork(changeLog, counters, caller, "setPaperworkItems", ?roadieId, false, "Set paperwork items", paperworkDetail);
+    } else {
+      ignore ChangeLog.recordPaperwork(changeLog, counters, caller, "setPaperworkItems", ?roadieId, false, "Set paperwork items", paperworkDetail);
+    };
   };
 
   // --- Shift boards ---
@@ -657,6 +684,11 @@ module {
   func roadieChip(
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
+    checklists : { var value : Store.Checklists },
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    demo : Bool,
     day : Common.Weekday,
     shift : Common.Shift,
     roadieId : Common.RoadieId,
@@ -667,6 +699,7 @@ module {
           case (?p) { p.code };
           case null { "" };
         };
+        let paperworkComplete = paperworkStatusWith(checklists.value, positions, r, visibleCheckoff(checkoffs, demo, r.id)) == #complete;
         ?{
           roadieId = r.id;
           name = displayName(r);
@@ -675,6 +708,7 @@ module {
           positionId = r.mainPositionId;
           positionCode;
           markedUnavailable = markedUnavailable(r, day, shift);
+          stage = computeStage(r, paperworkComplete, hasTrainingCheckIn(checkIns, schedule, demo, r.id));
         };
       };
       case null { null };
@@ -687,14 +721,19 @@ module {
     event : ?Store.ScheduleEvent,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
+    checklists : { var value : Store.Checklists },
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
   ) : Phase23.ShiftBoardView {
     let day = switch (event) {
       case (?e) { weekdayOf(e.start) };
       case null { #wed };
     };
     let shift = board.shift;
+    let demo = board.isDemo;
     let groups = board.groups.map(func(g) {
-      let chips = g.roadieIds.filterMap(func(rid) = roadieChip(roadies, positions, day, shift, rid));
+      let chips = g.roadieIds.filterMap(func(rid) = roadieChip(roadies, positions, checklists, checkoffs, checkIns, schedule, demo, day, shift, rid));
       {
         trainerPrincipal = g.trainerPrincipal;
         capacity = g.capacity;
@@ -707,7 +746,7 @@ module {
       for (rid in g.roadieIds.values()) { placed.add(rid) };
     };
     for (rid in board.offRoadieIds.values()) { placed.add(rid) };
-    let offThisShift = board.offRoadieIds.filterMap(func(rid) = roadieChip(roadies, positions, day, shift, rid));
+    let offThisShift = board.offRoadieIds.filterMap(func(rid) = roadieChip(roadies, positions, checklists, checkoffs, checkIns, schedule, demo, day, shift, rid));
     // Unassigned: active roadies in the partition not placed in a group or Off.
     let unassigned = roadies.values()
       .filter(func r =
@@ -721,6 +760,7 @@ module {
           case (?p) { p.code };
           case null { "" };
         };
+        let paperworkComplete = paperworkStatusWith(checklists.value, positions, r, visibleCheckoff(checkoffs, demo, r.id)) == #complete;
         {
           roadieId = r.id;
           name = displayName(r);
@@ -729,6 +769,7 @@ module {
           positionId = r.mainPositionId;
           positionCode;
           markedUnavailable = markedUnavailable(r, day, shift);
+          stage = computeStage(r, paperworkComplete, hasTrainingCheckIn(checkIns, schedule, demo, r.id));
         };
       })
       .toArray();
@@ -752,6 +793,9 @@ module {
     shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
+    checklists : { var value : Store.Checklists },
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     caller : Principal,
     eventId : Common.EventId,
@@ -762,7 +806,7 @@ module {
     switch (shiftBoards.get(boardKey(eventId, shift, demo))) {
       case (?board) {
         if (board.isDemo != demo) { return null };
-        ?buildBoardView(board, schedule.get(eventId), roadies, positions);
+        ?buildBoardView(board, schedule.get(eventId), roadies, positions, checklists, checkoffs, checkIns, schedule);
       };
       case null {
         // No board stored in the active partition. When the event exists,
@@ -778,7 +822,7 @@ module {
               editedAt = 0;
               isDemo = demo;
             };
-            ?buildBoardView(empty, ?event, roadies, positions);
+            ?buildBoardView(empty, ?event, roadies, positions, checklists, checkoffs, checkIns, schedule);
           };
           case null { null };
         };
@@ -794,6 +838,9 @@ module {
     shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
+    checklists : { var value : Store.Checklists },
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     caller : Principal,
   ) : [Phase23.ShiftBoardView] {
@@ -802,7 +849,7 @@ module {
     let boards = shiftBoards.values()
       .filter(func b = b.isDemo == demo)
       .toArray();
-    let views = boards.map(func(b) = buildBoardView(b, schedule.get(b.eventId), roadies, positions));
+    let views = boards.map(func(b) = buildBoardView(b, schedule.get(b.eventId), roadies, positions, checklists, checkoffs, checkIns, schedule));
     views.sort(func(a, b) {
       let c = Int.compare(a.eventId, b.eventId);
       if (c != #equal) { c } else {
@@ -1456,6 +1503,9 @@ module {
     shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     positions : Map.Map<Common.PositionId, Store.Position>,
+    checklists : { var value : Store.Checklists },
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
     schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     storeInfo : Store.StoreInfo,
     caller : Principal,
@@ -1523,7 +1573,7 @@ module {
           case (?e) { weekdayOf(e.start) };
           case null { #wed };
         };
-        let chips = group.roadieIds.filterMap(func(rid) = roadieChip(roadies, positions, day, shift, rid));
+        let chips = group.roadieIds.filterMap(func(rid) = roadieChip(roadies, positions, checklists, checkoffs, checkIns, schedule, demo, day, shift, rid));
         ?{
           eventId;
           shift;
@@ -1599,6 +1649,7 @@ module {
                 case (?d) { now > d };
                 case null { false };
               });
+              stage = computeStage(r, complete, hasTrainingCheckIn(checkIns, schedule, demo, r.id));
             };
           })
           .toArray();
@@ -2375,7 +2426,7 @@ module {
 
     // A trainer gets their own group and its check-in board.
     let myGroup = if (isTrainer) {
-      getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, schedule, storeInfo, caller);
+      getMyGroup(accessGrants, demoState, shiftBoards, roadies, positions, checklists, checkoffs, checkIns, schedule, storeInfo, caller);
     } else { null };
     let checkIn = switch (myGroup) {
       case (?g) { getCheckInBoard(accessGrants, demoState, shiftBoards, roadies, schedule, storeInfo, checkIns, caller, g.eventId, g.shift) };
@@ -2484,6 +2535,48 @@ module {
     };
     let complete = applicable.all(func(item) = checked.any(func(t) = t == item.id.toText()));
     if (complete) { #complete } else { #incomplete };
+  };
+
+  /// Internal: whether a roadie has at least one Present or Late check-in on a
+  /// training-day shift in the active partition. Used to derive the In Training
+  /// stage.
+  public func hasTrainingCheckIn(
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    demo : Bool,
+    roadieId : Common.RoadieId,
+  ) : Bool {
+    checkIns.values().any(func(c) {
+      c.isDemo == demo
+      and c.roadieId == roadieId
+      and (c.state == #present or c.state == #late)
+      and (switch (schedule.get(c.eventId)) {
+        case (?e) { e.kind == #trainingDay };
+        case null { false };
+      });
+    });
+  };
+
+  /// Internal: the derived hiring stage of a roadie, computed on every read.
+  /// First match wins: archived → null (Former); certified → #certified; active
+  /// with a Present/Late training check-in → #inTraining; active → #oriented;
+  /// paperwork complete → #paperworkDone; otherwise → #hired.
+  public func computeStage(
+    roadie : Roadie.Roadie,
+    paperworkComplete : Bool,
+    hasTrainingCheckIn : Bool,
+  ) : ?Roadie.RoadieStage {
+    if (roadie.status == #archived) {
+      return null;
+    };
+    if (roadie.status == #certified) {
+      return ?#certified;
+    };
+    if (roadie.rosterState == #active) {
+      if (hasTrainingCheckIn) { return ?#inTraining };
+      return ?#oriented;
+    };
+    if (paperworkComplete) { ?#paperworkDone } else { ?#hired };
   };
 
   /// Internal: the paperwork items that apply to a roadie.

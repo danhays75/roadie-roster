@@ -82,6 +82,7 @@ export interface ChangeLogEntry {
   'by' : Principal,
   'id' : ChangeLogId,
   'action' : string,
+  'paperworkDetail' : [] | [string],
   'isDemo' : boolean,
   'detail' : string,
   'touchesContactSet' : boolean,
@@ -342,6 +343,7 @@ export interface MyCrewRoadieRow {
   'name' : string,
   'positionName' : string,
   'positionId' : PositionId,
+  'stage' : [] | [RoadieStage],
   'rosterState' : RosterState,
   'paperworkDone' : bigint,
   'paperworkTotal' : bigint,
@@ -385,6 +387,7 @@ export interface OrientationRoadieRow {
   'positionName' : string,
   'positionId' : PositionId,
   'crewId' : [] | [CrewId],
+  'stage' : [] | [RoadieStage],
   'rosterState' : RosterState,
   'paperworkStatus' : PaperworkStatus,
   'crewName' : [] | [string],
@@ -464,6 +467,7 @@ export interface Roadie {
   'contactSet' : [] | [ContactSet],
   'isDemo' : boolean,
   'crewId' : [] | [CrewId],
+  'stage' : [] | [RoadieStage],
   'rosterState' : RosterState,
   'signedBy' : [] | [Principal],
   'birthdayMonthDay' : [] | [string],
@@ -495,6 +499,11 @@ export interface RoadieProfile {
   'favoriteColor' : [] | [string],
   'weekdayLunch' : [] | [boolean],
 }
+export type RoadieStage = { 'hired' : null } |
+  { 'inTraining' : null } |
+  { 'paperworkDone' : null } |
+  { 'oriented' : null } |
+  { 'certified' : null };
 export type RoadieStatus = { 'active' : null } |
   { 'hired' : null } |
   { 'inTraining' : null } |
@@ -556,6 +565,7 @@ export interface ShiftBoardRoadie {
   'name' : string,
   'positionCode' : string,
   'positionId' : PositionId,
+  'stage' : [] | [RoadieStage],
   'photo' : [] | [PhotoRef],
 }
 export interface ShiftBoardView {
@@ -715,6 +725,7 @@ export interface UnassignedRoadieRow {
   'positionName' : string,
   'positionId' : PositionId,
   'crewId' : [] | [CrewId],
+  'stage' : [] | [RoadieStage],
   'crewName' : [] | [string],
   'photo' : [] | [PhotoRef],
 }

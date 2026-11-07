@@ -44,15 +44,48 @@ module {
 
   /// Strip the contact set and the full photo bytes from a roadie card for
   /// callers that may not see them. The photo is fetched separately via
-  /// `getPhoto`.
-  func redact(roadie : Roadie.Roadie, canSee : Bool, now : Common.Timestamp) : Roadie.Roadie {
+  /// `getPhoto`. The derived `stage` is recomputed on every read from the
+  /// roadie's status, roster state, paperwork and training check-ins, so the
+  /// roster list, card and position roster can never disagree.
+  func redact(
+    roadie : Roadie.Roadie,
+    canSee : Bool,
+    now : Common.Timestamp,
+    checklists : { var value : Store.Checklists },
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    demo : Bool,
+  ) : Roadie.Roadie {
     let refreshed = refreshDerived(roadie, now, defaultTimeZone);
+    let stage = stageFor(refreshed, checklists, positions, checkoffs, checkIns, schedule, demo);
+    let withStage = { refreshed with stage };
     if (canSee) {
       // Managers keep the contact set but never the full photo bytes.
-      { refreshed with photo = null };
+      { withStage with photo = null };
     } else {
-      { refreshed with photo = null; contactSet = null };
+      { withStage with photo = null; contactSet = null };
     };
+  };
+
+  /// Internal: the derived hiring stage for a roadie, from the shared
+  /// `Phase23Lib.computeStage` helper so every view builder agrees.
+  func stageFor(
+    roadie : Roadie.Roadie,
+    checklists : { var value : Store.Checklists },
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+    demo : Bool,
+  ) : ?Roadie.RoadieStage {
+    let stored = switch (checkoffs.get(roadie.id)) {
+      case (?c) { if (c.isDemo == demo) { ?c } else { null } };
+      case null { null };
+    };
+    let paperworkComplete = Phase23Lib.paperworkStatusWith(checklists.value, positions, roadie, stored) == #complete;
+    Phase23Lib.computeStage(roadie, paperworkComplete, Phase23Lib.hasTrainingCheckIn(checkIns, schedule, demo, roadie.id));
   };
 
   /// List roadie cards visible to the caller, with contact-set fields stripped
@@ -65,14 +98,20 @@ module {
     demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     storeInfo : Store.StoreInfo,
+    checklists : { var value : Store.Checklists },
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     caller : Principal,
   ) : [Roadie.Roadie] {
     let role = Auth.requireReadable(accessGrants, demoState, caller);
     let canSee = Auth.canSeeContactSet(accessGrants, demoState, caller);
     let now = effectiveNow(demoState, storeInfo);
+    let demo = Auth.demoActive(demoState);
     roadies.values()
-      .filter(func(r) = r.isDemo == Auth.demoActive(demoState) and visibleToRole(r, role, accessGrants, demoState, caller))
-      .map(func(r) = redact(r, canSee, now))
+      .filter(func(r) = r.isDemo == demo and visibleToRole(r, role, accessGrants, demoState, caller))
+      .map(func(r) = redact(r, canSee, now, checklists, positions, checkoffs, checkIns, schedule, demo))
       .toArray();
   };
 
@@ -82,18 +121,24 @@ module {
     demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     storeInfo : Store.StoreInfo,
+    checklists : { var value : Store.Checklists },
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     caller : Principal,
     id : Common.RoadieId,
   ) : ?Roadie.Roadie {
     let role = Auth.requireReadable(accessGrants, demoState, caller);
     let canSee = Auth.canSeeContactSet(accessGrants, demoState, caller);
     let now = effectiveNow(demoState, storeInfo);
+    let demo = Auth.demoActive(demoState);
     switch (roadies.get(id)) {
       case (?r) {
-        if (r.isDemo != Auth.demoActive(demoState) or not visibleToRole(r, role, accessGrants, demoState, caller)) {
+        if (r.isDemo != demo or not visibleToRole(r, role, accessGrants, demoState, caller)) {
           Runtime.trap("Access denied: roadie is not visible to this role");
         };
-        ?redact(r, canSee, now);
+        ?redact(r, canSee, now, checklists, positions, checkoffs, checkIns, schedule, demo);
       };
       case null { null };
     };
@@ -126,15 +171,21 @@ module {
     demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
     storeInfo : Store.StoreInfo,
+    checklists : { var value : Store.Checklists },
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+    checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+    schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
     caller : Principal,
     positionId : Common.PositionId,
   ) : [Roadie.Roadie] {
     let role = Auth.requireReadable(accessGrants, demoState, caller);
     let canSee = Auth.canSeeContactSet(accessGrants, demoState, caller);
     let now = effectiveNow(demoState, storeInfo);
+    let demo = Auth.demoActive(demoState);
     roadies.values()
-      .filter(func(r) = r.isDemo == Auth.demoActive(demoState) and r.mainPositionId == positionId and visibleToRole(r, role, accessGrants, demoState, caller))
-      .map(func(r) = redact(r, canSee, now))
+      .filter(func(r) = r.isDemo == demo and r.mainPositionId == positionId and visibleToRole(r, role, accessGrants, demoState, caller))
+      .map(func(r) = redact(r, canSee, now, checklists, positions, checkoffs, checkIns, schedule, demo))
       .toArray();
   };
 

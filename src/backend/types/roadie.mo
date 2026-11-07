@@ -13,6 +13,19 @@ module {
     #archived;
   };
 
+  /// The derived hiring stage of a roadie, in order Hired → Paperwork Done →
+  /// Oriented → In Training → Certified. Computed on every read from the
+  /// roadie's status, roster state, paperwork and training check-ins; never
+  /// stored and never set by hand. An archived roadie has no stage and is shown
+  /// as Former.
+  public type RoadieStage = {
+    #hired;
+    #paperworkDone;
+    #oriented;
+    #inTraining;
+    #certified;
+  };
+
   /// Why a roadie was archived.
   public type ArchiveReason = {
     #noShow;
@@ -76,9 +89,11 @@ module {
     weekdayLunch : ?Bool;
   };
 
-  /// A roadie card. `isMinor` and `birthdayMonthDay` are non-sensitive derived
-  /// values so the card back can show the birthday and a Minor badge without
-  /// exposing the date of birth (which stays in the contact set).
+  /// A roadie card. `isMinor`, `birthdayMonthDay` and `stage` are non-sensitive
+  /// derived values so the card back can show the birthday, a Minor badge and
+  /// the hiring stage without exposing the date of birth (which stays in the
+  /// contact set). `stage` is recomputed on every read and never set by hand;
+  /// it is null for an archived roadie, which is shown as Former.
   public type Roadie = {
     id : Common.RoadieId;
     profile : RoadieProfile;
@@ -110,6 +125,8 @@ module {
     /// demo mode is off and never count toward on-hand, build-to, exports,
     /// gift bags or the store template.
     isDemo : Bool;
+    /// The derived hiring stage. Null for an archived roadie (shown as Former).
+    stage : ?RoadieStage;
   };
 
   /// A crew. `leaderPrincipal` is the approved manager who owns the crew, or
@@ -161,6 +178,9 @@ module {
 
   /// A single change-log entry. `isDemo` marks entries written while demo mode
   /// was on, so the change log can separate demo activity from real activity.
+  /// `paperworkDetail` carries the item-by-item paperwork change for a
+  /// `setPaperworkItems` entry — which items were checked or unchecked, by name
+  /// — and is null for every other action.
   public type ChangeLogEntry = {
     id : Common.ChangeLogId;
     at : Common.Timestamp;
@@ -169,6 +189,7 @@ module {
     subjectRoadieId : ?Common.RoadieId;
     touchesContactSet : Bool;
     detail : Text;
+    paperworkDetail : ?Text;
     isDemo : Bool;
   };
 };

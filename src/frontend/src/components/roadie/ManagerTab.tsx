@@ -10,6 +10,10 @@ import {
   WEEKDAYS,
 } from "@/components/roadie/constants";
 import {
+  type ChangeLogRow,
+  changeLogActionKey,
+  collapseChangeLog,
+  parsePaperworkDetail,
   useChecklists,
   useContactSet,
   useResignAvailability,
@@ -38,7 +42,7 @@ import {
 import { formatDateOnly, formatTimestamp, refToDataUrl } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Check, Eraser, PenLine } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -376,13 +380,16 @@ function AvailabilityPanel({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        {contactSet.availabilityResignPending ? (
-          <StatusBadge tone="pending" ocid="roadie.availability.resign_pending">
-            {t("roadie.resignPending")}
-          </StatusBadge>
-        ) : (
+        {contactSet.managerSignature ? (
           <StatusBadge tone="hired" ocid="roadie.availability.signed">
             {t("roadie.signed")}
+            {contactSet.managerSignedAt !== undefined
+              ? ` · ${formatTimestamp(contactSet.managerSignedAt)}`
+              : ""}
+          </StatusBadge>
+        ) : (
+          <StatusBadge tone="pending" ocid="roadie.availability.unsigned">
+            {t("roadie.unsigned")}
           </StatusBadge>
         )}
         <span className="text-sm text-muted-foreground">
@@ -400,12 +407,6 @@ function AvailabilityPanel({
             t("roadie.unsigned")
           )}
         </span>
-        {contactSet.managerSignedAt !== undefined && (
-          <span className="text-sm text-muted-foreground">
-            {t("roadie.field.availabilitySignedAt")}:{" "}
-            {formatTimestamp(contactSet.managerSignedAt)}
-          </span>
-        )}
       </div>
 
       <div className="overflow-x-auto">
@@ -728,12 +729,96 @@ function SizesEditor({ roadie }: { roadie: Roadie }) {
   );
 }
 
+/**
+ * Render one change-history row's plain-language label. Paperwork changes show
+ * the item-by-item detail the backend records; every other action maps to a
+ * fixed label, falling back to the raw action name for unknown actions.
+ */
+function ChangeHistoryLabel({ row }: { row: ChangeLogRow }) {
+  const { t } = useI18n();
+  const key = changeLogActionKey(row.action);
+  const label = key ? t(key) : row.action;
+
+  const paperwork = row.paperworkDetail
+    ? parsePaperworkDetail(row.paperworkDetail)
+    : [];
+  const items = paperwork.map((change) =>
+    t(
+      change.checked
+        ? "roadie.changeHistory.itemChecked"
+        : "roadie.changeHistory.itemUnchecked",
+      { name: change.name },
+    ),
+  );
+  const joined = items.join(t("roadie.changeHistory.itemsAnd"));
+
+  return (
+    <span className="font-display text-sm font-semibold uppercase tracking-wide text-foreground">
+      {label}
+      {joined && (
+        <span className="ml-2 font-body text-sm font-normal normal-case tracking-normal text-muted-foreground">
+          {joined}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** The change history for one roadie, with consecutive repeats collapsed. */
+function ChangeHistory({ id }: { id: RoadieId }) {
+  const { t } = useI18n();
+  const { data: changeLog } = useRoadieChangeLog(id);
+  const rows = useMemo(() => collapseChangeLog(changeLog ?? []), [changeLog]);
+
+  if (rows.length === 0) {
+    return <EmptyState title={t("roadie.changeHistory.empty")} />;
+  }
+
+  return (
+    <ul className="space-y-3">
+      {rows.map((row) => (
+        <li
+          key={row.id}
+          data-ocid="roadie.change_history.item"
+          className="rounded-md border border-border bg-background p-3"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="flex flex-wrap items-center gap-2">
+              <ChangeHistoryLabel row={row} />
+              {row.count > 1 && (
+                <span
+                  data-ocid="roadie.change_history.repeated"
+                  className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground"
+                >
+                  {t("roadie.changeHistory.repeated", { count: row.count })}
+                </span>
+              )}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {formatTimestamp(row.at)}
+            </span>
+          </div>
+          {row.detail && (
+            <p className="mt-1 break-words text-sm text-muted-foreground">
+              {row.detail}
+            </p>
+          )}
+          {row.touchesContactSet && (
+            <span className="mt-2 inline-block text-xs text-muted-foreground">
+              {t("roadie.changeHistory.touchesContact")}
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** The manager-only tab: contact set, availability, paperwork, history. */
 export function ManagerTab({ roadie }: { roadie: Roadie }) {
   const { t } = useI18n();
   const id = roadie.id;
   const { data: contactSet, isLoading } = useContactSet(id, true);
-  const { data: changeLog } = useRoadieChangeLog(id);
 
   return (
     <div className="space-y-5" data-ocid="roadie.manager.panel">
@@ -795,36 +880,7 @@ export function ManagerTab({ roadie }: { roadie: Roadie }) {
         title={t("roadie.section.changeHistory")}
         ocid="roadie.manager.change_history"
       >
-        {changeLog && changeLog.length > 0 ? (
-          <ul className="space-y-3">
-            {changeLog.map((entry) => (
-              <li
-                key={entry.id.toString()}
-                data-ocid="roadie.change_history.item"
-                className="rounded-md border border-border bg-background p-3"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-display text-sm font-semibold uppercase tracking-wide text-foreground">
-                    {entry.action}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {formatTimestamp(entry.at)}
-                  </span>
-                </div>
-                <p className="mt-1 break-words text-sm text-muted-foreground">
-                  {entry.detail}
-                </p>
-                {entry.touchesContactSet && (
-                  <span className="mt-2 inline-block text-xs text-muted-foreground">
-                    {t("roadie.changeHistory.touchesContact")}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EmptyState title={t("roadie.changeHistory.empty")} />
-        )}
+        <ChangeHistory id={id} />
       </Section>
 
       {roadie.contactSet?.dateOfBirth !== undefined && (

@@ -1,11 +1,11 @@
 import {
   type ArchiveReason,
+  type ChangeLogEntry,
   type ContactSet,
   type CrewId,
   type PositionId,
   type RoadieId,
   type RoadieProfile,
-  type RoadieStatus,
   type SignatureRef,
   createActor,
 } from "@/backend";
@@ -86,21 +86,6 @@ export function useRehireRoadie() {
     mutationFn: async (args: { id: RoadieId; reason: string | null }) => {
       if (!actor) throw new Error("Backend is not ready");
       return actor.rehireRoadie(args.id, args.reason);
-    },
-    onSuccess: (_data, args) => {
-      invalidate(args.id);
-    },
-  });
-}
-
-/** Update a roadie's status (phase 1: Hired, Paperwork done, Archived). */
-export function useUpdateRoadieStatus() {
-  const { actor } = useActor(createActor);
-  const invalidate = useInvalidateRoadie();
-  return useMutation({
-    mutationFn: async (args: { id: RoadieId; status: RoadieStatus }) => {
-      if (!actor) throw new Error("Backend is not ready");
-      return actor.updateRoadieStatus(args.id, args.status);
     },
     onSuccess: (_data, args) => {
       invalidate(args.id);
@@ -207,4 +192,103 @@ export function useRoadieChangeLog(id: RoadieId | undefined) {
     },
     enabled: !!actor && !isFetching && id !== undefined,
   });
+}
+
+/** Two minutes in nanoseconds: the window that collapses repeated entries. */
+const COLLAPSE_WINDOW_NS = 120_000_000_000n;
+
+/** One change-history row, possibly collapsing a run of identical entries. */
+export interface ChangeLogRow {
+  id: string;
+  action: string;
+  at: bigint;
+  by: string;
+  detail: string;
+  paperworkDetail?: string;
+  touchesContactSet: boolean;
+  /** How many consecutive entries this row represents (1 when not collapsed). */
+  count: number;
+}
+
+/**
+ * Collapse consecutive change-log entries that share the same action and the
+ * same author within two minutes into a single row. Entries arrive newest
+ * first, so only adjacent entries are compared; the newest entry of a run
+ * supplies the row's timestamp and detail, and `count` records the run length.
+ */
+export function collapseChangeLog(entries: ChangeLogEntry[]): ChangeLogRow[] {
+  const rows: ChangeLogRow[] = [];
+  for (const entry of entries) {
+    const by = entry.by.toText();
+    const previous = rows[rows.length - 1];
+    if (
+      previous &&
+      previous.action === entry.action &&
+      previous.by === by &&
+      previous.at - entry.at <= COLLAPSE_WINDOW_NS
+    ) {
+      previous.count += 1;
+      continue;
+    }
+    rows.push({
+      id: entry.id.toString(),
+      action: entry.action,
+      at: entry.at,
+      by,
+      detail: entry.detail,
+      paperworkDetail: entry.paperworkDetail,
+      touchesContactSet: entry.touchesContactSet,
+      count: 1,
+    });
+  }
+  return rows;
+}
+
+/**
+ * Map a backend change-log action to its plain-language copy key. Unknown
+ * actions return null so the caller can fall back to the raw action name.
+ */
+export function changeLogActionKey(action: string): string | null {
+  switch (action) {
+    case "setPaperworkItems":
+      return "roadie.changeHistory.action.paperwork";
+    case "saveUniformCheckoff":
+      return "roadie.changeHistory.action.uniform";
+    case "markPresent":
+      return "roadie.changeHistory.action.markedPresent";
+    case "moveRoadieToSession":
+      return "roadie.changeHistory.action.movedToSession";
+    case "changePosition":
+      return "roadie.changeHistory.action.crewChanged";
+    case "updateContactSet":
+      return "roadie.changeHistory.action.contactUpdated";
+    default:
+      return null;
+  }
+}
+
+/** One parsed paperwork item from a change-log detail string. */
+export interface PaperworkChange {
+  name: string;
+  checked: boolean;
+}
+
+/**
+ * Parse the backend's paperwork detail (for example
+ * "Food handler card ✓, Alcohol cert ✗") into named checked/unchecked items.
+ * A part without a trailing marker is ignored.
+ */
+export function parsePaperworkDetail(detail: string): PaperworkChange[] {
+  const changes: PaperworkChange[] = [];
+  for (const raw of detail.split(",")) {
+    const part = raw.trim();
+    if (part.endsWith("✓")) {
+      const name = part.slice(0, -1).trim();
+      if (name) changes.push({ name, checked: true });
+    } else if (part.endsWith("✗")) {
+      const name = part.slice(0, -1).trim();
+      if (name) changes.push({ name, checked: false });
+    }
+  }
+  return changes;
 }

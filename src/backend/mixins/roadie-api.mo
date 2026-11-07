@@ -13,6 +13,9 @@ mixin (
   crews : Map.Map<Common.CrewId, Roadie.Crew>,
   positions : Map.Map<Common.PositionId, Store.Position>,
   schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+  checklists : { var value : Store.Checklists },
+  orientationCheckoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+  checkIns : Map.Map<Text, Phase23.CheckInRecord>,
   changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
   counters : RoadieLib.Counters,
   demoState : Common.DemoState,
@@ -22,12 +25,12 @@ mixin (
 ) {
   /// List roadie cards visible to the caller.
   public query ({ caller }) func listRoadies() : async [Roadie.Roadie] {
-    RoadieLib.listRoadies(accessGrants, demoState, roadies, storeInfo.value, caller);
+    RoadieLib.listRoadies(accessGrants, demoState, roadies, storeInfo.value, checklists, positions, orientationCheckoffs, checkIns, schedule, caller);
   };
 
   /// Read one roadie card.
   public query ({ caller }) func getRoadie(id : Common.RoadieId) : async ?Roadie.Roadie {
-    RoadieLib.getRoadie(accessGrants, demoState, roadies, storeInfo.value, caller, id);
+    RoadieLib.getRoadie(accessGrants, demoState, roadies, storeInfo.value, checklists, positions, orientationCheckoffs, checkIns, schedule, caller, id);
   };
 
   /// Read a roadie's photo bytes by id, for a caller allowed to see the roadie.
@@ -38,7 +41,7 @@ mixin (
 
   /// List the roster for one position.
   public query ({ caller }) func listRosterForPosition(positionId : Common.PositionId) : async [Roadie.Roadie] {
-    RoadieLib.listRosterForPosition(accessGrants, demoState, roadies, storeInfo.value, caller, positionId);
+    RoadieLib.listRosterForPosition(accessGrants, demoState, roadies, storeInfo.value, checklists, positions, orientationCheckoffs, checkIns, schedule, caller, positionId);
   };
 
   /// Edit a roadie's non-contact details (Admin/Store Manager only).

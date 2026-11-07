@@ -19,6 +19,9 @@ mixin (
   attendance : Map.Map<Nat, Phase23.AttendanceRecord>,
   trainerNotes : Map.Map<Nat, Phase23.TrainerNote>,
   orientationCheckoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
+  checkIns : Map.Map<Text, Phase23.CheckInRecord>,
+  schedule : Map.Map<Common.EventId, Store.ScheduleEvent>,
+  checklists : { var value : Store.Checklists },
   shiftBoards : Map.Map<Text, Phase23.ShiftBoard>,
   groupChangeNotices : Map.Map<Nat, Phase23.GroupChangeNotice>,
   leaderTalks : Map.Map<Common.LeaderTalkId, Phase23.LeaderTalk>,
@@ -99,12 +102,12 @@ mixin (
 
   /// Seed the demo data set (Admin, demo mode only).
   public shared ({ caller }) func loadDemoData() : async Common.DemoDataSummary {
-    DemoLib.loadDemoData(accessGrants, demoState, roadies, signups, crews, attendance, trainerNotes, positions, storeInfo, changeLog, counters, caller);
+    DemoLib.loadDemoData(accessGrants, demoState, roadies, signups, crews, attendance, trainerNotes, orientationCheckoffs, checkIns, schedule, checklists, positions, storeInfo, changeLog, counters, caller);
   };
 
   /// Remove every demo record (Admin, demo mode only). Real records are never
   /// touched.
   public shared ({ caller }) func clearDemoData() : async Common.DemoDataSummary {
-    DemoLib.clearDemoData(accessGrants, demoState, roadies, signups, crews, attendance, trainerNotes, orientationCheckoffs, shiftBoards, groupChangeNotices, leaderTalks, finalSignOffs, changeLog, counters, caller);
+    DemoLib.clearDemoData(accessGrants, demoState, roadies, signups, crews, attendance, trainerNotes, orientationCheckoffs, checkIns, shiftBoards, groupChangeNotices, leaderTalks, finalSignOffs, changeLog, counters, caller);
   };
 };

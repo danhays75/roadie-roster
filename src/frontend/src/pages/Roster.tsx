@@ -1,5 +1,5 @@
 import type { Roadie } from "@/backend";
-import { RoadieStatus, RosterState } from "@/backend";
+import { RoadieStage, RoadieStatus } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { useDashboardCopy } from "@/components/dashboard/copy";
@@ -33,16 +33,39 @@ import { ChevronDown, ChevronUp, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 /** Which list the card pop-up is navigating within. */
-type CardList = "all" | "pending" | "active" | "former";
+type CardList = RosterTab | "former";
 
-/** The All / Pending / Active tab selection on the roster. */
-type RosterTab = "all" | "pending" | "active";
+/** The stage tab selection on the roster. */
+type RosterTab =
+  | "all"
+  | "hired"
+  | "paperworkDone"
+  | "oriented"
+  | "inTraining"
+  | "certified";
 
-/**
- * The crew filter selection. `"all"` shows every crew, `"none"` shows roadies
+/** The crew filter selection. `"all"` shows every crew, `"none"` shows roadies
  * with no crew, and any other value is a crew id as a string.
  */
 type CrewFilter = "all" | "none" | string;
+
+/** The backend stage a stage tab filters to. `"all"` has no single stage. */
+function stageForTab(tab: RosterTab): RoadieStage | undefined {
+  switch (tab) {
+    case "hired":
+      return RoadieStage.hired;
+    case "paperworkDone":
+      return RoadieStage.paperworkDone;
+    case "oriented":
+      return RoadieStage.oriented;
+    case "inTraining":
+      return RoadieStage.inTraining;
+    case "certified":
+      return RoadieStage.certified;
+    default:
+      return undefined;
+  }
+}
 
 export default function RosterPage() {
   const { t } = useDashboardCopy();
@@ -96,7 +119,7 @@ export default function RosterPage() {
       ? "all"
       : crewFilter;
 
-  const { pending, active, archived } = useMemo(() => {
+  const { live, archived } = useMemo(() => {
     const list = roadies ?? [];
     const q = query.trim().toLowerCase();
     const matchesCrew = (roadie: Roadie) => {
@@ -115,21 +138,36 @@ export default function RosterPage() {
       ).toLowerCase();
       return name.includes(q) || position.includes(q);
     };
-    const live = list.filter(
-      (roadie) => roadie.status !== RoadieStatus.archived && matches(roadie),
-    );
     return {
-      pending: live.filter(
-        (roadie) => roadie.rosterState === RosterState.pending,
-      ),
-      active: live.filter(
-        (roadie) => roadie.rosterState === RosterState.active,
+      live: list.filter(
+        (roadie) => roadie.status !== RoadieStatus.archived && matches(roadie),
       ),
       archived: list.filter(
         (roadie) => roadie.status === RoadieStatus.archived && matches(roadie),
       ),
     };
   }, [roadies, query, positionMap, activeCrewFilter]);
+
+  // The count of live roadies at each stage, keyed by the tab that shows them.
+  const stageCounts = useMemo(() => {
+    const counts: Record<RosterTab, number> = {
+      all: live.length,
+      hired: 0,
+      paperworkDone: 0,
+      oriented: 0,
+      inTraining: 0,
+      certified: 0,
+    };
+    for (const roadie of live) {
+      if (roadie.stage === RoadieStage.hired) counts.hired += 1;
+      else if (roadie.stage === RoadieStage.paperworkDone)
+        counts.paperworkDone += 1;
+      else if (roadie.stage === RoadieStage.oriented) counts.oriented += 1;
+      else if (roadie.stage === RoadieStage.inTraining) counts.inTraining += 1;
+      else if (roadie.stage === RoadieStage.certified) counts.certified += 1;
+    }
+    return counts;
+  }, [live]);
 
   // The paperwork-overdue flag is computed from the orientation check-off,
   // which only Admin and Store Manager may read.
@@ -139,11 +177,9 @@ export default function RosterPage() {
   );
 
   const shown =
-    tab === "pending"
-      ? pending
-      : tab === "active"
-        ? active
-        : [...pending, ...active];
+    tab === "all"
+      ? live
+      : live.filter((roadie) => roadie.stage === stageForTab(tab));
 
   const shownEntries: CardEntry[] = useMemo(
     () => shown.map((roadie) => ({ key: roadie.id.toString(), roadie })),
@@ -162,20 +198,31 @@ export default function RosterPage() {
       ? undefined
       : crewMap.get(roadie.crewId.toString());
 
-  const hasAny = pending.length > 0 || active.length > 0 || archived.length > 0;
+  const hasAny = live.length > 0 || archived.length > 0;
 
   const tabs: { key: RosterTab; label: string; count: number }[] = [
+    { key: "all", label: t("roster.filter.all"), count: stageCounts.all },
+    { key: "hired", label: t("roster.filter.hired"), count: stageCounts.hired },
     {
-      key: "all",
-      label: t("roster.filter.all"),
-      count: pending.length + active.length,
+      key: "paperworkDone",
+      label: t("roster.filter.paperworkDone"),
+      count: stageCounts.paperworkDone,
     },
     {
-      key: "pending",
-      label: t("roster.filter.pending"),
-      count: pending.length,
+      key: "oriented",
+      label: t("roster.filter.oriented"),
+      count: stageCounts.oriented,
     },
-    { key: "active", label: t("roster.filter.active"), count: active.length },
+    {
+      key: "inTraining",
+      label: t("roster.filter.inTraining"),
+      count: stageCounts.inTraining,
+    },
+    {
+      key: "certified",
+      label: t("roster.filter.certified"),
+      count: stageCounts.certified,
+    },
   ];
 
   const crewLabel = locale === "es" ? "Cuadrilla" : "Crew";
@@ -313,11 +360,17 @@ export default function RosterPage() {
       {!isLoading && !isError && hasAny && shown.length === 0 && (
         <EmptyState
           title={
-            tab === "pending"
-              ? t("roster.emptyPending")
-              : tab === "active"
-                ? t("roster.emptyActive")
-                : t("roster.emptyAll")
+            tab === "hired"
+              ? t("roster.emptyHired")
+              : tab === "paperworkDone"
+                ? t("roster.emptyPaperworkDone")
+                : tab === "oriented"
+                  ? t("roster.emptyOriented")
+                  : tab === "inTraining"
+                    ? t("roster.emptyInTraining")
+                    : tab === "certified"
+                      ? t("roster.emptyCertified")
+                      : t("roster.emptyAll")
           }
         />
       )}
@@ -335,13 +388,6 @@ export default function RosterPage() {
               crewName={crewNameOf(roadie) ?? t("roadie.field.none")}
               crewLabel={t("roadie.field.crew")}
               paperworkIncomplete={paperworkFlags.get(roadie.id.toString())}
-              rosterStateLabel={
-                tab === "all"
-                  ? roadie.rosterState === RosterState.pending
-                    ? t("roster.filter.pending")
-                    : t("roster.filter.active")
-                  : undefined
-              }
               onOpen={() => setCard({ list: tab, index })}
               ocid="roster.item"
               statusOcid="roster.item.status"

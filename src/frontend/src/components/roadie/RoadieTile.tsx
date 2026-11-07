@@ -7,15 +7,16 @@ import type {
   RoadieId,
   Timestamp,
 } from "@/backend";
-import { RoadieStatus, RosterState, createActor } from "@/backend";
+import { RoadieStatus, createActor } from "@/backend";
 import { StatusBadge } from "@/components/StatusBadge";
+import { useI18n } from "@/hooks/useI18n";
 import {
   useChecklists,
   usePositions,
   useRoadiePhoto,
   useSchedule,
 } from "@/hooks/useQueries";
-import { refToDataUrl, roadieStatusLabel } from "@/lib/format";
+import { refToDataUrl, roadieStageLabel } from "@/lib/format";
 import { paperworkDueEvent } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { useActor } from "@caffeineai/core-infrastructure";
@@ -28,13 +29,6 @@ function initialsOf(name: string): string {
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
-
-/** The badge tone for a roadie status: blue for hired/done, red for pending. */
-function statusTone(status: RoadieStatus) {
-  if (status === RoadieStatus.archived) return "muted" as const;
-  if (status === RoadieStatus.needsMoreTime) return "pending" as const;
-  return "hired" as const;
 }
 
 /** Human label for an archive reason, shown on a former roadie's tile. */
@@ -172,11 +166,12 @@ export function usePaperworkIncompleteMap(
 /**
  * A roadie's tile: the photo fills the top at roughly a 4:3 ratio with
  * `object-cover`, or the roadie's initials in navy on cream when no photo is
- * stored. Below the photo sit the name, a status badge, a crew tag when the
- * roadie has a crew, and a MINOR tag when the roadie is a minor. The tile is a
- * button so tapping it opens the shared card pop-up. A former roadie's tile is
- * grayscale and shows the archive reason instead of the status badge. When
- * `paperworkIncomplete` is set, a red "Paperwork incomplete" flag is shown.
+ * stored. Below the photo sit the name, a single stage badge derived from the
+ * backend's computed stage, a crew tag when the roadie has a crew, and a MINOR
+ * tag when the roadie is a minor. The tile is a button so tapping it opens the
+ * shared card pop-up. A former roadie's tile is grayscale and shows "Former"
+ * instead of a stage badge. When `paperworkIncomplete` is set, a red "Paperwork
+ * incomplete" flag is shown.
  */
 export function RoadieTile({
   roadie,
@@ -184,7 +179,6 @@ export function RoadieTile({
   crewName,
   crewLabel,
   paperworkIncomplete: paperworkFlag,
-  rosterStateLabel,
   onOpen,
   ocid = "roadie.tile",
   statusOcid,
@@ -202,11 +196,6 @@ export function RoadieTile({
   crewLabel?: string;
   /** When true, show the red "Paperwork incomplete" flag on the tile. */
   paperworkIncomplete?: boolean;
-  /**
-   * When set, show a Pending/Active badge derived from the roadie's roster
-   * state. Used on the Roster page's All tab, where both states are mixed.
-   */
-  rosterStateLabel?: string;
   onOpen: (roadie: Roadie) => void;
   ocid?: string;
   statusOcid?: string;
@@ -214,6 +203,7 @@ export function RoadieTile({
   className?: string;
 }) {
   const { data: photo } = useRoadiePhoto(roadie.id);
+  const { t } = useI18n();
   // A stored photo always wins; a record with no stored photo falls back to its
   // demo-only photo URL, which never touches real records.
   const photoUrl = useMemo(
@@ -272,25 +262,20 @@ export function RoadieTile({
             </span>
           )}
           <span className="mt-auto flex flex-wrap items-center gap-1.5 pt-1">
-            {isArchived ? (
-              <StatusBadge tone="muted" ocid={statusOcid}>
-                {archiveReasonLabel(roadie.archivedReason)}
-              </StatusBadge>
-            ) : (
-              <StatusBadge tone={statusTone(roadie.status)} ocid={statusOcid}>
-                {roadieStatusLabel(roadie.status)}
-              </StatusBadge>
-            )}
-            {rosterStateLabel && !isArchived && (
+            <StatusBadge
+              tone={isArchived ? "muted" : "hired"}
+              ocid={statusOcid}
+            >
+              {isArchived
+                ? t("roster.stage.former")
+                : roadieStageLabel(roadie.stage, t)}
+            </StatusBadge>
+            {isArchived && roadie.archivedReason && (
               <StatusBadge
-                tone={
-                  roadie.rosterState === RosterState.pending
-                    ? "pending"
-                    : "hired"
-                }
-                ocid={ocid ? `${ocid}.roster_state` : undefined}
+                tone="muted"
+                ocid={ocid ? `${ocid}.archive_reason` : undefined}
               >
-                {rosterStateLabel}
+                {archiveReasonLabel(roadie.archivedReason)}
               </StatusBadge>
             )}
             {(crewLabel || crewName) && (
