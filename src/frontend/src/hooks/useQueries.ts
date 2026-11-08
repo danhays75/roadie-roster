@@ -511,6 +511,28 @@ export function useSetPretendDate() {
   });
 }
 
+/**
+ * The cache key holding the timestamp of the last successful Load demo data
+ * action. It is bumped on every load, even when the seed is idempotent and the
+ * record counts do not change, so surfaces can react to the action itself.
+ */
+export const DEMO_DATA_LOADED_KEY = ["demoDataLoadedAt"] as const;
+
+/**
+ * The timestamp of the last successful Load demo data action, or 0 before any
+ * load. Reads the shared marker written by `useLoadDemoData`, so it changes on
+ * every load regardless of whether the demo record counts changed.
+ */
+export function useDemoDataLoadedAt(): number {
+  const { data } = useQuery({
+    queryKey: DEMO_DATA_LOADED_KEY,
+    queryFn: async (): Promise<number> => 0,
+    staleTime: Number.POSITIVE_INFINITY,
+    enabled: false,
+  });
+  return data ?? 0;
+}
+
 /** Count the demo records currently loaded (Admin, demo mode only). */
 export function useDemoDataSummary(enabled = true) {
   const { actor, isFetching } = useActor(createActor);
@@ -537,6 +559,9 @@ export function useLoadDemoData() {
       return actor.loadDemoData();
     },
     onSuccess: () => {
+      // Bump the load marker first so surfaces keyed to the action itself (the
+      // practice run card) reset even when the idempotent seed changes nothing.
+      queryClient.setQueryData(DEMO_DATA_LOADED_KEY, Date.now());
       void queryClient.invalidateQueries({ queryKey: ["demoDataSummary"] });
       void queryClient.invalidateQueries({ queryKey: ["roadies"] });
       void queryClient.invalidateQueries({ queryKey: ["pendingSignups"] });

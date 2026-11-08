@@ -36,10 +36,14 @@
 - Do not change the card design (roadieCard.css), crews, check-in rules, shift boards (saveShiftBoard keeps dropArchivedFromBoard) or contact-info rules
 - Publish when it compiles
 - Leave rosterState in the backend and the Dashboard numbers as they are
-- Demo seed data must stay internally consistent: every non-archived demo roadie is booked into the demo Orientation event and spread across the Hired, Paperwork Done, Oriented and In Training stages
 - Manager tab copy uses real wording, never raw copy keys, in English and Spanish
 - Manager tab availability shows exactly one badge: Signed with the date, or Not signed
 - Manager tab change history uses plain-language labels, names the paperwork items checked or unchecked, and merges repeated same-action entries from the same person within two minutes
+- Do not change the card design (roadieCard.css), crews, stage rules, check-in rules, shift boards (saveShiftBoard keeps dropArchivedFromBoard) or contact-info rules
+- Demo seed data must stay internally consistent: every non-archived demo roadie is booked into the demo Orientation event
+- Demo practice run card lives at the top of Today and is visible only to the real Admin while demo mode is on
+- Practice run step completion is derived from demo data, never from a manual tick
+- Take me there buttons use the existing demo setters (setDemoRole, setDemoTrainerAs, setDemoManagerAs, setPretendDate) and then navigate
 
 ## Accepted Requirements
 
@@ -156,11 +160,30 @@
 - Roster tabs All, Hired, Paperwork Done, Oriented, In Training, Certified with counts, keeping Show former
 - Stage computed on read, never hand-set; existing statuses migrate to Hired
 - Every non-archived demo roadie is booked into the demo Orientation event
-- The 38 non-archived demo roadies are spread across Hired, Paperwork Done, Oriented and In Training with the specified paperwork, attendance, check-in, rosterState and uniform state
-- The two minors are Oriented; the 2 archived roadies stay archived; the 3 pending kiosk sign-ups, crews and managers are unchanged
 - The Manager tab uniform sizes section shows real copy instead of raw keys
 - The Manager tab availability area shows exactly one badge
 - The Manager tab change history shows plain-language labels with item-level paperwork detail and collapses consecutive same-action entries by the same person within 2 minutes
+- All 38 non-archived demo roadies are booked into the demo Orientation event, rosterState #pending, with no orientation attendance records, no check-in records, no shift boards and no uniform check-offs
+- About 18 demo roadies have all applicable paperwork items checked (stage Paperwork Done); the other 20 have 0-3 items checked (stage Hired), with mixed positions and crews and the two minors fully done
+- The 2 archived roadies, the 3 pending kiosk sign-ups, crews, managers, trainers and Renee stay as they are
+- Load demo data resets the caller's pretend date to none, View as to Admin, and clears any demo practice progress
+- The highlighted current event is the one whose store-local date is today; if none is today, the next upcoming event, compared by store-local calendar date
+- Past events show a muted Done label; a past #deadline shows Past due (red) only if any active roadie still has incomplete paperwork, otherwise Done
+- NOW appears only on the event whose date is today and never on a past event
+- A demo-mode-only 'Practice run' card at the top of Today, shown only to the real Admin while demo mode is on
+- A progress line ('Step 2 of 6') and a 'Hide' link; Load demo data shows the card again and resets progress
+- Six steps, each with number, title, one-line instruction, 'Take me there' button, and a green check when done
+- A step counts as done automatically by looking at demo data, never by a manual tick
+- Step 1 Approve a new roadie: View as Admin, pretend date cleared, opens Approve New Hires; done when a demo kiosk sign-up has been approved
+- Step 2 Finish someone's paperwork: View as Admin, opens Roster on the Hired tab; done when any demo roadie moved from Hired to Paperwork Done after Load demo data
+- Step 3 Orientation day: Pretend it's = the demo Orientation date AM, View as Admin, opens Orientation; done when at least 10 demo roadies are Oriented
+- Step 4 Build Training Day 1 groups: Pretend it's = Training Day 1 AM, View as Admin, opens Groups on Training Day 1 · AM; done when a demo shift board exists for Training Day 1 AM with at least one roadie in a group
+- Step 5 Check in as a trainer: Pretend it's = Training Day 1 AM, View as NSO Trainer with Trainer = the first demo trainer who leads a group on that board, opens Today; done when that trainer's group has a check-in record for every roadie in it
+- Step 6 Handle the absence as a manager: same pretend date, View as Store Manager with Manager = the crew owner of the absent roadie, opens Today; done when a demo absent alert has been excused, moved or archived
+- After step 6: 'Practice run complete! Turn off demo mode when you're done.'
+- 'Take me there' uses the existing demo setters (setDemoRole, setDemoTrainerAs, setDemoManagerAs, setPretendDate), then navigates
+- Steps can be done in any order, but the card highlights the first step that isn't done
+- Demo mode only; nothing changes when demo mode is off
 
 ## Verified Commands
 
@@ -170,16 +193,6 @@
 
 ## Learnings
 
-- Demo date of birth is derived from age plus a varied MM-DD using Hinnant civil-date helpers so the two minors stay isMinor true.
-- The app's existing regression suite has known pre-existing failures (19 frontend, 9 backend) unrelated to the demo photo work; the user asked for them to be handled separately.
-- eligibleTrainers real mode in src/backend/lib/phase23.mo filters role == #trainer and not Auth.isDemoLeader(g); an admin (#admin) no longer gets an auto-fill column by design.
-- trainerAllowed real mode in src/backend/lib/phase23.mo rejects a grant where Auth.isDemoLeader(grant) is true while still accepting manager roles via isTrainerRole.
-- The app's inherited backend PocketIC lane has pre-existing failures unrelated to the shift-board trainer-eligibility change; the user asked for tests to be handled separately.
-- Crew ownership lives in src/backend/lib/roadie.mo: requireOwnerFree is the one-crew-per-manager guard used by createCrew and updateCrew; compare c.id against the optional exceptCrewId only when it is present, since `exceptCrewId ?? c.id` is always false on create.
-- Crew ownership matching goes through Auth.actingPrincipal, so getMyCrew and the Roster My crew chip follow the demo Manager picker without a separate code path.
-- The kiosk approval screen is src/frontend/src/pages/Approvals.tsx; its Crew Select needs a sentinel value for the "No crew" item because Radix Select rejects empty-string SelectItem values.
-- The Admin Crews panel is src/frontend/src/components/admin/CrewsPanel.tsx and keeps its own local CREW_COPY (en/es) rather than the shared lib/copy.ts, so crew-panel strings live in two places.
-- Demo seed in src/backend/lib/demo.mo now has 9 leaders (Renee Hollier, 6 #storeManager home store 975, 2 NSO Trainers) and 6 manager-owned crews; non-archived roadies are round-robined by position house.
 - The backend PocketIC lane needs `node test/pocketic/run-backend-lane.mjs`; several backend test files encode the pre-change demo seed and crew contract and must be updated when the seed or crew shape changes.
 - The Approve New Hires page is src/frontend/src/pages/Approvals.tsx; its pending sign-up card is PendingSignupCard and the Possible duplicates box is DuplicateList in the same file.
 - SignupSubmission carries no demoPhotoUrl, so the pending sign-up card photo resolves through the actor's getSignupPhoto(id) with an initials fallback; Approvals.tsx keeps a local useSignupPhoto hook because hooks/useQueries.ts is outside its file ownership.
@@ -195,3 +208,13 @@
 - ManagerTab resolves manager.sizes.title and manager.sizes.body through the shared src/frontend/src/lib/copy.ts via useI18n; src/frontend/src/components/kiosk/copy.ts defines the same keys with different body text but is not used by the Manager tab.
 - collapseChangeLog in src/frontend/src/components/roadie/useRoadieActions.ts compares previous.at - entry.at <= 120_000_000_000n on newest-first entries, so the 2-minute window is a non-negative difference.
 - The local preflight tester cannot get past the 'Tell us who you are' owner profile onboarding form after Internet Identity sign-in, so demo-seed and Manager-tab flows are not reachable in local testing; the run ends inconclusive with a canister_reject on listPositions for an unregistered caller.
+- demoStages in src/backend/lib/demo.mo is a 40-entry array indexed by loop position; archived indices 11 and 29 hold ignored placeholders, so the 38 live entries now count 18 Paperwork Done and 20 Hired, with minors at indices 7 and 19 both Paperwork Done.
+- loadDemoData in src/backend/lib/demo.mo resets the caller by clearing pretendDate and removing their demoRoles/demoTrainerAs/demoManagerAs entries; a missing demoRoles entry defaults to demo Admin.
+- OpeningTimeline.tsx classifies events by store-local calendar day keys (localDayKey via calendarInTimeZone from components/approvals/timeZone.ts), so currentIndex compares YYYY-MM-DD strings rather than timestamps; dashboard.timeline.done and dashboard.timeline.pastDue are the new copy keys.
+- usePaperworkIncompleteMap reads the real Date.now() rather than the demo pretend instant, so the timeline's Past due flag can diverge from its pretend-aware isPast under a pretend date.
+- The backend PocketIC lane has pre-existing failures unrelated to the demo seed (archive-board, shift-board and uniforms-projected tests) plus stale demo-seed tests that encode the old four-stage spread; the user asked that no tests be updated, added, removed or run-to-fix.
+- The demo practice run card is src/frontend/src/components/demo/PracticeRunCard.tsx, mounted at the top of TodayPage in src/frontend/src/pages/Today.tsx; it mounts its body only while demo mode is on and useRealAccessGrant reports the real Admin, so no demo reads fire when demo mode is off.
+- The practice run Hide reset keys off a shared demoDataLoadedAt query marker bumped by useLoadDemoData.onSuccess in src/frontend/src/hooks/useQueries.ts, because loadDemoData in src/backend/lib/demo.mo is idempotent and demo record counts do not change on a redundant load.
+- Step 2 deep-links the Roster Hired tab through an optional tab search param declared with validateSearch on the roster route in src/frontend/src/App.tsx and read with useSearch in src/frontend/src/pages/Roster.tsx, defaulting to the All tab when absent or unknown.
+- The local preflight tester cannot get past the 'Tell us who you are' owner profile onboarding form after Internet Identity sign-in, so demo-seed and practice-run flows are not reachable in local testing; the run ends inconclusive with unexercised step completions.
+- The app's inherited regression suite has 22 pre-existing frontend failures unrelated to recent work; the user asked that no tests be updated, added, removed or run-to-fix.

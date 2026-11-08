@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { AbsentAlertsList } from "@/components/alerts/AbsentAlertsList";
 import { CheckInBoard } from "@/components/checkin/CheckInBoard";
 import { useDashboardCopy } from "@/components/dashboard/copy";
+import { PracticeRunCard } from "@/components/demo/PracticeRunCard";
 import {
   type CardEntry,
   RoadieCardModal,
@@ -843,6 +844,8 @@ export default function TodayPage() {
   return (
     <div className="space-y-6" data-ocid="today.page">
       <PageHeader title={t("today.title")} subtitle={t("app.tagline")} />
+
+      <PracticeRunCard />
 
       {isTrainer ? (
         <TrainerToday mayCheckIn={mayCheckIn} />

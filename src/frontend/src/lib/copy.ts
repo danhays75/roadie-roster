@@ -768,6 +768,29 @@ export const en: CopyDictionary = {
   "demo.banner.role.kiosk": "Kiosk",
   "demo.signAsTest": "Sign as Test",
 
+  "today.practice.title": "Practice run",
+  "today.practice.progress": "Step {step} of {total}",
+  "today.practice.hide": "Hide",
+  "today.practice.takeMeThere": "Take me there",
+  "today.practice.complete":
+    "Practice run complete! Turn off demo mode when you're done.",
+  "today.practice.step1.title": "Approve a new roadie",
+  "today.practice.step1.body":
+    "Approve a demo kiosk sign-up on Approve New Hires.",
+  "today.practice.step2.title": "Finish someone's paperwork",
+  "today.practice.step2.body":
+    "Open Roster on the Hired tab and finish a roadie's paperwork.",
+  "today.practice.step3.title": "Orientation day",
+  "today.practice.step3.body": "Mark everyone who showed up Present.",
+  "today.practice.step4.title": "Build Training Day 1 groups",
+  "today.practice.step4.body": "Tap Auto-fill, then Save.",
+  "today.practice.step5.title": "Check in as a trainer",
+  "today.practice.step5.body":
+    "Mark Present, Late or Absent for each roadie; mark at least one Absent.",
+  "today.practice.step6.title": "Handle the absence as a manager",
+  "today.practice.step6.body":
+    "Use Excused, Move or Archive on the Absent alert.",
+
   "footer.attribution": "Built with love using caffeine.ai",
 };
 
@@ -1545,6 +1568,30 @@ export const es: CopyDictionary = {
   "demo.banner.role.leadership": "Liderazgo",
   "demo.banner.role.kiosk": "Quiosco",
   "demo.signAsTest": "Firmar como prueba",
+
+  "today.practice.title": "Práctica",
+  "today.practice.progress": "Paso {step} de {total}",
+  "today.practice.hide": "Ocultar",
+  "today.practice.takeMeThere": "Llévame allí",
+  "today.practice.complete":
+    "¡Práctica completada! Desactiva el modo demo cuando termines.",
+  "today.practice.step1.title": "Aprueba un nuevo roadie",
+  "today.practice.step1.body":
+    "Aprueba un registro demo del quiosco en Aprobar nuevos contratados.",
+  "today.practice.step2.title": "Completa el papeleo de alguien",
+  "today.practice.step2.body":
+    "Abre la Plantilla en la pestaña Contratados y completa el papeleo de un roadie.",
+  "today.practice.step3.title": "Día de orientación",
+  "today.practice.step3.body":
+    "Marca como Presente a todos los que asistieron.",
+  "today.practice.step4.title": "Crea los grupos del Día de entrenamiento 1",
+  "today.practice.step4.body": "Toca Rellenar automáticamente y luego Guardar.",
+  "today.practice.step5.title": "Registra como entrenador",
+  "today.practice.step5.body":
+    "Marca Presente, Tarde o Ausente para cada roadie; marca al menos un Ausente.",
+  "today.practice.step6.title": "Gestiona la ausencia como gerente",
+  "today.practice.step6.body":
+    "Usa Justificar, Mover o Archivar en la alerta de ausencia.",
 
   "footer.attribution": "Hecho con cariño usando caffeine.ai",
 };

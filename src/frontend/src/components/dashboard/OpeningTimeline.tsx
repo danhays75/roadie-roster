@@ -1,8 +1,14 @@
 import type { DateOnly, EventKind, ScheduleEvent } from "@/backend";
-import { EventKind as EventKindEnum } from "@/backend";
+import { EventKind as EventKindEnum, RoadieStatus } from "@/backend";
+import {
+  DEFAULT_TIME_ZONE,
+  calendarInTimeZone,
+} from "@/components/approvals/timeZone";
+import { usePaperworkIncompleteMap } from "@/components/roadie/RoadieTile";
 import { Card, CardContent } from "@/components/ui/card";
+import { canArchive, useAccessState } from "@/hooks/useAccess";
 import { useDemo } from "@/hooks/useDemo";
-import { useStoreInfo } from "@/hooks/useQueries";
+import { useRoadies, useStoreInfo } from "@/hooks/useQueries";
 import {
   dateOnlyToDate,
   formatDateOnlyLong,
@@ -27,6 +33,16 @@ export function eventKindLabel(kind: EventKind): string {
     [EventKindEnum.other]: "Event",
   };
   return labels[kind] ?? "Event";
+}
+
+/**
+ * A store-local calendar day key (`YYYY-MM-DD`) for an instant. Two instants
+ * share a key exactly when they fall on the same calendar day in the store's
+ * time zone, so keys compare lexicographically to order days.
+ */
+function localDayKey(instant: Date, timeZone: string): string {
+  const { year, month, day } = calendarInTimeZone(instant, timeZone);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 /**
@@ -119,6 +135,33 @@ export function OpeningTimeline({
   }, [demo.enabled, demo.pretendDate, storeInfo]);
   const now = useNow(pretendInstant);
 
+  // The store-local calendar day of the effective now. Events are classified
+  // by their own store-local calendar day against this key, not by exact
+  // timestamps, so "today" means the same calendar day in the store's zone.
+  const zone = timeZone ?? DEFAULT_TIME_ZONE;
+  const todayKey = useMemo(() => localDayKey(new Date(now), zone), [now, zone]);
+
+  // Whether any active roadie still has incomplete paperwork, which turns a
+  // past paperwork deadline into "Past due". The check-off read is Admin/Store
+  // Manager only, so other roles fall back to "Done".
+  const access = useAccessState();
+  const role = access.kind === "granted" ? access.grant.role : undefined;
+  const canReadPaperwork = canArchive(role);
+  const { data: roadies } = useRoadies();
+  const paperworkFlags = usePaperworkIncompleteMap(
+    roadies ?? [],
+    canReadPaperwork,
+  );
+  const hasIncompleteActivePaperwork = useMemo(
+    () =>
+      (roadies ?? []).some(
+        (roadie) =>
+          roadie.status !== RoadieStatus.archived &&
+          paperworkFlags.get(roadie.id.toString()) === true,
+      ),
+    [roadies, paperworkFlags],
+  );
+
   const [expanded, setExpanded] = useState(readStoredExpanded);
 
   const toggle = useCallback(() => {
@@ -140,14 +183,24 @@ export function OpeningTimeline({
     [events],
   );
 
+  // The store-local calendar day of each ordered event, aligned by index.
+  const dayKeys = useMemo(
+    () =>
+      ordered.map((event) => {
+        const date = timestampToDate(event.start);
+        return date ? localDayKey(date, zone) : "";
+      }),
+    [ordered, zone],
+  );
+
   const currentIndex = useMemo(() => {
-    let index = -1;
-    for (let i = 0; i < ordered.length; i += 1) {
-      const date = timestampToDate(ordered[i].start);
-      if (date && date.getTime() <= now) index = i;
-    }
-    return index;
-  }, [ordered, now]);
+    // The current event is the one whose store-local date is today; when no
+    // event falls on today, the next upcoming event (the first with a later
+    // store-local date) is highlighted instead.
+    const todayIndex = dayKeys.findIndex((key) => key === todayKey);
+    if (todayIndex !== -1) return todayIndex;
+    return dayKeys.findIndex((key) => key > todayKey);
+  }, [dayKeys, todayKey]);
 
   // The next milestone strictly after now, used for the collapsed summary line.
   const nextEvent = useMemo(() => {
@@ -255,7 +308,12 @@ export function OpeningTimeline({
               >
                 {ordered.map((event, index) => {
                   const isCurrent = index === currentIndex;
-                  const isPast = index < currentIndex;
+                  const isToday = dayKeys[index] === todayKey;
+                  const isPast = dayKeys[index] < todayKey;
+                  const isPastDue =
+                    isPast &&
+                    event.kind === EventKindEnum.deadline &&
+                    hasIncompleteActivePaperwork;
                   return (
                     <li
                       key={event.id.toString()}
@@ -293,9 +351,19 @@ export function OpeningTimeline({
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {isCurrent && (
+                          {isToday && (
                             <span className="rounded-full bg-primary px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-widest text-primary-foreground">
                               {t("dashboard.timeline.now")}
+                            </span>
+                          )}
+                          {!isToday && isPastDue && (
+                            <span className="rounded-full bg-destructive/10 px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-widest text-destructive">
+                              {t("dashboard.timeline.pastDue")}
+                            </span>
+                          )}
+                          {!isToday && isPast && !isPastDue && (
+                            <span className="rounded-full bg-muted px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                              {t("dashboard.timeline.done")}
                             </span>
                           )}
                           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">

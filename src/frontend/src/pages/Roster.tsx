@@ -29,6 +29,7 @@ import {
   useRoadies,
 } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
+import { useSearch } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -48,6 +49,23 @@ type RosterTab =
  * with no crew, and any other value is a crew id as a string.
  */
 type CrewFilter = "all" | "none" | string;
+
+/** The stage tabs, used to validate a `tab` search param from a deep link. */
+const ROSTER_TABS: RosterTab[] = [
+  "all",
+  "hired",
+  "paperworkDone",
+  "oriented",
+  "inTraining",
+  "certified",
+];
+
+/** Narrow an arbitrary search value to a known stage tab, defaulting to all. */
+function tabFromSearch(value: unknown): RosterTab {
+  return typeof value === "string" && (ROSTER_TABS as string[]).includes(value)
+    ? (value as RosterTab)
+    : "all";
+}
 
 /** The backend stage a stage tab filters to. `"all"` has no single stage. */
 function stageForTab(tab: RosterTab): RoadieStage | undefined {
@@ -70,8 +88,9 @@ function stageForTab(tab: RosterTab): RoadieStage | undefined {
 export default function RosterPage() {
   const { t } = useDashboardCopy();
   const { locale } = useI18n();
+  const search = useSearch({ from: "/roster" });
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<RosterTab>("all");
+  const [tab, setTab] = useState<RosterTab>(() => tabFromSearch(search.tab));
   const [crewFilter, setCrewFilter] = useState<CrewFilter>("all");
   const [showFormer, setShowFormer] = useState(false);
   const [card, setCard] = useState<{ list: CardList; index: number } | null>(

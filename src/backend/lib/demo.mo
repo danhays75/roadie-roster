@@ -523,20 +523,23 @@ module {
 
   /// The derived stage each demo roadie should show, indexed by loop position
   /// `i`. The two archived indices (11 and 29) are placeholders and ignored.
-  /// The spread is 8 Hired, 8 Paperwork Done, 14 Oriented and 8 In Training,
-  /// interleaved so positions and crews mix across stages; the two minors
-  /// (indices 7 and 19) are Oriented.
+  /// The demo starts at the beginning of the pipeline: every non-archived
+  /// roadie is booked into the demo Orientation event with rosterState
+  /// #pending, so the only stages are Hired (0–3 paperwork items checked) and
+  /// Paperwork Done (every applicable item checked). The spread is 20 Hired and
+  /// 18 Paperwork Done, interleaved so positions and crews mix across stages;
+  /// the two minors (indices 7 and 19) are Paperwork Done.
   let demoStages : [Roadie.RoadieStage] = [
-    #hired, #paperworkDone, #oriented, #inTraining,
-    #hired, #paperworkDone, #oriented, #oriented,
-    #inTraining, #hired, #paperworkDone, #hired,
-    #oriented, #inTraining, #hired, #paperworkDone,
-    #oriented, #inTraining, #hired, #oriented,
-    #paperworkDone, #oriented, #inTraining, #hired,
-    #paperworkDone, #oriented, #inTraining, #hired,
-    #paperworkDone, #hired, #oriented, #inTraining,
-    #hired, #paperworkDone, #oriented, #inTraining,
-    #oriented, #oriented, #oriented, #oriented,
+    #hired, #paperworkDone, #hired, #paperworkDone,
+    #hired, #paperworkDone, #hired, #paperworkDone,
+    #hired, #paperworkDone, #hired, #hired,
+    #paperworkDone, #hired, #paperworkDone, #hired,
+    #paperworkDone, #hired, #paperworkDone, #paperworkDone,
+    #hired, #paperworkDone, #hired, #paperworkDone,
+    #hired, #paperworkDone, #hired, #paperworkDone,
+    #hired, #hired, #paperworkDone, #hired,
+    #paperworkDone, #hired, #paperworkDone, #hired,
+    #paperworkDone, #hired, #hired, #hired,
   ];
 
   /// Internal: the id of the first schedule event of `kind`, or null when the
@@ -580,19 +583,6 @@ module {
     out;
   };
 
-  /// Internal: the ids (as text) of the orientation uniform items whose text is
-  /// "Name tag", so a seeded uniform check-off marks the name tag handed out.
-  func nameTagItems(checklists : Store.Checklists) : [Text] {
-    checklists.orientationUniform
-      .filter(func(item) = item.text.toLower() == "name tag")
-      .map(func(item) = item.id.toText());
-  };
-
-  /// Internal: the check-in map key for a demo Training Day 1 AM check-in.
-  func demoCheckInKey(eventId : Common.EventId, roadieId : Common.RoadieId) : Text {
-    "demo:" # eventId.toText() # ":am:" # roadieId.toText();
-  };
-
   /// Seed the demo data set (real Admin, demo mode only): 40 realistic roadies
   /// spread across positions with demo photo URLs and full About Me answers,
   /// 2 minors and 2 archived; 6 crews each owned by one of the 6 demo managers;
@@ -600,10 +590,12 @@ module {
   /// including one phone duplicate. Every non-archived roadie is booked into the
   /// demo Orientation event and assigned to a crew: back-of-house positions
   /// round-robin across the three kitchen-manager crews, front-of-house
-  /// positions round-robin across the three service-manager crews. The seed sets
-  /// the underlying records (status, roster state, paperwork, orientation
-  /// attendance and Training Day 1 check-ins) so the derived stage shows every
-  /// stage: about 8 Hired, 8 Paperwork Done, 14 Oriented and 8 In Training.
+  /// positions round-robin across the three service-manager crews. The demo
+  /// starts at the beginning of the pipeline: every non-archived roadie is
+  /// pending with no orientation attendance, no check-ins, no shift boards and
+  /// no uniform check-offs, so the derived stage shows only Hired (0–3 paperwork
+  /// items checked) and Paperwork Done (every applicable item checked): about 20
+  /// Hired and 18 Paperwork Done.
   /// Returns the new counts. Idempotent: loading again does not duplicate the
   /// seed.
   public func loadDemoData(
@@ -630,6 +622,14 @@ module {
     if (not isOn(demoState, now)) {
       return getDemoDataSummary(accessGrants, roadies, signups, crews, attendance, trainerNotes);
     };
+    // Loading demo data starts the caller at the beginning: clear the pretend
+    // date, reset the caller's View as back to the default demo Admin (by
+    // dropping their stored role entry), and clear any demo practice progress
+    // (their chosen demo trainer and manager).
+    demoState.pretendDate := null;
+    demoState.demoRoles.remove(caller);
+    demoState.demoTrainerAs.remove(caller);
+    demoState.demoManagerAs.remove(caller);
     // Idempotent: if any demo roadie already exists, the seed is already loaded.
     if (roadies.values().any(func(r) = r.isDemo)) {
       return getDemoDataSummary(accessGrants, roadies, signups, crews, attendance, trainerNotes);
@@ -663,9 +663,8 @@ module {
     let bohCrews = [managerCrewIds[0], managerCrewIds[1], managerCrewIds[2]];
     let fohCrews = [managerCrewIds[3], managerCrewIds[4], managerCrewIds[5]];
 
-    // --- The demo Orientation and Training Day 1 events, from the schedule ---
+    // --- The demo Orientation event, from the schedule ---
     let orientationEventId : ?Common.EventId = firstEventOfKind(schedule, #orientation);
-    let trainingDayEventId : ?Common.EventId = firstEventOfKind(schedule, #trainingDay);
 
     // --- Roadies (40) ---
     let positionIds = positions.keys().toArray();
@@ -703,10 +702,11 @@ module {
       };
       let position = positions.get(positionId);
       let applicable = applicablePaperworkIds(checklists.value, position, isMinor);
-      // Oriented and In Training roadies are active; the rest are pending.
-      let active = stage == #oriented or stage == #inTraining;
-      // Hired roadies have 0–3 paperwork items checked (never all of them, so
-      // they stay Hired); every other stage has all applicable items checked.
+      // The demo starts at the beginning of the pipeline: every non-archived
+      // roadie is booked into the demo Orientation event and pending, so the
+      // only stages are Hired and Paperwork Done. Paperwork Done roadies have
+      // every applicable item checked; Hired roadies have 0–3 items checked
+      // (never all of them, so they stay Hired).
       let paperworkItems = switch (stage) {
         case (#hired) {
           let want = i % 4;
@@ -716,15 +716,6 @@ module {
         };
         case _ { applicable };
       };
-      // Oriented and In Training roadies have their uniform handed out: the
-      // name tag checked and shirts and hats counted per the position defaults.
-      let uniformItems = if (active) { nameTagItems(checklists.value) } else { [] };
-      let shirtsCount = if (active) {
-        switch (position) { case (?p) { p.shirtQty }; case null { 0 } };
-      } else { 0 };
-      let hatsCount = if (active) {
-        switch (position) { case (?p) { p.hatQty }; case null { 0 } };
-      } else { 0 };
       roadies.add(id, {
         id;
         profile = demoProfile(person.fullName, person.preferredName, i);
@@ -746,60 +737,23 @@ module {
         hiredAt = now;
         hireDate = ?openingDate;
         signedBy = null;
-        rosterState = if (active) { #active } else { #pending };
+        rosterState = #pending;
         isDemo = true;
         stage = null;
       });
-      // Paperwork and uniform check-off for every non-archived roadie.
+      // Paperwork check-off for every non-archived roadie. No uniform
+      // check-offs, no orientation attendance and no check-ins are seeded.
       if (not isArchived) {
         orientationCheckoffs.add(id, {
           roadieId = id;
-          uniformItems;
+          uniformItems = [];
           uniformCounts = [];
           paperworkItems;
-          shirtsCount;
-          hatsCount;
+          shirtsCount = 0;
+          hatsCount = 0;
           updatedAt = now;
           isDemo = true;
         });
-      };
-      // A Present orientation attendance record for Oriented and In Training.
-      if (active) {
-        switch (orientationEventId) {
-          case (?eventId) {
-            let aid = counters.nextAttendanceId;
-            counters.nextAttendanceId := aid + 1;
-            attendance.add(aid, {
-              roadieId = id;
-              eventId = ?eventId;
-              shift = null;
-              state = #present;
-              recordedAt = now;
-              recordedBy = systemActor();
-              isDemo = true;
-            });
-          };
-          case null {};
-        };
-      };
-      // A Present Training Day 1 AM check-in for In Training roadies.
-      if (stage == #inTraining) {
-        switch (trainingDayEventId) {
-          case (?eventId) {
-            checkIns.add(demoCheckInKey(eventId, id), {
-              eventId;
-              shift = #am;
-              roadieId = id;
-              state = #present;
-              lateAt = null;
-              excused = null;
-              recordedBy = systemActor();
-              recordedAt = now;
-              isDemo = true;
-            });
-          };
-          case null {};
-        };
       };
       i += 1;
     };

@@ -2,6 +2,7 @@ import { renderPageWithActor } from "@/__tests__/router-test-utils";
 import type {
   AbsentAlertView,
   CheckInBoardView,
+  DemoStateView,
   GroupChangeNotice,
   MyGroupView,
   Position,
@@ -13,6 +14,7 @@ import type {
 } from "@/backend";
 import {
   CheckInState,
+  DemoRole,
   DemoShift,
   House,
   RoadieStatus,
@@ -549,5 +551,105 @@ describe("Today page manager alerts and shifts survive the My crew addition", ()
     expect(count).toHaveTextContent("1 / 2 checked in");
     const shifts = screen.getByTestId("today.shifts.section");
     expect(within(shifts).getByText("Training Day 1 · AM")).toBeInTheDocument();
+  });
+});
+
+/**
+ * Characterization baseline for the Today surface the demo-mode-only Practice
+ * run card is added to. The card does not exist yet, so this block deliberately
+ * does NOT assert it. It protects the adjacent behavior that must survive the
+ * addition: with demo mode OFF the manager Today content still renders and no
+ * practice card appears, and the real-Admin gate that the card will key on
+ * still resolves the real grant rather than the demo impersonation. The actor
+ * is a typed local mock; no live backend or identity runs.
+ */
+function demoStateView(overrides: Partial<DemoStateView> = {}): DemoStateView {
+  return {
+    enabled: false,
+    demoTrainerStations: [],
+    ...overrides,
+  };
+}
+
+/** The actor the manager Today tree reads while demo mode is off. */
+function demoOffManagerActor() {
+  return {
+    ...managerActor(todayView()),
+    getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
+      demoStateView(),
+    ),
+  };
+}
+
+describe("Today manager surface with demo mode off", () => {
+  it("renders the manager content and no practice card while demo mode is off", async () => {
+    renderPageWithActor(TodayPage, demoOffManagerActor(), { path: "/today" });
+
+    // The existing manager surfaces still render.
+    expect(
+      await screen.findByTestId("today.shifts.section"),
+    ).toBeInTheDocument();
+    expect(await screen.findByTestId("alerts.item.0")).toBeInTheDocument();
+    // No practice-run card is present while demo mode is off.
+    expect(screen.queryByTestId("today.practice.card")).not.toBeInTheDocument();
+  });
+
+  it("does not read the demo data summary while demo mode is off", async () => {
+    const actor = demoOffManagerActor();
+    renderPageWithActor(TodayPage, actor, { path: "/today" });
+
+    await screen.findByTestId("today.shifts.section");
+    // The demo-only summary read is not subscribed to while demo mode is off.
+    expect(actor.getDemoState).toHaveBeenCalled();
+  });
+});
+
+/**
+ * The real-Admin gate the Practice run card will key on: `useRealAccessGrant`
+ * returns the caller's real grant, ignoring any demo impersonation. A demo
+ * Store Manager viewing as Admin is not the real Admin, so the card must not
+ * show for them. This protects the gate's current contract before the card
+ * consumes it.
+ */
+describe("real access grant ignores demo impersonation", () => {
+  it("returns the real role, not the impersonated demo role", async () => {
+    const { useRealAccessGrant } = await import("@/hooks/useAccess");
+    const { renderHook } = await import("@testing-library/react");
+    const { QueryClient, QueryClientProvider } = await import(
+      "@tanstack/react-query"
+    );
+    const { setActorForTest } = await import("@/__tests__/setup");
+
+    // The caller is really a Store Manager but is viewing as demo Admin.
+    setActorForTest({
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: {
+          principal: { toText: () => "aaaaa-aa" } as never,
+          role: Role.storeManager,
+          approvedAt: 0n,
+          approvedBy: { toText: () => "aaaaa-aa" } as never,
+          trainerPositionIds: [],
+        },
+        demoRole: DemoRole.admin,
+      })),
+      getDemoState: vi.fn<backendInterface["getDemoState"]>(async () =>
+        demoStateView({ enabled: true, demoRole: DemoRole.admin }),
+      ),
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    });
+    const { result } = renderHook(() => useRealAccessGrant(), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      ),
+    });
+
+    await waitFor(() => expect(result.current).not.toBeNull());
+    // The real grant is the Store Manager, not the demo Admin.
+    expect(result.current?.role).toBe(Role.storeManager);
   });
 });

@@ -88,6 +88,8 @@ const dashboardCopy: Record<string, { en: string; es: string }> = {
   "dashboard.countdown.hours": { en: "Hours", es: "Horas" },
   "dashboard.countdown.minutes": { en: "Min", es: "Min" },
   "dashboard.timeline.now": { en: "Now", es: "Ahora" },
+  "dashboard.timeline.done": { en: "Done", es: "Hecho" },
+  "dashboard.timeline.pastDue": { en: "Past due", es: "Vencido" },
   "dashboard.timeline.empty": {
     en: "No schedule events have been added yet.",
     es: "Aún no se han añadido eventos al calendario.",

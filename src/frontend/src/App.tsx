@@ -368,6 +368,9 @@ const dashboardRoute = createRoute({
 const rosterRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/roster",
+  validateSearch: (search: Record<string, unknown>): { tab?: string } => ({
+    tab: typeof search.tab === "string" ? search.tab : undefined,
+  }),
   component: RosterPage,
 });
 

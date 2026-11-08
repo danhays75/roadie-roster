@@ -48002,6 +48002,26 @@ function useSetPretendDate() {
 		}
 	});
 }
+/**
+* The cache key holding the timestamp of the last successful Load demo data
+* action. It is bumped on every load, even when the seed is idempotent and the
+* record counts do not change, so surfaces can react to the action itself.
+*/
+var DEMO_DATA_LOADED_KEY = ["demoDataLoadedAt"];
+/**
+* The timestamp of the last successful Load demo data action, or 0 before any
+* load. Reads the shared marker written by `useLoadDemoData`, so it changes on
+* every load regardless of whether the demo record counts changed.
+*/
+function useDemoDataLoadedAt() {
+	const { data } = useQuery({
+		queryKey: DEMO_DATA_LOADED_KEY,
+		queryFn: async () => 0,
+		staleTime: Number.POSITIVE_INFINITY,
+		enabled: false
+	});
+	return data ?? 0;
+}
 /** Count the demo records currently loaded (Admin, demo mode only). */
 function useDemoDataSummary(enabled = true) {
 	const { actor, isFetching } = useActor(createActor);
@@ -48027,6 +48047,7 @@ function useLoadDemoData() {
 			return actor.loadDemoData();
 		},
 		onSuccess: () => {
+			queryClient.setQueryData(DEMO_DATA_LOADED_KEY, Date.now());
 			queryClient.invalidateQueries({ queryKey: ["demoDataSummary"] });
 			queryClient.invalidateQueries({ queryKey: ["roadies"] });
 			queryClient.invalidateQueries({ queryKey: ["pendingSignups"] });
@@ -50362,6 +50383,23 @@ var dictionaries = {
 		"demo.banner.role.leadership": "Leadership",
 		"demo.banner.role.kiosk": "Kiosk",
 		"demo.signAsTest": "Sign as Test",
+		"today.practice.title": "Practice run",
+		"today.practice.progress": "Step {step} of {total}",
+		"today.practice.hide": "Hide",
+		"today.practice.takeMeThere": "Take me there",
+		"today.practice.complete": "Practice run complete! Turn off demo mode when you're done.",
+		"today.practice.step1.title": "Approve a new roadie",
+		"today.practice.step1.body": "Approve a demo kiosk sign-up on Approve New Hires.",
+		"today.practice.step2.title": "Finish someone's paperwork",
+		"today.practice.step2.body": "Open Roster on the Hired tab and finish a roadie's paperwork.",
+		"today.practice.step3.title": "Orientation day",
+		"today.practice.step3.body": "Mark everyone who showed up Present.",
+		"today.practice.step4.title": "Build Training Day 1 groups",
+		"today.practice.step4.body": "Tap Auto-fill, then Save.",
+		"today.practice.step5.title": "Check in as a trainer",
+		"today.practice.step5.body": "Mark Present, Late or Absent for each roadie; mark at least one Absent.",
+		"today.practice.step6.title": "Handle the absence as a manager",
+		"today.practice.step6.body": "Use Excused, Move or Archive on the Absent alert.",
 		"footer.attribution": "Built with love using caffeine.ai"
 	},
 	es: {
@@ -51066,6 +51104,23 @@ var dictionaries = {
 		"demo.banner.role.leadership": "Liderazgo",
 		"demo.banner.role.kiosk": "Quiosco",
 		"demo.signAsTest": "Firmar como prueba",
+		"today.practice.title": "Práctica",
+		"today.practice.progress": "Paso {step} de {total}",
+		"today.practice.hide": "Ocultar",
+		"today.practice.takeMeThere": "Llévame allí",
+		"today.practice.complete": "¡Práctica completada! Desactiva el modo demo cuando termines.",
+		"today.practice.step1.title": "Aprueba un nuevo roadie",
+		"today.practice.step1.body": "Aprueba un registro demo del quiosco en Aprobar nuevos contratados.",
+		"today.practice.step2.title": "Completa el papeleo de alguien",
+		"today.practice.step2.body": "Abre la Plantilla en la pestaña Contratados y completa el papeleo de un roadie.",
+		"today.practice.step3.title": "Día de orientación",
+		"today.practice.step3.body": "Marca como Presente a todos los que asistieron.",
+		"today.practice.step4.title": "Crea los grupos del Día de entrenamiento 1",
+		"today.practice.step4.body": "Toca Rellenar automáticamente y luego Guardar.",
+		"today.practice.step5.title": "Registra como entrenador",
+		"today.practice.step5.body": "Marca Presente, Tarde o Ausente para cada roadie; marca al menos un Ausente.",
+		"today.practice.step6.title": "Gestiona la ausencia como gerente",
+		"today.practice.step6.body": "Usa Justificar, Mover o Archivar en la alerta de ausencia.",
 		"footer.attribution": "Hecho con cariño usando caffeine.ai"
 	}
 };
@@ -59427,6 +59482,14 @@ var dashboardCopy = {
 	"dashboard.timeline.now": {
 		en: "Now",
 		es: "Ahora"
+	},
+	"dashboard.timeline.done": {
+		en: "Done",
+		es: "Hecho"
+	},
+	"dashboard.timeline.pastDue": {
+		en: "Past due",
+		es: "Vencido"
 	},
 	"dashboard.timeline.empty": {
 		en: "No schedule events have been added yet.",
@@ -98948,6 +99011,15 @@ function eventKindLabel(kind) {
 	}[kind] ?? "Event";
 }
 /**
+* A store-local calendar day key (`YYYY-MM-DD`) for an instant. Two instants
+* share a key exactly when they fall on the same calendar day in the store's
+* time zone, so keys compare lexicographically to order days.
+*/
+function localDayKey(instant, timeZone) {
+	const { year, month, day } = calendarInTimeZone(instant, timeZone);
+	return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+/**
 * The current instant, refreshed on an interval. When demo mode supplies a
 * pretend date, that instant is returned instead of the real clock so the
 * countdown and schedule windows follow the pretend date.
@@ -99014,6 +99086,13 @@ function OpeningTimeline({ events, openingDate }) {
 		demo.pretendDate,
 		storeInfo
 	]));
+	const zone = timeZone ?? "America/Chicago";
+	const todayKey = (0, import_react.useMemo)(() => localDayKey(new Date(now), zone), [now, zone]);
+	const access = useAccessState();
+	const canReadPaperwork = canArchive(access.kind === "granted" ? access.grant.role : void 0);
+	const { data: roadies } = useRoadies();
+	const paperworkFlags = usePaperworkIncompleteMap(roadies ?? [], canReadPaperwork);
+	const hasIncompleteActivePaperwork = (0, import_react.useMemo)(() => (roadies ?? []).some((roadie) => roadie.status !== RoadieStatus.archived && paperworkFlags.get(roadie.id.toString()) === true), [roadies, paperworkFlags]);
 	const [expanded, setExpanded] = (0, import_react.useState)(readStoredExpanded);
 	const toggle = (0, import_react.useCallback)(() => {
 		setExpanded((current) => {
@@ -99025,14 +99104,15 @@ function OpeningTimeline({ events, openingDate }) {
 	const ordered = (0, import_react.useMemo)(() => [...events].sort((a, b) => Number(a.start - b.start)).filter((event) => {
 		return timestampToDate(event.start) !== null;
 	}), [events]);
+	const dayKeys = (0, import_react.useMemo)(() => ordered.map((event) => {
+		const date = timestampToDate(event.start);
+		return date ? localDayKey(date, zone) : "";
+	}), [ordered, zone]);
 	const currentIndex = (0, import_react.useMemo)(() => {
-		let index = -1;
-		for (let i = 0; i < ordered.length; i += 1) {
-			const date = timestampToDate(ordered[i].start);
-			if (date && date.getTime() <= now) index = i;
-		}
-		return index;
-	}, [ordered, now]);
+		const todayIndex = dayKeys.findIndex((key) => key === todayKey);
+		if (todayIndex !== -1) return todayIndex;
+		return dayKeys.findIndex((key) => key > todayKey);
+	}, [dayKeys, todayKey]);
 	const nextEvent = (0, import_react.useMemo)(() => {
 		for (const event of ordered) {
 			const date = timestampToDate(event.start);
@@ -99123,7 +99203,9 @@ function OpeningTimeline({ events, openingDate }) {
 							"data-ocid": "dashboard.timeline.list",
 							children: ordered.map((event, index) => {
 								const isCurrent = index === currentIndex;
-								const isPast = index < currentIndex;
+								const isToday = dayKeys[index] === todayKey;
+								const isPast = dayKeys[index] < todayKey;
+								const isPastDue = isPast && event.kind === EventKind.deadline && hasIncompleteActivePaperwork;
 								return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
 									"data-ocid": `dashboard.timeline.item.${index + 1}`,
 									className: "relative py-2",
@@ -99143,16 +99225,27 @@ function OpeningTimeline({ events, openingDate }) {
 											})]
 										}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 											className: "flex items-center gap-2",
-											children: [isCurrent && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-												className: "rounded-full bg-primary px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-widest text-primary-foreground",
-												children: t("dashboard.timeline.now")
-											}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-												className: "flex items-center gap-1.5 text-xs text-muted-foreground",
-												children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CalendarClock, {
-													className: "h-3.5 w-3.5",
-													"aria-hidden": "true"
-												}), formatTimestampMediumDate(event.start, timeZone)]
-											})]
+											children: [
+												isToday && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+													className: "rounded-full bg-primary px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-widest text-primary-foreground",
+													children: t("dashboard.timeline.now")
+												}),
+												!isToday && isPastDue && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+													className: "rounded-full bg-destructive/10 px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-widest text-destructive",
+													children: t("dashboard.timeline.pastDue")
+												}),
+												!isToday && isPast && !isPastDue && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+													className: "rounded-full bg-muted px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-widest text-muted-foreground",
+													children: t("dashboard.timeline.done")
+												}),
+												/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+													className: "flex items-center gap-1.5 text-xs text-muted-foreground",
+													children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CalendarClock, {
+														className: "h-3.5 w-3.5",
+														"aria-hidden": "true"
+													}), formatTimestampMediumDate(event.start, timeZone)]
+												})
+											]
 										})]
 									})]
 								}, event.id.toString());
@@ -108464,6 +108557,19 @@ function RoadieCardPage() {
 }
 //#endregion
 //#region src/pages/Roster.tsx
+/** The stage tabs, used to validate a `tab` search param from a deep link. */
+var ROSTER_TABS = [
+	"all",
+	"hired",
+	"paperworkDone",
+	"oriented",
+	"inTraining",
+	"certified"
+];
+/** Narrow an arbitrary search value to a known stage tab, defaulting to all. */
+function tabFromSearch(value) {
+	return typeof value === "string" && ROSTER_TABS.includes(value) ? value : "all";
+}
 /** The backend stage a stage tab filters to. `"all"` has no single stage. */
 function stageForTab(tab) {
 	switch (tab) {
@@ -108478,8 +108584,9 @@ function stageForTab(tab) {
 function RosterPage() {
 	const { t } = useDashboardCopy();
 	const { locale } = useI18n();
+	const search = useSearch({ from: "/roster" });
 	const [query, setQuery] = (0, import_react.useState)("");
-	const [tab, setTab] = (0, import_react.useState)("all");
+	const [tab, setTab] = (0, import_react.useState)(() => tabFromSearch(search.tab));
 	const [crewFilter, setCrewFilter] = (0, import_react.useState)("all");
 	const [showFormer, setShowFormer] = (0, import_react.useState)(false);
 	const [card, setCard] = (0, import_react.useState)(null);
@@ -109646,6 +109753,249 @@ function CheckInBoard({ eventId, shift, shiftLabel }) {
 	});
 }
 //#endregion
+//#region src/components/demo/PracticeRunCard.tsx
+/**
+* The demo seed baselines the practice run compares against. The seed loads 3
+* pending kiosk sign-ups and 18 roadies already at Paperwork Done, so steps 1
+* and 2 count as done only once the Admin moves past those baselines. Steps 3-6
+* start from zero in the seed, so their thresholds are absolute.
+*/
+var SEED_PENDING_SIGNUPS = 3;
+var SEED_PAPERWORK_DONE = 18;
+var ORIENTED_TARGET = 10;
+/** The first Training Day event's id and date, or null when none is scheduled. */
+function firstTrainingDay(schedule) {
+	const first = schedule.filter((event) => event.kind === EventKind.trainingDay).sort((a, b) => Number(a.start - b.start))[0];
+	if (!first) return null;
+	const date = timestampToDate(first.start);
+	if (!date) return null;
+	return {
+		eventId: first.id,
+		day: dateToDateOnly(date)
+	};
+}
+/** The demo Orientation event's date, or null when none is scheduled. */
+function orientationDay(schedule) {
+	const event = schedule.find((item) => item.kind === EventKind.orientation);
+	if (!event) return null;
+	const date = timestampToDate(event.start);
+	return date ? dateToDateOnly(date) : null;
+}
+/**
+* The practice-run card body. Mounted only while demo mode is on and the caller
+* is the real Admin, so its demo-data reads never run on any other screen.
+*/
+function PracticeRunBody({ onHide }) {
+	const { t } = useI18n();
+	const navigate = useNavigate();
+	const demo = useDemo();
+	const setTrainerAs = useSetDemoTrainerAs();
+	const summary = useDemoDataSummary(true);
+	const roadies = useRoadies();
+	const schedule = useSchedule();
+	const crews = useCrews();
+	const alerts = useAbsentAlerts(true);
+	const trainingDay1 = (0, import_react.useMemo)(() => firstTrainingDay(schedule.data ?? []), [schedule.data]);
+	const board = useShiftBoard(trainingDay1?.eventId, Shift.am, !!trainingDay1);
+	const checkIn = useCheckInBoard(trainingDay1?.eventId, Shift.am, !!trainingDay1);
+	const demoRoadies = roadies.data ?? [];
+	const pendingSignups = summary.data ? Number(summary.data.signups) : 0;
+	const paperworkDone = demoRoadies.filter((roadie) => roadie.stage === RoadieStage.paperworkDone).length;
+	const oriented = demoRoadies.filter((roadie) => roadie.stage === RoadieStage.oriented).length;
+	const boardGroups = board.data?.groups ?? [];
+	const boardHasGroup = boardGroups.some((group) => group.roadies.length > 0);
+	const firstTrainer = boardGroups.find((group) => group.roadies.length > 0)?.trainerPrincipal;
+	const checkedInIds = new Set((checkIn.data?.roadies ?? []).filter((row) => row.state !== void 0).map((row) => row.roadieId.toString()));
+	const trainerGroup = boardGroups.find((group) => firstTrainer !== void 0 && group.trainerPrincipal.toString() === firstTrainer.toString());
+	const trainerGroupCheckedIn = !!trainerGroup && trainerGroup.roadies.length > 0 && trainerGroup.roadies.every((roadie) => checkedInIds.has(roadie.roadieId.toString()));
+	const alertHandled = (alerts.data ?? []).some((alert) => alert.excused !== void 0 || alert.archived);
+	const absentCrewOwner = (0, import_react.useMemo)(() => {
+		const alert = (alerts.data ?? [])[0];
+		if (!alert) return void 0;
+		const roadie = demoRoadies.find((candidate) => candidate.id.toString() === alert.roadieId.toString());
+		if (!roadie?.crewId) return void 0;
+		return (crews.data ?? []).find((candidate) => candidate.id.toString() === roadie.crewId?.toString())?.leaderPrincipal;
+	}, [
+		alerts.data,
+		demoRoadies,
+		crews.data
+	]);
+	const orientationDate = (0, import_react.useMemo)(() => orientationDay(schedule.data ?? []), [schedule.data]);
+	const steps = [
+		{
+			id: 1,
+			titleKey: "today.practice.step1.title",
+			bodyKey: "today.practice.step1.body",
+			done: pendingSignups < SEED_PENDING_SIGNUPS,
+			onTakeMeThere: () => {
+				demo.setRole(DemoRole.admin, []);
+				demo.setPretendDate(null);
+				navigate({ to: "/approvals" });
+			}
+		},
+		{
+			id: 2,
+			titleKey: "today.practice.step2.title",
+			bodyKey: "today.practice.step2.body",
+			done: paperworkDone > SEED_PAPERWORK_DONE,
+			onTakeMeThere: () => {
+				demo.setRole(DemoRole.admin, []);
+				navigate({
+					to: "/roster",
+					search: { tab: "hired" }
+				});
+			}
+		},
+		{
+			id: 3,
+			titleKey: "today.practice.step3.title",
+			bodyKey: "today.practice.step3.body",
+			done: oriented >= ORIENTED_TARGET,
+			onTakeMeThere: () => {
+				if (orientationDate !== null) demo.setPretendDate({
+					day: orientationDate,
+					shift: DemoShift.am
+				});
+				demo.setRole(DemoRole.admin, []);
+				navigate({ to: "/orientation" });
+			}
+		},
+		{
+			id: 4,
+			titleKey: "today.practice.step4.title",
+			bodyKey: "today.practice.step4.body",
+			done: boardHasGroup,
+			onTakeMeThere: () => {
+				if (trainingDay1) demo.setPretendDate({
+					day: trainingDay1.day,
+					shift: DemoShift.am
+				});
+				demo.setRole(DemoRole.admin, []);
+				navigate({ to: "/groups" });
+			}
+		},
+		{
+			id: 5,
+			titleKey: "today.practice.step5.title",
+			bodyKey: "today.practice.step5.body",
+			done: trainerGroupCheckedIn,
+			onTakeMeThere: () => {
+				if (trainingDay1) demo.setPretendDate({
+					day: trainingDay1.day,
+					shift: DemoShift.am
+				});
+				demo.setRole(DemoRole.trainer, []);
+				if (firstTrainer) setTrainerAs.mutate(firstTrainer);
+				navigate({ to: "/today" });
+			}
+		},
+		{
+			id: 6,
+			titleKey: "today.practice.step6.title",
+			bodyKey: "today.practice.step6.body",
+			done: alertHandled,
+			onTakeMeThere: () => {
+				if (trainingDay1) demo.setPretendDate({
+					day: trainingDay1.day,
+					shift: DemoShift.am
+				});
+				demo.setRole(DemoRole.storeManager, []);
+				if (absentCrewOwner) demo.setManagerAs(absentCrewOwner);
+				navigate({ to: "/today" });
+			}
+		}
+	];
+	const firstNotDone = steps.find((step) => !step.done);
+	const allDone = !firstNotDone;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		"data-ocid": "today.practice.card",
+		"aria-label": t("today.practice.title"),
+		className: "rounded-lg border border-primary/40 bg-card p-5 shadow-subtle",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "flex flex-wrap items-start justify-between gap-3",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "min-w-0",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+					className: "font-display text-lg font-bold uppercase tracking-wide text-foreground",
+					children: t("today.practice.title")
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					"data-ocid": "today.practice.progress",
+					className: "mt-1 text-sm font-medium text-muted-foreground",
+					children: allDone ? t("today.practice.complete") : t("today.practice.progress", {
+						step: firstNotDone?.id ?? steps.length,
+						total: steps.length
+					})
+				})]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+				type: "button",
+				variant: "ghost",
+				size: "sm",
+				"data-ocid": "today.practice.hide_button",
+				className: "touch-target shrink-0",
+				onClick: onHide,
+				children: t("today.practice.hide")
+			})]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", {
+			className: "mt-4 space-y-2",
+			"data-ocid": "today.practice.list",
+			children: steps.map((step) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
+				"data-ocid": `today.practice.step.${step.id}`,
+				className: cn("flex flex-wrap items-start gap-3 rounded-md border p-3", step.done ? "border-border bg-muted/30" : step.id === firstNotDone?.id ? "border-primary/50 bg-primary/5" : "border-border bg-card"),
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-display text-sm font-bold", step.done ? "bg-[oklch(0.62_0.17_150)] text-white" : "bg-muted text-muted-foreground"),
+						"aria-hidden": "true",
+						children: step.done ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { className: "h-4 w-4" }) : step.id
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "min-w-0 flex-1",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "font-display text-sm font-semibold uppercase tracking-wide text-foreground",
+							children: t(step.titleKey)
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "mt-0.5 text-sm text-muted-foreground",
+							children: t(step.bodyKey)
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+						type: "button",
+						variant: "outline",
+						size: "sm",
+						"data-ocid": `today.practice.step.${step.id}.take_me_there_button`,
+						className: "touch-target shrink-0",
+						onClick: step.onTakeMeThere,
+						children: [t("today.practice.takeMeThere"), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, {
+							className: "ml-1 h-4 w-4",
+							"aria-hidden": "true"
+						})]
+					})
+				]
+			}, step.id))
+		})]
+	});
+}
+/**
+* The demo-mode-only "Practice run" card at the top of Today. Shown only to the
+* real Admin while demo mode is on, regardless of the current View as role. Each
+* step's done state is derived from the demo data, never from a manual tick, and
+* "Take me there" drives the existing demo setters before navigating.
+*
+* The card body is mounted only while it is actually shown, so none of its
+* demo-data reads run when demo mode is off or for a non-Admin caller.
+*/
+function PracticeRunCard() {
+	const demo = useDemo();
+	const realGrant = useRealAccessGrant();
+	const loadedAt = useDemoDataLoadedAt();
+	const [hidden, setHidden] = (0, import_react.useState)(false);
+	(0, import_react.useEffect)(() => {
+		if (loadedAt > 0) setHidden(false);
+	}, [loadedAt]);
+	const isRealAdmin = realGrant?.role === Role.admin;
+	if (!demo.enabled || !isRealAdmin || hidden) return null;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PracticeRunBody, { onHide: () => setHidden(true) });
+}
+//#endregion
 //#region src/pages/Today.tsx
 /**
 * One dismissible "Your group changed" notice: the shift label, the added and
@@ -110299,20 +110649,24 @@ function TodayPage() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-6",
 		"data-ocid": "today.page",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
-			title: t("today.title"),
-			subtitle: t("app.tagline")
-		}), isTrainer ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrainerToday, { mayCheckIn }) : maySeeManager ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ManagerToday, { role }) : readOnly ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ReadOnlyToday, {}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
-			"data-ocid": "today.placeholder",
-			className: "rounded-lg border border-dashed border-border bg-card p-8 text-center",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
-				className: "font-display text-xl font-semibold uppercase tracking-wide",
-				children: t("today.placeholder.title")
-			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "mx-auto mt-2 max-w-lg text-sm text-muted-foreground",
-				children: t("today.placeholder.body")
-			})]
-		})]
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PageHeader, {
+				title: t("today.title"),
+				subtitle: t("app.tagline")
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PracticeRunCard, {}),
+			isTrainer ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TrainerToday, { mayCheckIn }) : maySeeManager ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ManagerToday, { role }) : readOnly ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ReadOnlyToday, {}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+				"data-ocid": "today.placeholder",
+				className: "rounded-lg border border-dashed border-border bg-card p-8 text-center",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+					className: "font-display text-xl font-semibold uppercase tracking-wide",
+					children: t("today.placeholder.title")
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "mx-auto mt-2 max-w-lg text-sm text-muted-foreground",
+					children: t("today.placeholder.body")
+				})]
+			})
+		]
 	});
 }
 //#endregion
@@ -110570,6 +110924,7 @@ var dashboardRoute = createRoute({
 var rosterRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/roster",
+	validateSearch: (search) => ({ tab: typeof search.tab === "string" ? search.tab : void 0 }),
 	component: RosterPage
 });
 var myProfileRoute = createRoute({
