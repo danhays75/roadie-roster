@@ -117,7 +117,7 @@ mixin (
   /// Set the paperwork items for a roadie (Admin or Store Manager only, logged).
   /// Updates only `paperworkItems` and keeps the uniform fields.
   public shared ({ caller }) func setPaperworkItems(roadieId : Common.RoadieId, paperworkItems : [Text]) : async () {
-    Phase23Lib.setPaperworkItems(accessGrants, demoState, roadies, checklists, orientationCheckoffs, changeLog, counters, storeInfo.value, caller, roadieId, paperworkItems);
+    Phase23Lib.setPaperworkItems(accessGrants, demoState, roadies, positions, checklists, orientationCheckoffs, changeLog, counters, storeInfo.value, caller, roadieId, paperworkItems);
   };
 
   /// Read one shift board with its trainer columns, Unassigned tray and Off

@@ -184,8 +184,10 @@ describe("backend paperwork, uniform and override contract", () => {
   }
 
   // The Servers position (id 0) needs an alcohol cert, so a non-minor roadie's
-  // applicable paperwork is the four seeded items 0-3; item 4 is minor-only.
-  const COMPLETE_PAPERWORK = ["0", "1", "2", "3"];
+  // applicable paperwork is the four seeded items in checklist order
+  // (Digital Paperwork, I-9 / W-4, Alcohol Certificate, Policies & Procedures);
+  // item 4 is minor-only.
+  const COMPLETE_PAPERWORK = ["0", "5", "3", "1"];
 
   it("keeps the roadie's paperwork when the uniform check-off is saved", async () => {
     const roadieId = await newRoadie("Uniform Saver", "+1-555-0301");
@@ -222,17 +224,17 @@ describe("backend paperwork, uniform and override contract", () => {
   it("restricts setPaperworkItems to Admin and Store Manager", async () => {
     const roadieId = await newRoadie("Role Gated", "+1-555-0303");
 
-    // A Store Manager may set paperwork.
+    // A Store Manager may set paperwork (the first applicable item, in order).
     await expect(
-      manager.setPaperworkItems(roadieId, ["3"]),
+      manager.setPaperworkItems(roadieId, ["0"]),
     ).resolves.toBeNull();
 
     // A Training Manager and a Visiting Manager may not.
     await expect(
-      trainingManager.setPaperworkItems(roadieId, ["3"]),
+      trainingManager.setPaperworkItems(roadieId, ["0"]),
     ).rejects.toThrow();
     await expect(
-      visitingManager.setPaperworkItems(roadieId, ["3"]),
+      visitingManager.setPaperworkItems(roadieId, ["0"]),
     ).rejects.toThrow();
   });
 

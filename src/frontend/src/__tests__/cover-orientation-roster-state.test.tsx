@@ -773,17 +773,27 @@ describe("Uniform check-off", () => {
 
 const PAPERWORK_ITEMS: ChecklistItem[] = [
   {
-    id: 1n,
-    text: "I-9 form",
+    id: 0n,
+    text: "Digital Paperwork",
     minorOnly: false,
     requiresAlcoholCert: false,
+    enabled: true,
+    itemType: UniformItemType.checkbox,
+  },
+  {
+    id: 5n,
+    text: "I-9 / W-4",
+    minorOnly: false,
+    requiresAlcoholCert: false,
+    enabled: true,
     itemType: UniformItemType.checkbox,
   },
   {
     id: 3n,
-    text: "Alcohol certificate",
+    text: "Alcohol Certificate",
     minorOnly: false,
     requiresAlcoholCert: true,
+    enabled: true,
     itemType: UniformItemType.checkbox,
   },
   {
@@ -791,6 +801,7 @@ const PAPERWORK_ITEMS: ChecklistItem[] = [
     text: "LA employment certificate (LWC confirmation received)",
     minorOnly: true,
     requiresAlcoholCert: false,
+    enabled: true,
     itemType: UniformItemType.checkbox,
   },
 ];
@@ -887,7 +898,7 @@ describe("Manager tab paperwork checklist", () => {
   it("shows each applicable item's checked state and reports Paperwork n of m", async () => {
     renderPageWithActor(
       RoadieCardPage,
-      managerTabActor(Role.storeManager, managerRoadie(), checkoff(["1"])),
+      managerTabActor(Role.storeManager, managerRoadie(), checkoff(["0"])),
       { path: "/roster/$roadieId", initialEntry: "/roster/1" },
     );
 
@@ -895,10 +906,11 @@ describe("Manager tab paperwork checklist", () => {
 
     const section = await screen.findByTestId("roadie.manager.paperwork");
     // The alcohol item applies (Servers needs an alcohol cert) and the minor
-    // item does not (the roadie is not a minor), so two items are applicable.
-    expect(within(section).getByText("I-9 form")).toBeInTheDocument();
+    // item does not (the roadie is not a minor), so three items are applicable.
+    expect(within(section).getByText("Digital Paperwork")).toBeInTheDocument();
+    expect(within(section).getByText("I-9 / W-4")).toBeInTheDocument();
     expect(
-      within(section).getByText("Alcohol certificate"),
+      within(section).getByText("Alcohol Certificate"),
     ).toBeInTheDocument();
     expect(
       within(section).queryByText(
@@ -906,16 +918,16 @@ describe("Manager tab paperwork checklist", () => {
       ),
     ).not.toBeInTheDocument();
 
-    // The stored item is checked; the other is not.
+    // The stored item is checked; the others are not.
     const boxes = within(section).getAllByTestId("roadie.paperwork.checkbox");
-    expect(boxes).toHaveLength(2);
+    expect(boxes).toHaveLength(3);
     expect(boxes[0]).toBeChecked();
     expect(boxes[1]).not.toBeChecked();
 
     // The progress line counts the checked applicable items.
     expect(
       within(section).getByTestId("roadie.paperwork.progress"),
-    ).toHaveTextContent("Paperwork 1 of 2");
+    ).toHaveTextContent("Paperwork 1 of 3");
     // Not complete yet, so no Complete badge.
     expect(
       within(section).queryByTestId("roadie.paperwork.complete"),
@@ -926,7 +938,7 @@ describe("Manager tab paperwork checklist", () => {
     const actor = managerTabActor(
       Role.storeManager,
       managerRoadie(),
-      checkoff(["1"]),
+      checkoff(["0"]),
     );
     renderPageWithActor(RoadieCardPage, actor, {
       path: "/roster/$roadieId",
@@ -937,18 +949,23 @@ describe("Manager tab paperwork checklist", () => {
 
     const section = await screen.findByTestId("roadie.manager.paperwork");
     const boxes = within(section).getAllByTestId("roadie.paperwork.checkbox");
-    // Check the second applicable item.
+    // Check the second applicable item (I-9 / W-4), which is enabled because
+    // Digital Paperwork above it is already checked.
     await user.click(boxes[1]);
 
     await waitFor(() =>
-      expect(actor.setPaperworkItems).toHaveBeenCalledWith(1n, ["1", "3"]),
+      expect(actor.setPaperworkItems).toHaveBeenCalledWith(1n, ["0", "5"]),
     );
   });
 
   it("shows the Complete badge when every applicable item is checked", async () => {
     renderPageWithActor(
       RoadieCardPage,
-      managerTabActor(Role.storeManager, managerRoadie(), checkoff(["1", "3"])),
+      managerTabActor(
+        Role.storeManager,
+        managerRoadie(),
+        checkoff(["0", "5", "3"]),
+      ),
       { path: "/roster/$roadieId", initialEntry: "/roster/1" },
     );
 
@@ -957,7 +974,7 @@ describe("Manager tab paperwork checklist", () => {
     const section = await screen.findByTestId("roadie.manager.paperwork");
     expect(
       within(section).getByTestId("roadie.paperwork.progress"),
-    ).toHaveTextContent("Paperwork 2 of 2");
+    ).toHaveTextContent("Paperwork 3 of 3");
     expect(
       within(section).getByTestId("roadie.paperwork.complete"),
     ).toBeInTheDocument();
@@ -977,6 +994,64 @@ describe("Manager tab paperwork checklist", () => {
     expect(
       screen.queryByTestId("roadie.paperwork.checkbox"),
     ).not.toBeInTheDocument();
+  });
+
+  it("hides the alcohol item for a position that does not need an alcohol cert", async () => {
+    // A cook position does not need an alcohol cert, so the alcohol item must
+    // not appear even though the checklist carries it.
+    const cook: Position = { ...SERVERS, needsAlcoholCert: false };
+    const actor = {
+      ...managerTabActor(Role.storeManager, managerRoadie(), checkoff([])),
+      listPositions: vi.fn<backendInterface["listPositions"]>(async () => [
+        cook,
+      ]),
+    };
+    renderPageWithActor(RoadieCardPage, actor, {
+      path: "/roster/$roadieId",
+      initialEntry: "/roster/1",
+    });
+
+    await openManagerTab();
+
+    const section = await screen.findByTestId("roadie.manager.paperwork");
+    expect(within(section).getByText("Digital Paperwork")).toBeInTheDocument();
+    expect(within(section).getByText("I-9 / W-4")).toBeInTheDocument();
+    expect(
+      within(section).queryByText("Alcohol Certificate"),
+    ).not.toBeInTheDocument();
+    // Only the two non-alcohol items apply, so the progress line counts two.
+    expect(
+      within(section).getByTestId("roadie.paperwork.progress"),
+    ).toHaveTextContent("Paperwork 0 of 2");
+  });
+
+  it("shows the minor-only item for a minor roadie", async () => {
+    renderPageWithActor(
+      RoadieCardPage,
+      managerTabActor(
+        Role.storeManager,
+        managerRoadie({ isMinor: true }),
+        checkoff([]),
+      ),
+      { path: "/roster/$roadieId", initialEntry: "/roster/1" },
+    );
+
+    await openManagerTab();
+
+    const section = await screen.findByTestId("roadie.manager.paperwork");
+    // The minor-only item applies to a minor, alongside the alcohol item
+    // (Servers needs an alcohol cert) and the two non-alcohol items.
+    expect(
+      within(section).getByText(
+        "LA employment certificate (LWC confirmation received)",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(section).getByText("Alcohol Certificate"),
+    ).toBeInTheDocument();
+    expect(
+      within(section).getByTestId("roadie.paperwork.progress"),
+    ).toHaveTextContent("Paperwork 0 of 4");
   });
 });
 

@@ -84,15 +84,27 @@ module {
   /// A checklist item (orientation uniform or paperwork). `itemType` is
   /// `#checkbox` for a simple tick or `#count` for a counted item (for example
   /// shirts or hats given); paperwork items are always `#checkbox`.
+  ///
+  /// `enabled` is meaningful only for paperwork items: a disabled paperwork
+  /// item is hidden everywhere as if it did not exist (the roadie card
+  /// checklist, the stage tags, paperwork counts and totals, the Paperwork Done
+  /// stage, the orientation gate and the Practice run) and never blocks
+  /// in-order completion. Orientation uniform items are always enabled.
   public type ChecklistItem = {
     id : Nat;
     text : Text;
     requiresAlcoholCert : Bool;
     minorOnly : Bool;
     itemType : Common.UniformItemType;
+    enabled : Bool;
   };
 
-  /// The two editable checklists.
+  /// The two editable checklists. Array order is the display and enforcement
+  /// order. `paperwork` is ordered: Digital Paperwork, I-9 / W-4, Alcohol
+  /// Certificate, Food Handler Card, Policies & Procedures, then any minor-only
+  /// items. An item may only be checked when every applicable, enabled item
+  /// above it is checked, and unchecking an item also unchecks every item below
+  /// it. Disabled items are skipped entirely.
   public type Checklists = {
     orientationUniform : [ChecklistItem];
     paperwork : [ChecklistItem];

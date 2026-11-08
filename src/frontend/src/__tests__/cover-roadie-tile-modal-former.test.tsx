@@ -169,6 +169,100 @@ describe("position roster dialog shows each roadie's own photo", () => {
   });
 });
 
+describe("roadie tile photo box is a 4:5 portrait", () => {
+  it("renders the photo box at a 4:5 aspect ratio spanning the full tile width", async () => {
+    renderWithActor(
+      <PositionRosterDialog
+        position={POSITION}
+        open
+        onOpenChange={vi.fn()}
+        canRehire={false}
+      />,
+      dialogActor([roadie({ id: 7n })]),
+    );
+
+    const photo = await screen.findByTestId("dashboard.roster.item.photo");
+    expect(photo.className).toContain("aspect-[4/5]");
+    expect(photo.className).toContain("w-full");
+  });
+
+  it("crops a stored photo with object-cover and a center 30% focal point", async () => {
+    renderWithActor(
+      <PositionRosterDialog
+        position={POSITION}
+        open
+        onOpenChange={vi.fn()}
+        canRehire={false}
+      />,
+      dialogActor([roadie({ id: 7n })]),
+    );
+
+    const photo = await screen.findByTestId("dashboard.roster.item.photo");
+    const img = await within(photo).findByRole("img", { name: "Ada" });
+    expect(img.className).toContain("object-cover");
+    expect(img.className).toContain("object-[center_30%]");
+  });
+
+  it("uses the same 4:5 box for a demo photo and for the initials fallback", async () => {
+    const demoActor = dialogActor([
+      roadie({ id: 7n, demoPhotoUrl: "https://example.test/demo.png" }),
+    ]);
+    demoActor.getPhoto = vi.fn<backendInterface["getPhoto"]>(async () => null);
+    const { unmount } = renderWithActor(
+      <PositionRosterDialog
+        position={POSITION}
+        open
+        onOpenChange={vi.fn()}
+        canRehire={false}
+      />,
+      demoActor,
+    );
+
+    const demoPhoto = await screen.findByTestId("dashboard.roster.item.photo");
+    expect(demoPhoto.className).toContain("aspect-[4/5]");
+    const demoImg = await within(demoPhoto).findByRole("img", { name: "Ada" });
+    expect(demoImg).toHaveAttribute("src", "https://example.test/demo.png");
+    expect(demoImg.className).toContain("object-[center_30%]");
+    unmount();
+
+    const fallbackActor = dialogActor([roadie({ id: 7n })]);
+    fallbackActor.getPhoto = vi.fn<backendInterface["getPhoto"]>(
+      async () => null,
+    );
+    renderWithActor(
+      <PositionRosterDialog
+        position={POSITION}
+        open
+        onOpenChange={vi.fn()}
+        canRehire={false}
+      />,
+      fallbackActor,
+    );
+
+    const fallbackPhoto = await screen.findByTestId(
+      "dashboard.roster.item.photo",
+    );
+    expect(fallbackPhoto.className).toContain("aspect-[4/5]");
+    expect(within(fallbackPhoto).queryByRole("img")).toBeNull();
+    expect(fallbackPhoto).toHaveTextContent("AD");
+  });
+
+  it("keeps the name text below the photo", async () => {
+    renderWithActor(
+      <PositionRosterDialog
+        position={POSITION}
+        open
+        onOpenChange={vi.fn()}
+        canRehire={false}
+      />,
+      dialogActor([roadie({ id: 7n })]),
+    );
+
+    const tile = await screen.findByTestId("dashboard.roster.item");
+    expect(tile).toHaveTextContent("Ada");
+  });
+});
+
 describe("tapping a roadie tile opens the shared card pop-up", () => {
   it("opens the modal with the dimmed overlay and the FlipCard at max width 420px", async () => {
     const user = userEvent.setup();

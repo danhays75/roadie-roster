@@ -262,6 +262,7 @@ actor {
           rosterState = #pending;
           isDemo = false;
           stage = null;
+          paperworkStep = null;
         })
         .payload("id", func r = r.id)
         .payload("name", func r = r.profile.name)
@@ -639,6 +640,28 @@ actor {
         .payload("bufferPercent", func s = s.bufferPercent)
         .payload("shirtCurve", func s = curveText(s.sizeCurve.shirts))
         .payload("hatCurve", func s = curveText(s.sizeCurve.hats))
+        .controllerOnly()
+        .build(),
+      Entity.manual<Store.ChecklistItem>(
+        "paperworkItem",
+        func () = checklists.value.paperwork.values(),
+        "ChecklistItem",
+        "id",
+      )
+        .sample({
+          id = 0;
+          text = "";
+          requiresAlcoholCert = false;
+          minorOnly = false;
+          itemType = #checkbox;
+          enabled = true;
+        })
+        .payload("id", func i = i.id)
+        .payload("text", func i = i.text)
+        .payload("requiresAlcoholCert", func i = i.requiresAlcoholCert)
+        .payload("minorOnly", func i = i.minorOnly)
+        .payload("itemType", func i = switch i.itemType { case (#checkbox) "checkbox"; case (#count) "count" })
+        .payload("enabled", func i = i.enabled)
         .controllerOnly()
         .build(),
     ];

@@ -24,7 +24,7 @@ import {
   useUpdateChecklists,
   useUpdateRetentionSettings,
 } from "@/hooks/useQueries";
-import { Loader2, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface ChecklistDraft {
@@ -50,6 +50,7 @@ function ChecklistEditor({
   onChange,
   ocid,
   showItemType = false,
+  showEnabled = false,
 }: {
   title: string;
   description: string;
@@ -57,6 +58,7 @@ function ChecklistEditor({
   onChange: (items: ChecklistItem[]) => void;
   ocid: string;
   showItemType?: boolean;
+  showEnabled?: boolean;
 }) {
   const c = useAdminCopy();
 
@@ -70,6 +72,15 @@ function ChecklistEditor({
     onChange(items.filter((item) => item.id !== id));
   };
 
+  const moveItem = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= items.length) return;
+    const next = [...items];
+    const [moved] = next.splice(index, 1);
+    next.splice(target, 0, moved);
+    onChange(next);
+  };
+
   const addItem = () => {
     onChange([
       ...items,
@@ -78,6 +89,7 @@ function ChecklistEditor({
         text: "",
         requiresAlcoholCert: false,
         minorOnly: false,
+        enabled: true,
         itemType: UniformItemType.checkbox,
       },
     ]);
@@ -97,6 +109,14 @@ function ChecklistEditor({
           >
             {c.checklistsToggleHint}
           </p>
+          {showEnabled && (
+            <p
+              className="mt-0.5 text-xs text-muted-foreground"
+              data-ocid={`${ocid}.enabled_hint`}
+            >
+              {c.checklistsEnabledHint}
+            </p>
+          )}
         </div>
         <Button
           type="button"
@@ -131,6 +151,47 @@ function ChecklistEditor({
               }
             />
             <div className="flex flex-wrap items-center gap-4">
+              {showEnabled && (
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Switch
+                    aria-label={c.checklistsEnabled}
+                    data-ocid={`${ocid}.enabled.switch.${index + 1}`}
+                    checked={item.enabled}
+                    onCheckedChange={(checked) =>
+                      updateItem(item.id, { enabled: checked })
+                    }
+                  />
+                  {c.checklistsEnabled}
+                </span>
+              )}
+              {showEnabled && (
+                <span className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={c.checklistsMoveUp}
+                    data-ocid={`${ocid}.move_up_button.${index + 1}`}
+                    className="touch-target"
+                    disabled={index === 0}
+                    onClick={() => moveItem(index, -1)}
+                  >
+                    <ArrowUp className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={c.checklistsMoveDown}
+                    data-ocid={`${ocid}.move_down_button.${index + 1}`}
+                    className="touch-target"
+                    disabled={index === items.length - 1}
+                    onClick={() => moveItem(index, 1)}
+                  >
+                    <ArrowDown className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </span>
+              )}
               {showItemType && (
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Select
@@ -305,6 +366,7 @@ export function ChecklistsPanel() {
               description={c.checklistsPaperworkHint}
               items={draft.paperwork}
               ocid="admin.checklists.paperwork"
+              showEnabled
               onChange={(items) => {
                 setSaved(false);
                 setDraft((current) =>

@@ -60,7 +60,12 @@ module {
   ) : Roadie.Roadie {
     let refreshed = refreshDerived(roadie, now, defaultTimeZone);
     let stage = stageFor(refreshed, checklists, positions, checkoffs, checkIns, schedule, demo);
-    let withStage = { refreshed with stage };
+    let stored = switch (checkoffs.get(refreshed.id)) {
+      case (?c) { if (c.isDemo == demo) { ?c } else { null } };
+      case null { null };
+    };
+    let paperworkStep = Phase23Lib.paperworkStepFor(checklists.value, positions, refreshed, stored, stage);
+    let withStage = { refreshed with stage; paperworkStep };
     if (canSee) {
       // Managers keep the contact set but never the full photo bytes.
       { withStage with photo = null };

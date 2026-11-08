@@ -511,9 +511,13 @@ function AvailabilityPanel({
 /**
  * The paperwork checklist for one roadie. Shows only the items that apply to
  * them (respecting "Only alcohol positions" and "Only under 18"), each with its
- * stored checked state. Admin and Store Manager may toggle an item, which saves
- * through `setPaperworkItems`; every other role sees the list read-only. A
- * "Paperwork x of y" line and a Complete badge summarise progress.
+ * stored checked state. Items are checked in order: an item can only be checked
+ * once every applicable item above it is checked, so a later item whose
+ * predecessor is unchecked is disabled and shows a "Finish <previous item>
+ * first" hint. Unchecking an item also unchecks every item below it. Admin and
+ * Store Manager may toggle an item, which saves through `setPaperworkItems`;
+ * every other role sees the list read-only. A "Paperwork x of y" line and a
+ * Complete badge summarise progress.
  */
 function PaperworkChecklist({ roadie }: { roadie: Roadie }) {
   const { t } = useI18n();
@@ -532,6 +536,7 @@ function PaperworkChecklist({ roadie }: { roadie: Roadie }) {
   const needsAlcohol = position?.needsAlcoholCert ?? false;
   const applicable: ChecklistItem[] = (checklists?.paperwork ?? []).filter(
     (item) =>
+      item.enabled &&
       (!item.requiresAlcoholCert || needsAlcohol) &&
       (!item.minorOnly || roadie.isMinor),
   );
@@ -539,11 +544,23 @@ function PaperworkChecklist({ roadie }: { roadie: Roadie }) {
   const done = applicable.filter((item) => checked.has(item.id.toString()));
   const complete = applicable.length > 0 && done.length === applicable.length;
 
-  const toggle = (item: ChecklistItem, next: boolean) => {
+  // The first applicable item that is not checked. Every item after it is
+  // blocked until it is checked, so the order is enforced top to bottom.
+  const firstUnchecked = applicable.findIndex(
+    (item) => !checked.has(item.id.toString()),
+  );
+
+  const toggle = (index: number, next: boolean) => {
     const ids = new Set(checked);
-    const key = item.id.toString();
-    if (next) ids.add(key);
-    else ids.delete(key);
+    if (next) {
+      ids.add(applicable[index].id.toString());
+    } else {
+      // Unchecking an item also clears every item below it, so the list can
+      // never hold a checked item after an unchecked one.
+      for (let i = index; i < applicable.length; i += 1) {
+        ids.delete(applicable[i].id.toString());
+      }
+    }
     save.mutate({ roadieId: id, paperworkItems: [...ids] });
   };
 
@@ -573,29 +590,44 @@ function PaperworkChecklist({ roadie }: { roadie: Roadie }) {
       </div>
 
       <ul className="space-y-3">
-        {applicable.map((item) => {
+        {applicable.map((item, index) => {
           const key = item.id.toString();
           const isChecked = checked.has(key);
+          // An item is blocked while any item above it is still unchecked.
+          const blocked = firstUnchecked !== -1 && index > firstUnchecked;
+          const previous = index > 0 ? applicable[index - 1] : undefined;
           return (
             <li key={key} className="flex items-start gap-3">
               <Checkbox
                 id={`paperwork-${key}`}
                 checked={isChecked}
-                disabled={!mayEdit || save.isPending}
+                disabled={!mayEdit || save.isPending || blocked}
                 data-ocid="roadie.paperwork.checkbox"
-                onCheckedChange={(next) => toggle(item, next === true)}
+                onCheckedChange={(next) => toggle(index, next === true)}
               />
-              <Label
-                htmlFor={`paperwork-${key}`}
-                className="text-sm font-normal text-foreground"
-              >
-                {item.text}
-                {item.minorOnly && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    {t("roadie.minor")}
-                  </span>
+              <div className="min-w-0 flex-1">
+                <Label
+                  htmlFor={`paperwork-${key}`}
+                  className="text-sm font-normal text-foreground"
+                >
+                  {item.text}
+                  {item.minorOnly && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {t("roadie.minor")}
+                    </span>
+                  )}
+                </Label>
+                {blocked && previous && (
+                  <p
+                    data-ocid="roadie.paperwork.finish_first"
+                    className="mt-0.5 text-xs text-muted-foreground"
+                  >
+                    {t("roadie.paperwork.finishFirst", {
+                      item: previous.text,
+                    })}
+                  </p>
                 )}
-              </Label>
+              </div>
             </li>
           );
         })}

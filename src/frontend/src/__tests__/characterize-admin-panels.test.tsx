@@ -8,7 +8,7 @@ import type {
 } from "@/backend";
 import { House, UniformItemType } from "@/backend";
 import AdminPage from "@/pages/Admin";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -62,6 +62,7 @@ const CHECKLISTS: Checklists = {
       text: "Non-slip shoes",
       requiresAlcoholCert: false,
       minorOnly: false,
+      enabled: true,
       itemType: UniformItemType.checkbox,
     },
   ],
@@ -71,6 +72,7 @@ const CHECKLISTS: Checklists = {
       text: "Onboarding",
       requiresAlcoholCert: false,
       minorOnly: false,
+      enabled: true,
       itemType: UniformItemType.checkbox,
     },
   ],
@@ -199,6 +201,88 @@ describe("checklist editor add/remove/save survives the toggle rename", () => {
     );
     const saved = actor.updateChecklists.mock.calls[0]?.[0];
     expect(saved?.orientationUniform).toEqual([]);
+  });
+});
+
+describe("paperwork editor per-item controls and save survive the enabled/order addition", () => {
+  it("renders each paperwork item with its text, alcohol and minor switches and a remove button", async () => {
+    const user = userEvent.setup();
+    const actor = baseActor();
+    renderPageWithActor(AdminPage, actor, { path: "/admin" });
+
+    await user.click(await screen.findByTestId("admin.checklists.tab"));
+
+    const section = await screen.findByTestId("admin.checklists.paperwork");
+    // The seeded paperwork item is editable in place.
+    expect(screen.getByDisplayValue("Onboarding")).toBeInTheDocument();
+    // Each item keeps its alcohol and minor switches and its remove control.
+    expect(
+      within(section).getByTestId(
+        "admin.checklists.paperwork.alcohol.switch.1",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(section).getByTestId("admin.checklists.paperwork.minor.switch.1"),
+    ).toBeInTheDocument();
+    expect(
+      within(section).getByTestId("admin.checklists.paperwork.remove_button.1"),
+    ).toBeInTheDocument();
+  });
+
+  it("saves the edited paperwork text and the alcohol/minor flags through updateChecklists", async () => {
+    const user = userEvent.setup();
+    const actor = baseActor();
+    renderPageWithActor(AdminPage, actor, { path: "/admin" });
+
+    await user.click(await screen.findByTestId("admin.checklists.tab"));
+    await screen.findByDisplayValue("Onboarding");
+
+    const text = screen.getByDisplayValue("Onboarding");
+    await user.clear(text);
+    await user.type(text, "Food Handler Card");
+    await user.click(
+      screen.getByTestId("admin.checklists.paperwork.alcohol.switch.1"),
+    );
+    await user.click(
+      screen.getByTestId("admin.checklists.paperwork.minor.switch.1"),
+    );
+
+    await user.click(screen.getByTestId("admin.checklists.save_button"));
+    await waitFor(() =>
+      expect(actor.updateChecklists).toHaveBeenCalledTimes(1),
+    );
+    const saved = actor.updateChecklists.mock.calls[0]?.[0];
+    const item = saved?.paperwork.find(
+      (entry) => entry.text === "Food Handler Card",
+    );
+    expect(item).toBeDefined();
+    expect(item?.requiresAlcoholCert).toBe(true);
+    expect(item?.minorOnly).toBe(true);
+    // The uniform list is carried through unchanged.
+    expect(saved?.orientationUniform.map((entry) => entry.text)).toContain(
+      "Non-slip shoes",
+    );
+  });
+
+  it("removes a paperwork item from the draft before saving", async () => {
+    const user = userEvent.setup();
+    const actor = baseActor();
+    renderPageWithActor(AdminPage, actor, { path: "/admin" });
+
+    await user.click(await screen.findByTestId("admin.checklists.tab"));
+    await screen.findByDisplayValue("Onboarding");
+
+    await user.click(
+      screen.getByTestId("admin.checklists.paperwork.remove_button.1"),
+    );
+    expect(screen.queryByDisplayValue("Onboarding")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("admin.checklists.save_button"));
+    await waitFor(() =>
+      expect(actor.updateChecklists).toHaveBeenCalledTimes(1),
+    );
+    const saved = actor.updateChecklists.mock.calls[0]?.[0];
+    expect(saved?.paperwork).toEqual([]);
   });
 });
 

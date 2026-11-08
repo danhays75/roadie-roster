@@ -556,7 +556,8 @@ module {
 
   /// Internal: the ids (as text) of the paperwork items that apply to a roadie
   /// with `position` and `isMinor`, mirroring the backend's applicable-paperwork
-  /// rule (respecting "Only alcohol positions" and "Only under 18").
+  /// rule (respecting "Only alcohol positions" and "Only under 18", and skipping
+  /// disabled items).
   func applicablePaperworkIds(
     checklists : Store.Checklists,
     position : ?Store.Position,
@@ -567,7 +568,7 @@ module {
       case null { false };
     };
     checklists.paperwork
-      .filter(func(item) = (not item.requiresAlcoholCert or needsAlcohol) and (not item.minorOnly or isMinor))
+      .filter(func(item) = item.enabled and (not item.requiresAlcoholCert or needsAlcohol) and (not item.minorOnly or isMinor))
       .map(func(item) = item.id.toText());
   };
 
@@ -740,6 +741,7 @@ module {
         rosterState = #pending;
         isDemo = true;
         stage = null;
+        paperworkStep = null;
       });
       // Paperwork check-off for every non-archived roadie. No uniform
       // check-offs, no orientation attendance and no check-ins are seeded.

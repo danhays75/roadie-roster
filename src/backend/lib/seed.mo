@@ -137,22 +137,29 @@ module {
 
   func seedOrientationUniform() : [Store.ChecklistItem] {
     [
-      { id = 0; text = "Non-slip shoes"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
-      { id = 1; text = "Dark blue jeans"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
-      { id = 2; text = "Hair"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
-      { id = 3; text = "Piercings"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
-      { id = 4; text = "Smile"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
-      { id = 5; text = "Name tag"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
+      { id = 0; text = "Non-slip shoes"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox; enabled = true },
+      { id = 1; text = "Dark blue jeans"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox; enabled = true },
+      { id = 2; text = "Hair"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox; enabled = true },
+      { id = 3; text = "Piercings"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox; enabled = true },
+      { id = 4; text = "Smile"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox; enabled = true },
+      { id = 5; text = "Name tag"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox; enabled = true },
     ];
   };
 
+  /// The paperwork checklist in enforced order: Digital Paperwork (id 0, was
+  /// Onboarding), I-9 / W-4 (new, id 5), Alcohol Certificate (id 3, was Alcohol
+  /// cert, keeping its alcohol-positions-only flag), the Food Handler Card
+  /// (id 2, re-added disabled by default), Policies & Procedures (id 1), then
+  /// any minor-only items (id 4). Ids of the renamed items are preserved so
+  /// existing checks carry over.
   func seedPaperwork() : [Store.ChecklistItem] {
     [
-      { id = 0; text = "Onboarding"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
-      { id = 1; text = "Policies & procedures"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
-      { id = 2; text = "Food handler card"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox },
-      { id = 3; text = "Alcohol cert"; requiresAlcoholCert = true; minorOnly = false; itemType = #checkbox },
-      { id = 4; text = "LA employment certificate (LWC confirmation received)"; requiresAlcoholCert = false; minorOnly = true; itemType = #checkbox },
+      { id = 0; text = "Digital Paperwork"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox; enabled = true },
+      { id = 5; text = "I-9 / W-4"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox; enabled = true },
+      { id = 3; text = "Alcohol Certificate"; requiresAlcoholCert = true; minorOnly = false; itemType = #checkbox; enabled = true },
+      { id = 2; text = "Food Handler Card"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox; enabled = false },
+      { id = 1; text = "Policies & Procedures"; requiresAlcoholCert = false; minorOnly = false; itemType = #checkbox; enabled = true },
+      { id = 4; text = "LA employment certificate (LWC confirmation received)"; requiresAlcoholCert = false; minorOnly = true; itemType = #checkbox; enabled = true },
     ];
   };
 

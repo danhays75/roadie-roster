@@ -2,9 +2,11 @@ import type {
   ArchiveReason,
   ChecklistItem,
   OrientationCheckoff,
+  PaperworkStep,
   Position,
   Roadie,
   RoadieId,
+  RoadieStage,
   Timestamp,
 } from "@/backend";
 import { RoadieStatus, createActor } from "@/backend";
@@ -16,11 +18,12 @@ import {
   useRoadiePhoto,
   useSchedule,
 } from "@/hooks/useQueries";
-import { refToDataUrl, roadieStageLabel } from "@/lib/format";
+import { refToDataUrl, roadieStageTag } from "@/lib/format";
 import { paperworkDueEvent } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
+import { Check } from "lucide-react";
 import { useMemo } from "react";
 
 /** The roadie's initials for the no-photo placeholder, at most two letters. */
@@ -74,6 +77,7 @@ export function paperworkIncomplete(
   const needsAlcohol = position?.needsAlcoholCert ?? false;
   const applicable = paperworkItems.filter(
     (item) =>
+      item.enabled &&
       (!item.requiresAlcoholCert || needsAlcohol) &&
       (!item.minorOnly || roadie.isMinor),
   );
@@ -164,6 +168,31 @@ export function usePaperworkIncompleteMap(
 }
 
 /**
+ * The shared stage tag for a roadie. While the stage is Hired it shows the
+ * latest completed paperwork step (with a check mark) instead of "Hired"; every
+ * other stage shows its own label. All variants use the hired tone, so the
+ * in-between step tags share the Hired tag color.
+ */
+export function RoadieStageBadge({
+  stage,
+  paperworkStep,
+  ocid,
+}: {
+  stage?: RoadieStage;
+  paperworkStep?: PaperworkStep;
+  ocid?: string;
+}) {
+  const { t } = useI18n();
+  const tag = roadieStageTag(stage, paperworkStep);
+  return (
+    <StatusBadge tone="hired" ocid={ocid}>
+      {tag.done && <Check className="mr-1 h-3.5 w-3.5" aria-hidden="true" />}
+      {t(tag.key)}
+    </StatusBadge>
+  );
+}
+
+/**
  * A roadie's tile: the photo fills the top at roughly a 4:3 ratio with
  * `object-cover`, or the roadie's initials in navy on cream when no photo is
  * stored. Below the photo sit the name, a single stage badge derived from the
@@ -226,13 +255,13 @@ export function RoadieTile({
       >
         <span
           data-ocid={photoOcid}
-          className="relative block aspect-[4/3] w-full overflow-hidden bg-[#F5F3EE]"
+          className="relative block aspect-[4/5] w-full overflow-hidden bg-[#F5F3EE]"
         >
           {photoUrl ? (
             <img
               src={photoUrl}
               alt={name}
-              className="h-full w-full object-cover object-top"
+              className="h-full w-full object-cover object-[center_30%]"
             />
           ) : (
             <span
@@ -262,14 +291,17 @@ export function RoadieTile({
             </span>
           )}
           <span className="mt-auto flex flex-wrap items-center gap-1.5 pt-1">
-            <StatusBadge
-              tone={isArchived ? "muted" : "hired"}
-              ocid={statusOcid}
-            >
-              {isArchived
-                ? t("roster.stage.former")
-                : roadieStageLabel(roadie.stage, t)}
-            </StatusBadge>
+            {isArchived ? (
+              <StatusBadge tone="muted" ocid={statusOcid}>
+                {t("roster.stage.former")}
+              </StatusBadge>
+            ) : (
+              <RoadieStageBadge
+                stage={roadie.stage}
+                paperworkStep={roadie.paperworkStep}
+                ocid={statusOcid}
+              />
+            )}
             {isArchived && roadie.archivedReason && (
               <StatusBadge
                 tone="muted"

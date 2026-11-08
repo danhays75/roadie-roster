@@ -1,16 +1,15 @@
 import { Role } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
-import { StatusBadge } from "@/components/StatusBadge";
 import { FlipCard } from "@/components/roadie/FlipCard";
 import { ManagerTab } from "@/components/roadie/ManagerTab";
 import { RoadieActions } from "@/components/roadie/RoadieActions";
+import { RoadieStageBadge } from "@/components/roadie/RoadieTile";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { canArchive, canEditRoadie, useAccessState } from "@/hooks/useAccess";
 import { useI18n } from "@/hooks/useI18n";
 import { useCrews, usePositions, useRoadie } from "@/hooks/useQueries";
-import { roadieStageLabel } from "@/lib/format";
 import { Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { Component, type ReactNode } from "react";
@@ -123,9 +122,11 @@ function RoadieCardContent() {
             title={roadie.profile.preferredName || roadie.profile.name}
             subtitle={positionById(roadie.mainPositionId)?.name}
             action={
-              <StatusBadge tone="hired" ocid="roadie.status">
-                {roadieStageLabel(roadie.stage, t)}
-              </StatusBadge>
+              <RoadieStageBadge
+                stage={roadie.stage}
+                paperworkStep={roadie.paperworkStep}
+                ocid="roadie.status"
+              />
             }
           />
 

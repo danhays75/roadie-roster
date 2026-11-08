@@ -264,7 +264,10 @@ module {
     checklists.value;
   };
 
-  /// Update the editable checklists (Admin only).
+  /// Update the editable checklists (Admin only, logged). Refused while demo
+  /// mode is on for real settings. The paperwork array order is the completion
+  /// order and the order the card tag moves through; each item's `enabled` flag
+  /// hides it everywhere when false.
   public func updateChecklists(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
@@ -276,7 +279,10 @@ module {
   ) : () {
     Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
     checklists.value := value;
-    ignore ChangeLog.record(changeLog, counters, caller, "updateChecklists", null, false, "Updated checklists");
+    let detail = "Updated checklists: paperwork " # value.paperwork.map(func(item) =
+      item.text # (if item.enabled { " on" } else { " off" })
+    ).values().join(", ");
+    ignore ChangeLog.record(changeLog, counters, caller, "updateChecklists", null, false, detail);
   };
 
   /// Read retention settings (any role except Kiosk).

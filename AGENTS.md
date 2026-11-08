@@ -44,6 +44,12 @@
 - Demo practice run card lives at the top of Today and is visible only to the real Admin while demo mode is on
 - Practice run step completion is derived from demo data, never from a manual tick
 - Take me there buttons use the existing demo setters (setDemoRole, setDemoTrainerAs, setDemoManagerAs, setPretendDate) and then navigate
+- Paperwork checklist order is Digital Paperwork, I-9 / W-4, Alcohol Certificate, Policies & Procedures, then minor-only items
+- Paperwork items are checked in order only; later boxes stay disabled with a "Finish <previous item> first" hint and unchecking clears the items below
+- While a roadie is Hired the stage tag shows their latest completed paperwork step in the Hired tag color
+- Do not change the card design (roadieCard.css), crews, check-in rules, shift boards or contact-info rules
+- Keep the in-order paperwork steps and tags exactly as built
+- Change nothing else
 
 ## Accepted Requirements
 
@@ -184,6 +190,14 @@
 - 'Take me there' uses the existing demo setters (setDemoRole, setDemoTrainerAs, setDemoManagerAs, setPretendDate), then navigates
 - Steps can be done in any order, but the card highlights the first step that isn't done
 - Demo mode only; nothing changes when demo mode is off
+- Each paperwork checklist item gets an enabled flag, migrated true for all existing items
+- Disabled paperwork items are hidden everywhere as if they did not exist
+- The Food Handler Card returns as a paperwork item disabled by default in real and demo data
+- Admin > Checklists > Paperwork shows an On/Off switch and Move up / Move down buttons per item
+- The admin list order is the completion order and the order the card tag moves through
+- Turning an item on inserts it at its position and moves an already-passed roadie's stage back to that step until checked
+- Checklist changes are logged and blocked while demo mode is on for real settings
+- The enabled Food Handler Card step tag reads "Food Handler ✓"
 
 ## Verified Commands
 
@@ -193,21 +207,6 @@
 
 ## Learnings
 
-- The app's inherited regression suite has 29 pre-existing failures (19 frontend, 10 backend) unrelated to recent work; the user asked for them to be handled separately and asked that no tests be updated, added, removed or run-to-fix.
-- The derived roadie stage is computed on every read by computeStage in src/backend/lib/phase23.mo (first match: archived gives no stage, certified, active with a Present or Late check-in on a training-day shift, active, paperwork complete, else hired); the stored stage field stays null and is never set by hand.
-- roadieStageLabel in src/frontend/src/lib/format.ts takes an optional translator and resolves the shared roster.stage.* keys in src/frontend/src/lib/copy.ts, so stage tags render in English and Spanish; without a translator it falls back to English.
-- The Roster page tabs are All, Hired, Paperwork Done, Oriented, In Training and Certified with counts from stageCounts in src/frontend/src/pages/Roster.tsx, plus the Show former toggle for archived roadies.
-- The app's inherited regression suite has 32 pre-existing failures (22 frontend, 10 backend) unrelated to recent work; the user asked for them to be handled separately and asked that no tests be updated, added, removed or run-to-fix.
-- The demo seed spread lives in demoStages in src/backend/lib/demo.mo, a 40-entry array indexed by loop position; archived indices 11 and 29 hold ignored #hired placeholders, so the 38 live entries count 8 Hired, 8 Paperwork Done, 14 Oriented and 8 In Training.
-- ManagerTab resolves manager.sizes.title and manager.sizes.body through the shared src/frontend/src/lib/copy.ts via useI18n; src/frontend/src/components/kiosk/copy.ts defines the same keys with different body text but is not used by the Manager tab.
-- collapseChangeLog in src/frontend/src/components/roadie/useRoadieActions.ts compares previous.at - entry.at <= 120_000_000_000n on newest-first entries, so the 2-minute window is a non-negative difference.
-- The local preflight tester cannot get past the 'Tell us who you are' owner profile onboarding form after Internet Identity sign-in, so demo-seed and Manager-tab flows are not reachable in local testing; the run ends inconclusive with a canister_reject on listPositions for an unregistered caller.
-- demoStages in src/backend/lib/demo.mo is a 40-entry array indexed by loop position; archived indices 11 and 29 hold ignored placeholders, so the 38 live entries now count 18 Paperwork Done and 20 Hired, with minors at indices 7 and 19 both Paperwork Done.
-- loadDemoData in src/backend/lib/demo.mo resets the caller by clearing pretendDate and removing their demoRoles/demoTrainerAs/demoManagerAs entries; a missing demoRoles entry defaults to demo Admin.
-- OpeningTimeline.tsx classifies events by store-local calendar day keys (localDayKey via calendarInTimeZone from components/approvals/timeZone.ts), so currentIndex compares YYYY-MM-DD strings rather than timestamps; dashboard.timeline.done and dashboard.timeline.pastDue are the new copy keys.
-- usePaperworkIncompleteMap reads the real Date.now() rather than the demo pretend instant, so the timeline's Past due flag can diverge from its pretend-aware isPast under a pretend date.
-- The backend PocketIC lane has pre-existing failures unrelated to the demo seed (archive-board, shift-board and uniforms-projected tests) plus stale demo-seed tests that encode the old four-stage spread; the user asked that no tests be updated, added, removed or run-to-fix.
-- The demo practice run card is src/frontend/src/components/demo/PracticeRunCard.tsx, mounted at the top of TodayPage in src/frontend/src/pages/Today.tsx; it mounts its body only while demo mode is on and useRealAccessGrant reports the real Admin, so no demo reads fire when demo mode is off.
 - The practice run Hide reset keys off a shared demoDataLoadedAt query marker bumped by useLoadDemoData.onSuccess in src/frontend/src/hooks/useQueries.ts, because loadDemoData in src/backend/lib/demo.mo is idempotent and demo record counts do not change on a redundant load.
 - Step 2 deep-links the Roster Hired tab through an optional tab search param declared with validateSearch on the roster route in src/frontend/src/App.tsx and read with useSearch in src/frontend/src/pages/Roster.tsx, defaulting to the All tab when absent or unknown.
 - The local preflight tester cannot get past the 'Tell us who you are' owner profile onboarding form after Internet Identity sign-in, so demo-seed and practice-run flows are not reachable in local testing; the run ends inconclusive with unexercised step completions.
@@ -218,3 +217,18 @@
 - The OQL sample literal in src/backend/main.mo (signups.toEntityManual("signup", "SignupSubmission", "id").sample({...})) must list every SignupSubmission field; a missing field fails mops build with M0096 and leaves src/frontend/src/backend.d.ts stale, so new backend fields are invisible to tsc until `mops build` and `pnpm bindgen` run.
 - The demo seed's seedSignup in src/backend/lib/demo.mo now takes positionAppliedFor and photoFile, so the 3 pending kiosk sign-ups carry demo photos from the shared demoPhotoBase and applied-for positions.
 - The local preflight tester reached the Approve New Hires page with demo data loaded and confirmed the applicant photos and the Possible duplicates photo, but the run ended inconclusive before the approval commit and the Main position pre-fill were exercised.
+- src/frontend/src/pages/Approvals.tsx prefills the pending sign-up card's Main position from signup.profile.positionAppliedFor via normalizePositionName/matchAppliedPosition (trim, lowercase, one trailing 's' dropped) and a one-time ref-guarded effect, so a positions refetch never overwrites the manager's manual choice.
+- The local preflight tester cannot create a pending kiosk sign-up: the kiosk application's signature canvas (aria-label 'Signature drawing area') is not exposed as an actionable element, so the Approve New Hires page shows 'No sign-ups are waiting for review' and the Main position pre-fill cannot be exercised locally.
+- The paperwork checklist order is defined by the paperwork array order in src/backend/lib/seed.mo (Digital Paperwork id 0, I-9 / W-4 id 5, Alcohol Certificate id 3, Policies & Procedures id 1, minor-only id 4); migration 00000024_000000.mo rewrites the stored real checklist and drops the Food handler card id from every roadie's checked items.
+- setPaperworkItems in src/backend/lib/phase23.mo enforces in-order checking over applicablePaperwork only, traps 'Do <item> first' for an out-of-order check, and cascades an uncheck to every applicable item below; it needs the positions parameter to call applicablePaperwork.
+- paperworkStepFor in src/backend/lib/phase23.mo maps named steps by item id (Digital=0, I-9=5, Alcohol=3), not by applicable index, so non-alcohol roadies never show Alcohol Cert; the derived paperworkStep is exposed on the roadie and on the orientation, shift board, crew and unassigned view rows.
+- roadieStageTag(stage, paperworkStep) in src/frontend/src/lib/format.ts maps a Hired roadie's backend paperworkStep to a copy key plus a check-mark flag, and RoadieStageBadge in src/frontend/src/components/roadie/RoadieTile.tsx renders it in the hired tone; PaperworkChecklist in ManagerTab.tsx blocks any item after the first unchecked applicable item and clears every item below on uncheck.
+- A new Roadie field needs paperworkStep = null in every stored-record literal (demo, signup, OQL sample) and a derived value in every view builder, or mops build fails with M0096 and src/frontend/src/backend.d.ts stays stale.
+- The local preflight tester reached the roster step tags and the card header step tag, but the Manager tab (paperwork checklist) crashed the page target, so the checklist order, the disabled/hint rule and the demo Alcohol Cert tag were not observed locally.
+- ChecklistItem in src/backend/types/store.mo now carries enabled:Bool; every frontend ChecklistItem literal and mock (including tester-owned test files) must set it or tsc fails with TS2741.
+- The paperwork array order in src/backend/lib/seed.mo is the admin-set completion order; migration 00000025_000000.mo adds enabled=true to every stored checklist item and inserts the Food Handler Card (id 2, enabled=false) after the Alcohol Certificate.
+- applicablePaperwork in src/backend/lib/phase23.mo filters item.enabled, so disabled paperwork items never block in-order completion or count toward paperwork totals; paperworkStepFor maps id 2 to #foodHandlerCard and roadieStageTag maps it to the roster.stage.foodHandlerCard copy key.
+- Admin > Checklists > Paperwork in src/frontend/src/components/admin/ChecklistsPanel.tsx renders the On/Off switch and Move up / Move down controls behind a showEnabled prop, so only the paperwork editor shows them.
+- The host build typechecks tester-owned test files too, so a new required field on a generated binding breaks the build until the tester adds it to every test literal.
+- The shared roadie tile src/frontend/src/components/roadie/RoadieTile.tsx renders its photo box as one span with aspect-[4/5] w-full and the image with object-cover object-[center_30%]; stored photos, demoPhotoUrl images and the initials fallback all render inside that single span, so a photo-shape change is a one-line edit there.
+- The local preflight tester reached the Roster page but found an empty roster ('No roadies have been added yet.', all tabs at 0), so no roadie tile existed to inspect; tile-level visual checks end inconclusive unless demo data is loaded first.

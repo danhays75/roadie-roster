@@ -20,6 +20,7 @@ import {
   RoadieCardModal,
 } from "@/components/roadie/RoadieCardModal";
 import { RoadiePhoto } from "@/components/roadie/RoadiePhoto";
+import { RoadieStageBadge } from "@/components/roadie/RoadieTile";
 import { Button } from "@/components/ui/button";
 import {
   canCheckIn,
@@ -35,7 +36,7 @@ import {
   useRoadies,
   useToday,
 } from "@/hooks/useQueries";
-import { formatTimestamp, roadieStageLabel } from "@/lib/format";
+import { formatTimestamp } from "@/lib/format";
 import { Link } from "@tanstack/react-router";
 import {
   BellRing,
@@ -202,7 +203,6 @@ function MyCrewRow({
   index: number;
   onOpen: () => void;
 }) {
-  const { t } = useDashboardCopy();
   return (
     <li data-ocid={`today.myCrew.item.${index}`}>
       <button
@@ -243,12 +243,11 @@ function MyCrewRow({
             {row.positionName}
           </span>
           <span className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            <StatusBadge
-              tone="hired"
+            <RoadieStageBadge
+              stage={row.stage}
+              paperworkStep={row.paperworkStep}
               ocid={`today.myCrew.item.${index}.status`}
-            >
-              {roadieStageLabel(row.stage, t)}
-            </StatusBadge>
+            />
             <span
               data-ocid={`today.myCrew.item.${index}.paperwork`}
               className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground"

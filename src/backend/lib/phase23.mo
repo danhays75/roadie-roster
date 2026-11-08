@@ -167,7 +167,9 @@ module {
       };
       let present = isPresentAt(attendance, demo, r.id, eventId);
       let noShow = r.rosterState == #pending and event.start < now;
-      let paperworkComplete = paperworkStatusWith(checklists.value, positions, r, visibleCheckoff(checkoffs, demo, r.id)) == #complete;
+      let stored = visibleCheckoff(checkoffs, demo, r.id);
+      let paperworkComplete = paperworkStatusWith(checklists.value, positions, r, stored) == #complete;
+      let stage = computeStage(r, paperworkComplete, false);
       {
         roadieId = r.id;
         name = displayName(r);
@@ -177,11 +179,12 @@ module {
         positionName;
         crewId = r.crewId;
         crewName;
-        paperworkStatus = paperworkStatusWith(checklists.value, positions, r, visibleCheckoff(checkoffs, demo, r.id));
+        paperworkStatus = paperworkStatusWith(checklists.value, positions, r, stored);
         rosterState = r.rosterState;
         present;
         noShow;
-        stage = computeStage(r, paperworkComplete, false);
+        stage;
+        paperworkStep = paperworkStepFor(checklists.value, positions, r, stored, stage);
       };
     });
     let presentCount = rows.filter(func(row) = row.present).size();
@@ -351,7 +354,9 @@ module {
           };
           case null { null };
         };
-        let paperworkComplete = paperworkStatusWith(checklists.value, positions, r, visibleCheckoff(checkoffs, demo, r.id)) == #complete;
+        let stored = visibleCheckoff(checkoffs, demo, r.id);
+        let paperworkComplete = paperworkStatusWith(checklists.value, positions, r, stored) == #complete;
+        let stage = computeStage(r, paperworkComplete, false);
         {
           roadieId = r.id;
           name = displayName(r);
@@ -361,7 +366,8 @@ module {
           positionName;
           crewId = r.crewId;
           crewName;
-          stage = computeStage(r, paperworkComplete, false);
+          stage;
+          paperworkStep = paperworkStepFor(checklists.value, positions, r, stored, stage);
         };
       })
       .toArray();
@@ -565,10 +571,17 @@ module {
   /// Updates only `paperworkItems` and keeps the uniform fields, so a paperwork
   /// save never clobbers the uniform check-off. Creates the check-off record
   /// when it is missing, with the active `isDemo`.
+  ///
+  /// The checklist is enforced in order: an item may only be checked when every
+  /// applicable item above it is checked, and unchecking an item also unchecks
+  /// every applicable item below it. An out-of-order check traps
+  /// "Do <item> first". Items that do not apply to the roadie (for example the
+  /// Alcohol Certificate for a non-alcohol position) are skipped.
   public func setPaperworkItems(
     accessGrants : Map.Map<Principal, Access.AccessGrant>,
     demoState : Common.DemoState,
     roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
+    positions : Map.Map<Common.PositionId, Store.Position>,
     checklists : { var value : Store.Checklists },
     checkoffs : Map.Map<Common.RoadieId, Phase23.OrientationCheckoff>,
     changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
@@ -597,19 +610,59 @@ module {
         };
       };
     };
+    let previous = base.paperworkItems;
+    // Enforce the in-order rule over the applicable items, in checklist order.
+    // `allAboveChecked` starts true and turns false at the first applicable item
+    // that is not checked; a later checked item is then out of order. Once an
+    // item that was checked is unchecked, every applicable item below it is
+    // dropped from the effective set. A checked item below an unchecked one is
+    // dropped when it was already checked before (for example a newly enabled
+    // item inserted above it), and traps "Do <item> first" only when the caller
+    // is newly checking it out of order.
+    let applicable = applicablePaperwork(checklists.value, positions, roadie);
+    let effective = List.empty<Text>();
+    var allAboveChecked = true;
+    var cascade = false;
+    for (item in applicable.values()) {
+      let id = item.id.toText();
+      let wasChecked = previous.any(func(t) = t == id);
+      let isChecked = paperworkItems.any(func(t) = t == id);
+      if (cascade) {
+        // An item above was unchecked: drop this one too.
+        allAboveChecked := false;
+      } else if (isChecked) {
+        if (not allAboveChecked) {
+          if (wasChecked) {
+            // A pre-existing check invalidated by a newly enabled item above:
+            // drop it so the roadie's stage moves back to that step.
+            allAboveChecked := false;
+          } else {
+            Runtime.trap("Do " # item.text # " first");
+          };
+        } else {
+          effective.add(id);
+        };
+      } else {
+        allAboveChecked := false;
+        if (wasChecked) {
+          // Unchecking this item cascades to every applicable item below it.
+          cascade := true;
+        };
+      };
+    };
+    let effectiveItems = effective.toArray();
     // Update only the paperwork items; keep the roadie's uniform fields.
     checkoffs.add(roadieId, {
       base with
-      paperworkItems;
+      paperworkItems = effectiveItems;
       updatedAt = effectiveNow(demoState, storeInfo);
     });
     // Record which items were checked or unchecked, by name, so the change log
     // can show the item-by-item detail instead of a bare action name.
-    let previous = base.paperworkItems;
     let parts = checklists.value.paperwork.map(func(item) {
       let id = item.id.toText();
       let wasChecked = previous.any(func(t) = t == id);
-      let isChecked = paperworkItems.any(func(t) = t == id);
+      let isChecked = effectiveItems.any(func(t) = t == id);
       if (wasChecked == isChecked) {
         "";
       } else if (isChecked) {
@@ -699,7 +752,9 @@ module {
           case (?p) { p.code };
           case null { "" };
         };
-        let paperworkComplete = paperworkStatusWith(checklists.value, positions, r, visibleCheckoff(checkoffs, demo, r.id)) == #complete;
+        let stored = visibleCheckoff(checkoffs, demo, r.id);
+        let paperworkComplete = paperworkStatusWith(checklists.value, positions, r, stored) == #complete;
+        let stage = computeStage(r, paperworkComplete, hasTrainingCheckIn(checkIns, schedule, demo, r.id));
         ?{
           roadieId = r.id;
           name = displayName(r);
@@ -708,7 +763,8 @@ module {
           positionId = r.mainPositionId;
           positionCode;
           markedUnavailable = markedUnavailable(r, day, shift);
-          stage = computeStage(r, paperworkComplete, hasTrainingCheckIn(checkIns, schedule, demo, r.id));
+          stage;
+          paperworkStep = paperworkStepFor(checklists.value, positions, r, stored, stage);
         };
       };
       case null { null };
@@ -760,7 +816,9 @@ module {
           case (?p) { p.code };
           case null { "" };
         };
-        let paperworkComplete = paperworkStatusWith(checklists.value, positions, r, visibleCheckoff(checkoffs, demo, r.id)) == #complete;
+        let stored = visibleCheckoff(checkoffs, demo, r.id);
+        let paperworkComplete = paperworkStatusWith(checklists.value, positions, r, stored) == #complete;
+        let stage = computeStage(r, paperworkComplete, hasTrainingCheckIn(checkIns, schedule, demo, r.id));
         {
           roadieId = r.id;
           name = displayName(r);
@@ -769,7 +827,8 @@ module {
           positionId = r.mainPositionId;
           positionCode;
           markedUnavailable = markedUnavailable(r, day, shift);
-          stage = computeStage(r, paperworkComplete, hasTrainingCheckIn(checkIns, schedule, demo, r.id));
+          stage;
+          paperworkStep = paperworkStepFor(checklists.value, positions, r, stored, stage);
         };
       })
       .toArray();
@@ -1623,7 +1682,8 @@ module {
           .filter(func(r) = r.isDemo == demo and r.crewId == ?c.id and r.status != #archived)
           .map(func(r) {
             let applicable = applicablePaperwork(checklists.value, positions, r);
-            let checked = switch (visibleCheckoff(checkoffs, demo, r.id)) {
+            let stored = visibleCheckoff(checkoffs, demo, r.id);
+            let checked = switch (stored) {
               case (?co) { co.paperworkItems };
               case null { [] };
             };
@@ -1634,6 +1694,7 @@ module {
               case (?p) { p.name };
               case null { "" };
             };
+            let stage = computeStage(r, complete, hasTrainingCheckIn(checkIns, schedule, demo, r.id));
             {
               roadieId = r.id;
               name = displayName(r);
@@ -1649,7 +1710,8 @@ module {
                 case (?d) { now > d };
                 case null { false };
               });
-              stage = computeStage(r, complete, hasTrainingCheckIn(checkIns, schedule, demo, r.id));
+              stage;
+              paperworkStep = paperworkStepFor(checklists.value, positions, r, stored, stage);
             };
           })
           .toArray();
@@ -2537,6 +2599,51 @@ module {
     if (complete) { #complete } else { #incomplete };
   };
 
+  /// Internal: the latest completed paperwork step while a roadie's stage is
+  /// Hired, so the stage tag can show progress instead of a bare "Hired". The
+  /// named steps are Digital Paperwork (id 0), I-9 / W-4 (id 5), Alcohol
+  /// Certificate (id 3) and Food Handler Card (id 2); Policies & Procedures and
+  /// the minor-only items have no named step, so they never advance it. The step
+  /// is the highest named item that is checked, and `#none` when none is.
+  /// Returns null when the stage is not Hired (the tag then shows the stage
+  /// itself).
+  public func paperworkStepFor(
+    checklists : Store.Checklists,
+    positions : Map.Map<Common.PositionId, Store.Position>,
+    roadie : Roadie.Roadie,
+    checkoff : ?Phase23.OrientationCheckoff,
+    stage : ?Roadie.RoadieStage,
+  ) : ?Roadie.PaperworkStep {
+    if (stage != ?#hired) {
+      return null;
+    };
+    let applicable = applicablePaperwork(checklists, positions, roadie);
+    let checked = switch (checkoff) {
+      case (?c) { c.paperworkItems };
+      case null { [] };
+    };
+    let isChecked = func(id : Nat) : Bool {
+      checked.any(func(t) = t == id.toText());
+    };
+    // The named steps in order; the highest checked one wins. A named item that
+    // does not apply to the roadie (or is disabled) is skipped.
+    var step : Roadie.PaperworkStep = #none;
+    for (item in applicable.values()) {
+      if (isChecked(item.id)) {
+        if (item.id == 0) {
+          step := #digitalPaperwork;
+        } else if (item.id == 5) {
+          step := #i9W4;
+        } else if (item.id == 3) {
+          step := #alcoholCertificate;
+        } else if (item.id == 2) {
+          step := #foodHandlerCard;
+        };
+      };
+    };
+    ?step;
+  };
+
   /// Internal: whether a roadie has at least one Present or Late check-in on a
   /// training-day shift in the active partition. Used to derive the In Training
   /// stage.
@@ -2579,7 +2686,9 @@ module {
     if (paperworkComplete) { ?#paperworkDone } else { ?#hired };
   };
 
-  /// Internal: the paperwork items that apply to a roadie.
+  /// Internal: the paperwork items that apply to a roadie. A disabled item is
+  /// hidden everywhere as if it did not exist, so it never applies: it never
+  /// blocks in-order completion and never counts toward the paperwork total.
   func applicablePaperwork(
     checklists : Store.Checklists,
     positions : Map.Map<Common.PositionId, Store.Position>,
@@ -2590,7 +2699,9 @@ module {
       case null { false };
     };
     checklists.paperwork.filter(func(item) =
-      (not item.requiresAlcoholCert or needsAlcohol) and (not item.minorOnly or roadie.isMinor)
+      item.enabled
+      and (not item.requiresAlcoholCert or needsAlcohol)
+      and (not item.minorOnly or roadie.isMinor)
     );
   };
 

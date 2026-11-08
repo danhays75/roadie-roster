@@ -1,8 +1,8 @@
 import type { ShiftBoardRoadie } from "@/backend";
 import { useGroupsCopy } from "@/components/groups/copy";
-import { refToDataUrl, roadieStageLabel } from "@/lib/format";
+import { refToDataUrl, roadieStageTag } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { GripVertical } from "lucide-react";
+import { Check, GripVertical } from "lucide-react";
 import { useMemo } from "react";
 
 /** The roadie's initials for the no-photo placeholder, at most two letters. */
@@ -47,6 +47,7 @@ export function RoadieChip({
     [roadie.photo, roadie.demoPhotoUrl],
   );
   const position = roadie.positionCode || t("roadie.field.none");
+  const stageTag = roadieStageTag(roadie.stage, roadie.paperworkStep);
 
   return (
     <li
@@ -124,7 +125,10 @@ export function RoadieChip({
             data-ocid={`${ocid}.stage`}
             className="mt-0.5 inline-flex items-center rounded-full bg-accent px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-wider text-accent-foreground"
           >
-            {roadieStageLabel(roadie.stage, t)}
+            {stageTag.done && (
+              <Check className="mr-1 h-3 w-3" aria-hidden="true" />
+            )}
+            {t(stageTag.key)}
           </span>
         </span>
       </button>

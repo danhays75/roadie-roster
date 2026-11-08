@@ -346,6 +346,7 @@ describe("Manager tab keeps its contact, orientation, paperwork and corporate se
         text: "I-9",
         requiresAlcoholCert: false,
         minorOnly: false,
+        enabled: true,
         itemType: "paperwork" as never,
       },
       {
@@ -353,6 +354,7 @@ describe("Manager tab keeps its contact, orientation, paperwork and corporate se
         text: "W-4",
         requiresAlcoholCert: false,
         minorOnly: false,
+        enabled: true,
         itemType: "paperwork" as never,
       },
     ];
@@ -386,6 +388,205 @@ describe("Manager tab keeps its contact, orientation, paperwork and corporate se
     expect(
       await screen.findByText(t("roadie.changeHistory.empty")),
     ).toBeInTheDocument();
+  });
+});
+
+/**
+ * Adjacent behavior the accepted paperwork-checklist change must not disturb.
+ *
+ * The request intentionally changes the checklist's item names and order, adds
+ * an I-9 / W-4 item, removes the Food handler card, and makes checking ordered.
+ * This block deliberately does NOT assert the old names, the old order or the
+ * old free-form toggling. It protects the surrounding behavior that must
+ * survive:
+ *   - the applicability filter (an alcohol-only item is hidden for a
+ *     non-alcohol position; a minor-only item is shown for a minor),
+ *   - the `setPaperworkItems` save seam (a toggle writes the roadie id and the
+ *     checked item ids through the actor),
+ *   - the read-only state for a role that may not edit a roadie.
+ * The item texts below are neutral placeholders, not the seeded names.
+ */
+
+/** A paperwork checklist actor with configurable items, position and role. */
+function paperworkActor(options: {
+  items: ChecklistItem[];
+  position?: Position;
+  role?: Role;
+  checked?: string[];
+}) {
+  const position = options.position ?? POSITION;
+  const setPaperworkItems = vi.fn<backendInterface["setPaperworkItems"]>(
+    async () => {},
+  );
+  return {
+    actor: {
+      getChecklists: vi.fn<backendInterface["getChecklists"]>(async () => ({
+        paperwork: options.items,
+        orientationUniform: [],
+      })),
+      listPositions: vi.fn<backendInterface["listPositions"]>(async () => [
+        position,
+      ]),
+      getOrientationCheckoff: vi.fn<backendInterface["getOrientationCheckoff"]>(
+        async () => ({
+          paperworkItems: options.checked ?? [],
+          uniformItems: [],
+          uniformCounts: [],
+          shirtsCount: 0n,
+          hatsCount: 0n,
+          roadieId: 1n,
+          isDemo: false,
+          updatedAt: 0n,
+        }),
+      ),
+      listSchedule: vi.fn<backendInterface["listSchedule"]>(async () => []),
+      getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
+        grant: grant(options.role ?? Role.storeManager),
+      })),
+      getContactSet: vi.fn<backendInterface["getContactSet"]>(async () => []),
+      listChangeLog: vi.fn<backendInterface["listChangeLog"]>(async () => []),
+      updateRoadieDetails: vi.fn<backendInterface["updateRoadieDetails"]>(
+        async () => {},
+      ),
+      updateContactSet: vi.fn<backendInterface["updateContactSet"]>(
+        async () => {},
+      ),
+      setPaperworkItems,
+      moveRoadieToSession: vi.fn<backendInterface["moveRoadieToSession"]>(
+        async () => {},
+      ),
+    },
+    setPaperworkItems,
+  };
+}
+
+function item(
+  id: bigint,
+  text: string,
+  flags: Partial<Pick<ChecklistItem, "requiresAlcoholCert" | "minorOnly">> = {},
+): ChecklistItem {
+  return {
+    id,
+    text,
+    requiresAlcoholCert: flags.requiresAlcoholCert ?? false,
+    minorOnly: flags.minorOnly ?? false,
+    enabled: true,
+    itemType: "paperwork" as never,
+  };
+}
+
+describe("Manager tab paperwork checklist keeps its applicability filter", () => {
+  it("hides an alcohol-only item for a non-alcohol position", async () => {
+    const { actor } = paperworkActor({
+      items: [
+        item(0n, "General item"),
+        item(1n, "Alcohol-only item", { requiresAlcoholCert: true }),
+      ],
+      position: { ...POSITION, needsAlcoholCert: false },
+    });
+    renderWithActor(<ManagerTab roadie={roadie()} />, actor);
+
+    expect(await screen.findByText("General item")).toBeInTheDocument();
+    expect(screen.queryByText("Alcohol-only item")).not.toBeInTheDocument();
+  });
+
+  it("shows an alcohol-only item for an alcohol position", async () => {
+    const { actor } = paperworkActor({
+      items: [
+        item(0n, "General item"),
+        item(1n, "Alcohol-only item", { requiresAlcoholCert: true }),
+      ],
+      position: { ...POSITION, needsAlcoholCert: true },
+    });
+    renderWithActor(<ManagerTab roadie={roadie()} />, actor);
+
+    expect(await screen.findByText("General item")).toBeInTheDocument();
+    expect(screen.getByText("Alcohol-only item")).toBeInTheDocument();
+  });
+
+  it("hides a minor-only item for a non-minor roadie", async () => {
+    const { actor } = paperworkActor({
+      items: [
+        item(0n, "General item"),
+        item(1n, "Minor-only item", { minorOnly: true }),
+      ],
+    });
+    renderWithActor(<ManagerTab roadie={roadie({ isMinor: false })} />, actor);
+
+    expect(await screen.findByText("General item")).toBeInTheDocument();
+    expect(screen.queryByText("Minor-only item")).not.toBeInTheDocument();
+  });
+
+  it("shows a minor-only item for a minor roadie", async () => {
+    const { actor } = paperworkActor({
+      items: [
+        item(0n, "General item"),
+        item(1n, "Minor-only item", { minorOnly: true }),
+      ],
+    });
+    renderWithActor(<ManagerTab roadie={roadie({ isMinor: true })} />, actor);
+
+    expect(await screen.findByText("General item")).toBeInTheDocument();
+    expect(screen.getByText("Minor-only item")).toBeInTheDocument();
+  });
+});
+
+describe("Manager tab paperwork checklist keeps its save seam", () => {
+  it("writes the roadie id and the checked item ids through setPaperworkItems", async () => {
+    const user = userEvent.setup();
+    const { actor, setPaperworkItems } = paperworkActor({
+      items: [item(0n, "First item"), item(1n, "Second item")],
+      checked: ["0"],
+    });
+    renderWithActor(<ManagerTab roadie={roadie()} />, actor);
+
+    // The stored item is checked; the other is not.
+    const boxes = await screen.findAllByTestId("roadie.paperwork.checkbox");
+    expect(boxes).toHaveLength(2);
+    expect(boxes[0]).toHaveAttribute("data-state", "checked");
+    expect(boxes[1]).toHaveAttribute("data-state", "unchecked");
+
+    // Checking the second item saves both ids for this roadie.
+    await user.click(boxes[1]);
+
+    await waitFor(() => expect(setPaperworkItems).toHaveBeenCalledTimes(1));
+    const [roadieId, ids] = setPaperworkItems.mock.calls[0];
+    expect(roadieId).toBe(1n);
+    expect([...ids].sort()).toEqual(["0", "1"]);
+  });
+
+  it("clears the items below when an earlier item is unchecked", async () => {
+    const user = userEvent.setup();
+    const { actor, setPaperworkItems } = paperworkActor({
+      items: [item(0n, "First item"), item(1n, "Second item")],
+      checked: ["0", "1"],
+    });
+    renderWithActor(<ManagerTab roadie={roadie()} />, actor);
+
+    const boxes = await screen.findAllByTestId("roadie.paperwork.checkbox");
+    await user.click(boxes[0]);
+
+    await waitFor(() => expect(setPaperworkItems).toHaveBeenCalledTimes(1));
+    const [roadieId, ids] = setPaperworkItems.mock.calls[0];
+    expect(roadieId).toBe(1n);
+    // Unchecking the first item also clears the item below it.
+    expect(ids).toEqual([]);
+  });
+});
+
+describe("Manager tab paperwork checklist is read-only for a non-editor", () => {
+  it("disables every checkbox for a role that may not edit a roadie", async () => {
+    const { actor } = paperworkActor({
+      items: [item(0n, "First item"), item(1n, "Second item")],
+      role: Role.trainingManager,
+    });
+    renderWithActor(<ManagerTab roadie={roadie()} />, actor);
+
+    const boxes = await screen.findAllByTestId("roadie.paperwork.checkbox");
+    expect(boxes).toHaveLength(2);
+    for (const box of boxes) {
+      expect(box).toBeDisabled();
+    }
   });
 });
 

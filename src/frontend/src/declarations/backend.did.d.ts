@@ -115,6 +115,7 @@ export interface ChecklistItem {
   'requiresAlcoholCert' : boolean,
   'text' : string,
   'minorOnly' : boolean,
+  'enabled' : boolean,
   'itemType' : UniformItemType,
 }
 export interface Checklists {
@@ -347,6 +348,7 @@ export interface MyCrewRoadieRow {
   'stage' : [] | [RoadieStage],
   'rosterState' : RosterState,
   'paperworkDone' : bigint,
+  'paperworkStep' : [] | [PaperworkStep],
   'paperworkTotal' : bigint,
   'absentToday' : boolean,
   'photo' : [] | [PhotoRef],
@@ -390,6 +392,7 @@ export interface OrientationRoadieRow {
   'crewId' : [] | [CrewId],
   'stage' : [] | [RoadieStage],
   'rosterState' : RosterState,
+  'paperworkStep' : [] | [PaperworkStep],
   'paperworkStatus' : PaperworkStatus,
   'crewName' : [] | [string],
   'photo' : [] | [PhotoRef],
@@ -417,6 +420,11 @@ export interface OverviewRow {
 }
 export type PaperworkStatus = { 'incomplete' : null } |
   { 'complete' : null };
+export type PaperworkStep = { 'i9W4' : null } |
+  { 'none' : null } |
+  { 'foodHandlerCard' : null } |
+  { 'digitalPaperwork' : null } |
+  { 'alcoholCertificate' : null };
 export interface PendingRequestSummary {
   'hasProfile' : boolean,
   'requestedAt' : Timestamp,
@@ -472,6 +480,7 @@ export interface Roadie {
   'rosterState' : RosterState,
   'signedBy' : [] | [Principal],
   'birthdayMonthDay' : [] | [string],
+  'paperworkStep' : [] | [PaperworkStep],
   'isMinor' : boolean,
   'archivedReason' : [] | [ArchiveReason],
   'photo' : [] | [PhotoRef],
@@ -567,6 +576,7 @@ export interface ShiftBoardRoadie {
   'positionCode' : string,
   'positionId' : PositionId,
   'stage' : [] | [RoadieStage],
+  'paperworkStep' : [] | [PaperworkStep],
   'photo' : [] | [PhotoRef],
 }
 export interface ShiftBoardView {
@@ -728,6 +738,7 @@ export interface UnassignedRoadieRow {
   'positionId' : PositionId,
   'crewId' : [] | [CrewId],
   'stage' : [] | [RoadieStage],
+  'paperworkStep' : [] | [PaperworkStep],
   'crewName' : [] | [string],
   'photo' : [] | [PhotoRef],
 }

@@ -115,6 +115,10 @@ export interface AdminCopy {
   checklistsRequiresAlcoholCert: string;
   checklistsMinorOnly: string;
   checklistsToggleHint: string;
+  checklistsEnabled: string;
+  checklistsEnabledHint: string;
+  checklistsMoveUp: string;
+  checklistsMoveDown: string;
   checklistsItemType: string;
   checklistsItemTypeCheckbox: string;
   checklistsItemTypeCount: string;
@@ -343,6 +347,11 @@ const en: AdminCopy = {
   checklistsRequiresAlcoholCert: "Only alcohol positions",
   checklistsMinorOnly: "Only under 18",
   checklistsToggleHint: "Leave both off if the item applies to everyone.",
+  checklistsEnabled: "On/Off",
+  checklistsEnabledHint:
+    "Turn an item off to hide it everywhere. The list order is the order roadies complete the steps.",
+  checklistsMoveUp: "Move up",
+  checklistsMoveDown: "Move down",
   checklistsItemType: "Type",
   checklistsItemTypeCheckbox: "Checkbox",
   checklistsItemTypeCount: "Count",
@@ -580,6 +589,11 @@ const es: AdminCopy = {
   checklistsMinorOnly: "Solo menores de 18",
   checklistsToggleHint:
     "Deja ambos desactivados si el artículo aplica a todos.",
+  checklistsEnabled: "Activado/Desactivado",
+  checklistsEnabledHint:
+    "Desactiva un artículo para ocultarlo en todas partes. El orden de la lista es el orden en que los roadies completan los pasos.",
+  checklistsMoveUp: "Subir",
+  checklistsMoveDown: "Bajar",
   checklistsItemType: "Tipo",
   checklistsItemTypeCheckbox: "Casilla",
   checklistsItemTypeCount: "Cantidad",

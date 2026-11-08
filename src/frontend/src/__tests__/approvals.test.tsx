@@ -154,6 +154,23 @@ const SERVERS: Position = {
   defaultHats: 1n,
 };
 
+const BARTENDER: Position = {
+  id: 11n,
+  name: "Bartender",
+  code: "BAR",
+  house: House.foh,
+  openingBuildTo: 2n,
+  afterOpeningBuildTo: 1n,
+  minimumAge: 18n,
+  needsAlcoholCert: true,
+  shirtType: "Polo",
+  shirtQty: 2n,
+  hatType: "Cap",
+  hatQty: 1n,
+  defaultShirts: 2n,
+  defaultHats: 1n,
+};
+
 const CREW_SUMMARIES: CrewSummary[] = [
   { id: 0n, name: "Jordan's Crew", roadieCount: 0n, isDemo: false },
 ];
@@ -576,6 +593,107 @@ describe("Approvals Start date prefill follows the orientation session", () => {
       ).toHaveTextContent("Orientation B"),
     );
     expect(startInput).toHaveValue("2026-03-15");
+  });
+});
+
+/**
+ * Cover for the accepted Main position pre-fill: a pending sign-up whose
+ * Position applied for matches a position name (ignoring case, surrounding
+ * spaces and a single trailing "s") starts with that position selected, while
+ * an unmatched or absent value leaves the "Select a position" placeholder. The
+ * manager can still change the selection afterwards. The actor is a typed local
+ * mock; no live backend, identity or storage is exercised.
+ */
+
+/** A pending adult sign-up carrying the given Position applied for. */
+function signupWithAppliedFor(
+  positionAppliedFor: string | undefined,
+): SignupSubmission {
+  const base = adultSignup();
+  return {
+    ...base,
+    profile: { name: "Adult Applicant", positionAppliedFor },
+  };
+}
+
+/** The approvals actor with a single "Servers" position and a chosen sign-up. */
+function prefillActor(signup: SignupSubmission) {
+  return {
+    ...approvalsActor(),
+    listPendingSignups: vi.fn<backendInterface["listPendingSignups"]>(
+      async () => [signup],
+    ),
+  };
+}
+
+describe("Approvals Main position pre-fill from Position applied for", () => {
+  it("selects the matching position as soon as the card appears", async () => {
+    renderPageWithActor(
+      ApprovalsPage,
+      prefillActor(signupWithAppliedFor("Servers")),
+      { path: "/approvals" },
+    );
+
+    const select = await screen.findByTestId("approvals.signup.main.select");
+    await waitFor(() => expect(select).toHaveTextContent("Servers"));
+    expect(select).not.toHaveTextContent(
+      t("approvals.signup.main.placeholder"),
+    );
+  });
+
+  it("matches ignoring case, surrounding spaces and a trailing s", async () => {
+    renderPageWithActor(
+      ApprovalsPage,
+      prefillActor(signupWithAppliedFor("  servers  ")),
+      { path: "/approvals" },
+    );
+
+    const select = await screen.findByTestId("approvals.signup.main.select");
+    await waitFor(() => expect(select).toHaveTextContent("Servers"));
+  });
+
+  it("stays on the placeholder when nothing matches", async () => {
+    renderPageWithActor(
+      ApprovalsPage,
+      prefillActor(signupWithAppliedFor("Line Cook")),
+      { path: "/approvals" },
+    );
+
+    const select = await screen.findByTestId("approvals.signup.main.select");
+    await waitFor(() =>
+      expect(select).toHaveTextContent(t("approvals.signup.main.placeholder")),
+    );
+  });
+
+  it("stays on the placeholder when there is no Position applied for", async () => {
+    renderPageWithActor(
+      ApprovalsPage,
+      prefillActor(signupWithAppliedFor(undefined)),
+      { path: "/approvals" },
+    );
+
+    const select = await screen.findByTestId("approvals.signup.main.select");
+    await waitFor(() =>
+      expect(select).toHaveTextContent(t("approvals.signup.main.placeholder")),
+    );
+  });
+
+  it("lets the manager change the pre-filled selection", async () => {
+    const user = userEvent.setup();
+    const actor = prefillActor(signupWithAppliedFor("Servers"));
+    actor.listPositions = vi.fn<backendInterface["listPositions"]>(async () => [
+      SERVERS,
+      BARTENDER,
+    ]);
+    renderPageWithActor(ApprovalsPage, actor, { path: "/approvals" });
+
+    const select = await screen.findByTestId("approvals.signup.main.select");
+    await waitFor(() => expect(select).toHaveTextContent("Servers"));
+
+    await user.click(select);
+    await user.click(await screen.findByRole("option", { name: "Bartender" }));
+
+    await waitFor(() => expect(select).toHaveTextContent("Bartender"));
   });
 });
 

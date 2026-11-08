@@ -104,6 +104,7 @@ type UnassignedRoadieRow =
    crewName: opt text;
    demoPhotoUrl: opt text;
    name: text;
+   paperworkStep: opt PaperworkStep;
    photo: opt PhotoRef;
    positionId: PositionId;
    positionName: text;
@@ -292,6 +293,7 @@ type ShiftBoardRoadie =
    demoPhotoUrl: opt text;
    markedUnavailable: bool;
    name: text;
+   paperworkStep: opt PaperworkStep;
    photo: opt PhotoRef;
    positionCode: text;
    positionId: PositionId;
@@ -414,6 +416,7 @@ type Roadie =
    isMinor: bool;
    mainPositionId: PositionId;
    orientationEventId: opt EventId;
+   paperworkStep: opt PaperworkStep;
    photo: opt PhotoRef;
    profile: RoadieProfile;
    rosterState: RosterState;
@@ -477,6 +480,14 @@ type PendingRequestSummary =
    hasProfile: bool;
    requestedAt: Timestamp;
  };
+type PaperworkStep = 
+ variant {
+   alcoholCertificate;
+   digitalPaperwork;
+   foodHandlerCard;
+   i9W4;
+   none;
+ };
 type PaperworkStatus = 
  variant {
    complete;
@@ -514,6 +525,7 @@ type OrientationRoadieRow =
    name: text;
    noShow: bool;
    paperworkStatus: PaperworkStatus;
+   paperworkStep: opt PaperworkStep;
    photo: opt PhotoRef;
    positionId: PositionId;
    positionName: text;
@@ -564,6 +576,7 @@ type MyCrewRoadieRow =
    name: text;
    paperworkDone: nat;
    paperworkOverdue: bool;
+   paperworkStep: opt PaperworkStep;
    paperworkTotal: nat;
    photo: opt PhotoRef;
    positionId: PositionId;
@@ -850,6 +863,7 @@ type Checklists =
  };
 type ChecklistItem = 
  record {
+   enabled: bool;
    id: nat;
    itemType: UniformItemType;
    minorOnly: bool;

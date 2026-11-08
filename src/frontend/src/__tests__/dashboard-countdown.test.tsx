@@ -328,6 +328,7 @@ function timelineActor(options: {
         text: item.text,
         requiresAlcoholCert: false,
         minorOnly: false,
+        enabled: true,
         itemType: { checkbox: null } as never,
       })),
       orientationUniform: [],

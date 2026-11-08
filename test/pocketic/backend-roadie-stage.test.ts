@@ -158,8 +158,8 @@ describe("backend computed roadie stage", () => {
       "stage-paperwork@example.com",
     );
     // The Servers position needs an alcohol cert, so all four seeded paperwork
-    // items apply; checking them all completes the paperwork.
-    await admin.setPaperworkItems(roadieId, ["0", "1", "2", "3"]);
+    // items apply; checking them all in checklist order completes the paperwork.
+    await admin.setPaperworkItems(roadieId, ["0", "5", "3", "1"]);
     expect(await stageOf(roadieId)).toEqual([{ paperworkDone: null }]);
   });
 
@@ -176,7 +176,7 @@ describe("backend computed roadie stage", () => {
       "stage-oriented@example.com",
       [session!.id],
     );
-    await admin.setPaperworkItems(roadieId, ["0", "1", "2", "3"]);
+    await admin.setPaperworkItems(roadieId, ["0", "5", "3", "1"]);
     await admin.markPresent(roadieId, session!.id, []);
 
     // Active with no training-day check-in is Oriented.
@@ -200,7 +200,7 @@ describe("backend computed roadie stage", () => {
       "stage-training@example.com",
       [session!.id],
     );
-    await admin.setPaperworkItems(roadieId, ["0", "1", "2", "3"]);
+    await admin.setPaperworkItems(roadieId, ["0", "5", "3", "1"]);
     await admin.markPresent(roadieId, session!.id, []);
     // A Present check-in on a training-day shift moves the stage to In Training.
     // The stage reads the trainer check-in map, so record it through the real
@@ -248,7 +248,7 @@ describe("backend computed roadie stage", () => {
     expect(await stageOf(roadieId)).toEqual([{ hired: null }]);
     // ...and Paperwork Done on the very next read once it is complete, with no
     // separate stage write in between.
-    await admin.setPaperworkItems(roadieId, ["0", "1", "2", "3"]);
+    await admin.setPaperworkItems(roadieId, ["0", "5", "3", "1"]);
     expect(await stageOf(roadieId)).toEqual([{ paperworkDone: null }]);
   });
 });

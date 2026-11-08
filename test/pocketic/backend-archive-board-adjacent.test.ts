@@ -194,7 +194,7 @@ describe("backend archive and board adjacent behavior", () => {
     const active = await approveRoadie("Active Roadie", "+1-555-0702", pastId);
 
     // Marking Present makes the roadie Active, so archiveNoShows must skip it.
-    await admin.setPaperworkItems(active, ["0", "1", "2", "3"]);
+    await admin.setPaperworkItems(active, ["0", "5", "3", "1"]);
     await admin.markPresent(active, pastId, []);
 
     const archived = await admin.archiveNoShows(pastId);

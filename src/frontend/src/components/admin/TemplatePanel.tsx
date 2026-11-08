@@ -143,6 +143,7 @@ function parseChecklistItems(value: unknown): Checklists["paperwork"] | null {
       text: raw.text,
       requiresAlcoholCert: raw.requiresAlcoholCert === true,
       minorOnly: raw.minorOnly === true,
+      enabled: raw.enabled !== false,
       itemType:
         raw.itemType === "count"
           ? UniformItemType.count

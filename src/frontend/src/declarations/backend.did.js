@@ -261,6 +261,7 @@ export const ChecklistItem = IDL.Record({
   'requiresAlcoholCert' : IDL.Bool,
   'text' : IDL.Text,
   'minorOnly' : IDL.Bool,
+  'enabled' : IDL.Bool,
   'itemType' : UniformItemType,
 });
 export const Checklists = IDL.Record({
@@ -439,6 +440,13 @@ export const RosterState = IDL.Variant({
   'active' : IDL.Null,
   'pending' : IDL.Null,
 });
+export const PaperworkStep = IDL.Variant({
+  'i9W4' : IDL.Null,
+  'none' : IDL.Null,
+  'foodHandlerCard' : IDL.Null,
+  'digitalPaperwork' : IDL.Null,
+  'alcoholCertificate' : IDL.Null,
+});
 export const MyCrewRoadieRow = IDL.Record({
   'demoPhotoUrl' : IDL.Opt(IDL.Text),
   'roadieId' : RoadieId,
@@ -449,6 +457,7 @@ export const MyCrewRoadieRow = IDL.Record({
   'stage' : IDL.Opt(RoadieStage),
   'rosterState' : RosterState,
   'paperworkDone' : IDL.Nat,
+  'paperworkStep' : IDL.Opt(PaperworkStep),
   'paperworkTotal' : IDL.Nat,
   'absentToday' : IDL.Bool,
   'photo' : IDL.Opt(PhotoRef),
@@ -466,6 +475,7 @@ export const ShiftBoardRoadie = IDL.Record({
   'positionCode' : IDL.Text,
   'positionId' : PositionId,
   'stage' : IDL.Opt(RoadieStage),
+  'paperworkStep' : IDL.Opt(PaperworkStep),
   'photo' : IDL.Opt(PhotoRef),
 });
 export const MyGroupView = IDL.Record({
@@ -504,6 +514,7 @@ export const OrientationRoadieRow = IDL.Record({
   'crewId' : IDL.Opt(CrewId),
   'stage' : IDL.Opt(RoadieStage),
   'rosterState' : RosterState,
+  'paperworkStep' : IDL.Opt(PaperworkStep),
   'paperworkStatus' : PaperworkStatus,
   'crewName' : IDL.Opt(IDL.Text),
   'photo' : IDL.Opt(PhotoRef),
@@ -567,6 +578,7 @@ export const Roadie = IDL.Record({
   'rosterState' : RosterState,
   'signedBy' : IDL.Opt(IDL.Principal),
   'birthdayMonthDay' : IDL.Opt(IDL.Text),
+  'paperworkStep' : IDL.Opt(PaperworkStep),
   'isMinor' : IDL.Bool,
   'archivedReason' : IDL.Opt(ArchiveReason),
   'photo' : IDL.Opt(PhotoRef),
@@ -821,6 +833,7 @@ export const UnassignedRoadieRow = IDL.Record({
   'positionId' : PositionId,
   'crewId' : IDL.Opt(CrewId),
   'stage' : IDL.Opt(RoadieStage),
+  'paperworkStep' : IDL.Opt(PaperworkStep),
   'crewName' : IDL.Opt(IDL.Text),
   'photo' : IDL.Opt(PhotoRef),
 });
@@ -1367,6 +1380,7 @@ export const idlFactory = ({ IDL }) => {
     'requiresAlcoholCert' : IDL.Bool,
     'text' : IDL.Text,
     'minorOnly' : IDL.Bool,
+    'enabled' : IDL.Bool,
     'itemType' : UniformItemType,
   });
   const Checklists = IDL.Record({
@@ -1539,6 +1553,13 @@ export const idlFactory = ({ IDL }) => {
     'active' : IDL.Null,
     'pending' : IDL.Null,
   });
+  const PaperworkStep = IDL.Variant({
+    'i9W4' : IDL.Null,
+    'none' : IDL.Null,
+    'foodHandlerCard' : IDL.Null,
+    'digitalPaperwork' : IDL.Null,
+    'alcoholCertificate' : IDL.Null,
+  });
   const MyCrewRoadieRow = IDL.Record({
     'demoPhotoUrl' : IDL.Opt(IDL.Text),
     'roadieId' : RoadieId,
@@ -1549,6 +1570,7 @@ export const idlFactory = ({ IDL }) => {
     'stage' : IDL.Opt(RoadieStage),
     'rosterState' : RosterState,
     'paperworkDone' : IDL.Nat,
+    'paperworkStep' : IDL.Opt(PaperworkStep),
     'paperworkTotal' : IDL.Nat,
     'absentToday' : IDL.Bool,
     'photo' : IDL.Opt(PhotoRef),
@@ -1566,6 +1588,7 @@ export const idlFactory = ({ IDL }) => {
     'positionCode' : IDL.Text,
     'positionId' : PositionId,
     'stage' : IDL.Opt(RoadieStage),
+    'paperworkStep' : IDL.Opt(PaperworkStep),
     'photo' : IDL.Opt(PhotoRef),
   });
   const MyGroupView = IDL.Record({
@@ -1604,6 +1627,7 @@ export const idlFactory = ({ IDL }) => {
     'crewId' : IDL.Opt(CrewId),
     'stage' : IDL.Opt(RoadieStage),
     'rosterState' : RosterState,
+    'paperworkStep' : IDL.Opt(PaperworkStep),
     'paperworkStatus' : PaperworkStatus,
     'crewName' : IDL.Opt(IDL.Text),
     'photo' : IDL.Opt(PhotoRef),
@@ -1667,6 +1691,7 @@ export const idlFactory = ({ IDL }) => {
     'rosterState' : RosterState,
     'signedBy' : IDL.Opt(IDL.Principal),
     'birthdayMonthDay' : IDL.Opt(IDL.Text),
+    'paperworkStep' : IDL.Opt(PaperworkStep),
     'isMinor' : IDL.Bool,
     'archivedReason' : IDL.Opt(ArchiveReason),
     'photo' : IDL.Opt(PhotoRef),
@@ -1918,6 +1943,7 @@ export const idlFactory = ({ IDL }) => {
     'positionId' : PositionId,
     'crewId' : IDL.Opt(CrewId),
     'stage' : IDL.Opt(RoadieStage),
+    'paperworkStep' : IDL.Opt(PaperworkStep),
     'crewName' : IDL.Opt(IDL.Text),
     'photo' : IDL.Opt(PhotoRef),
   });

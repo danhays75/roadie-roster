@@ -369,10 +369,11 @@ describe("Dashboard keeps its KPI tiles and adjust-mode toggle", () => {
 
 const PAPERWORK_ITEMS: ChecklistItem[] = [
   {
-    id: 1n,
-    text: "I-9 form",
+    id: 0n,
+    text: "Digital Paperwork",
     minorOnly: false,
     requiresAlcoholCert: false,
+    enabled: true,
     itemType: UniformItemType.checkbox,
   },
   {
@@ -380,6 +381,7 @@ const PAPERWORK_ITEMS: ChecklistItem[] = [
     text: "LA employment certificate (LWC confirmation received)",
     minorOnly: true,
     requiresAlcoholCert: false,
+    enabled: true,
     itemType: UniformItemType.checkbox,
   },
 ];
@@ -450,7 +452,7 @@ describe("Manager tab keeps rendering the paperwork checklist", () => {
     await user.click(await screen.findByTestId("roadie.manager.tab"));
 
     const section = await screen.findByTestId("roadie.manager.paperwork");
-    expect(within(section).getByText("I-9 form")).toBeInTheDocument();
+    expect(within(section).getByText("Digital Paperwork")).toBeInTheDocument();
     expect(
       within(section).getByText(
         "LA employment certificate (LWC confirmation received)",
@@ -474,7 +476,7 @@ describe("Manager tab keeps rendering the paperwork checklist", () => {
     await user.click(await screen.findByTestId("roadie.manager.tab"));
 
     const section = await screen.findByTestId("roadie.manager.paperwork");
-    expect(within(section).getByText("I-9 form")).toBeInTheDocument();
+    expect(within(section).getByText("Digital Paperwork")).toBeInTheDocument();
     expect(
       within(section).queryByText(
         "LA employment certificate (LWC confirmation received)",

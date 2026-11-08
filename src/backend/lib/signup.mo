@@ -267,6 +267,7 @@ module {
       rosterState = #pending;
       isDemo = submission.isDemo;
       stage = null;
+      paperworkStep = null;
     });
     signups.add(id, { submission with status = #approved(roadieId) });
     logWrite(changeLog, counters, demoState, caller, "approveSignup", ?roadieId, true, "Approved signup");

@@ -56,7 +56,7 @@ import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Check, UserCheck, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * A pending kiosk sign-up's photo bytes, read on demand by sign-up id. The
@@ -182,6 +182,32 @@ function ageInTimeZone(dateOfBirth: DateOnly, timeZone: string): number | null {
  */
 const NO_CREW = "__none__";
 
+/**
+ * Normalize a position name for matching: trim surrounding whitespace, lower
+ * case, and drop a single trailing "s" so "Cashiers" matches "Cashier".
+ */
+function normalizePositionName(name: string): string {
+  const trimmed = name.trim().toLowerCase();
+  return trimmed.endsWith("s") ? trimmed.slice(0, -1) : trimmed;
+}
+
+/**
+ * The position whose name matches the applicant's Position applied for,
+ * ignoring case, surrounding whitespace and a single trailing "s" on either
+ * side. Returns undefined when there is no applied-for value or no match.
+ */
+function matchAppliedPosition(
+  appliedFor: string | undefined,
+  positions: Position[],
+): Position | undefined {
+  if (!appliedFor) return undefined;
+  const target = normalizePositionName(appliedFor);
+  if (!target) return undefined;
+  return positions.find(
+    (position) => normalizePositionName(position.name) === target,
+  );
+}
+
 /** The copy key describing what a duplicate matched on. */
 function matchFieldKey(matchedOn: string): string {
   if (matchedOn === "both") return "approvals.signup.duplicates.match.both";
@@ -306,6 +332,22 @@ function PendingSignupCard({
   useEffect(() => {
     if (!crewTouched && fewestCrewId) setCrewId(fewestCrewId);
   }, [crewTouched, fewestCrewId]);
+
+  // Prefill Main position from the applicant's Position applied for once the
+  // positions load, matching case-insensitively, trimming whitespace and
+  // ignoring a single trailing "s". Runs only on first load so a later
+  // positions refetch never overwrites the manager's own selection.
+  const mainPrefilled = useRef(false);
+  useEffect(() => {
+    if (mainPrefilled.current) return;
+    const match = matchAppliedPosition(
+      signup.profile.positionAppliedFor,
+      positions,
+    );
+    if (!match) return;
+    mainPrefilled.current = true;
+    setMainPositionId(match.id.toString());
+  }, [signup.profile.positionAppliedFor, positions]);
 
   const mainPosition = positions.find(
     (position) => position.id.toString() === mainPositionId,

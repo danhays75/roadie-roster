@@ -1535,6 +1535,9 @@ video {
 .aspect-\[4\/3\] {
   aspect-ratio: 4/3;
 }
+.aspect-\[4\/5\] {
+  aspect-ratio: 4/5;
+}
 .aspect-square {
   aspect-ratio: 1 / 1;
 }
@@ -2495,6 +2498,10 @@ video {
 .object-cover {
   -o-object-fit: cover;
      object-fit: cover;
+}
+.object-\[center_30\%\] {
+  -o-object-position: center 30%;
+     object-position: center 30%;
 }
 .object-top {
   -o-object-position: top;
