@@ -441,6 +441,344 @@ describe("Practice run step completion is derived from demo data", () => {
   });
 });
 
+/**
+ * The accepted change widens steps 2 and 3 to count roadies who have advanced
+ * past their original stage. Step 2 counts paperworkDone + oriented + inTraining
+ * + certified against the 18 seed baseline; step 3 counts oriented + inTraining
+ * + certified against the 10 orientation target. Both stay done as roadies move
+ * to later stages.
+ */
+describe("Practice run step 2 and step 3 count advanced stages", () => {
+  it("marks step 2 done when advanced-stage roadies push the count past the seed baseline", async () => {
+    // 18 at Paperwork Done is the seed baseline (not done); one more at a later
+    // stage pushes the widened count to 19, so step 2 is done.
+    const roadies: Roadie[] = [
+      ...Array.from({ length: 18 }, (_, i) =>
+        roadie(BigInt(i + 1), RoadieStage.paperworkDone),
+      ),
+      roadie(100n, RoadieStage.certified),
+    ];
+    const actor = cardActor({ roadies });
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(
+        screen
+          .getByTestId("today.practice.step.2")
+          .querySelector(".lucide-check"),
+      ).not.toBeNull(),
+    );
+  });
+
+  it("keeps step 2 not done at the seed baseline of 18 Paperwork Done roadies", async () => {
+    const roadies = Array.from({ length: 18 }, (_, i) =>
+      roadie(BigInt(i + 1), RoadieStage.paperworkDone),
+    );
+    const actor = cardActor({ roadies });
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("today.practice.step.2")).toBeInTheDocument(),
+    );
+    const step2 = screen.getByTestId("today.practice.step.2");
+    expect(step2).toHaveTextContent("2");
+    expect(step2.querySelector(".lucide-check")).toBeNull();
+  });
+
+  it("keeps step 2 done as its roadies advance to later stages", async () => {
+    // 19 roadies spread across every counted stage: the widened count stays 19
+    // as they advance, so step 2 stays done.
+    const roadies: Roadie[] = [
+      ...Array.from({ length: 5 }, (_, i) =>
+        roadie(BigInt(i + 1), RoadieStage.paperworkDone),
+      ),
+      ...Array.from({ length: 5 }, (_, i) =>
+        roadie(BigInt(i + 100), RoadieStage.oriented),
+      ),
+      ...Array.from({ length: 5 }, (_, i) =>
+        roadie(BigInt(i + 200), RoadieStage.inTraining),
+      ),
+      ...Array.from({ length: 4 }, (_, i) =>
+        roadie(BigInt(i + 300), RoadieStage.certified),
+      ),
+    ];
+    const actor = cardActor({ roadies });
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(
+        screen
+          .getByTestId("today.practice.step.2")
+          .querySelector(".lucide-check"),
+      ).not.toBeNull(),
+    );
+  });
+
+  it("marks step 3 done when advanced-stage roadies reach the orientation target", async () => {
+    // 9 Oriented plus 1 In Training reaches the target of 10.
+    const roadies: Roadie[] = [
+      ...Array.from({ length: 9 }, (_, i) =>
+        roadie(BigInt(i + 1), RoadieStage.oriented),
+      ),
+      roadie(100n, RoadieStage.inTraining),
+    ];
+    const actor = cardActor({ roadies });
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(
+        screen
+          .getByTestId("today.practice.step.3")
+          .querySelector(".lucide-check"),
+      ).not.toBeNull(),
+    );
+  });
+
+  it("keeps step 3 not done below the orientation target", async () => {
+    // 9 Oriented is one short of the target of 10.
+    const roadies = Array.from({ length: 9 }, (_, i) =>
+      roadie(BigInt(i + 1), RoadieStage.oriented),
+    );
+    const actor = cardActor({ roadies });
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("today.practice.step.3")).toBeInTheDocument(),
+    );
+    const step3 = screen.getByTestId("today.practice.step.3");
+    expect(step3).toHaveTextContent("3");
+    expect(step3.querySelector(".lucide-check")).toBeNull();
+  });
+
+  it("keeps step 3 done as its roadies advance to later stages", async () => {
+    // 10 roadies across oriented, inTraining and certified: the widened count
+    // stays at 10 as they advance, so step 3 stays done.
+    const roadies: Roadie[] = [
+      ...Array.from({ length: 4 }, (_, i) =>
+        roadie(BigInt(i + 1), RoadieStage.oriented),
+      ),
+      ...Array.from({ length: 3 }, (_, i) =>
+        roadie(BigInt(i + 100), RoadieStage.inTraining),
+      ),
+      ...Array.from({ length: 3 }, (_, i) =>
+        roadie(BigInt(i + 200), RoadieStage.certified),
+      ),
+    ];
+    const actor = cardActor({ roadies });
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(
+        screen
+          .getByTestId("today.practice.step.3")
+          .querySelector(".lucide-check"),
+      ).not.toBeNull(),
+    );
+  });
+});
+
+/**
+ * Adjacent step completion that the accepted change does not touch: steps 1, 4,
+ * 5 and 6 keep deriving their done state from demo data. These guard the
+ * surrounding behavior while steps 2 and 3 change their counting.
+ */
+describe("Practice run adjacent step completion", () => {
+  it("keeps step 1 not done at the seed baseline of 3 pending sign-ups", async () => {
+    const actor = cardActor({ summary: summary({ signups: 3n }) });
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("today.practice.progress")).toHaveTextContent(
+        "Step 1 of 6",
+      ),
+    );
+    const step1 = screen.getByTestId("today.practice.step.1");
+    expect(step1).toHaveTextContent("1");
+    expect(step1.querySelector(".lucide-check")).toBeNull();
+  });
+
+  it("marks step 4 done when a demo board group holds at least one roadie", async () => {
+    const trainer = principal("ttttt-tt");
+    const board: ShiftBoardView = {
+      eventId: 20n,
+      shift: Shift.am,
+      groups: [
+        {
+          trainerPrincipal: trainer,
+          capacity: 4n,
+          roadies: [
+            {
+              roadieId: 100n,
+              name: "Roadie 100",
+              positionCode: "CASH",
+              positionId: 1n,
+              markedUnavailable: false,
+            },
+          ],
+        },
+      ],
+      unassigned: [],
+      offThisShift: [],
+      isDemo: true,
+      editedAt: 0n,
+    };
+    const actor = cardActor({ board });
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(
+        screen
+          .getByTestId("today.practice.step.4")
+          .querySelector(".lucide-check"),
+      ).not.toBeNull(),
+    );
+  });
+
+  it("keeps step 4 not done when the demo board has no roadie in a group", async () => {
+    const actor = cardActor();
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("today.practice.step.4")).toBeInTheDocument(),
+    );
+    const step4 = screen.getByTestId("today.practice.step.4");
+    expect(step4).toHaveTextContent("4");
+    expect(step4.querySelector(".lucide-check")).toBeNull();
+  });
+
+  it("marks step 5 done when every roadie in the first trainer's group is checked in", async () => {
+    const trainer = principal("ttttt-tt");
+    const board: ShiftBoardView = {
+      eventId: 20n,
+      shift: Shift.am,
+      groups: [
+        {
+          trainerPrincipal: trainer,
+          capacity: 4n,
+          roadies: [
+            {
+              roadieId: 100n,
+              name: "Roadie 100",
+              positionCode: "CASH",
+              positionId: 1n,
+              markedUnavailable: false,
+            },
+          ],
+        },
+      ],
+      unassigned: [],
+      offThisShift: [],
+      isDemo: true,
+      editedAt: 0n,
+    };
+    const checkIn: CheckInBoardView = {
+      eventId: 20n,
+      shift: Shift.am,
+      roadies: [
+        { roadieId: 100n, name: "Roadie 100", state: "present" as never },
+      ],
+      checkedInCount: 1n,
+      totalCount: 1n,
+      locked: false,
+      shiftLabel: "AM",
+    };
+    const actor = cardActor({ board, checkIn });
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(
+        screen
+          .getByTestId("today.practice.step.5")
+          .querySelector(".lucide-check"),
+      ).not.toBeNull(),
+    );
+  });
+
+  it("keeps step 5 not done when a roadie in the group has no check-in record", async () => {
+    const trainer = principal("ttttt-tt");
+    const board: ShiftBoardView = {
+      eventId: 20n,
+      shift: Shift.am,
+      groups: [
+        {
+          trainerPrincipal: trainer,
+          capacity: 4n,
+          roadies: [
+            {
+              roadieId: 100n,
+              name: "Roadie 100",
+              positionCode: "CASH",
+              positionId: 1n,
+              markedUnavailable: false,
+            },
+          ],
+        },
+      ],
+      unassigned: [],
+      offThisShift: [],
+      isDemo: true,
+      editedAt: 0n,
+    };
+    const actor = cardActor({ board });
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("today.practice.step.5")).toBeInTheDocument(),
+    );
+    const step5 = screen.getByTestId("today.practice.step.5");
+    expect(step5).toHaveTextContent("5");
+    expect(step5.querySelector(".lucide-check")).toBeNull();
+  });
+
+  it("marks step 6 done when a demo absent alert is excused", async () => {
+    const alerts: AbsentAlertView[] = [
+      {
+        id: 1n,
+        eventId: 20n,
+        roadieId: 100n,
+        name: "Roadie 100",
+        createdAt: 0n,
+        shift: Shift.am,
+        shiftLabel: "AM",
+        excused: "Called in",
+        archived: false,
+      },
+    ];
+    const actor = cardActor({ alerts });
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("today.practice.step.6")).toBeInTheDocument(),
+    );
+    const step6 = screen.getByTestId("today.practice.step.6");
+    expect(step6.querySelector(".lucide-check")).not.toBeNull();
+  });
+
+  it("keeps step 6 not done when the demo absent alert is neither excused nor archived", async () => {
+    const alerts: AbsentAlertView[] = [
+      {
+        id: 1n,
+        eventId: 20n,
+        roadieId: 100n,
+        name: "Roadie 100",
+        createdAt: 0n,
+        shift: Shift.am,
+        shiftLabel: "AM",
+        archived: false,
+      },
+    ];
+    const actor = cardActor({ alerts });
+    renderPageWithActor(PracticeRunPage, actor, { path: "/today" });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("today.practice.step.6")).toBeInTheDocument(),
+    );
+    const step6 = screen.getByTestId("today.practice.step.6");
+    expect(step6).toHaveTextContent("6");
+    expect(step6.querySelector(".lucide-check")).toBeNull();
+  });
+});
+
 describe("Practice run Take me there drives the demo setters", () => {
   it("step 1 sets View as Admin, clears the pretend date and opens Approve New Hires", async () => {
     const user = userEvent.setup();

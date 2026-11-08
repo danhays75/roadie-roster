@@ -353,6 +353,7 @@ actor {
             weekdayLunch = null;
           };
           photo = null;
+          demoPhotoUrl = null;
           signature = null;
           contactSet = {
             phone = "";

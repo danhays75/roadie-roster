@@ -760,9 +760,9 @@ module {
 
     // --- Pending kiosk sign-ups (3), one a phone duplicate of another ---
     let duplicatePhone = "555-0100";
-    seedSignup(signups, counters, 0, "Brittany Landry", ?"Britt", duplicatePhone, "brittany.landry@example.com", now);
-    seedSignup(signups, counters, 1, "Cameron Hebert", null, duplicatePhone, "cameron.hebert@example.com", now);
-    seedSignup(signups, counters, 2, "Natalie Fontenot", ?"Nat", "555-0199", "natalie.fontenot@example.com", now);
+    seedSignup(signups, counters, 0, "Brittany Landry", ?"Britt", duplicatePhone, "brittany.landry@example.com", "Servers", "02179409844976945fbeaee288e5855715c9c7643a6f5a868d286_0_1794098471182_477bc68b.webp", now);
+    seedSignup(signups, counters, 1, "Cameron Hebert", null, duplicatePhone, "cameron.hebert@example.com", "Broil / Saute", "021794098450810fea0cb63916d8b7cee037e8f30dc2746679fb1_0_1794098460748_9128231b.webp", now);
+    seedSignup(signups, counters, 2, "Natalie Fontenot", ?"Nat", "555-0199", "natalie.fontenot@example.com", "Hosts", "021794098451872f39d09b715cb307c823cd4ff1a5ec1abd30527_0_1794098479850_32075eb3.webp", now);
 
     ignore ChangeLog.record(changeLog, counters, caller, "loadDemoData", null, false, "Loaded demo data");
     getDemoDataSummary(accessGrants, roadies, signups, crews, attendance, trainerNotes);
@@ -951,7 +951,10 @@ module {
     if (n < 10) { "0" # n.toText() } else { n.toText() };
   };
 
-  /// Internal: seed one pending demo kiosk sign-up.
+  /// Internal: seed one pending demo kiosk sign-up. `positionAppliedFor` is the
+  /// position name the applicant asked for, so the approval form's Main position
+  /// pre-fills; `photoFile` is the demo photo file name appended to the shared
+  /// demo photo base.
   func seedSignup(
     signups : Map.Map<Common.SignupId, Signup.SignupSubmission>,
     counters : Counters,
@@ -960,6 +963,8 @@ module {
     preferredName : ?Text,
     phone : Text,
     email : Text,
+    positionAppliedFor : Text,
+    photoFile : Text,
     now : Int,
   ) {
     let id = counters.nextSignupId;
@@ -967,8 +972,12 @@ module {
     signups.add(id, {
       id;
       submittedAt = now;
-      profile = demoProfile(name, preferredName, 44 + i);
+      profile = {
+        demoProfile(name, preferredName, 44 + i) with
+        positionAppliedFor = ?positionAppliedFor;
+      };
       photo = null;
+      demoPhotoUrl = ?(demoPhotoBase # photoFile);
       signature = null;
       contactSet = {
         phone;

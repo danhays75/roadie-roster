@@ -270,6 +270,123 @@ describe("Approvals Crew field default and round-trip survive the pre-selection"
 });
 
 /**
+ * Characterization baseline for the photo sources on the Approve New Hires
+ * card and the Possible duplicates box. The accepted change adds an optional
+ * demo photo to kiosk sign-ups and duplicate matches, so this block
+ * deliberately does NOT assert the demo-photo fallback. It protects the
+ * adjacent behavior that must survive: the stored kiosk photo still wins when
+ * one exists, the card still falls back to the applicant's initials when no
+ * photo exists, and the duplicates row still names the matched roadie with
+ * their position, match field and archived marker.
+ */
+
+/** A single byte is enough to produce a non-empty data URL. */
+const SIGNUP_PHOTO_BYTES = new Uint8Array([1, 2, 3, 4]);
+
+/** The actor the Approvals page reads, with a configurable sign-up photo. */
+function photoApprovalsActor(
+  signup: SignupSubmission,
+  getSignupPhoto: backendInterface["getSignupPhoto"],
+) {
+  return {
+    ...approvalsActor(signup),
+    getSignupPhoto,
+    getPhoto: vi.fn<backendInterface["getPhoto"]>(async () => null),
+  };
+}
+
+describe("Approvals sign-up card photo source survives the demo-photo addition", () => {
+  it("shows the stored kiosk photo when one exists", async () => {
+    const getSignupPhoto = vi.fn<backendInterface["getSignupPhoto"]>(
+      async () => SIGNUP_PHOTO_BYTES,
+    );
+    renderPageWithActor(
+      ApprovalsPage,
+      photoApprovalsActor(adultSignup(), getSignupPhoto),
+      { path: "/approvals" },
+    );
+
+    const photo = await screen.findByTestId("approvals.signup.photo");
+    const img = await within(photo).findByRole("img");
+    expect(img).toHaveAttribute("src", expect.stringContaining("data:image/"));
+    expect(getSignupPhoto).toHaveBeenCalledWith(1n);
+  });
+
+  it("falls back to the applicant's initials when no photo exists", async () => {
+    const getSignupPhoto = vi.fn<backendInterface["getSignupPhoto"]>(
+      async () => null,
+    );
+    renderPageWithActor(
+      ApprovalsPage,
+      photoApprovalsActor(adultSignup(), getSignupPhoto),
+      { path: "/approvals" },
+    );
+
+    const photo = await screen.findByTestId("approvals.signup.photo");
+    await waitFor(() => expect(getSignupPhoto).toHaveBeenCalledWith(1n));
+    // No photo bytes exist, so the card must not render an <img> at all.
+    expect(photo.querySelector("img")).toBeNull();
+    // "Adult Applicant" initials are A and A.
+    expect(photo).toHaveTextContent("AA");
+  });
+});
+
+describe("Approvals duplicates row content survives the demo-photo addition", () => {
+  it("names the matched roadie with position, match field and archived marker", async () => {
+    const actor = photoApprovalsActor(
+      adultSignup(),
+      vi.fn<backendInterface["getSignupPhoto"]>(async () => null),
+    );
+    actor.findDuplicates = vi.fn<backendInterface["findDuplicates"]>(
+      async () => [
+        {
+          roadieId: 7n,
+          name: "Alex Rivera",
+          mainPositionName: "Bartender",
+          matchedOn: "phone",
+          archived: true,
+        },
+      ],
+    );
+    renderPageWithActor(ApprovalsPage, actor, { path: "/approvals" });
+
+    const list = await screen.findByTestId("approvals.signup.duplicates.list");
+    expect(within(list).getByText(/Alex Rivera/)).toBeInTheDocument();
+    expect(within(list).getByText(/Bartender/)).toBeInTheDocument();
+    expect(within(list).getByText(t("roster.archived"))).toBeInTheDocument();
+  });
+
+  it("shows the matched roadie's initials when they have no photo", async () => {
+    const actor = photoApprovalsActor(
+      adultSignup(),
+      vi.fn<backendInterface["getSignupPhoto"]>(async () => null),
+    );
+    actor.findDuplicates = vi.fn<backendInterface["findDuplicates"]>(
+      async () => [
+        {
+          roadieId: 7n,
+          name: "Alex Rivera",
+          mainPositionName: "Bartender",
+          matchedOn: "phone",
+          archived: false,
+        },
+      ],
+    );
+    // The matched roadie has no stored photo, so the row falls back to initials.
+    actor.getPhoto = vi.fn<backendInterface["getPhoto"]>(async () => null);
+    renderPageWithActor(ApprovalsPage, actor, { path: "/approvals" });
+
+    const photo = await screen.findByTestId(
+      "approvals.signup.duplicates.photo",
+    );
+    await waitFor(() => expect(actor.getPhoto).toHaveBeenCalledWith(7n));
+    expect(photo.querySelector("img")).toBeNull();
+    // "Alex Rivera" initials are A and R.
+    expect(photo).toHaveTextContent("AR");
+  });
+});
+
+/**
  * Characterization baseline for the Crews panel's member list. The Crews
  * request changes who may own a crew and how an ownerless crew is shown, but
  * the existing member list must survive: a crew with members expands to show

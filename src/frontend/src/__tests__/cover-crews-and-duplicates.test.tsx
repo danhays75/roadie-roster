@@ -210,6 +210,10 @@ function approvalsActor(
   crews: CrewSummary[],
   approver: Principal,
   duplicates: DuplicateMatch[] = [],
+  photos: {
+    getSignupPhoto?: backendInterface["getSignupPhoto"];
+    getPhoto?: backendInterface["getPhoto"];
+  } = {},
 ) {
   return {
     getMyAccess: vi.fn<backendInterface["getMyAccess"]>(async () => ({
@@ -233,6 +237,11 @@ function approvalsActor(
       async () => duplicates,
     ),
     approveSignup: vi.fn<backendInterface["approveSignup"]>(async () => 0n),
+    getSignupPhoto:
+      photos.getSignupPhoto ??
+      vi.fn<backendInterface["getSignupPhoto"]>(async () => null),
+    getPhoto:
+      photos.getPhoto ?? vi.fn<backendInterface["getPhoto"]>(async () => null),
   };
 }
 
@@ -588,5 +597,124 @@ describe("Duplicate warning wording", () => {
 
     const link = await screen.findByTestId("approvals.signup.duplicates.link");
     expect(link).toHaveAttribute("href", "/roster/7");
+  });
+});
+
+/**
+ * Cover for the accepted demo-photo change on the Approve New Hires card and
+ * the Possible duplicates box. A demo sign-up and a demo duplicate match now
+ * carry a demo-only photo URL, shown only when no stored kiosk photo exists.
+ * The actor is a typed local mock; the backend lane is the only place the real
+ * canister methods run.
+ */
+
+/** A single byte is enough to produce a non-empty data URL. */
+const SIGNUP_PHOTO_BYTES = new Uint8Array([1, 2, 3, 4]);
+
+/** A demo-only photo URL, as Load demo data writes onto a demo record. */
+const DEMO_PHOTO_URL = "https://cdn.example.test/demo/applicant.webp";
+
+describe("Approvals sign-up card demo photo", () => {
+  it("shows the demo photo URL when no stored kiosk photo exists", async () => {
+    const getSignupPhoto = vi.fn<backendInterface["getSignupPhoto"]>(
+      async () => null,
+    );
+    renderPageWithActor(
+      ApprovalsPage,
+      approvalsActor(
+        { ...adultSignup(), demoPhotoUrl: DEMO_PHOTO_URL },
+        [],
+        JORDAN_PRINCIPAL,
+        [],
+        { getSignupPhoto },
+      ),
+      { path: "/approvals" },
+    );
+
+    const photo = await screen.findByTestId("approvals.signup.photo");
+    const img = await within(photo).findByRole("img");
+    expect(img).toHaveAttribute("src", DEMO_PHOTO_URL);
+    expect(getSignupPhoto).toHaveBeenCalledWith(1n);
+  });
+
+  it("prefers the stored kiosk photo over the demo photo URL", async () => {
+    const getSignupPhoto = vi.fn<backendInterface["getSignupPhoto"]>(
+      async () => SIGNUP_PHOTO_BYTES,
+    );
+    renderPageWithActor(
+      ApprovalsPage,
+      approvalsActor(
+        { ...adultSignup(), demoPhotoUrl: DEMO_PHOTO_URL },
+        [],
+        JORDAN_PRINCIPAL,
+        [],
+        { getSignupPhoto },
+      ),
+      { path: "/approvals" },
+    );
+
+    const photo = await screen.findByTestId("approvals.signup.photo");
+    const img = await within(photo).findByRole("img");
+    expect(img).toHaveAttribute("src", expect.stringContaining("data:image/"));
+    expect(img).not.toHaveAttribute("src", DEMO_PHOTO_URL);
+  });
+});
+
+describe("Possible duplicates demo photo", () => {
+  it("shows the matched roadie's demo photo instead of initials", async () => {
+    const duplicates: DuplicateMatch[] = [
+      {
+        roadieId: 7n,
+        name: "Casey Morgan",
+        mainPositionName: "Servers",
+        matchedOn: "phone",
+        archived: false,
+        demoPhotoUrl: DEMO_PHOTO_URL,
+      },
+    ];
+    renderPageWithActor(
+      ApprovalsPage,
+      approvalsActor(adultSignup(), [], JORDAN_PRINCIPAL, duplicates, {
+        getPhoto: vi.fn<backendInterface["getPhoto"]>(async () => null),
+      }),
+      { path: "/approvals" },
+    );
+
+    const photo = await screen.findByTestId(
+      "approvals.signup.duplicates.photo",
+    );
+    const img = await within(photo).findByRole("img");
+    expect(img).toHaveAttribute("src", DEMO_PHOTO_URL);
+    // The initials fallback is not shown when a demo photo exists.
+    expect(photo).not.toHaveTextContent("CM");
+  });
+
+  it("prefers the matched roadie's stored photo over the demo photo URL", async () => {
+    const duplicates: DuplicateMatch[] = [
+      {
+        roadieId: 7n,
+        name: "Casey Morgan",
+        mainPositionName: "Servers",
+        matchedOn: "phone",
+        archived: false,
+        demoPhotoUrl: DEMO_PHOTO_URL,
+      },
+    ];
+    renderPageWithActor(
+      ApprovalsPage,
+      approvalsActor(adultSignup(), [], JORDAN_PRINCIPAL, duplicates, {
+        getPhoto: vi.fn<backendInterface["getPhoto"]>(
+          async () => SIGNUP_PHOTO_BYTES,
+        ),
+      }),
+      { path: "/approvals" },
+    );
+
+    const photo = await screen.findByTestId(
+      "approvals.signup.duplicates.photo",
+    );
+    const img = await within(photo).findByRole("img");
+    expect(img).toHaveAttribute("src", expect.stringContaining("data:image/"));
+    expect(img).not.toHaveAttribute("src", DEMO_PHOTO_URL);
   });
 });

@@ -291,6 +291,7 @@ export const Result = IDL.Record({
 });
 export const DuplicateMatch = IDL.Record({
   'matchedOn' : IDL.Text,
+  'demoPhotoUrl' : IDL.Opt(IDL.Text),
   'roadieId' : RoadieId,
   'name' : IDL.Text,
   'mainPositionName' : IDL.Text,
@@ -607,6 +608,7 @@ export const SignupSubmission = IDL.Record({
   'id' : SignupId,
   'status' : SignupStatus,
   'signature' : IDL.Opt(SignatureRef),
+  'demoPhotoUrl' : IDL.Opt(IDL.Text),
   'contactSet' : ContactSet,
   'submittedAt' : Timestamp,
   'isDemo' : IDL.Bool,
@@ -1395,6 +1397,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const DuplicateMatch = IDL.Record({
     'matchedOn' : IDL.Text,
+    'demoPhotoUrl' : IDL.Opt(IDL.Text),
     'roadieId' : RoadieId,
     'name' : IDL.Text,
     'mainPositionName' : IDL.Text,
@@ -1705,6 +1708,7 @@ export const idlFactory = ({ IDL }) => {
     'id' : SignupId,
     'status' : SignupStatus,
     'signature' : IDL.Opt(SignatureRef),
+    'demoPhotoUrl' : IDL.Opt(IDL.Text),
     'contactSet' : ContactSet,
     'submittedAt' : Timestamp,
     'isDemo' : IDL.Bool,

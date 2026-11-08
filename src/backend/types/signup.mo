@@ -10,6 +10,10 @@ module {
     submittedAt : Common.Timestamp;
     profile : Roadie.RoadieProfile;
     photo : ?Common.PhotoRef;
+    /// Demo-only photo URL, set on seeded demo sign-ups so the approval card can
+    /// show an applicant photo when there is no stored kiosk photo. Null for
+    /// real sign-ups.
+    demoPhotoUrl : ?Text;
     signature : ?Common.SignatureRef;
     contactSet : Roadie.ContactSet;
     status : SignupStatus;
@@ -34,6 +38,9 @@ module {
     mainPositionName : Text;
     matchedOn : Text;
     archived : Bool;
+    /// The matched roadie's demo-only photo URL, so the Possible duplicates box
+    /// can show a demo roadie's photo. Null for real roadies.
+    demoPhotoUrl : ?Text;
   };
 
   /// The manager's approval decision for a submission.

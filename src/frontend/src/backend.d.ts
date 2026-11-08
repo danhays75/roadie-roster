@@ -201,6 +201,7 @@ export interface DemoStateView {
 }
 export interface DuplicateMatch {
     matchedOn: string;
+    demoPhotoUrl?: string;
     roadieId: RoadieId;
     name: string;
     mainPositionName: string;
@@ -632,6 +633,7 @@ export interface SignupSubmission {
     id: SignupId;
     status: SignupStatus;
     signature?: SignatureRef;
+    demoPhotoUrl?: string;
     contactSet: ContactSet;
     submittedAt: Timestamp;
     isDemo: boolean;

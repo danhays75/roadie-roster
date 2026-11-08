@@ -54,6 +54,7 @@ module {
       submittedAt = effectiveNow(demoState, storeInfo);
       profile = capProfile(profile);
       photo;
+      demoPhotoUrl = null;
       signature;
       contactSet = capContactSet(contactSet);
       status = #pending;
@@ -169,7 +170,7 @@ module {
         case (?pos) { pos.name };
         case null { "" };
       };
-      { roadieId = r.id; name; mainPositionName; matchedOn; archived = r.status == #archived };
+      { roadieId = r.id; name; mainPositionName; matchedOn; archived = r.status == #archived; demoPhotoUrl = r.demoPhotoUrl };
     }).toArray();
   };
 
@@ -246,7 +247,7 @@ module {
       id = roadieId;
       profile = submission.profile;
       photo = submission.photo;
-      demoPhotoUrl = null;
+      demoPhotoUrl = submission.demoPhotoUrl;
       mainPositionId = decision.mainPositionId;
       secondPositionId = decision.secondPositionId;
       crossTrainedPositionId = null;

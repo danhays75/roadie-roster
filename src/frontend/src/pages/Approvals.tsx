@@ -87,23 +87,28 @@ function initialsOf(name: string): string {
 }
 
 /**
- * A pending sign-up's kiosk photo, read by sign-up id and shown at the top of
- * the card. Falls back to the applicant's initials in navy on cream when no
- * photo was captured at the kiosk.
+ * A pending sign-up's photo, read by sign-up id and shown at the top of the
+ * card. The stored kiosk photo wins; when none was captured, a demo sign-up's
+ * demo-only photo URL is shown; otherwise the applicant's initials in navy on
+ * cream. Demo URLs never touch real records.
  */
 function SignupPhoto({
   id,
   name,
+  demoPhotoUrl,
   className,
   ocid,
 }: {
   id: SignupId;
   name: string;
+  /** A demo-only photo URL, used only when no kiosk photo was stored. */
+  demoPhotoUrl?: string;
   className?: string;
   ocid?: string;
 }) {
   const { data: photo } = useSignupPhoto(id);
-  const src = useMemo(() => refToDataUrl(photo), [photo]);
+  const storedSrc = useMemo(() => refToDataUrl(photo), [photo]);
+  const src = storedSrc ?? demoPhotoUrl ?? null;
 
   return (
     <span
@@ -219,6 +224,7 @@ function DuplicateList({ matches }: { matches: DuplicateMatch[] }) {
               <RoadiePhoto
                 id={match.roadieId}
                 name={match.name}
+                demoPhotoUrl={match.demoPhotoUrl}
                 ocid="approvals.signup.duplicates.photo"
                 className="h-9 w-9 border"
                 iconClassName="h-4 w-4"
@@ -413,7 +419,12 @@ function PendingSignupCard({
       className="rounded-lg border border-border bg-card p-4 shadow-subtle"
     >
       <div className="flex flex-wrap items-start gap-3">
-        <SignupPhoto id={signup.id} name={name} ocid="approvals.signup.photo" />
+        <SignupPhoto
+          id={signup.id}
+          name={name}
+          demoPhotoUrl={signup.demoPhotoUrl}
+          ocid="approvals.signup.photo"
+        />
         <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="font-display text-sm font-semibold uppercase tracking-wide">

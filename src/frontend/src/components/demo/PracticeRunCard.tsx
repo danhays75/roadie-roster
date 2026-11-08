@@ -102,10 +102,17 @@ function PracticeRunBody({ onHide }: { onHide: () => void }) {
   const demoRoadies = roadies.data ?? [];
   const pendingSignups = summary.data ? Number(summary.data.signups) : 0;
   const paperworkDone = demoRoadies.filter(
-    (roadie) => roadie.stage === RoadieStage.paperworkDone,
+    (roadie) =>
+      roadie.stage === RoadieStage.paperworkDone ||
+      roadie.stage === RoadieStage.oriented ||
+      roadie.stage === RoadieStage.inTraining ||
+      roadie.stage === RoadieStage.certified,
   ).length;
   const oriented = demoRoadies.filter(
-    (roadie) => roadie.stage === RoadieStage.oriented,
+    (roadie) =>
+      roadie.stage === RoadieStage.oriented ||
+      roadie.stage === RoadieStage.inTraining ||
+      roadie.stage === RoadieStage.certified,
   ).length;
 
   const boardGroups = board.data?.groups ?? [];

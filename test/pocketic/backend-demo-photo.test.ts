@@ -140,6 +140,27 @@ describe("backend demo photo URL contract", () => {
     await admin.setDemoMode(false, "");
   });
 
+  it("seeds a demo photo URL and an applied-for position on every demo sign-up", async () => {
+    await admin.setDemoMode(true, "DEMO");
+    await admin.loadDemoData();
+
+    const signups = await admin.listPendingSignups();
+    expect(signups).toHaveLength(3);
+    for (const signup of signups) {
+      expect(signup.isDemo).toBe(true);
+      // The seed writes a demo-only photo URL; the stored kiosk photo stays null.
+      expect(signup.demoPhotoUrl).toHaveLength(1);
+      expect(signup.demoPhotoUrl[0]).toMatch(/^https?:\/\//);
+      expect(signup.photo).toEqual([]);
+      // The applied-for position is set so the approval form's Main position
+      // pre-fills.
+      expect(signup.profile.positionAppliedFor).toHaveLength(1);
+      expect(signup.profile.positionAppliedFor[0]?.trim().length ?? 0).toBeGreaterThan(0);
+    }
+
+    await admin.setDemoMode(false, "");
+  });
+
   it("leaves a real record's demo photo URL null", async () => {
     // A real roadie created while demo mode is off must carry no demo photo URL.
     const signupId = await admin.submitSignup(

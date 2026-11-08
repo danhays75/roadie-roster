@@ -193,12 +193,6 @@
 
 ## Learnings
 
-- The backend PocketIC lane needs `node test/pocketic/run-backend-lane.mjs`; several backend test files encode the pre-change demo seed and crew contract and must be updated when the seed or crew shape changes.
-- The Approve New Hires page is src/frontend/src/pages/Approvals.tsx; its pending sign-up card is PendingSignupCard and the Possible duplicates box is DuplicateList in the same file.
-- SignupSubmission carries no demoPhotoUrl, so the pending sign-up card photo resolves through the actor's getSignupPhoto(id) with an initials fallback; Approvals.tsx keeps a local useSignupPhoto hook because hooks/useQueries.ts is outside its file ownership.
-- DuplicateMatch carries roadieId but no photo, so the duplicates-row photo resolves via RoadiePhoto with an initials fallback.
-- Start date on the approval form prefills from the selected orientation session's store-local calendar date using calendarInTimeZone from src/frontend/src/components/approvals/timeZone.ts, and a startDateTouched flag stops a session change from overwriting a hand-edited value.
-- All approvals copy strings live in the shared src/frontend/src/lib/copy.ts (en and es), not a local COPY object in the page.
 - The app's inherited regression suite has 29 pre-existing failures (19 frontend, 10 backend) unrelated to recent work; the user asked for them to be handled separately and asked that no tests be updated, added, removed or run-to-fix.
 - The derived roadie stage is computed on every read by computeStage in src/backend/lib/phase23.mo (first match: archived gives no stage, certified, active with a Present or Late check-in on a training-day shift, active, paperwork complete, else hired); the stored stage field stays null and is never set by hand.
 - roadieStageLabel in src/frontend/src/lib/format.ts takes an optional translator and resolves the shared roster.stage.* keys in src/frontend/src/lib/copy.ts, so stage tags render in English and Spanish; without a translator it falls back to English.
@@ -218,3 +212,9 @@
 - Step 2 deep-links the Roster Hired tab through an optional tab search param declared with validateSearch on the roster route in src/frontend/src/App.tsx and read with useSearch in src/frontend/src/pages/Roster.tsx, defaulting to the All tab when absent or unknown.
 - The local preflight tester cannot get past the 'Tell us who you are' owner profile onboarding form after Internet Identity sign-in, so demo-seed and practice-run flows are not reachable in local testing; the run ends inconclusive with unexercised step completions.
 - The app's inherited regression suite has 22 pre-existing frontend failures unrelated to recent work; the user asked that no tests be updated, added, removed or run-to-fix.
+- PracticeRunCard step 2 counts demo roadies in paperworkDone, oriented, inTraining and certified stages against SEED_PAPERWORK_DONE; step 3 counts oriented, inTraining and certified against ORIENTED_TARGET, so both stay done as roadies advance.
+- The app's inherited regression suite has 23 pre-existing frontend failures unrelated to recent work; the user asked that no tests be updated, added, removed or run-to-fix.
+- SignupSubmission and DuplicateMatch carry demoPhotoUrl : ?Text (src/backend/types/signup.mo); lib/signup.mo sets it on submit, fills it in findDuplicates from the matching roadie and copies it onto the new Roadie in approveSignup; migration 00000023_000000.mo adds it as null for existing records.
+- The OQL sample literal in src/backend/main.mo (signups.toEntityManual("signup", "SignupSubmission", "id").sample({...})) must list every SignupSubmission field; a missing field fails mops build with M0096 and leaves src/frontend/src/backend.d.ts stale, so new backend fields are invisible to tsc until `mops build` and `pnpm bindgen` run.
+- The demo seed's seedSignup in src/backend/lib/demo.mo now takes positionAppliedFor and photoFile, so the 3 pending kiosk sign-ups carry demo photos from the shared demoPhotoBase and applied-for positions.
+- The local preflight tester reached the Approve New Hires page with demo data loaded and confirmed the applicant photos and the Possible duplicates photo, but the run ended inconclusive before the approval commit and the Main position pre-fill were exercised.

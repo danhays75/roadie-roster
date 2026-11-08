@@ -244,6 +244,7 @@ type SizeCurve =
 type SignupSubmission = 
  record {
    contactSet: ContactSet;
+   demoPhotoUrl: opt text;
    id: SignupId;
    isDemo: bool;
    photo: opt PhotoRef;
@@ -751,6 +752,7 @@ type Email = text;
 type DuplicateMatch = 
  record {
    archived: bool;
+   demoPhotoUrl: opt text;
    mainPositionName: text;
    matchedOn: text;
    name: text;
