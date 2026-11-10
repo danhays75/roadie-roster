@@ -50,6 +50,8 @@
 - Do not change the card design (roadieCard.css), crews, check-in rules, shift boards or contact-info rules
 - Keep the in-order paperwork steps and tags exactly as built
 - Change nothing else
+- The Paperwork Done stage is labelled "Ready for Orientation" and shows the seal image instead of a text tag
+- The seal artwork lives at src/frontend/public/assets/ready-for-orientation-seal.png with the area outside the circular badge transparent
 
 ## Accepted Requirements
 
@@ -207,12 +209,6 @@
 
 ## Learnings
 
-- The practice run Hide reset keys off a shared demoDataLoadedAt query marker bumped by useLoadDemoData.onSuccess in src/frontend/src/hooks/useQueries.ts, because loadDemoData in src/backend/lib/demo.mo is idempotent and demo record counts do not change on a redundant load.
-- Step 2 deep-links the Roster Hired tab through an optional tab search param declared with validateSearch on the roster route in src/frontend/src/App.tsx and read with useSearch in src/frontend/src/pages/Roster.tsx, defaulting to the All tab when absent or unknown.
-- The local preflight tester cannot get past the 'Tell us who you are' owner profile onboarding form after Internet Identity sign-in, so demo-seed and practice-run flows are not reachable in local testing; the run ends inconclusive with unexercised step completions.
-- The app's inherited regression suite has 22 pre-existing frontend failures unrelated to recent work; the user asked that no tests be updated, added, removed or run-to-fix.
-- PracticeRunCard step 2 counts demo roadies in paperworkDone, oriented, inTraining and certified stages against SEED_PAPERWORK_DONE; step 3 counts oriented, inTraining and certified against ORIENTED_TARGET, so both stay done as roadies advance.
-- The app's inherited regression suite has 23 pre-existing frontend failures unrelated to recent work; the user asked that no tests be updated, added, removed or run-to-fix.
 - SignupSubmission and DuplicateMatch carry demoPhotoUrl : ?Text (src/backend/types/signup.mo); lib/signup.mo sets it on submit, fills it in findDuplicates from the matching roadie and copies it onto the new Roadie in approveSignup; migration 00000023_000000.mo adds it as null for existing records.
 - The OQL sample literal in src/backend/main.mo (signups.toEntityManual("signup", "SignupSubmission", "id").sample({...})) must list every SignupSubmission field; a missing field fails mops build with M0096 and leaves src/frontend/src/backend.d.ts stale, so new backend fields are invisible to tsc until `mops build` and `pnpm bindgen` run.
 - The demo seed's seedSignup in src/backend/lib/demo.mo now takes positionAppliedFor and photoFile, so the 3 pending kiosk sign-ups carry demo photos from the shared demoPhotoBase and applied-for positions.
@@ -232,3 +228,9 @@
 - The host build typechecks tester-owned test files too, so a new required field on a generated binding breaks the build until the tester adds it to every test literal.
 - The shared roadie tile src/frontend/src/components/roadie/RoadieTile.tsx renders its photo box as one span with aspect-[4/5] w-full and the image with object-cover object-[center_30%]; stored photos, demoPhotoUrl images and the initials fallback all render inside that single span, so a photo-shape change is a one-line edit there.
 - The local preflight tester reached the Roster page but found an empty roster ('No roadies have been added yet.', all tabs at 0), so no roadie tile existed to inspect; tile-level visual checks end inconclusive unless demo data is loaded first.
+- The Ready for Orientation seal lives at src/frontend/public/assets/ready-for-orientation-seal.png (512x512 RGBA, transparent outside the circular badge) and is referenced by the absolute URL /assets/ready-for-orientation-seal.png; RoadieStageBadge in src/frontend/src/components/roadie/RoadieTile.tsx renders it for the paperworkDone stage, so Orientation rows, Today crew rows and the RoadieCard header all get it from one place.
+- RoadieTile keeps the outer button overflow-visible and clips the photo in an inner rounded-t-lg span so the seal overlay (absolute, right -6px, bottom -30px, 40% of tile width, rotate -8deg) can overhang the photo box without being clipped.
+- The local preflight tester reached the Roster page and confirmed the renamed stage tab 'READY FOR ORIENTATION 0', but the roster was empty, so the seal on a tile, the smaller seal on Orientation and Today crew rows, and the seal clearing at the Oriented stage were not observed locally.
+- The desktop header in src/frontend/src/components/Layout.tsx is a two-row layout: row 1 holds the store logo (shrink-0), the title and the tagline subtitle on the left with the Sign out button on the right, and row 2 holds the navigation links on their own full-width row using overflow-x-auto, flex-nowrap, whitespace-nowrap labels, lg:justify-between spacing and a pointer-events-none absolute gradient fade at the right edge inside a relative wrapper.
+- The rendered desktop nav order is applied by a local NAV_ORDER sort inside src/frontend/src/components/Layout.tsx because NAV_ITEMS in src/frontend/src/hooks/useAccess.ts is grouped by feature, not by the required header order.
+- The .stripe-flag utility in src/frontend/src/index.css stays the last child of the header, directly under the nav row, and the sub-1024px hamburger toggle (lg:hidden) and mobile menu panel are unchanged.

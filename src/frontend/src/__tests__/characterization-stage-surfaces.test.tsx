@@ -223,7 +223,7 @@ describe("Roster page stage tabs", () => {
     );
     expect(
       screen.getByTestId("roster.filter.paperworkDone.tab"),
-    ).toHaveTextContent("Paperwork Done");
+    ).toHaveTextContent("Ready for Orientation");
     expect(screen.getByTestId("roster.filter.oriented.tab")).toHaveTextContent(
       "Oriented",
     );
@@ -345,16 +345,16 @@ describe("Roadie card header stage tag", () => {
     );
   });
 
-  it("shows the Paperwork Done stage tag in the card header", async () => {
+  it("shows the Ready for Orientation seal in the card header", async () => {
     renderPageWithActor(
       RoadieCardPage,
       cardActor(roadie({ stage: RoadieStage.paperworkDone })),
       { path: "/roster/$roadieId", initialEntry: "/roster/1" },
     );
 
-    expect(await screen.findByTestId("roadie.status")).toHaveTextContent(
-      "Paperwork Done",
-    );
+    const status = await screen.findByTestId("roadie.status");
+    expect(status.tagName).toBe("IMG");
+    expect(status).toHaveAttribute("alt", "Ready for Orientation");
   });
 });
 

@@ -6,10 +6,9 @@ import type {
   Position,
   Roadie,
   RoadieId,
-  RoadieStage,
   Timestamp,
 } from "@/backend";
-import { RoadieStatus, createActor } from "@/backend";
+import { RoadieStage, RoadieStatus, createActor } from "@/backend";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useI18n } from "@/hooks/useI18n";
 import {
@@ -167,11 +166,40 @@ export function usePaperworkIncompleteMap(
   }, [enabled, dueInstant, pastDue, checkoffs, checklists, positionMap, now]);
 }
 
+/** The public path of the "Ready for Orientation" seal artwork. */
+export const READY_FOR_ORIENTATION_SEAL_SRC =
+  "/assets/ready-for-orientation-seal.png";
+
+/**
+ * The "Ready for Orientation" seal image, shown in place of the text tag once a
+ * roadie's stage is Paperwork Done. The artwork is a circular badge with a
+ * transparent background, so it can sit over a photo or inline in a row. The
+ * caller controls the rendered size through `className` (width/height) and any
+ * extra transform or shadow.
+ */
+export function ReadyForOrientationSeal({
+  className,
+  ocid,
+}: {
+  className?: string;
+  ocid?: string;
+}) {
+  return (
+    <img
+      src={READY_FOR_ORIENTATION_SEAL_SRC}
+      alt="Ready for Orientation"
+      data-ocid={ocid}
+      className={cn("pointer-events-none select-none", className)}
+    />
+  );
+}
+
 /**
  * The shared stage tag for a roadie. While the stage is Hired it shows the
  * latest completed paperwork step (with a check mark) instead of "Hired"; every
  * other stage shows its own label. All variants use the hired tone, so the
- * in-between step tags share the Hired tag color.
+ * in-between step tags share the Hired tag color. Once the stage is Paperwork
+ * Done ("Ready for Orientation") the text tag is replaced by the seal image.
  */
 export function RoadieStageBadge({
   stage,
@@ -183,6 +211,14 @@ export function RoadieStageBadge({
   ocid?: string;
 }) {
   const { t } = useI18n();
+  if (stage === RoadieStage.paperworkDone) {
+    return (
+      <ReadyForOrientationSeal
+        ocid={ocid}
+        className="h-10 w-10 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.35)]"
+      />
+    );
+  }
   const tag = roadieStageTag(stage, paperworkStep);
   return (
     <StatusBadge tone="hired" ocid={ocid}>
@@ -249,28 +285,30 @@ export function RoadieTile({
         data-ocid={ocid ? `${ocid}.link` : undefined}
         onClick={() => onOpen(roadie)}
         className={cn(
-          "group flex h-full w-full flex-col overflow-hidden rounded-lg border border-border bg-card text-left shadow-subtle transition-smooth hover:-translate-y-0.5 hover:shadow-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+          "group flex h-full w-full flex-col overflow-visible rounded-lg border border-border bg-card text-left shadow-subtle transition-smooth hover:-translate-y-0.5 hover:shadow-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
           isArchived && "opacity-80 grayscale",
         )}
       >
         <span
           data-ocid={photoOcid}
-          className="relative block aspect-[4/5] w-full overflow-hidden bg-[#F5F3EE]"
+          className="relative block aspect-[4/5] w-full overflow-visible rounded-t-lg bg-[#F5F3EE]"
         >
-          {photoUrl ? (
-            <img
-              src={photoUrl}
-              alt={name}
-              className="h-full w-full object-cover object-[center_30%]"
-            />
-          ) : (
-            <span
-              className="flex h-full w-full items-center justify-center font-display text-3xl font-bold uppercase tracking-wide text-[#14284B]"
-              aria-hidden="true"
-            >
-              {initialsOf(name)}
-            </span>
-          )}
+          <span className="absolute inset-0 block overflow-hidden rounded-t-lg">
+            {photoUrl ? (
+              <img
+                src={photoUrl}
+                alt={name}
+                className="h-full w-full object-cover object-[center_30%]"
+              />
+            ) : (
+              <span
+                className="flex h-full w-full items-center justify-center font-display text-3xl font-bold uppercase tracking-wide text-[#14284B]"
+                aria-hidden="true"
+              >
+                {initialsOf(name)}
+              </span>
+            )}
+          </span>
           {roadie.isMinor && (
             <span
               data-ocid={ocid ? `${ocid}.minor` : undefined}
@@ -278,6 +316,12 @@ export function RoadieTile({
             >
               Minor
             </span>
+          )}
+          {!isArchived && roadie.stage === RoadieStage.paperworkDone && (
+            <ReadyForOrientationSeal
+              ocid={ocid ? `${ocid}.seal` : undefined}
+              className="absolute -bottom-[30px] -right-[6px] z-10 h-[40%] w-[40%] rotate-[-8deg] drop-shadow-[0_3px_4px_rgba(0,0,0,0.4)]"
+            />
           )}
         </span>
 
@@ -295,7 +339,7 @@ export function RoadieTile({
               <StatusBadge tone="muted" ocid={statusOcid}>
                 {t("roster.stage.former")}
               </StatusBadge>
-            ) : (
+            ) : roadie.stage === RoadieStage.paperworkDone ? null : (
               <RoadieStageBadge
                 stage={roadie.stage}
                 paperworkStep={roadie.paperworkStep}

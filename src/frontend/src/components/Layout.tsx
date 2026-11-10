@@ -21,6 +21,34 @@ function useCurrentRole(): Role | undefined {
   return access.kind === "granted" ? access.grant.role : undefined;
 }
 
+/**
+ * The desktop navigation order. The nav model in `useAccess` is grouped by
+ * feature, so the header renders the links in this explicit order instead:
+ * Today, Dashboard, Roster, Groups, Orientation, Approve New Hires, Leaders,
+ * Uniforms, Gift Bags, Export, Kiosk, My Profile, Admin. Any item not listed
+ * keeps its model position after the listed ones.
+ */
+const NAV_ORDER = [
+  "/today",
+  "/dashboard",
+  "/roster",
+  "/groups",
+  "/orientation",
+  "/approvals",
+  "/leaders",
+  "/uniforms",
+  "/gift-bags",
+  "/export",
+  "/kiosk",
+  "/my-profile",
+  "/admin",
+];
+
+function navRank(to: string): number {
+  const index = NAV_ORDER.indexOf(to);
+  return index === -1 ? NAV_ORDER.length : index;
+}
+
 function NavLinks({
   onNavigate,
   className,
@@ -40,38 +68,41 @@ function NavLinks({
 
   return (
     <nav aria-label="Primary" className={className}>
-      <ul className="flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-1">
-        {NAV_ITEMS.filter((item) => canSeeNavItem(item, role)).map((item) => {
-          const active =
-            pathname === item.to || pathname.startsWith(`${item.to}/`);
-          const showBadge =
-            item.badge === "pendingApprovals" && pendingCount > 0;
-          return (
-            <li key={item.to}>
-              <Link
-                to={item.to}
-                onClick={onNavigate}
-                data-ocid={`nav.${item.to.replace("/", "")}.link`}
-                className={cn(
-                  "touch-target flex items-center justify-between gap-2 rounded-md px-3 py-2 font-display text-sm font-medium uppercase tracking-wider transition-colors",
-                  active
-                    ? "bg-white/10 text-white"
-                    : "text-white/75 hover:bg-white/10 hover:text-white",
-                )}
-              >
-                <span>{t(item.labelKey)}</span>
-                {showBadge && (
-                  <span
-                    data-ocid="nav.approvals.badge"
-                    className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary-foreground"
-                  >
-                    {pendingCount}
-                  </span>
-                )}
-              </Link>
-            </li>
-          );
-        })}
+      <ul className="flex flex-col gap-1 lg:w-full lg:flex-row lg:flex-nowrap lg:items-center lg:justify-between lg:gap-1">
+        {NAV_ITEMS.filter((item) => canSeeNavItem(item, role))
+          .slice()
+          .sort((a, b) => navRank(a.to) - navRank(b.to))
+          .map((item) => {
+            const active =
+              pathname === item.to || pathname.startsWith(`${item.to}/`);
+            const showBadge =
+              item.badge === "pendingApprovals" && pendingCount > 0;
+            return (
+              <li key={item.to} className="lg:shrink-0">
+                <Link
+                  to={item.to}
+                  onClick={onNavigate}
+                  data-ocid={`nav.${item.to.replace("/", "")}.link`}
+                  className={cn(
+                    "touch-target flex items-center justify-between gap-2 whitespace-nowrap rounded-md px-3 py-2 font-display text-sm font-medium uppercase tracking-wider transition-colors",
+                    active
+                      ? "bg-white/10 text-white"
+                      : "text-white/75 hover:bg-white/10 hover:text-white",
+                  )}
+                >
+                  <span>{t(item.labelKey)}</span>
+                  {showBadge && (
+                    <span
+                      data-ocid="nav.approvals.badge"
+                      className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary-foreground"
+                    >
+                      {pendingCount}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
       </ul>
     </nav>
   );
@@ -87,48 +118,62 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-dvh flex-col bg-background">
       <DemoBanner />
       <header className="sticky top-[var(--demo-banner-h,0px)] z-40 bg-secondary text-secondary-foreground">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6 md:py-4">
-          <Link
-            to="/dashboard"
-            data-ocid="header.home_link"
-            className="flex min-w-0 items-center gap-3"
-          >
-            <StoreLogo className="h-14 w-14 md:h-[72px] md:w-[72px]" />
-            <span className="min-w-0">
-              <span className="block font-display text-xl font-bold uppercase leading-none tracking-wide md:text-2xl">
-                {t("app.name")}
-              </span>
-              <span className="mt-0.5 block truncate text-xs text-white/70">
-                {t("app.tagline")}
-              </span>
-            </span>
-          </Link>
-
-          <NavLinks className="hidden lg:block" />
-
-          <div className="flex items-center gap-1">
-            <SignOutButton
-              label={t("nav.signOut")}
-              ocid="nav.sign_out_button"
-              className="touch-target hidden items-center gap-2 rounded-md px-3 py-2 font-display text-sm font-medium uppercase tracking-wider text-white/75 transition-colors hover:bg-white/10 hover:text-white lg:inline-flex"
-            />
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={menuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
-              aria-expanded={menuOpen}
-              data-ocid="nav.menu.toggle"
-              className="touch-target text-white hover:bg-white/10 hover:text-white lg:hidden"
-              onClick={() => setMenuOpen((open) => !open)}
+        <div className="mx-auto w-full max-w-6xl px-4 py-3 md:px-6 md:py-4">
+          {/* Row 1: brand on the left, account controls on the right. */}
+          <div className="flex items-center justify-between gap-4">
+            <Link
+              to="/dashboard"
+              data-ocid="header.home_link"
+              className="flex min-w-0 items-center gap-3"
             >
-              {menuOpen ? (
-                <X className="h-5 w-5" aria-hidden="true" />
-              ) : (
-                <Menu className="h-5 w-5" aria-hidden="true" />
-              )}
-            </Button>
+              <StoreLogo className="h-14 w-14 md:h-[72px] md:w-[72px]" />
+              <span className="min-w-0">
+                <span className="block font-display text-xl font-bold uppercase leading-none tracking-wide md:text-2xl">
+                  {t("app.name")}
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-white/70">
+                  {t("app.tagline")}
+                </span>
+              </span>
+            </Link>
+
+            <div className="flex items-center gap-1">
+              <SignOutButton
+                label={t("nav.signOut")}
+                ocid="nav.sign_out_button"
+                className="touch-target hidden items-center gap-2 rounded-md px-3 py-2 font-display text-sm font-medium uppercase tracking-wider text-white/75 transition-colors hover:bg-white/10 hover:text-white lg:inline-flex"
+              />
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={menuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
+                aria-expanded={menuOpen}
+                data-ocid="nav.menu.toggle"
+                className="touch-target text-white hover:bg-white/10 hover:text-white lg:hidden"
+                onClick={() => setMenuOpen((open) => !open)}
+              >
+                {menuOpen ? (
+                  <X className="h-5 w-5" aria-hidden="true" />
+                ) : (
+                  <Menu className="h-5 w-5" aria-hidden="true" />
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Row 2: the desktop navigation on its own full-width row. It stays
+              on one line and scrolls horizontally with a subtle edge fade when
+              the links do not fit. */}
+          <div className="relative mt-3 hidden lg:block">
+            <div className="overflow-x-auto">
+              <NavLinks className="w-full" />
+            </div>
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-secondary to-transparent"
+            />
           </div>
         </div>
 

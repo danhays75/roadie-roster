@@ -367,7 +367,7 @@ describe("RoadieTile Hired stage tag shows the latest completed paperwork step",
     expect(status.querySelector("svg")).not.toBeNull();
   });
 
-  it("shows Paperwork Done once every applicable item is checked", async () => {
+  it("shows the Ready for Orientation seal once every applicable item is checked", async () => {
     renderWithActor(
       <RoadieTile
         roadie={managerRoadie({ stage: RoadieStage.paperworkDone })}
@@ -379,10 +379,10 @@ describe("RoadieTile Hired stage tag shows the latest completed paperwork step",
       tileActor(),
     );
 
-    const status = await screen.findByTestId("tile.status");
-    expect(status).toHaveTextContent("Paperwork Done");
-    // A non-Hired stage tag carries no check mark.
-    expect(status.querySelector("svg")).toBeNull();
+    // The Ready for Orientation stage replaces the text tag with the seal image.
+    const seal = await screen.findByTestId("tile.seal");
+    expect(seal).toHaveAttribute("alt", "Ready for Orientation");
+    expect(screen.queryByTestId("tile.status")).not.toBeInTheDocument();
   });
 
   it("shows the plain Hired label for a Hired roadie with no completed step", async () => {

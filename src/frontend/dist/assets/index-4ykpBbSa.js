@@ -49939,7 +49939,7 @@ var dictionaries = {
 		"roster.filter.active": "Active",
 		"roster.filter.archived": "Archived",
 		"roster.filter.hired": "Hired",
-		"roster.filter.paperworkDone": "Paperwork Done",
+		"roster.filter.paperworkDone": "Ready for Orientation",
 		"roster.filter.oriented": "Oriented",
 		"roster.filter.inTraining": "In Training",
 		"roster.filter.certified": "Certified",
@@ -49948,7 +49948,7 @@ var dictionaries = {
 		"roster.stage.i9W4": "I-9 / W-4",
 		"roster.stage.alcoholCertificate": "Alcohol Cert",
 		"roster.stage.foodHandlerCard": "Food Handler",
-		"roster.stage.paperworkDone": "Paperwork Done",
+		"roster.stage.paperworkDone": "Ready for Orientation",
 		"roster.stage.oriented": "Oriented",
 		"roster.stage.inTraining": "In Training",
 		"roster.stage.certified": "Certified",
@@ -49958,7 +49958,7 @@ var dictionaries = {
 		"roster.emptyPending": "No pending roadies right now.",
 		"roster.emptyActive": "No active roadies right now.",
 		"roster.emptyHired": "No hired roadies right now.",
-		"roster.emptyPaperworkDone": "No roadies have finished paperwork yet.",
+		"roster.emptyPaperworkDone": "No roadies are ready for orientation yet.",
 		"roster.emptyOriented": "No oriented roadies right now.",
 		"roster.emptyInTraining": "No roadies are in training right now.",
 		"roster.emptyCertified": "No certified roadies right now.",
@@ -50116,7 +50116,7 @@ var dictionaries = {
 		"roadie.reason.letGo": "Let go",
 		"roadie.reason.other": "Other",
 		"roadie.status.hired": "Hired",
-		"roadie.status.paperworkDone": "Paperwork done",
+		"roadie.status.paperworkDone": "Ready for orientation",
 		"roadie.status.archived": "Archived",
 		"roadie.weekday.mon": "Mon",
 		"roadie.weekday.tue": "Tue",
@@ -50665,7 +50665,7 @@ var dictionaries = {
 		"roster.filter.active": "Activos",
 		"roster.filter.archived": "Archivados",
 		"roster.filter.hired": "Contratados",
-		"roster.filter.paperworkDone": "Papeleo listo",
+		"roster.filter.paperworkDone": "Listo para orientación",
 		"roster.filter.oriented": "Orientados",
 		"roster.filter.inTraining": "En capacitación",
 		"roster.filter.certified": "Certificados",
@@ -50674,7 +50674,7 @@ var dictionaries = {
 		"roster.stage.i9W4": "I-9 / W-4",
 		"roster.stage.alcoholCertificate": "Cert. de alcohol",
 		"roster.stage.foodHandlerCard": "Manipulador de alimentos",
-		"roster.stage.paperworkDone": "Papeleo listo",
+		"roster.stage.paperworkDone": "Listo para orientación",
 		"roster.stage.oriented": "Orientado",
 		"roster.stage.inTraining": "En capacitación",
 		"roster.stage.certified": "Certificado",
@@ -50684,7 +50684,7 @@ var dictionaries = {
 		"roster.emptyPending": "No hay roadies pendientes ahora.",
 		"roster.emptyActive": "No hay roadies activos ahora.",
 		"roster.emptyHired": "No hay roadies contratados ahora.",
-		"roster.emptyPaperworkDone": "Ningún roadie ha completado el papeleo aún.",
+		"roster.emptyPaperworkDone": "Ningún roadie está listo para orientación aún.",
 		"roster.emptyOriented": "No hay roadies orientados ahora.",
 		"roster.emptyInTraining": "No hay roadies en capacitación ahora.",
 		"roster.emptyCertified": "No hay roadies certificados ahora.",
@@ -50842,7 +50842,7 @@ var dictionaries = {
 		"roadie.reason.letGo": "Despedido",
 		"roadie.reason.other": "Otro",
 		"roadie.status.hired": "Contratado",
-		"roadie.status.paperworkDone": "Papeleo listo",
+		"roadie.status.paperworkDone": "Listo para orientación",
 		"roadie.status.archived": "Archivado",
 		"roadie.weekday.mon": "Lun",
 		"roadie.weekday.tue": "Mar",
@@ -57611,6 +57611,32 @@ function useCurrentRole() {
 	const access = useAccessState();
 	return access.kind === "granted" ? access.grant.role : void 0;
 }
+/**
+* The desktop navigation order. The nav model in `useAccess` is grouped by
+* feature, so the header renders the links in this explicit order instead:
+* Today, Dashboard, Roster, Groups, Orientation, Approve New Hires, Leaders,
+* Uniforms, Gift Bags, Export, Kiosk, My Profile, Admin. Any item not listed
+* keeps its model position after the listed ones.
+*/
+var NAV_ORDER = [
+	"/today",
+	"/dashboard",
+	"/roster",
+	"/groups",
+	"/orientation",
+	"/approvals",
+	"/leaders",
+	"/uniforms",
+	"/gift-bags",
+	"/export",
+	"/kiosk",
+	"/my-profile",
+	"/admin"
+];
+function navRank(to) {
+	const index = NAV_ORDER.indexOf(to);
+	return index === -1 ? NAV_ORDER.length : index;
+}
 function NavLinks({ onNavigate, className }) {
 	const { t } = useI18n();
 	const role = useCurrentRole();
@@ -57622,21 +57648,24 @@ function NavLinks({ onNavigate, className }) {
 		"aria-label": "Primary",
 		className,
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
-			className: "flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-1",
-			children: NAV_ITEMS.filter((item) => canSeeNavItem(item, role)).map((item) => {
+			className: "flex flex-col gap-1 lg:w-full lg:flex-row lg:flex-nowrap lg:items-center lg:justify-between lg:gap-1",
+			children: NAV_ITEMS.filter((item) => canSeeNavItem(item, role)).slice().sort((a, b) => navRank(a.to) - navRank(b.to)).map((item) => {
 				const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
 				const showBadge = item.badge === "pendingApprovals" && pendingCount > 0;
-				return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
-					to: item.to,
-					onClick: onNavigate,
-					"data-ocid": `nav.${item.to.replace("/", "")}.link`,
-					className: cn("touch-target flex items-center justify-between gap-2 rounded-md px-3 py-2 font-display text-sm font-medium uppercase tracking-wider transition-colors", active ? "bg-white/10 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"),
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: t(item.labelKey) }), showBadge && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						"data-ocid": "nav.approvals.badge",
-						className: "inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary-foreground",
-						children: pendingCount
-					})]
-				}) }, item.to);
+				return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", {
+					className: "lg:shrink-0",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
+						to: item.to,
+						onClick: onNavigate,
+						"data-ocid": `nav.${item.to.replace("/", "")}.link`,
+						className: cn("touch-target flex items-center justify-between gap-2 whitespace-nowrap rounded-md px-3 py-2 font-display text-sm font-medium uppercase tracking-wider transition-colors", active ? "bg-white/10 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"),
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: t(item.labelKey) }), showBadge && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							"data-ocid": "nav.approvals.badge",
+							className: "inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary-foreground",
+							children: pendingCount
+						})]
+					})
+				}, item.to);
 			})
 		})
 	});
@@ -57654,9 +57683,10 @@ function Layout({ children }) {
 				className: "sticky top-[var(--demo-banner-h,0px)] z-40 bg-secondary text-secondary-foreground",
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6 md:py-4",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
+						className: "mx-auto w-full max-w-6xl px-4 py-3 md:px-6 md:py-4",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex items-center justify-between gap-4",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
 								to: "/dashboard",
 								"data-ocid": "header.home_link",
 								className: "flex min-w-0 items-center gap-3",
@@ -57670,9 +57700,7 @@ function Layout({ children }) {
 										children: t("app.tagline")
 									})]
 								})]
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(NavLinks, { className: "hidden lg:block" }),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 								className: "flex items-center gap-1",
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SignOutButton, {
 									label: t("nav.signOut"),
@@ -57695,8 +57723,17 @@ function Layout({ children }) {
 										"aria-hidden": "true"
 									})
 								})]
-							})
-						]
+							})]
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "relative mt-3 hidden lg:block",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								className: "overflow-x-auto",
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(NavLinks, { className: "w-full" })
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								"aria-hidden": "true",
+								className: "pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-secondary to-transparent"
+							})]
+						})]
 					}),
 					menuOpen && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "border-t border-white/10 px-4 pb-4 pt-2 lg:hidden",
@@ -61059,14 +61096,36 @@ function usePaperworkIncompleteMap(roadies, enabled) {
 		now
 	]);
 }
+/** The public path of the "Ready for Orientation" seal artwork. */
+var READY_FOR_ORIENTATION_SEAL_SRC = "/assets/ready-for-orientation-seal.png";
+/**
+* The "Ready for Orientation" seal image, shown in place of the text tag once a
+* roadie's stage is Paperwork Done. The artwork is a circular badge with a
+* transparent background, so it can sit over a photo or inline in a row. The
+* caller controls the rendered size through `className` (width/height) and any
+* extra transform or shadow.
+*/
+function ReadyForOrientationSeal({ className, ocid }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+		src: READY_FOR_ORIENTATION_SEAL_SRC,
+		alt: "Ready for Orientation",
+		"data-ocid": ocid,
+		className: cn("pointer-events-none select-none", className)
+	});
+}
 /**
 * The shared stage tag for a roadie. While the stage is Hired it shows the
 * latest completed paperwork step (with a check mark) instead of "Hired"; every
 * other stage shows its own label. All variants use the hired tone, so the
-* in-between step tags share the Hired tag color.
+* in-between step tags share the Hired tag color. Once the stage is Paperwork
+* Done ("Ready for Orientation") the text tag is replaced by the seal image.
 */
 function RoadieStageBadge({ stage, paperworkStep, ocid }) {
 	const { t } = useI18n();
+	if (stage === RoadieStage.paperworkDone) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ReadyForOrientationSeal, {
+		ocid,
+		className: "h-10 w-10 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.35)]"
+	});
 	const tag = roadieStageTag(stage, paperworkStep);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(StatusBadge, {
 		tone: "hired",
@@ -61100,23 +61159,33 @@ function RoadieTile({ roadie, positionName, crewName, crewLabel, paperworkIncomp
 			type: "button",
 			"data-ocid": ocid ? `${ocid}.link` : void 0,
 			onClick: () => onOpen(roadie),
-			className: cn("group flex h-full w-full flex-col overflow-hidden rounded-lg border border-border bg-card text-left shadow-subtle transition-smooth hover:-translate-y-0.5 hover:shadow-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary", isArchived && "opacity-80 grayscale"),
+			className: cn("group flex h-full w-full flex-col overflow-visible rounded-lg border border-border bg-card text-left shadow-subtle transition-smooth hover:-translate-y-0.5 hover:shadow-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary", isArchived && "opacity-80 grayscale"),
 			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 				"data-ocid": photoOcid,
-				className: "relative block aspect-[4/5] w-full overflow-hidden bg-[#F5F3EE]",
-				children: [photoUrl ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-					src: photoUrl,
-					alt: name,
-					className: "h-full w-full object-cover object-[center_30%]"
-				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-					className: "flex h-full w-full items-center justify-center font-display text-3xl font-bold uppercase tracking-wide text-[#14284B]",
-					"aria-hidden": "true",
-					children: initialsOf$7(name)
-				}), roadie.isMinor && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-					"data-ocid": ocid ? `${ocid}.minor` : void 0,
-					className: "absolute right-2 top-2 rounded-full bg-primary px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-wider text-primary-foreground",
-					children: "Minor"
-				})]
+				className: "relative block aspect-[4/5] w-full overflow-visible rounded-t-lg bg-[#F5F3EE]",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: "absolute inset-0 block overflow-hidden rounded-t-lg",
+						children: photoUrl ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+							src: photoUrl,
+							alt: name,
+							className: "h-full w-full object-cover object-[center_30%]"
+						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "flex h-full w-full items-center justify-center font-display text-3xl font-bold uppercase tracking-wide text-[#14284B]",
+							"aria-hidden": "true",
+							children: initialsOf$7(name)
+						})
+					}),
+					roadie.isMinor && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						"data-ocid": ocid ? `${ocid}.minor` : void 0,
+						className: "absolute right-2 top-2 rounded-full bg-primary px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-wider text-primary-foreground",
+						children: "Minor"
+					}),
+					!isArchived && roadie.stage === RoadieStage.paperworkDone && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ReadyForOrientationSeal, {
+						ocid: ocid ? `${ocid}.seal` : void 0,
+						className: "absolute -bottom-[30px] -right-[6px] z-10 h-[40%] w-[40%] rotate-[-8deg] drop-shadow-[0_3px_4px_rgba(0,0,0,0.4)]"
+					})
+				]
 			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 				className: "flex min-w-0 flex-1 flex-col gap-1.5 p-3",
 				children: [
@@ -61135,7 +61204,7 @@ function RoadieTile({ roadie, positionName, crewName, crewLabel, paperworkIncomp
 								tone: "muted",
 								ocid: statusOcid,
 								children: t("roster.stage.former")
-							}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadieStageBadge, {
+							}) : roadie.stage === RoadieStage.paperworkDone ? null : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoadieStageBadge, {
 								stage: roadie.stage,
 								paperworkStep: roadie.paperworkStep,
 								ocid: statusOcid
