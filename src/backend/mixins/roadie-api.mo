@@ -70,11 +70,6 @@ mixin (
     RoadieLib.rehireRoadie(accessGrants, demoState, roadies, schedule, storeInfo.value, changeLog, counters, caller, id, reason);
   };
 
-  /// Update a roadie's status (Admin/Store Manager only).
-  public shared ({ caller }) func updateRoadieStatus(id : Common.RoadieId, status : Roadie.RoadieStatus) : async () {
-    RoadieLib.updateRoadieStatus(accessGrants, demoState, roadies, changeLog, counters, caller, id, status);
-  };
-
   /// Read a roadie's contact set. Admin and Store Manager receive the contact
   /// set; every other read-capable role receives an empty array.
   public query ({ caller }) func getContactSet(id : Common.RoadieId) : async [Roadie.ContactSet] {

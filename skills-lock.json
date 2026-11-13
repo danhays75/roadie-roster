@@ -104,7 +104,7 @@
     "extension-inference": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "214c2d07a50720a3dbaff263e014906735257e021255e144f7597d0245979255"
+      "computedHash": "6e018f77433cf9caa0c0b3c083f30aceacc9159135b3b0474f34e5d7ab8efcc3"
     },
     "extension-invite-links": {
       "source": "caffeinelabs/skills",
@@ -164,7 +164,7 @@
     "writing-motoko": {
       "source": "caffeinelabs/skills",
       "sourceType": "github",
-      "computedHash": "201b1da606caa87aea25035e471b466301abd245e8c650ea57813cc3c03bd011"
+      "computedHash": "78f0ffc24308f0cfd086d50d3a14898b0d63eb5d55a5c5c46b761745631039b4"
     }
   }
 }

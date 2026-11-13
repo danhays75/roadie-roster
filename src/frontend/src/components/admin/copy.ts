@@ -117,6 +117,8 @@ export interface AdminCopy {
   checklistsToggleHint: string;
   checklistsEnabled: string;
   checklistsEnabledHint: string;
+  checklistsShortLabel: string;
+  checklistsShortLabelPlaceholder: string;
   checklistsMoveUp: string;
   checklistsMoveDown: string;
   checklistsItemType: string;
@@ -350,6 +352,8 @@ const en: AdminCopy = {
   checklistsEnabled: "On/Off",
   checklistsEnabledHint:
     "Turn an item off to hide it everywhere. The list order is the order roadies complete the steps.",
+  checklistsShortLabel: "Short label",
+  checklistsShortLabelPlaceholder: "Optional, e.g. Alcohol Cert",
   checklistsMoveUp: "Move up",
   checklistsMoveDown: "Move down",
   checklistsItemType: "Type",
@@ -592,6 +596,8 @@ const es: AdminCopy = {
   checklistsEnabled: "Activado/Desactivado",
   checklistsEnabledHint:
     "Desactiva un artículo para ocultarlo en todas partes. El orden de la lista es el orden en que los roadies completan los pasos.",
+  checklistsShortLabel: "Etiqueta corta",
+  checklistsShortLabelPlaceholder: "Opcional, p. ej. Alcohol Cert",
   checklistsMoveUp: "Subir",
   checklistsMoveDown: "Bajar",
   checklistsItemType: "Tipo",

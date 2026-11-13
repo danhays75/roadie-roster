@@ -6,7 +6,7 @@ import type {
   StaffProfile,
   Timestamp,
 } from "@/backend";
-import { DemoShift, PaperworkStep, RoadieStage } from "@/backend";
+import { DemoShift, RoadieStage } from "@/backend";
 import { translate } from "@/hooks/useI18n";
 
 /**
@@ -424,36 +424,40 @@ export function roadieStageLabelKey(stage: RoadieStage | undefined): string {
 }
 
 /**
- * The copy key and check-mark state for a roadie's stage tag. While the stage is
+ * The text and check-mark state for a roadie's stage tag. While the stage is
  * Hired the tag shows the latest completed paperwork step instead of "Hired":
- * none checked reads "Hired", a completed step reads that step's label with a
- * check mark, and every other stage keeps its own label. The in-between step
- * tags share the Hired tag color, so callers render them with the hired tone.
+ * none checked reads "Hired", a completed step reads that step's label (the
+ * backend-derived `paperworkStep` text: the item's short label or its full
+ * text) with a check mark, and every other stage keeps its own translated
+ * label. The in-between step tags share the Hired tag color, so callers render
+ * them with the hired tone. Either `label` (raw text) or `key` (copy key) is
+ * set; render through `roadieStageTagText` so every surface agrees.
  */
-export interface RoadieStageTag {
-  key: string;
-  done: boolean;
-}
+export type RoadieStageTag =
+  | { label: string; key?: undefined; done: true }
+  | { key: string; label?: undefined; done: false };
 
 export function roadieStageTag(
   stage: RoadieStage | undefined,
-  paperworkStep?: PaperworkStep,
+  paperworkStep?: string,
 ): RoadieStageTag {
   if (stage === RoadieStage.hired) {
-    switch (paperworkStep) {
-      case PaperworkStep.digitalPaperwork:
-        return { key: "roster.stage.digitalPaperwork", done: true };
-      case PaperworkStep.i9W4:
-        return { key: "roster.stage.i9W4", done: true };
-      case PaperworkStep.alcoholCertificate:
-        return { key: "roster.stage.alcoholCertificate", done: true };
-      case PaperworkStep.foodHandlerCard:
-        return { key: "roster.stage.foodHandlerCard", done: true };
-      default:
-        return { key: "roster.stage.hired", done: false };
-    }
+    const label = paperworkStep?.trim();
+    if (label) return { label, done: true };
   }
   return { key: roadieStageLabelKey(stage), done: false };
+}
+
+/**
+ * The visible text of a stage tag: the completed step's label as returned by
+ * the backend, or the translated stage label. The check mark is rendered by the
+ * caller from `tag.done`.
+ */
+export function roadieStageTagText(
+  tag: RoadieStageTag,
+  t: (key: string) => string,
+): string {
+  return tag.label ?? t(tag.key);
 }
 
 /**
@@ -465,11 +469,10 @@ export function roadieStageTag(
 export function roadieStageLabel(
   stage: RoadieStage | undefined,
   t?: (key: string) => string,
-  paperworkStep?: PaperworkStep,
+  paperworkStep?: string,
 ): string {
-  const key = roadieStageTag(stage, paperworkStep).key;
-  if (t) return t(key);
-  return translate("en", key);
+  const tag = roadieStageTag(stage, paperworkStep);
+  return roadieStageTagText(tag, t ?? ((key) => translate("en", key)));
 }
 
 /** Human label for a role enum value. */

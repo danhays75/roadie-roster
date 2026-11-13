@@ -10,7 +10,6 @@ import type {
 } from "@/backend";
 import {
   House,
-  PaperworkStep,
   RoadieStage,
   RoadieStatus,
   Role,
@@ -410,7 +409,7 @@ describe("RoadieTile shows the Food Handler step tag for an enabled Food Handler
       <RoadieTile
         roadie={managerRoadie({
           stage: RoadieStage.hired,
-          paperworkStep: PaperworkStep.foodHandlerCard,
+          paperworkStep: "Food Handler",
         })}
         positionName="Servers"
         onOpen={vi.fn()}

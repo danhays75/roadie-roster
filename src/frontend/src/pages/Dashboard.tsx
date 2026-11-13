@@ -5,24 +5,21 @@ import type {
   ScheduleEvent,
   StoreInfo,
 } from "@/backend";
-import { EventKind, createActor } from "@/backend";
+import { EventKind, RoadieStatus, createActor } from "@/backend";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { StoreLogo } from "@/components/StoreLogo";
-import {
-  KpiTiles,
-  type OrientationWindow,
-} from "@/components/dashboard/KpiTiles";
-import { OpeningTimeline } from "@/components/dashboard/OpeningTimeline";
+import { DashboardErrorBoundary } from "@/components/dashboard/DashboardErrorBoundary";
+import type { OrientationWindow } from "@/components/dashboard/KpiTiles";
 import { PositionPanel } from "@/components/dashboard/PositionPanel";
 import { PositionRosterDialog } from "@/components/dashboard/PositionRosterDialog";
 import { useDashboardCopy } from "@/components/dashboard/copy";
 import { usePaperworkIncompleteMap } from "@/components/roadie/RoadieTile";
 import { Button } from "@/components/ui/button";
 import { canArchive, useAccessState } from "@/hooks/useAccess";
-import { useDemo } from "@/hooks/useDemo";
 import {
   useDashboard,
+  useDemoState,
   useRoadies,
   useRosterSummary,
   useSchedule,
@@ -38,7 +35,61 @@ import { paperworkDueEvent } from "@/lib/schedule";
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, SlidersHorizontal } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+
+// The two heaviest dashboard sections load on demand so the page shell paints
+// first. Both lazy components are module-level constants so a re-render never
+// creates a new lazy wrapper (which would re-import and remount the section).
+// The `.then` mapping keeps their named exports intact for other callers. The
+// timeline is rendered through its hook-free view: the page already holds the
+// store info, effective "now" and paperwork flags it needs, and every backend
+// hook mounted inside the chunk would refetch the whole query cache on arrival.
+const KpiTiles = lazy(() =>
+  import("@/components/dashboard/KpiTiles").then((m) => ({
+    default: m.KpiTiles,
+  })),
+);
+const OpeningTimeline = lazy(() =>
+  import("@/components/dashboard/OpeningTimeline").then((m) => ({
+    default: m.OpeningTimelineView,
+  })),
+);
+
+const KPI_SKELETON_TILES = ["hired", "needed", "showed", "certified"];
+const TIMELINE_SKELETON_ROWS = ["first", "second", "third", "fourth"];
+
+/** A neutral grey placeholder for the KPI section: a progress bar plus tiles. */
+function KpiTilesSkeleton() {
+  return (
+    <div
+      aria-hidden="true"
+      data-ocid="dashboard.kpi.loading_state"
+      className="space-y-4"
+    >
+      <div className="h-12 animate-pulse rounded-xl bg-muted" />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {KPI_SKELETON_TILES.map((id) => (
+          <div key={id} className="h-28 animate-pulse rounded-xl bg-muted" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** A neutral grey placeholder for the timeline: a short stack of rows. */
+function OpeningTimelineSkeleton() {
+  return (
+    <div
+      aria-hidden="true"
+      data-ocid="dashboard.timeline.loading_state"
+      className="space-y-3 rounded-xl border border-border bg-card p-4"
+    >
+      {TIMELINE_SKELETON_ROWS.map((id) => (
+        <div key={id} className="h-10 animate-pulse rounded-xl bg-muted" />
+      ))}
+    </div>
+  );
+}
 
 /**
  * The dashboard hero banner: a navy panel with the red-and-white flag stripe,
@@ -217,6 +268,14 @@ function DashboardAlerts({
 }
 
 export default function DashboardPage() {
+  return (
+    <DashboardErrorBoundary>
+      <DashboardContent />
+    </DashboardErrorBoundary>
+  );
+}
+
+function DashboardContent() {
   const { t } = useDashboardCopy();
   const access = useAccessState();
   const role = access.kind === "granted" ? access.grant.role : undefined;
@@ -231,19 +290,23 @@ export default function DashboardPage() {
   const { data: alerts } = useAlerts(canAdjust);
 
   // The orientation window follows the demo "Pretend it's" date when demo mode
-  // supplies one, so the summary phases move with the pretend date.
-  const demo = useDemo();
+  // supplies one, so the summary phases move with the pretend date. The demo
+  // state is read directly: `useDemo` also mounts the four demo mutations, and
+  // every mounted backend hook refetches the whole query cache on mount.
+  const { data: demoState } = useDemoState();
+  const demoEnabled = demoState?.enabled ?? false;
+  const pretendDate = demoState?.pretendDate ?? null;
   const pretendInstant = useMemo(() => {
-    if (!demo.enabled || !demo.pretendDate || !storeInfo) return null;
+    if (!demoEnabled || !pretendDate || !storeInfo) return null;
     return (
       pretendDateToInstant(
-        demo.pretendDate,
+        pretendDate,
         storeInfo.timeZone,
         storeInfo.amShiftStart,
         storeInfo.pmShiftStart,
       )?.getTime() ?? null
     );
-  }, [demo.enabled, demo.pretendDate, storeInfo]);
+  }, [demoEnabled, pretendDate, storeInfo]);
   const now = useNow(pretendInstant);
   const orientationWindow = useOrientationWindow(schedule ?? [], now);
 
@@ -270,6 +333,17 @@ export default function DashboardPage() {
       .filter((roadie) => paperworkFlags.get(roadie.id.toString()))
       .map((roadie) => roadie.profile.preferredName || roadie.profile.name);
   }, [canAdjust, roadies, paperworkFlags]);
+  // Whether any active roadie still has incomplete paperwork, which turns a
+  // past paperwork deadline on the timeline into "Past due".
+  const hasIncompleteActivePaperwork = useMemo(
+    () =>
+      (roadies ?? []).some(
+        (roadie) =>
+          roadie.status !== RoadieStatus.archived &&
+          paperworkFlags.get(roadie.id.toString()) === true,
+      ),
+    [roadies, paperworkFlags],
+  );
 
   const [adjustMode, setAdjustMode] = useState(false);
   const [selected, setSelected] = useState<Position | null>(null);
@@ -316,25 +390,32 @@ export default function DashboardPage() {
 
       {data && (
         <>
-          <OpeningTimeline
-            events={schedule ?? []}
-            openingDate={storeInfo?.openingDate ?? null}
-          />
+          <Suspense fallback={<OpeningTimelineSkeleton />}>
+            <OpeningTimeline
+              events={schedule ?? []}
+              openingDate={storeInfo?.openingDate ?? null}
+              now={now}
+              timeZone={storeInfo?.timeZone}
+              hasIncompleteActivePaperwork={hasIncompleteActivePaperwork}
+            />
+          </Suspense>
 
           <DashboardAlerts
             paperworkNames={paperworkNames}
             alerts={alerts ?? []}
           />
 
-          <KpiTiles
-            hired={data.hired}
-            active={data.active}
-            pending={data.pending}
-            buildToTotal={data.buildToTotal}
-            stillNeeded={data.stillNeeded}
-            certified={data.certified}
-            window={orientationWindow}
-          />
+          <Suspense fallback={<KpiTilesSkeleton />}>
+            <KpiTiles
+              hired={data.hired}
+              active={data.active}
+              pending={data.pending}
+              buildToTotal={data.buildToTotal}
+              stillNeeded={data.stillNeeded}
+              certified={data.certified}
+              window={orientationWindow}
+            />
+          </Suspense>
 
           {adjustMode && canAdjust && (
             <p
@@ -374,12 +455,17 @@ export default function DashboardPage() {
         </>
       )}
 
-      <PositionRosterDialog
-        position={selected}
-        open={rosterOpen}
-        onOpenChange={setRosterOpen}
-        canRehire={canRehire}
-      />
+      {/* The roster dialog (and the card modal inside it) mounts once a
+          position has been picked and stays mounted afterwards, so its backend
+          hooks do not run for a dialog nobody has opened. */}
+      {selected && (
+        <PositionRosterDialog
+          position={selected}
+          open={rosterOpen}
+          onOpenChange={setRosterOpen}
+          canRehire={canRehire}
+        />
+      )}
     </div>
   );
 }

@@ -73,9 +73,10 @@ module {
     markedUnavailable : Bool;
     /// The derived hiring stage. Null for an archived roadie (shown as Former).
     stage : ?Roadie.RoadieStage;
-    /// The latest completed paperwork step while the stage is Hired; null for
-    /// every other stage. Drives the in-between stage tag.
-    paperworkStep : ?Roadie.PaperworkStep;
+    /// The label of the latest completed paperwork step while the stage is
+    /// Hired; null when nothing is checked and for every other stage. Drives
+    /// the in-between stage tag.
+    paperworkStep : ?Text;
   };
 
   /// One trainer column on a shift board, with its roadie chips.
@@ -146,9 +147,10 @@ module {
     paperworkOverdue : Bool;
     /// The derived hiring stage. Null for an archived roadie (shown as Former).
     stage : ?Roadie.RoadieStage;
-    /// The latest completed paperwork step while the stage is Hired; null for
-    /// every other stage. Drives the in-between stage tag.
-    paperworkStep : ?Roadie.PaperworkStep;
+    /// The label of the latest completed paperwork step while the stage is
+    /// Hired; null when nothing is checked and for every other stage. Drives
+    /// the in-between stage tag.
+    paperworkStep : ?Text;
   };
 
   /// A crew owner's "My crew" section on the Today screen: the crew name and
@@ -235,9 +237,10 @@ module {
     noShow : Bool;
     /// The derived hiring stage. Null for an archived roadie (shown as Former).
     stage : ?Roadie.RoadieStage;
-    /// The latest completed paperwork step while the stage is Hired; null for
-    /// every other stage. Drives the in-between stage tag.
-    paperworkStep : ?Roadie.PaperworkStep;
+    /// The label of the latest completed paperwork step while the stage is
+    /// Hired; null when nothing is checked and for every other stage. Drives
+    /// the in-between stage tag.
+    paperworkStep : ?Text;
   };
 
   /// The orientation check-in screen for one session: the session's assigned
@@ -276,9 +279,10 @@ module {
     crewName : ?Text;
     /// The derived hiring stage. Null for an archived roadie (shown as Former).
     stage : ?Roadie.RoadieStage;
-    /// The latest completed paperwork step while the stage is Hired; null for
-    /// every other stage. Drives the in-between stage tag.
-    paperworkStep : ?Roadie.PaperworkStep;
+    /// The label of the latest completed paperwork step while the stage is
+    /// Hired; null when nothing is checked and for every other stage. Drives
+    /// the in-between stage tag.
+    paperworkStep : ?Text;
   };
 
   // --- Uniform check-off ---

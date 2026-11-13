@@ -655,6 +655,7 @@ actor {
           minorOnly = false;
           itemType = #checkbox;
           enabled = true;
+          shortLabel = null;
         })
         .payload("id", func i = i.id)
         .payload("text", func i = i.text)
@@ -662,6 +663,7 @@ actor {
         .payload("minorOnly", func i = i.minorOnly)
         .payload("itemType", func i = switch i.itemType { case (#checkbox) "checkbox"; case (#count) "count" })
         .payload("enabled", func i = i.enabled)
+        .payload("shortLabel", func i = i.shortLabel)
         .controllerOnly()
         .build(),
     ];

@@ -2,7 +2,6 @@ import type {
   ArchiveReason,
   ChecklistItem,
   OrientationCheckoff,
-  PaperworkStep,
   Position,
   Roadie,
   RoadieId,
@@ -17,7 +16,7 @@ import {
   useRoadiePhoto,
   useSchedule,
 } from "@/hooks/useQueries";
-import { refToDataUrl, roadieStageTag } from "@/lib/format";
+import { refToDataUrl, roadieStageTag, roadieStageTagText } from "@/lib/format";
 import { paperworkDueEvent } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { useActor } from "@caffeineai/core-infrastructure";
@@ -207,7 +206,7 @@ export function RoadieStageBadge({
   ocid,
 }: {
   stage?: RoadieStage;
-  paperworkStep?: PaperworkStep;
+  paperworkStep?: string;
   ocid?: string;
 }) {
   const { t } = useI18n();
@@ -223,7 +222,7 @@ export function RoadieStageBadge({
   return (
     <StatusBadge tone="hired" ocid={ocid}>
       {tag.done && <Check className="mr-1 h-3.5 w-3.5" aria-hidden="true" />}
-      {t(tag.key)}
+      {roadieStageTagText(tag, t)}
     </StatusBadge>
   );
 }

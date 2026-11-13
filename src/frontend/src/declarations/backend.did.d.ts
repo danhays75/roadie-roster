@@ -117,6 +117,7 @@ export interface ChecklistItem {
   'minorOnly' : boolean,
   'enabled' : boolean,
   'itemType' : UniformItemType,
+  'shortLabel' : [] | [string],
 }
 export interface Checklists {
   'paperwork' : Array<ChecklistItem>,
@@ -348,7 +349,7 @@ export interface MyCrewRoadieRow {
   'stage' : [] | [RoadieStage],
   'rosterState' : RosterState,
   'paperworkDone' : bigint,
-  'paperworkStep' : [] | [PaperworkStep],
+  'paperworkStep' : [] | [string],
   'paperworkTotal' : bigint,
   'absentToday' : boolean,
   'photo' : [] | [PhotoRef],
@@ -392,7 +393,7 @@ export interface OrientationRoadieRow {
   'crewId' : [] | [CrewId],
   'stage' : [] | [RoadieStage],
   'rosterState' : RosterState,
-  'paperworkStep' : [] | [PaperworkStep],
+  'paperworkStep' : [] | [string],
   'paperworkStatus' : PaperworkStatus,
   'crewName' : [] | [string],
   'photo' : [] | [PhotoRef],
@@ -420,11 +421,6 @@ export interface OverviewRow {
 }
 export type PaperworkStatus = { 'incomplete' : null } |
   { 'complete' : null };
-export type PaperworkStep = { 'i9W4' : null } |
-  { 'none' : null } |
-  { 'foodHandlerCard' : null } |
-  { 'digitalPaperwork' : null } |
-  { 'alcoholCertificate' : null };
 export interface PendingRequestSummary {
   'hasProfile' : boolean,
   'requestedAt' : Timestamp,
@@ -480,7 +476,7 @@ export interface Roadie {
   'rosterState' : RosterState,
   'signedBy' : [] | [Principal],
   'birthdayMonthDay' : [] | [string],
-  'paperworkStep' : [] | [PaperworkStep],
+  'paperworkStep' : [] | [string],
   'isMinor' : boolean,
   'archivedReason' : [] | [ArchiveReason],
   'photo' : [] | [PhotoRef],
@@ -576,7 +572,7 @@ export interface ShiftBoardRoadie {
   'positionCode' : string,
   'positionId' : PositionId,
   'stage' : [] | [RoadieStage],
-  'paperworkStep' : [] | [PaperworkStep],
+  'paperworkStep' : [] | [string],
   'photo' : [] | [PhotoRef],
 }
 export interface ShiftBoardView {
@@ -738,7 +734,7 @@ export interface UnassignedRoadieRow {
   'positionId' : PositionId,
   'crewId' : [] | [CrewId],
   'stage' : [] | [RoadieStage],
-  'paperworkStep' : [] | [PaperworkStep],
+  'paperworkStep' : [] | [string],
   'crewName' : [] | [string],
   'photo' : [] | [PhotoRef],
 }
@@ -1409,10 +1405,6 @@ export interface _SERVICE {
    * / Edit a roadie's non-contact details (Admin/Store Manager only).
    */
   'updateRoadieDetails' : ActorMethod<[RoadieId, RoadieProfile], undefined>,
-  /**
-   * / Update a roadie's status (Admin/Store Manager only).
-   */
-  'updateRoadieStatus' : ActorMethod<[RoadieId, RoadieStatus], undefined>,
   /**
    * / Update a schedule event (Admin only).
    */

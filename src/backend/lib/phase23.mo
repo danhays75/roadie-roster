@@ -1,17 +1,17 @@
+import Char "mo:core/Char";
 import Int "mo:core/Int";
 import List "mo:core/List";
 import Map "mo:core/Map";
 import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
-import Time "mo:core/Time";
 import Common "../types/common";
 import Store "../types/store";
 import Roadie "../types/roadie";
 import Phase23 "../types/phase23";
 import Access "../types/access";
 import Auth "auth";
-import Age "age";
+import Clock "clock";
 import ChangeLog "changelog";
 
 module {
@@ -102,7 +102,7 @@ module {
     Auth.requireManager(accessGrants, demoState, caller);
     let id = counters.nextAttendanceId;
     counters.nextAttendanceId := id + 1;
-    attendance.add(id, { record with recordedAt = effectiveNow(demoState, storeInfo); recordedBy = caller; isDemo = Auth.demoActive(demoState) });
+    attendance.add(id, { record with recordedAt = Clock.effectiveNow(demoState, storeInfo); recordedBy = caller; isDemo = Auth.demoActive(demoState) });
     logWrite(changeLog, counters, demoState, caller, "recordAttendance", ?record.roadieId, false, "Recorded attendance");
   };
 
@@ -147,7 +147,7 @@ module {
       Runtime.trap("Schedule event is not an orientation session");
     };
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState, storeInfo);
+    let now = Clock.effectiveNow(demoState, storeInfo);
     let assigned = roadies.values()
       .filter(func r = r.isDemo == demo and r.status != #archived and r.orientationEventId == ?eventId)
       .toArray();
@@ -250,7 +250,7 @@ module {
         eventId = ?eventId;
         shift = null;
         state = #present;
-        recordedAt = effectiveNow(demoState, storeInfo);
+        recordedAt = Clock.effectiveNow(demoState, storeInfo);
         recordedBy = caller;
         isDemo = demo;
       });
@@ -447,10 +447,10 @@ module {
       Runtime.trap("Schedule event is not an orientation session");
     };
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState, storeInfo);
+    let now = Clock.effectiveNow(demoState, storeInfo);
     // A session has passed once its local calendar date is before the effective
     // clock's local calendar date in the store time zone.
-    if (Age.localDayStart(event.start, storeInfo.timeZone) >= Age.localDayStart(now, storeInfo.timeZone)) {
+    if (Clock.localDayStart(event.start, storeInfo.timeZone) >= Clock.localDayStart(now, storeInfo.timeZone)) {
       Runtime.trap("Session has not passed yet");
     };
     let noShows = roadies.values()
@@ -562,7 +562,7 @@ module {
       base with
       uniformItems;
       uniformCounts;
-      updatedAt = effectiveNow(demoState, storeInfo);
+      updatedAt = Clock.effectiveNow(demoState, storeInfo);
     });
     logWrite(changeLog, counters, demoState, caller, "saveUniformCheckoff", ?roadieId, false, "Saved uniform check-off");
   };
@@ -655,7 +655,7 @@ module {
     checkoffs.add(roadieId, {
       base with
       paperworkItems = effectiveItems;
-      updatedAt = effectiveNow(demoState, storeInfo);
+      updatedAt = Clock.effectiveNow(demoState, storeInfo);
     });
     // Record which items were checked or unchecked, by name, so the change log
     // can show the item-by-item detail instead of a bare action name.
@@ -1098,10 +1098,10 @@ module {
     // Only current or future shifts produce notices. A shift is past once its
     // local calendar date is before the effective clock's local calendar date
     // in the store time zone, so a shift earlier today still counts as current.
-    let now = effectiveNow(demoState, storeInfo);
+    let now = Clock.effectiveNow(demoState, storeInfo);
     switch (event) {
       case (?e) {
-        if (Age.localDayStart(e.start, storeInfo.timeZone) < Age.localDayStart(now, storeInfo.timeZone)) { return };
+        if (Clock.localDayStart(e.start, storeInfo.timeZone) < Clock.localDayStart(now, storeInfo.timeZone)) { return };
       };
       case null { return };
     };
@@ -1139,7 +1139,7 @@ module {
           addedNames = added.map(func(rid) = roadieName(roadies, rid));
           removedNames = removed.map(func(rid) = roadieName(roadies, rid));
           editorName;
-          createdAt = effectiveNow(demoState, storeInfo);
+          createdAt = Clock.effectiveNow(demoState, storeInfo);
           dismissed = false;
           isDemo = demo;
         });
@@ -1187,7 +1187,7 @@ module {
     editor : Principal,
   ) : () {
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState, storeInfo);
+    let now = Clock.effectiveNow(demoState, storeInfo);
     // Snapshot the boards so the map can be updated while iterating.
     let boards = shiftBoards.entries().toArray();
     for ((key, board) in boards.values()) {
@@ -1262,7 +1262,7 @@ module {
     };
     let stored : Phase23.ShiftBoard = {
       sanitized with
-      editedAt = effectiveNow(demoState, storeInfo);
+      editedAt = Clock.effectiveNow(demoState, storeInfo);
       isDemo = demo;
     };
     shiftBoards.add(key, stored);
@@ -1309,7 +1309,7 @@ module {
       shift;
       groups = source.groups;
       offRoadieIds = source.offRoadieIds;
-      editedAt = effectiveNow(demoState, storeInfo);
+      editedAt = Clock.effectiveNow(demoState, storeInfo);
       isDemo = demo;
     };
     // Archived roadies are silently dropped from the copied board.
@@ -1448,7 +1448,7 @@ module {
     let stored : Phase23.ShiftBoard = {
       board with
       groups = newGroups;
-      editedAt = effectiveNow(demoState, storeInfo);
+      editedAt = Clock.effectiveNow(demoState, storeInfo);
     };
     validateBoard(stored);
     shiftBoards.add(key, stored);
@@ -1506,7 +1506,7 @@ module {
       shift;
       groups = [];
       offRoadieIds = [];
-      editedAt = effectiveNow(demoState, storeInfo);
+      editedAt = Clock.effectiveNow(demoState, storeInfo);
       isDemo = demo;
     };
     shiftBoards.add(key, stored);
@@ -1571,7 +1571,7 @@ module {
   ) : ?Phase23.MyGroupView {
     ignore Auth.requireReadable(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState, storeInfo);
+    let now = Clock.effectiveNow(demoState, storeInfo);
     // While demo mode is on and the caller impersonates a demo NSO Trainer,
     // match the board group to the chosen demo leader instead of the caller.
     let acting = Auth.actingPrincipal(demoState, caller);
@@ -1676,7 +1676,7 @@ module {
     switch (crew) {
       case null { null };
       case (?c) {
-        let now = effectiveNow(demoState, storeInfo);
+        let now = Clock.effectiveNow(demoState, storeInfo);
         let dueAt = paperworkDueAt(schedule);
         let rows = roadies.values()
           .filter(func(r) = r.isDemo == demo and r.crewId == ?c.id and r.status != #archived)
@@ -1750,7 +1750,7 @@ module {
         return false;
       };
       switch (schedule.get(c.eventId)) {
-        case (?event) { isToday(event, now, timeZone) };
+        case (?event) { Clock.isToday(event, now, timeZone) };
         case null { false };
       };
     });
@@ -1771,7 +1771,7 @@ module {
     };
     let id = counters.nextTrainerNoteId;
     counters.nextTrainerNoteId := id + 1;
-    trainerNotes.add(id, { note with id; author = caller; createdAt = effectiveNow(demoState, storeInfo); isDemo = Auth.demoActive(demoState) });
+    trainerNotes.add(id, { note with id; author = caller; createdAt = Clock.effectiveNow(demoState, storeInfo); isDemo = Auth.demoActive(demoState) });
     logWrite(changeLog, counters, demoState, caller, "addTrainerNote", ?note.roadieId, false, "Added trainer note");
     id;
   };
@@ -1796,7 +1796,7 @@ module {
       Runtime.trap("Access denied: only the author may edit a trainer note");
     };
     let twentyFourHoursNs : Int = 24 * 60 * 60 * 1_000_000_000;
-    if (effectiveNow(demoState, storeInfo) > existing.createdAt + twentyFourHoursNs) {
+    if (Clock.effectiveNow(demoState, storeInfo) > existing.createdAt + twentyFourHoursNs) {
       Runtime.trap("Trainer note is locked after 24 hours");
     };
     trainerNotes.add(note.id, { existing with didWell = note.didWell; workOn = note.workOn });
@@ -1930,7 +1930,7 @@ module {
       };
       case null {};
     };
-    finalSignOffs.add(signOff.roadieId, { signOff with signedBy = caller; signedAt = effectiveNow(demoState, storeInfo); isDemo = demo });
+    finalSignOffs.add(signOff.roadieId, { signOff with signedBy = caller; signedAt = Clock.effectiveNow(demoState, storeInfo); isDemo = demo });
     logWrite(changeLog, counters, demoState, caller, "recordFinalSignOff", ?signOff.roadieId, false, "Recorded final sign-off");
   };
 
@@ -1980,24 +1980,6 @@ module {
       # roadieId.toText();
   };
 
-  /// Internal: the start and end of a shift as UTC nanosecond timestamps. The
-  /// shift's date is the event's local calendar date in the store time zone;
-  /// the start and end times are the store's AM or PM shift times (store-local
-  /// minutes since midnight). A Friends & Family night uses the PM times.
-  func shiftWindow(
-    event : Store.ScheduleEvent,
-    shift : Common.Shift,
-    storeInfo : Store.StoreInfo,
-  ) : (Common.Timestamp, Common.Timestamp) {
-    let dayStart = Age.localDayStart(event.start, storeInfo.timeZone);
-    let usePm = shift == #pm or event.kind == #friendsAndFamily;
-    let startMin = if (usePm) { storeInfo.pmShiftStart } else { storeInfo.amShiftStart };
-    let endMin = if (usePm) { storeInfo.pmShiftEnd } else { storeInfo.amShiftEnd };
-    let start = dayStart + startMin.toInt() * 60_000_000_000;
-    let end = dayStart + endMin.toInt() * 60_000_000_000;
-    (start, end);
-  };
-
   /// Internal: whether the trainer lock window is open for a shift: from 30
   /// minutes before the shift start until 2 hours after the shift end, on the
   /// effective clock.
@@ -2007,7 +1989,7 @@ module {
     storeInfo : Store.StoreInfo,
     now : Common.Timestamp,
   ) : Bool {
-    let (start, end) = shiftWindow(event, shift, storeInfo);
+    let (start, end) = Clock.shiftWindow(event, shift, storeInfo);
     let openAt = start - 30 * 60_000_000_000;
     let closeAt = end + 2 * 60 * 60_000_000_000;
     now >= openAt and now <= closeAt;
@@ -2178,7 +2160,7 @@ module {
     };
     let event = schedule.get(eventId) ?? Runtime.trap("Shift not found");
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState, storeInfo);
+    let now = Clock.effectiveNow(demoState, storeInfo);
     // Outside the trainer window only a manager may change records.
     if (not withinTrainerWindow(event, shift, storeInfo, now) and not isCheckInManager(accessGrants, demoState, caller)) {
       Runtime.trap("Check-in is locked; ask a manager to change");
@@ -2236,7 +2218,7 @@ module {
       case null { return null };
     };
     let event = schedule.get(eventId);
-    let now = effectiveNow(demoState, storeInfo);
+    let now = Clock.effectiveNow(demoState, storeInfo);
     let locked = switch (event) {
       case (?e) { not withinTrainerWindow(e, shift, storeInfo, now) and not isCheckInManager(accessGrants, demoState, caller) };
       case null { true };
@@ -2407,7 +2389,7 @@ module {
           shift = otherShift;
           groups = [];
           offRoadieIds = [];
-          editedAt = effectiveNow(demoState, storeInfo);
+          editedAt = Clock.effectiveNow(demoState, storeInfo);
           isDemo = demo;
         };
       };
@@ -2421,7 +2403,7 @@ module {
       board with
       groups = newGroups;
       offRoadieIds = newOff;
-      editedAt = effectiveNow(demoState, storeInfo);
+      editedAt = Clock.effectiveNow(demoState, storeInfo);
     };
     shiftBoards.add(key, stored);
     logWrite(changeLog, counters, demoState, caller, "moveAbsentRoadieToOtherShift", ?alert.roadieId, false, "Moved absent roadie to the other shift");
@@ -2452,11 +2434,6 @@ module {
     };
   };
 
-  /// Internal: whether a schedule event's local calendar date in the store time
-  /// zone is the effective clock's local calendar date.
-  func isToday(event : Store.ScheduleEvent, now : Common.Timestamp, timeZone : Common.TimeZone) : Bool {
-    Age.localDayStart(event.start, timeZone) == Age.localDayStart(now, timeZone);
-  };
 
   /// The Today page payload, shaped by the caller's role. A trainer gets their
   /// group and its check-in board; a crew owner gets their "My crew" section;
@@ -2481,7 +2458,7 @@ module {
   ) : Phase23.TodayView {
     let role = Auth.requireReadable(accessGrants, demoState, caller);
     let demo = Auth.demoActive(demoState);
-    let now = effectiveNow(demoState, storeInfo);
+    let now = Clock.effectiveNow(demoState, storeInfo);
     let isTrainer = role == #trainer;
     let isManager = role == #admin or role == #storeManager or role == #trainingManager;
     let isReadOnly = role == #leadership or role == #visitingManager;
@@ -2534,7 +2511,7 @@ module {
   ) : [Phase23.ShiftCheckInSummary] {
     let summaries = List.empty<Phase23.ShiftCheckInSummary>();
     for (event in schedule.values()) {
-      if (isToday(event, now, timeZone)) {
+      if (Clock.isToday(event, now, timeZone)) {
         switch (event.kind) {
           case (#trainingDay) {
             summaries.add(shiftCheckInSummary(checkIns, demo, event, #am));
@@ -2599,21 +2576,22 @@ module {
     if (complete) { #complete } else { #incomplete };
   };
 
-  /// Internal: the latest completed paperwork step while a roadie's stage is
-  /// Hired, so the stage tag can show progress instead of a bare "Hired". The
-  /// named steps are Digital Paperwork (id 0), I-9 / W-4 (id 5), Alcohol
-  /// Certificate (id 3) and Food Handler Card (id 2); Policies & Procedures and
-  /// the minor-only items have no named step, so they never advance it. The step
-  /// is the highest named item that is checked, and `#none` when none is.
-  /// Returns null when the stage is not Hired (the tag then shows the stage
-  /// itself).
+  /// Internal: the label of the latest completed paperwork step while a
+  /// roadie's stage is Hired, so the stage tag can show progress instead of a
+  /// bare "Hired". Walks the roadie's applicable (enabled, applicability-
+  /// filtered) paperwork items in checklist order and takes the highest-ordered
+  /// checked one; the label is its `shortLabel` when set and non-blank,
+  /// otherwise its `text`. Works for any item, including custom ones. Returns
+  /// null when nothing is checked (the tag then shows "Hired") and when the
+  /// stage is not Hired (the tag then shows the stage itself). The check mark
+  /// is appended by the frontend.
   public func paperworkStepFor(
     checklists : Store.Checklists,
     positions : Map.Map<Common.PositionId, Store.Position>,
     roadie : Roadie.Roadie,
     checkoff : ?Phase23.OrientationCheckoff,
     stage : ?Roadie.RoadieStage,
-  ) : ?Roadie.PaperworkStep {
+  ) : ?Text {
     if (stage != ?#hired) {
       return null;
     };
@@ -2625,23 +2603,25 @@ module {
     let isChecked = func(id : Nat) : Bool {
       checked.any(func(t) = t == id.toText());
     };
-    // The named steps in order; the highest checked one wins. A named item that
-    // does not apply to the roadie (or is disabled) is skipped.
-    var step : Roadie.PaperworkStep = #none;
+    var step : ?Text = null;
     for (item in applicable.values()) {
       if (isChecked(item.id)) {
-        if (item.id == 0) {
-          step := #digitalPaperwork;
-        } else if (item.id == 5) {
-          step := #i9W4;
-        } else if (item.id == 3) {
-          step := #alcoholCertificate;
-        } else if (item.id == 2) {
-          step := #foodHandlerCard;
-        };
+        step := ?stepLabel(item);
       };
     };
-    ?step;
+    step;
+  };
+
+  /// Internal: the step tag label of a paperwork item: its short label when
+  /// set and non-blank, otherwise its full text.
+  func stepLabel(item : Store.ChecklistItem) : Text {
+    switch (item.shortLabel) {
+      case (?short) {
+        let trimmed = short.trim(#predicate(func(c : Char) : Bool { c.isWhitespace() }));
+        if (trimmed.size() == 0) { item.text } else { trimmed };
+      };
+      case null { item.text };
+    };
   };
 
   /// Internal: whether a roadie has at least one Present or Late check-in on a
@@ -2805,28 +2785,6 @@ module {
       Runtime.trap("Roadie not found");
     };
     roadie;
-  };
-
-  /// Internal: the effective clock. While demo mode is on with a pretend date
-  /// set, the pretend timestamp is returned; otherwise the real clock. The
-  /// pretend date's `day` is a local calendar date in the store time zone, and
-  /// the pretend time is 30 minutes after the store's AM or PM shift start
-  /// (local), so "Pretend it's Feb 2 AM" lands just inside the AM shift.
-  func effectiveNow(demoState : Common.DemoState, storeInfo : Store.StoreInfo) : Common.Timestamp {
-    if (not Auth.demoActive(demoState)) {
-      return Time.now();
-    };
-    switch (demoState.pretendDate) {
-      case (?pd) {
-        let dayStart = Age.localMidnightOfDate(pd.day, storeInfo.timeZone);
-        let shiftStartMin = switch (pd.shift) {
-          case (#am) { storeInfo.amShiftStart };
-          case (#pm) { storeInfo.pmShiftStart };
-        };
-        dayStart + (shiftStartMin.toInt() + 30) * 60_000_000_000;
-      };
-      case null { Time.now() };
-    };
   };
 
   /// Internal: write a change-log entry into the active partition.

@@ -52,6 +52,13 @@
 - Change nothing else
 - The Paperwork Done stage is labelled "Ready for Orientation" and shows the seal image instead of a text tag
 - The seal artwork lives at src/frontend/public/assets/ready-for-orientation-seal.png with the area outside the circular badge transparent
+- Do not update, add, remove or run-to-fix any tests; known failing tests stay untouched and publish as soon as it compiles
+- Never change app behavior to satisfy old tests
+- All time math (effectiveNow, shiftWindow, isToday/localDate) lives in backend/lib/clock.mo; modules call Clock and keep no local copies, with identical pretend-date, shift-window and Today semantics
+- A roadie's status changes only through archiveRoadie, rehireRoadie and (later) final sign-off; there is no manual updateRoadieStatus
+- While a roadie is Hired, the step tag reads "<shortLabel or item text> ✓" for the highest checked applicable enabled paperwork item, including custom items; the backend returns the label text, not a fixed variant
+- Paperwork checklist items carry an optional Short label editable in Admin > Checklists > Paperwork (placeholder "Optional, e.g. Alcohol Cert"); blank saves null and the tag falls back to the item text
+- The Dashboard page content sits inside an error boundary reading "Something went wrong loading the dashboard. Reload." with Reload as a button, keeping header, nav and demo banner visible; OpeningTimeline and KPI tiles are lazy-loaded behind small grey skeletons
 
 ## Accepted Requirements
 
@@ -203,20 +210,12 @@
 
 ## Verified Commands
 
-- **typecheck**: `pnpm --dir src/frontend typecheck`
-- **fix**: `mops check --fix && pnpm --dir src/frontend fix`
-- **build**: `mops build && pnpm --dir src/frontend build`
+- **typecheck**: `cd src/frontend && pnpm exec tsc --noEmit -p node_modules/.cache/caffeine-production-tsconfig.json`
+- **fix**: `cd src/frontend && pnpm fix; mops check --fix`
+- **build**: `cd src/frontend && pnpm build; mops build`
 
 ## Learnings
 
-- SignupSubmission and DuplicateMatch carry demoPhotoUrl : ?Text (src/backend/types/signup.mo); lib/signup.mo sets it on submit, fills it in findDuplicates from the matching roadie and copies it onto the new Roadie in approveSignup; migration 00000023_000000.mo adds it as null for existing records.
-- The OQL sample literal in src/backend/main.mo (signups.toEntityManual("signup", "SignupSubmission", "id").sample({...})) must list every SignupSubmission field; a missing field fails mops build with M0096 and leaves src/frontend/src/backend.d.ts stale, so new backend fields are invisible to tsc until `mops build` and `pnpm bindgen` run.
-- The demo seed's seedSignup in src/backend/lib/demo.mo now takes positionAppliedFor and photoFile, so the 3 pending kiosk sign-ups carry demo photos from the shared demoPhotoBase and applied-for positions.
-- The local preflight tester reached the Approve New Hires page with demo data loaded and confirmed the applicant photos and the Possible duplicates photo, but the run ended inconclusive before the approval commit and the Main position pre-fill were exercised.
-- src/frontend/src/pages/Approvals.tsx prefills the pending sign-up card's Main position from signup.profile.positionAppliedFor via normalizePositionName/matchAppliedPosition (trim, lowercase, one trailing 's' dropped) and a one-time ref-guarded effect, so a positions refetch never overwrites the manager's manual choice.
-- The local preflight tester cannot create a pending kiosk sign-up: the kiosk application's signature canvas (aria-label 'Signature drawing area') is not exposed as an actionable element, so the Approve New Hires page shows 'No sign-ups are waiting for review' and the Main position pre-fill cannot be exercised locally.
-- The paperwork checklist order is defined by the paperwork array order in src/backend/lib/seed.mo (Digital Paperwork id 0, I-9 / W-4 id 5, Alcohol Certificate id 3, Policies & Procedures id 1, minor-only id 4); migration 00000024_000000.mo rewrites the stored real checklist and drops the Food handler card id from every roadie's checked items.
-- setPaperworkItems in src/backend/lib/phase23.mo enforces in-order checking over applicablePaperwork only, traps 'Do <item> first' for an out-of-order check, and cascades an uncheck to every applicable item below; it needs the positions parameter to call applicablePaperwork.
 - paperworkStepFor in src/backend/lib/phase23.mo maps named steps by item id (Digital=0, I-9=5, Alcohol=3), not by applicable index, so non-alcohol roadies never show Alcohol Cert; the derived paperworkStep is exposed on the roadie and on the orientation, shift board, crew and unassigned view rows.
 - roadieStageTag(stage, paperworkStep) in src/frontend/src/lib/format.ts maps a Hired roadie's backend paperworkStep to a copy key plus a check-mark flag, and RoadieStageBadge in src/frontend/src/components/roadie/RoadieTile.tsx renders it in the hired tone; PaperworkChecklist in ManagerTab.tsx blocks any item after the first unchecked applicable item and clears every item below on uncheck.
 - A new Roadie field needs paperworkStep = null in every stored-record literal (demo, signup, OQL sample) and a derived value in every view builder, or mops build fails with M0096 and src/frontend/src/backend.d.ts stays stale.
@@ -234,3 +233,11 @@
 - The desktop header in src/frontend/src/components/Layout.tsx is a two-row layout: row 1 holds the store logo (shrink-0), the title and the tagline subtitle on the left with the Sign out button on the right, and row 2 holds the navigation links on their own full-width row using overflow-x-auto, flex-nowrap, whitespace-nowrap labels, lg:justify-between spacing and a pointer-events-none absolute gradient fade at the right edge inside a relative wrapper.
 - The rendered desktop nav order is applied by a local NAV_ORDER sort inside src/frontend/src/components/Layout.tsx because NAV_ITEMS in src/frontend/src/hooks/useAccess.ts is grouped by feature, not by the required header order.
 - The .stripe-flag utility in src/frontend/src/index.css stays the last child of the header, directly under the nav row, and the sub-1024px hamburger toggle (lg:hidden) and mobile menu panel are unchanged.
+- Clock.effectiveNow/shiftWindow/isToday live in src/backend/lib/clock.mo; roadie.mo, signup.mo, phase23.mo and store.mo call Clock and keep no local copies.
+- paperworkStepFor returns ?Text (shortLabel-or-text of the highest checked applicable enabled item); the frontend appends the check mark via roadieStageTag in lib/format.ts.
+- Blank Short label is dropped on both sides: ChecklistsPanel trimShortLabel omits it and store.mo normalizeItem stores null.
+- useActor (core-infrastructure) refetches every cached query on each mount; dense pages must mount few backend hooks (Dashboard went from ~90 to ~20 mounts after a request storm crashed the browser).
+- PocketIC canister Time.now() lags wall Date.now() by days; backend tests that build 'past' events from Date.now() fail regardless of backend code.
+- In raw PocketIC actor calls, new opt record fields (e.g. ChecklistItem.shortLabel) must be present as [] in test literals or Candid encoding fails before the call.
+- Dashboard Suspense skeletons use animate-pulse without a motion-reduce guard (minor, open).
+- In tester YAML prompts, quote values containing ': ' or the dispatch is refused.

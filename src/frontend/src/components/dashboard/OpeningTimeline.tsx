@@ -106,6 +106,12 @@ function storeExpanded(expanded: boolean): void {
  * Countdown to opening day plus the opening timeline, with the phase the store
  * is currently in highlighted. The milestone list is collapsible; the flag,
  * label, opening date and countdown boxes always stay visible.
+ *
+ * This is the standalone form: it reads the store info, demo state, access and
+ * roster itself. The Dashboard already holds all of those, so it renders
+ * `OpeningTimelineView` directly and passes them in, keeping the lazily loaded
+ * section free of backend hooks (each mounted backend hook refetches the whole
+ * query cache on mount).
  */
 export function OpeningTimeline({
   events,
@@ -114,12 +120,8 @@ export function OpeningTimeline({
   events: ScheduleEvent[];
   openingDate: DateOnly | null;
 }) {
-  const { t } = useDashboardCopy();
   const { data: storeInfo } = useStoreInfo();
   const demo = useDemo();
-  // Schedule times are wall-clock times in the store's zone, so they must be
-  // formatted with that zone rather than the device's.
-  const timeZone = storeInfo?.timeZone;
   // While demo mode is on with a pretend date, the countdown and schedule
   // windows follow that instant instead of the real clock.
   const pretendInstant = useMemo(() => {
@@ -134,12 +136,6 @@ export function OpeningTimeline({
     );
   }, [demo.enabled, demo.pretendDate, storeInfo]);
   const now = useNow(pretendInstant);
-
-  // The store-local calendar day of the effective now. Events are classified
-  // by their own store-local calendar day against this key, not by exact
-  // timestamps, so "today" means the same calendar day in the store's zone.
-  const zone = timeZone ?? DEFAULT_TIME_ZONE;
-  const todayKey = useMemo(() => localDayKey(new Date(now), zone), [now, zone]);
 
   // Whether any active roadie still has incomplete paperwork, which turns a
   // past paperwork deadline into "Past due". The check-off read is Admin/Store
@@ -161,6 +157,45 @@ export function OpeningTimeline({
       ),
     [roadies, paperworkFlags],
   );
+
+  return (
+    <OpeningTimelineView
+      events={events}
+      openingDate={openingDate}
+      now={now}
+      timeZone={storeInfo?.timeZone}
+      hasIncompleteActivePaperwork={hasIncompleteActivePaperwork}
+    />
+  );
+}
+
+/**
+ * The countdown card and timeline, rendered from values the caller already
+ * holds: the effective "now" (with any demo pretend date applied), the store's
+ * time zone and whether any active roadie still has incomplete paperwork. It
+ * calls no backend hooks.
+ */
+export function OpeningTimelineView({
+  events,
+  openingDate,
+  now,
+  timeZone,
+  hasIncompleteActivePaperwork,
+}: {
+  events: ScheduleEvent[];
+  openingDate: DateOnly | null;
+  now: number;
+  /** Schedule times are wall-clock times in the store's zone, not the device's. */
+  timeZone: string | undefined;
+  hasIncompleteActivePaperwork: boolean;
+}) {
+  const { t } = useDashboardCopy();
+
+  // The store-local calendar day of the effective now. Events are classified
+  // by their own store-local calendar day against this key, not by exact
+  // timestamps, so "today" means the same calendar day in the store's zone.
+  const zone = timeZone ?? DEFAULT_TIME_ZONE;
+  const todayKey = useMemo(() => localDayKey(new Date(now), zone), [now, zone]);
 
   const [expanded, setExpanded] = useState(readStoredExpanded);
 

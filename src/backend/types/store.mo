@@ -90,6 +90,9 @@ module {
   /// checklist, the stage tags, paperwork counts and totals, the Paperwork Done
   /// stage, the orientation gate and the Practice run) and never blocks
   /// in-order completion. Orientation uniform items are always enabled.
+  /// `shortLabel` is an optional short name for the paperwork step tag
+  /// (for example "Alcohol Cert"); when null the tag uses `text`. Blank labels
+  /// are stored as null.
   public type ChecklistItem = {
     id : Nat;
     text : Text;
@@ -97,6 +100,7 @@ module {
     minorOnly : Bool;
     itemType : Common.UniformItemType;
     enabled : Bool;
+    shortLabel : ?Text;
   };
 
   /// The two editable checklists. Array order is the display and enforcement

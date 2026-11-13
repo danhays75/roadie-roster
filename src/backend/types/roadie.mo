@@ -26,25 +26,6 @@ module {
     #certified;
   };
 
-  /// The latest completed paperwork step while a roadie's stage is Hired, so
-  /// the stage tag can show progress instead of a bare "Hired". The steps are
-  /// ordered by the paperwork checklist order (Digital Paperwork, I-9 / W-4,
-  /// Alcohol Certificate, Food Handler Card, Policies & Procedures, then
-  /// minor-only items):
-  /// `#none` (nothing checked) → `#digitalPaperwork` → `#i9W4` →
-  /// `#alcoholCertificate` → `#foodHandlerCard`. When every applicable item is
-  /// checked the stage is Paperwork Done, so this value is null for every
-  /// non-Hired stage and for an archived roadie. Items that do not apply to the
-  /// roadie (for example the Alcohol Certificate for a non-alcohol position) or
-  /// that are disabled are skipped.
-  public type PaperworkStep = {
-    #none;
-    #digitalPaperwork;
-    #i9W4;
-    #alcoholCertificate;
-    #foodHandlerCard;
-  };
-
   /// Why a roadie was archived.
   public type ArchiveReason = {
     #noShow;
@@ -146,11 +127,14 @@ module {
     isDemo : Bool;
     /// The derived hiring stage. Null for an archived roadie (shown as Former).
     stage : ?RoadieStage;
-    /// The latest completed paperwork step, derived on every read. Non-null
-    /// only while `stage` is `#hired`; null for every other stage and for an
-    /// archived roadie. Drives the in-between stage tag ("Digital Paperwork ✓",
-    /// "I-9 / W-4 ✓", "Alcohol Cert ✓").
-    paperworkStep : ?PaperworkStep;
+    /// The label of the latest completed paperwork step, derived on every
+    /// read. Non-null only while `stage` is `#hired` and at least one
+    /// applicable, enabled paperwork item is checked: the `shortLabel` (or the
+    /// item `text` when no short label is set) of the highest-ordered checked
+    /// item in checklist order. Null when nothing is checked, for every other
+    /// stage and for an archived roadie. Drives the in-between stage tag; the
+    /// frontend appends the check mark.
+    paperworkStep : ?Text;
   };
 
   /// A crew. `leaderPrincipal` is the approved manager who owns the crew, or

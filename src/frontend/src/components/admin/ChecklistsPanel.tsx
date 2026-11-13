@@ -43,6 +43,17 @@ function nextItemId(items: ChecklistItem[]): bigint {
   return items.reduce((max, item) => (item.id > max ? item.id : max), 0n) + 1n;
 }
 
+/**
+ * A blank short label is saved as absent (the optional binding omits it, so the
+ * backend stores null and the stage tag falls back to the item's full text);
+ * a filled one is trimmed. An empty string is never sent.
+ */
+function trimShortLabel(item: ChecklistItem): ChecklistItem {
+  const { shortLabel, ...rest } = item;
+  const trimmed = shortLabel?.trim();
+  return trimmed ? { ...rest, shortLabel: trimmed } : rest;
+}
+
 function ChecklistEditor({
   title,
   description,
@@ -51,6 +62,7 @@ function ChecklistEditor({
   ocid,
   showItemType = false,
   showEnabled = false,
+  showShortLabel = false,
 }: {
   title: string;
   description: string;
@@ -59,6 +71,7 @@ function ChecklistEditor({
   ocid: string;
   showItemType?: boolean;
   showEnabled?: boolean;
+  showShortLabel?: boolean;
 }) {
   const c = useAdminCopy();
 
@@ -141,15 +154,30 @@ function ChecklistEditor({
             data-ocid={`${ocid}.item.${index + 1}`}
             className="flex flex-col gap-3 rounded-md border border-border bg-background p-3 sm:flex-row sm:items-center"
           >
-            <Input
-              aria-label={c.checklistsItemText}
-              data-ocid={`${ocid}.text.input.${index + 1}`}
-              className="touch-target flex-1"
-              value={item.text}
-              onChange={(event) =>
-                updateItem(item.id, { text: event.target.value })
-              }
-            />
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <Input
+                aria-label={c.checklistsItemText}
+                data-ocid={`${ocid}.text.input.${index + 1}`}
+                className="touch-target"
+                value={item.text}
+                onChange={(event) =>
+                  updateItem(item.id, { text: event.target.value })
+                }
+              />
+              {showShortLabel && (
+                <Input
+                  aria-label={c.checklistsShortLabel}
+                  placeholder={c.checklistsShortLabelPlaceholder}
+                  data-ocid={`${ocid}.short_label.input.${index + 1}`}
+                  className="touch-target"
+                  maxLength={40}
+                  value={item.shortLabel ?? ""}
+                  onChange={(event) =>
+                    updateItem(item.id, { shortLabel: event.target.value })
+                  }
+                />
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-4">
               {showEnabled && (
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -292,7 +320,9 @@ export function ChecklistsPanel() {
         orientationUniform: draft.orientationUniform.filter((item) =>
           item.text.trim(),
         ),
-        paperwork: draft.paperwork.filter((item) => item.text.trim()),
+        paperwork: draft.paperwork
+          .filter((item) => item.text.trim())
+          .map(trimShortLabel),
       },
       { onSuccess: () => setSaved(true) },
     );
@@ -367,6 +397,7 @@ export function ChecklistsPanel() {
               items={draft.paperwork}
               ocid="admin.checklists.paperwork"
               showEnabled
+              showShortLabel
               onChange={(items) => {
                 setSaved(false);
                 setDraft((current) =>

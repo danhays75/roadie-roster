@@ -1,3 +1,4 @@
+import Char "mo:core/Char";
 import List "mo:core/List";
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
@@ -278,11 +279,33 @@ module {
     value : Store.Checklists,
   ) : () {
     Auth.requireRealSettingsAdmin(accessGrants, demoState, caller);
-    checklists.value := value;
-    let detail = "Updated checklists: paperwork " # value.paperwork.map(func(item) =
+    let normalized = normalizeChecklists(value);
+    checklists.value := normalized;
+    let detail = "Updated checklists: paperwork " # normalized.paperwork.map(func(item) =
       item.text # (if item.enabled { " on" } else { " off" })
     ).values().join(", ");
     ignore ChangeLog.record(changeLog, counters, caller, "updateChecklists", null, false, detail);
+  };
+
+  /// Internal: trim every item's optional short label and store a blank one as
+  /// null, so the step tag falls back to the item text.
+  func normalizeChecklists(value : Store.Checklists) : Store.Checklists {
+    {
+      orientationUniform = value.orientationUniform.map(normalizeItem);
+      paperwork = value.paperwork.map(normalizeItem);
+    };
+  };
+
+  /// Internal: normalize one checklist item's short label.
+  func normalizeItem(item : Store.ChecklistItem) : Store.ChecklistItem {
+    let shortLabel : ?Text = switch (item.shortLabel) {
+      case (?short) {
+        let trimmed = short.trim(#predicate(func(c : Char) : Bool { c.isWhitespace() }));
+        if (trimmed.size() == 0) { null } else { ?trimmed };
+      };
+      case null { null };
+    };
+    { item with shortLabel };
   };
 
   /// Read retention settings (any role except Kiosk).
@@ -428,7 +451,7 @@ module {
       });
       nextEventId += 1;
     };
-    checklists.value := file.checklists;
+    checklists.value := normalizeChecklists(file.checklists);
     storeInfo.value := {
       storeInfo.value with
       leaderTalkName = file.leaderTalkName;

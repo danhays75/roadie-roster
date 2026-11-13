@@ -2,7 +2,6 @@ import Char "mo:core/Char";
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
-import Time "mo:core/Time";
 import Common "../types/common";
 import Roadie "../types/roadie";
 import Store "../types/store";
@@ -11,6 +10,7 @@ import Phase23 "../types/phase23";
 import Auth "auth";
 import ChangeLog "changelog";
 import Age "age";
+import Clock "clock";
 import StoreLib "store";
 import Phase23Lib "phase23";
 
@@ -112,7 +112,7 @@ module {
   ) : [Roadie.Roadie] {
     let role = Auth.requireReadable(accessGrants, demoState, caller);
     let canSee = Auth.canSeeContactSet(accessGrants, demoState, caller);
-    let now = effectiveNow(demoState, storeInfo);
+    let now = Clock.effectiveNow(demoState, storeInfo);
     let demo = Auth.demoActive(demoState);
     roadies.values()
       .filter(func(r) = r.isDemo == demo and visibleToRole(r, role, accessGrants, demoState, caller))
@@ -136,7 +136,7 @@ module {
   ) : ?Roadie.Roadie {
     let role = Auth.requireReadable(accessGrants, demoState, caller);
     let canSee = Auth.canSeeContactSet(accessGrants, demoState, caller);
-    let now = effectiveNow(demoState, storeInfo);
+    let now = Clock.effectiveNow(demoState, storeInfo);
     let demo = Auth.demoActive(demoState);
     switch (roadies.get(id)) {
       case (?r) {
@@ -186,7 +186,7 @@ module {
   ) : [Roadie.Roadie] {
     let role = Auth.requireReadable(accessGrants, demoState, caller);
     let canSee = Auth.canSeeContactSet(accessGrants, demoState, caller);
-    let now = effectiveNow(demoState, storeInfo);
+    let now = Clock.effectiveNow(demoState, storeInfo);
     let demo = Auth.demoActive(demoState);
     roadies.values()
       .filter(func(r) = r.isDemo == demo and r.mainPositionId == positionId and visibleToRole(r, role, accessGrants, demoState, caller))
@@ -238,7 +238,7 @@ module {
     // Age gate: the roadie must meet the minimum age of every assigned position.
     switch (roadie.contactSet) {
       case (?cs) {
-        let now = effectiveNow(demoState, storeInfo);
+        let now = Clock.effectiveNow(demoState, storeInfo);
         if (not Age.meetsMinimumAge(cs.dateOfBirth, main.minimumAge, now, defaultTimeZone)) {
           Runtime.trap("Roadie is below the minimum age for this position");
         };
@@ -277,7 +277,7 @@ module {
   ) : () {
     Auth.requireManager(accessGrants, demoState, caller);
     let roadie = requireVisibleRoadie(roadies, demoState, id);
-    roadies.add(id, { roadie with status = #archived; archivedReason = ?reason; archivedAt = ?effectiveNow(demoState, storeInfo) });
+    roadies.add(id, { roadie with status = #archived; archivedReason = ?reason; archivedAt = ?Clock.effectiveNow(demoState, storeInfo) });
     Phase23Lib.removeArchivedRoadieFromBoards(accessGrants, demoState, shiftBoards, groupChangeNotices, roadies, schedule, counters, storeInfo, id, caller);
     logWrite(changeLog, counters, demoState, caller, "archiveRoadie", ?id, false, "Archived roadie");
   };
@@ -307,7 +307,7 @@ module {
       Runtime.trap("A rehire reason is required");
     };
     let roadie = requireVisibleRoadie(roadies, demoState, id);
-    let nextSession = switch (StoreLib.nextOrientationEvent(schedule, effectiveNow(demoState, storeInfo))) {
+    let nextSession = switch (StoreLib.nextOrientationEvent(schedule, Clock.effectiveNow(demoState, storeInfo))) {
       case (?event) { ?event.id };
       case null { roadie.orientationEventId };
     };
@@ -320,31 +320,6 @@ module {
       orientationEventId = nextSession;
     });
     logWrite(changeLog, counters, demoState, caller, "rehireRoadie", ?id, false, "Rehired roadie: " # trimmed);
-  };
-
-  /// Update a roadie's status (Admin/Store Manager only). This never sets or
-  /// clears the archived status; only archiveRoadie and rehireRoadie may.
-  public func updateRoadieStatus(
-    accessGrants : Map.Map<Principal, Access.AccessGrant>,
-    demoState : Common.DemoState,
-    roadies : Map.Map<Common.RoadieId, Roadie.Roadie>,
-    changeLog : Map.Map<Common.ChangeLogId, Roadie.ChangeLogEntry>,
-    counters : Counters,
-    caller : Principal,
-    id : Common.RoadieId,
-    status : Roadie.RoadieStatus,
-  ) : () {
-    Auth.requireManager(accessGrants, demoState, caller);
-    switch (status) {
-      case (#archived) { Runtime.trap("Use archiveRoadie to archive a roadie") };
-      case (_) {};
-    };
-    let roadie = requireVisibleRoadie(roadies, demoState, id);
-    if (roadie.status == #archived) {
-      Runtime.trap("Use rehireRoadie to restore an archived roadie");
-    };
-    roadies.add(id, { roadie with status });
-    logWrite(changeLog, counters, demoState, caller, "updateRoadieStatus", ?id, false, "Updated roadie status");
   };
 
   /// Read a roadie's contact set. Admin and Store Manager receive the contact
@@ -446,7 +421,7 @@ module {
     let updated : Roadie.ContactSet = {
       cs with
       availabilitySignature = ?signature;
-      availabilitySignedAt = ?effectiveNow(demoState, storeInfo);
+      availabilitySignedAt = ?Clock.effectiveNow(demoState, storeInfo);
       availabilityResignPending = false;
     };
     roadies.add(id, { roadie with contactSet = ?updated });
@@ -635,33 +610,11 @@ module {
           return false;
         };
         switch (r.contactSet) {
-          case (?cs) { Age.isMinor(cs.dateOfBirth, effectiveNow(demoState, storeInfo), defaultTimeZone) };
+          case (?cs) { Age.isMinor(cs.dateOfBirth, Clock.effectiveNow(demoState, storeInfo), defaultTimeZone) };
           case null { r.isMinor };
         };
       };
       case null { false };
-    };
-  };
-
-  /// Internal: the effective clock. While demo mode is on with a pretend date
-  /// set, the pretend timestamp is returned; otherwise the real clock. The
-  /// pretend date's `day` is a local calendar date in the store time zone, and
-  /// the pretend time is 30 minutes after the store's AM or PM shift start
-  /// (local), so "Pretend it's Feb 2 AM" lands just inside the AM shift.
-  func effectiveNow(demoState : Common.DemoState, storeInfo : Store.StoreInfo) : Common.Timestamp {
-    if (not Auth.demoActive(demoState)) {
-      return Time.now();
-    };
-    switch (demoState.pretendDate) {
-      case (?pd) {
-        let dayStart = Age.localMidnightOfDate(pd.day, storeInfo.timeZone);
-        let shiftStartMin = switch (pd.shift) {
-          case (#am) { storeInfo.amShiftStart };
-          case (#pm) { storeInfo.pmShiftStart };
-        };
-        dayStart + (shiftStartMin.toInt() + 30) * 60_000_000_000;
-      };
-      case null { Time.now() };
     };
   };
 

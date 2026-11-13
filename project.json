@@ -1,19 +1,20 @@
 {
-  "overview": "Roadie Roster is a hiring and onboarding manager for a new store opening, tracking roadies from sign-up through paperwork, orientation, training and certification.",
+  "overview": "Roadie Roster is a new-store opening staffing app that tracks hired roadies from kiosk sign-up through paperwork, orientation, training groups and certification, with demo mode and a store-local pretend clock.",
   "features": [
-    "Paperwork checklist in a fixed order: Digital Paperwork, I-9 / W-4, Alcohol Certificate, Policies & Procedures",
-    "Checklist items can only be checked in order, with later boxes disabled until the step above is done",
-    "The stage tag shows each roadie's latest completed paperwork step while they are Hired",
-    "Roster, orientation, crew and card views all show the same step tag",
-    "Demo mode with seeded roadies showing a mix of paperwork steps"
+    "Kiosk sign-up and manager approval of new roadies",
+    "Roster, roadie trading cards and derived stage tags",
+    "Paperwork checklists with optional short labels for step tags",
+    "Orientation sessions, training groups and trainer check-ins",
+    "Dashboard with hiring progress, countdown and opening timeline",
+    "Demo mode with a pretend date driven by a single store clock"
   ],
-  "category": "staff-management",
+  "category": "staffing-app",
   "tags": [
     "hiring",
     "onboarding",
     "roster",
-    "paperwork",
-    "store-operations"
+    "restaurant",
+    "pwa"
   ],
-  "last_updated": "2026-11-08T01:43:26.226Z"
+  "last_updated": "2026-11-13T00:10:48.552Z"
 }

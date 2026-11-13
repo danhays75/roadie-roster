@@ -10,7 +10,6 @@ import type {
 } from "@/backend";
 import {
   House,
-  PaperworkStep,
   RoadieStage,
   RoadieStatus,
   Role,
@@ -311,7 +310,7 @@ describe("RoadieTile Hired stage tag shows the latest completed paperwork step",
       <RoadieTile
         roadie={managerRoadie({
           stage: RoadieStage.hired,
-          paperworkStep: PaperworkStep.digitalPaperwork,
+          paperworkStep: "Digital Paperwork",
         })}
         positionName="Servers"
         onOpen={vi.fn()}
@@ -332,7 +331,7 @@ describe("RoadieTile Hired stage tag shows the latest completed paperwork step",
       <RoadieTile
         roadie={managerRoadie({
           stage: RoadieStage.hired,
-          paperworkStep: PaperworkStep.i9W4,
+          paperworkStep: "I-9 / W-4",
         })}
         positionName="Servers"
         onOpen={vi.fn()}
@@ -352,7 +351,7 @@ describe("RoadieTile Hired stage tag shows the latest completed paperwork step",
       <RoadieTile
         roadie={managerRoadie({
           stage: RoadieStage.hired,
-          paperworkStep: PaperworkStep.alcoholCertificate,
+          paperworkStep: "Alcohol Cert",
         })}
         positionName="Servers"
         onOpen={vi.fn()}
@@ -390,7 +389,7 @@ describe("RoadieTile Hired stage tag shows the latest completed paperwork step",
       <RoadieTile
         roadie={managerRoadie({
           stage: RoadieStage.hired,
-          paperworkStep: PaperworkStep.none,
+          paperworkStep: undefined,
         })}
         positionName="Servers"
         onOpen={vi.fn()}

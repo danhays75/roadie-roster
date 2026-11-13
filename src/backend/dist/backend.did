@@ -104,7 +104,7 @@ type UnassignedRoadieRow =
    crewName: opt text;
    demoPhotoUrl: opt text;
    name: text;
-   paperworkStep: opt PaperworkStep;
+   paperworkStep: opt text;
    photo: opt PhotoRef;
    positionId: PositionId;
    positionName: text;
@@ -293,7 +293,7 @@ type ShiftBoardRoadie =
    demoPhotoUrl: opt text;
    markedUnavailable: bool;
    name: text;
-   paperworkStep: opt PaperworkStep;
+   paperworkStep: opt text;
    photo: opt PhotoRef;
    positionCode: text;
    positionId: PositionId;
@@ -416,7 +416,7 @@ type Roadie =
    isMinor: bool;
    mainPositionId: PositionId;
    orientationEventId: opt EventId;
-   paperworkStep: opt PaperworkStep;
+   paperworkStep: opt text;
    photo: opt PhotoRef;
    profile: RoadieProfile;
    rosterState: RosterState;
@@ -480,14 +480,6 @@ type PendingRequestSummary =
    hasProfile: bool;
    requestedAt: Timestamp;
  };
-type PaperworkStep = 
- variant {
-   alcoholCertificate;
-   digitalPaperwork;
-   foodHandlerCard;
-   i9W4;
-   none;
- };
 type PaperworkStatus = 
  variant {
    complete;
@@ -525,7 +517,7 @@ type OrientationRoadieRow =
    name: text;
    noShow: bool;
    paperworkStatus: PaperworkStatus;
-   paperworkStep: opt PaperworkStep;
+   paperworkStep: opt text;
    photo: opt PhotoRef;
    positionId: PositionId;
    positionName: text;
@@ -576,7 +568,7 @@ type MyCrewRoadieRow =
    name: text;
    paperworkDone: nat;
    paperworkOverdue: bool;
-   paperworkStep: opt PaperworkStep;
+   paperworkStep: opt text;
    paperworkTotal: nat;
    photo: opt PhotoRef;
    positionId: PositionId;
@@ -868,6 +860,7 @@ type ChecklistItem =
    itemType: UniformItemType;
    minorOnly: bool;
    requiresAlcoholCert: bool;
+   shortLabel: opt text;
    "text": text;
  };
 type CheckInState = 
@@ -1342,8 +1335,6 @@ service : {
   updateRetentionSettings: (settings: RetentionSettings) -> ();
   /// Edit a roadie's non-contact details (Admin/Store Manager only).
   updateRoadieDetails: (id: RoadieId, profile: RoadieProfile) -> ();
-  /// Update a roadie's status (Admin/Store Manager only).
-  updateRoadieStatus: (id: RoadieId, status: RoadieStatus) -> ();
   /// Update a schedule event (Admin only).
   updateScheduleEvent: (event: ScheduleEvent) -> ();
   /// Update the store configuration (Admin only).

@@ -1,14 +1,16 @@
 import type { Position, RosterSummary } from "@/backend";
-import { RoadieStatus, RosterState } from "@/backend";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ChevronRight, Loader2, Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { useDashboardCopy } from "./copy";
-import { useAdjustBuildTo, useRosterForPosition } from "./hooks";
+import { useAdjustBuildTo } from "./hooks";
 
 type AdjustField = "opening" | "afterOpening";
+
+/** The panel-level build-to mutation, shared by every row in the panel. */
+type AdjustBuildTo = ReturnType<typeof useAdjustBuildTo>;
 
 function AdjustStepper({
   label,
@@ -63,6 +65,7 @@ function AdjustStepper({
 function PositionRow({
   position,
   summary,
+  adjust,
   adjustMode,
   canAdjust,
   showSplit,
@@ -70,22 +73,20 @@ function PositionRow({
 }: {
   position: Position;
   summary?: RosterSummary;
+  adjust: AdjustBuildTo;
   adjustMode: boolean;
   canAdjust: boolean;
   showSplit: boolean;
   onOpenRoster: (position: Position) => void;
 }) {
   const { t } = useDashboardCopy();
-  const { data: roster } = useRosterForPosition(position.id);
-  const adjust = useAdjustBuildTo();
   const [error, setError] = useState<string | null>(null);
 
-  // On-hand and open spots come from the backend roster summary; the position's
-  // own roster read is the fallback while the summary is still loading.
-  const rosterOnHand = (roster ?? []).filter(
-    (r) => r.status !== RoadieStatus.archived,
-  ).length;
-  const onHand = summary ? Number(summary.onHand) : rosterOnHand;
+  // On-hand, open spots and the pending/active split all come from the
+  // backend roster summary, which loads alongside the dashboard. No per-row
+  // roster read: a query per position multiplied the page's backend hooks and
+  // each mounted backend hook refetches the whole query cache on mount.
+  const onHand = summary ? Number(summary.onHand) : 0;
   const target = summary
     ? Number(summary.buildTo)
     : Number(position.openingBuildTo);
@@ -94,22 +95,12 @@ function PositionRow({
   const needed = target - onHand;
   const openSpots = summary ? Number(summary.openSpots) : Math.max(0, needed);
   const over = needed < 0;
-  // Pending and active break the on-hand total down; the position's own roster
-  // read is the fallback while the summary is still loading.
-  const activeCount = summary
-    ? Number(summary.active)
-    : (roster ?? []).filter(
-        (r) =>
-          r.status !== RoadieStatus.archived &&
-          r.rosterState === RosterState.active,
-      ).length;
-  const pendingCount = summary
-    ? Number(summary.pending)
-    : (roster ?? []).filter(
-        (r) =>
-          r.status !== RoadieStatus.archived &&
-          r.rosterState === RosterState.pending,
-      ).length;
+  const activeCount = summary ? Number(summary.active) : 0;
+  const pendingCount = summary ? Number(summary.pending) : 0;
+
+  // Only the row whose save is in flight shows the saving state.
+  const isSaving =
+    adjust.isPending && adjust.variables?.positionId === position.id;
 
   const applyDelta = (field: AdjustField, delta: bigint) => {
     setError(null);
@@ -222,18 +213,18 @@ function PositionRow({
           <AdjustStepper
             label={t("dashboard.adjust.opening")}
             value={Number(position.openingBuildTo)}
-            disabled={adjust.isPending}
+            disabled={isSaving}
             onDelta={(delta) => applyDelta("opening", delta)}
             ocid="dashboard.adjust.opening"
           />
           <AdjustStepper
             label={t("dashboard.adjust.afterOpening")}
             value={Number(position.afterOpeningBuildTo)}
-            disabled={adjust.isPending}
+            disabled={isSaving}
             onDelta={(delta) => applyDelta("afterOpening", delta)}
             ocid="dashboard.adjust.after_opening"
           />
-          {adjust.isPending && (
+          {isSaving && (
             <p className="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
               {t("dashboard.adjust.saving")}
@@ -271,6 +262,9 @@ export function PositionPanel({
   ocid: string;
 }) {
   const { t } = useDashboardCopy();
+  // One build-to mutation per panel instead of one per row, so the panel
+  // mounts a single backend hook however many positions it lists.
+  const adjust = useAdjustBuildTo();
   return (
     <Card
       data-ocid={ocid}
@@ -291,6 +285,7 @@ export function PositionPanel({
                 key={position.id.toString()}
                 position={position}
                 summary={summaryByPosition.get(position.id.toString())}
+                adjust={adjust}
                 adjustMode={adjustMode}
                 canAdjust={canAdjust}
                 showSplit={showSplit}

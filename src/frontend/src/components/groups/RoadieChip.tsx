@@ -1,6 +1,6 @@
 import type { ShiftBoardRoadie } from "@/backend";
 import { useGroupsCopy } from "@/components/groups/copy";
-import { refToDataUrl, roadieStageTag } from "@/lib/format";
+import { refToDataUrl, roadieStageTag, roadieStageTagText } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Check, GripVertical } from "lucide-react";
 import { useMemo } from "react";
@@ -128,7 +128,7 @@ export function RoadieChip({
             {stageTag.done && (
               <Check className="mr-1 h-3 w-3" aria-hidden="true" />
             )}
-            {t(stageTag.key)}
+            {roadieStageTagText(stageTag, t)}
           </span>
         </span>
       </button>

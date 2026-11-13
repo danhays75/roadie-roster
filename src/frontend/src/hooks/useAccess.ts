@@ -1,6 +1,6 @@
 import { Role } from "@/backend";
-import { demoRoleToRole, useDemo } from "@/hooks/useDemo";
-import { useMyAccess } from "@/hooks/useQueries";
+import { demoRoleToRole } from "@/hooks/useDemo";
+import { useDemoState, useMyAccess } from "@/hooks/useQueries";
 import type { AccessGrant, AccessState, MyAccessView, NavItem } from "@/types";
 import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useMemo } from "react";
@@ -206,9 +206,18 @@ function normalizeAccessView(value: unknown): {
  * while it is off they stay pending. The backend enforces the same permission
  * rules for the impersonated role as for a real user with that role.
  */
+/** A stable empty station list so a missing demo state never re-derives access. */
+const NO_DEMO_STATIONS: bigint[] = [];
+
 export function useAccessState(): AccessState {
   const { data, isLoading, isError, error, isReady } = useMyAccess();
-  const demo = useDemo();
+  // The demo state is read directly rather than through `useDemo`, which also
+  // mounts the four demo mutations. Every mounted backend hook triggers a
+  // cache-wide refetch on mount, so an access check costs two hooks, not six.
+  const { data: demoData } = useDemoState();
+  const demoEnabled = demoData?.enabled ?? false;
+  const demoStateRole = demoData?.demoRole ?? null;
+  const demoTrainerStations = demoData?.demoTrainerStations ?? NO_DEMO_STATIONS;
   const { identity } = useInternetIdentity();
 
   return useMemo(() => {
@@ -217,10 +226,10 @@ export function useAccessState(): AccessState {
     if (!isReady || isLoading) return { kind: "loading" };
 
     const { grant, demoRole } = normalizeAccessView(data);
-    const demoOn = demo.enabled;
+    const demoOn = demoEnabled;
     // The caller's own demo role: prefer the per-caller value from the access
     // view, falling back to the demo state read.
-    const callerDemoRole = demoRole ?? demo.demoRole;
+    const callerDemoRole = demoRole ?? demoStateRole;
 
     if (demoOn && callerDemoRole !== null && callerDemoRole !== undefined) {
       const effectiveRole = demoRoleToRole(callerDemoRole);
@@ -244,7 +253,7 @@ export function useAccessState(): AccessState {
           approvedAt: 0n,
           approvedBy: principal,
           role: effectiveRole,
-          trainerPositionIds: demo.demoTrainerStations,
+          trainerPositionIds: demoTrainerStations,
         };
         return { kind: "granted", grant: synthetic, demo: true };
       }
@@ -266,9 +275,9 @@ export function useAccessState(): AccessState {
     isError,
     error,
     isReady,
-    demo.enabled,
-    demo.demoRole,
-    demo.demoTrainerStations,
+    demoEnabled,
+    demoStateRole,
+    demoTrainerStations,
     identity,
   ]);
 }

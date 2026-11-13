@@ -138,6 +138,10 @@ function parseChecklistItems(value: unknown): Checklists["paperwork"] | null {
     if (!isRecord(raw)) return null;
     const id = toBigInt(raw.id);
     if (id === null || typeof raw.text !== "string") return null;
+    const shortLabel =
+      typeof raw.shortLabel === "string" && raw.shortLabel.trim()
+        ? raw.shortLabel.trim()
+        : undefined;
     items.push({
       id,
       text: raw.text,
@@ -148,6 +152,7 @@ function parseChecklistItems(value: unknown): Checklists["paperwork"] | null {
         raw.itemType === "count"
           ? UniformItemType.count
           : UniformItemType.checkbox,
+      ...(shortLabel ? { shortLabel } : {}),
     });
   }
   return items;
